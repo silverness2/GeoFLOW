@@ -14,7 +14,7 @@ project("GeoFLOW" VERSION 0.0.0.1 LANGUAGES C CXX Fortran)
 #---------------------------------------------------------------------
 # User Configure Build Process
 #---------------------------------------------------------------------
-set(USER_REQUEST_VERBOSE_CMAKE FALSE)
+set(USER_REQUEST_VERBOSE_CMAKE TRUE)
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 set(CMAKE_COLOR_MAKEFILE TRUE)
 set(DEFAULT_BUILD_TYPE "Release")
