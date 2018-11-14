@@ -1,0 +1,8 @@
+#
+# File to ignore
+#
+
+# Ignore the configure.hpp file which gets generated
+# from configure.hpp.in everytime cmake is run
+#
+configure.hpp
