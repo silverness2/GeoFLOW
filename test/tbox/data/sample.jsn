@@ -1,0 +1,7 @@
+{
+	"Logging" : {
+		"prefix" : "log",
+		"log_all_nodes" : false
+	}
+
+}

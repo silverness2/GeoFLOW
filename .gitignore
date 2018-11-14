@@ -1,0 +1,11 @@
+#
+# Files to ignore from git repo
+#
+
+# Out of Source Build Location
+build
+
+# Eclipse Project Files
+.project
+.cproject
+.pydevproject

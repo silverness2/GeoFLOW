@@ -1,0 +1,231 @@
+# Check CMake Version 
+cmake_minimum_required(VERSION 3.1.0 FATAL_ERROR)
+#
+#---------------------------------------------------------------------
+# Project Setup
+#---------------------------------------------------------------------
+#
+project("GeoFLOW" VERSION 0.0.0.1 LANGUAGES C CXX Fortran)
+#set(PROJECT_VERSION_MAJOR 0)
+#set(PROJECT_VERSION_MINOR 0)
+#set(PROJECT_VERSION_PATCH 0)
+#set(PROJECT_VERSION_TWEAK 1)
+
+#---------------------------------------------------------------------
+# User Configure Build Process
+#---------------------------------------------------------------------
+set(USER_REQUEST_VERBOSE_CMAKE FALSE)
+set(CMAKE_VERBOSE_MAKEFILE TRUE)
+set(CMAKE_COLOR_MAKEFILE TRUE)
+set(DEFAULT_BUILD_TYPE "Release")
+
+#
+#---------------------------------------------------------------------
+# Force build in seperate directory
+#---------------------------------------------------------------------
+#
+if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+	message("")
+	message("===================================================================")
+	message("~~~~~~~~~~~~~~ In-source builds are not permitted ~~~~~~~~~~~~~~~~~")
+	message("===================================================================")
+	message("")
+	message("This library has been configured to prevent building within the")
+	message("source tree. You must build within a seperate directory to keep")
+	message("configurations seperate.  Follow these steps:")
+	message("")
+	message("1. Remove the cache files already created.")
+	message("> rm -r CMakeCache.txt CMakeFiles")
+	message("")
+	message("2. Create a build directory and configure.")
+	message("> mkdir build; cd build; cmake ..")
+	message("")
+	message(FATAL_ERROR "In-source builds are not allowed.")
+endif(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+
+#
+#---------------------------------------------------------------------
+# Directory Report
+#---------------------------------------------------------------------
+#
+if(USER_REQUEST_VERBOSE_CMAKE)
+	message("")
+	message("--------------------- Directory Report -----------------------")
+
+	message(" ") # CMAKE directories are from top level CMakeLists.txt
+	message("Top Level Directories:")
+	message("CMAKE_SOURCE_DIR       = ${CMAKE_SOURCE_DIR}")
+	message("CMAKE_BINARY_DIR       = ${CMAKE_BINARY_DIR}")
+	message("CMAKE_CURRENT_LIST_DIR = ${CMAKE_CURRENT_LIST_DIR}")
+	message(" ") # PROJECT directories are for recent project call
+	message("Project Level Directories:")
+	message("PROJECT_SOURCE_DIR     = ${PROJECT_SOURCE_DIR}")
+	message("PROJECT_BINARY_DIR     = ${PROJECT_BINARY_DIR}")
+	#message("<Name>_BINARY_DIR     = ${<Name>_BINARY_DIR}") # By project name
+endif(USER_REQUEST_VERBOSE_CMAKE)
+
+#---------------------------------------------------------------------
+# Locations of Installation & Report
+#---------------------------------------------------------------------
+
+# Source locations in source tree
+set(MY_PROJECT_PREFIX  ${PROJECT_SOURCE_DIR})
+set(MY_PROJECT_INCDIR  ${MY_PROJECT_PREFIX}/src)
+set(MY_PROJECT_LIBDIR  ${MY_PROJECT_PREFIX}/src)
+set(MY_PROJECT_TESTDIR ${MY_PROJECT_PREFIX}/test)
+
+# Where to place all libraries
+set(MY_INSTALL_PREFIX  ${CMAKE_BINARY_DIR})
+set(MY_INSTALL_BINDIR  ${MY_INSTALL_PREFIX}/bin)
+set(MY_INSTALL_EXPLDIR ${MY_INSTALL_PREFIX}/examples)
+set(MY_INSTALL_INCDIR  ${MY_INSTALL_PREFIX}/include)
+set(MY_INSTALL_LIBDIR  ${MY_INSTALL_PREFIX}/lib)
+set(MY_INSTALL_TESTDIR ${MY_INSTALL_PREFIX}/test)
+
+if(USER_REQUEST_VERBOSE_CMAKE)
+	message(" ")
+	message("Using Directories:")
+	message("--- Original Locations ---")
+	message("MY_PROJECT_PREFIX    = ${MY_PROJECT_PREFIX}")
+	message("MY_PROJECT_INCDIR    = ${MY_PROJECT_INCDIR}")
+	message("MY_PROJECT_LIBDIR    = ${MY_PROJECT_LIBDIR}")
+	message("MY_PROJECT_TESTDIR   = ${MY_PROJECT_TESTDIR}")
+	message(" ")
+	message("--- Installation Locations ---")
+	message("MY_INSTALL_PREFIX   = ${MY_INSTALL_PREFIX}")
+	message("MY_INSTALL_BINDIR   = ${MY_INSTALL_BINDIR}")
+	message("MY_INSTALL_EXPLDIR  = ${MY_INSTALL_EXPLDIR}")
+	message("MY_INSTALL_INCDIR   = ${MY_INSTALL_INCDIR}")
+	message("MY_INSTALL_LIBDIR   = ${MY_INSTALL_LIBDIR}")
+	message("MY_INSTALL_TESTDIR  = ${MY_INSTALL_TESTDIR}")
+endif(USER_REQUEST_VERBOSE_CMAKE)
+
+#---------------------------------------------------------------------
+# Detect OpenMP & MPI Flags/Includes/Libraries
+#---------------------------------------------------------------------
+
+message("")
+message("------------------ Searching for Libraries ---------------------")
+
+message("")
+message("Searching OpenMP:")
+FIND_PACKAGE(OpenMP)
+message("OpenMP Found          = ${OpenMP_FOUND}")
+message("OpenMP F Comp Flags   = ${OpenMP_Fortran_FLAGS}")
+message("OpenMP F Inludes      = ${OpenMP_Fortran_INCLUDE_PATH}")
+message("OpenMP F Link Flags   = ${OpenMP_Fortran_LINK_FLAGS}")
+message("OpenMP F Libraries    = ${OpenMP_Fortran_LIBRARIES}")
+message("OpenMP C Comp Flags   = ${OpenMP_C_FLAGS}")
+message("OpenMP C Inludes      = ${OpenMP_C_INCLUDE_PATH}")
+message("OpenMP C Link Flags   = ${OpenMP_C_LINK_FLAGS}")
+message("OpenMP C Libraries    = ${OpenMP_C_LIBRARIES}")
+message("OpenMP C++ Comp Flags = ${OpenMP_CXX_FLAGS}")
+message("OpenMP C++ Inludes    = ${OpenMP_CXX_INCLUDE_PATH}")
+message("OpenMP C++ Link Flags = ${OpenMP_CXX_LINK_FLAGS}")
+message("OpenMP C++ Libraries  = ${OpenMP_CXX_LIBRARIES}")
+
+message("")
+message("Searching MPI:")
+FIND_PACKAGE(MPI)
+message("MPI F Found        = ${MPI_Fortran_FOUND}")
+message("MPI F Comp Flags   = ${MPI_Fortran_FLAGS}")
+message("MPI F Inludes      = ${MPI_Fortran_INCLUDE_PATH}")
+message("MPI F Link Flags   = ${MPI_Fortran_LINK_FLAGS}")
+message("MPI F Libraries    = ${MPI_Fortran_LIBRARIES}")
+message("MPI C Found        = ${MPI_C_FOUND}")
+message("MPI C Comp Flags   = ${MPI_C_FLAGS}")
+message("MPI C Inludes      = ${MPI_C_INCLUDE_PATH}")
+message("MPI C Link Flags   = ${MPI_C_LINK_FLAGS}")
+message("MPI C Libraries    = ${MPI_C_LIBRARIES}")
+message("MPI C++ Found      = ${MPI_CXX_FOUND}")
+message("MPI C++ Comp Flags = ${MPI_CXX_FLAGS}")
+message("MPI C++ Inludes    = ${MPI_CXX_INCLUDE_PATH}")
+message("MPI C++ Link Flags = ${MPI_CXX_LINK_FLAGS}")
+message("MPI C++ Libraries  = ${MPI_CXX_LIBRARIES}")
+
+#---------------------------------------------------------------------
+# Detect Other Libraries
+#---------------------------------------------------------------------
+      
+set(Boost_DEBUG OFF)              # Enable debug output from FIND_PACKAGE
+set(Boost_NO_SYSTEM_PATHS ON)     # Do not search system paths before BOOST_ROOT
+set(Boost_USE_STATIC_LIBS ON)     # Static link to Boost libraries
+set(Boost_USE_STATIC_RUNTIME OFF) # Use Boost static linked to C++ runtime
+set(Boost_USE_MULTITHREADED OFF)  # Use Boost multi-threaded code
+
+message("")
+message("Searching Boost:")
+message("BOOST_ROOT = ${BOOST_ROOT}")
+message("Boost_NO_SYSTEM_PATHS = ${Boost_NO_SYSTEM_PATHS}")
+FIND_PACKAGE(Boost 1.65.0 COMPONENTS filesystem mpi serialization REQUIRED)
+message("Boost Found               = ${Boost_FOUND}")
+message("Boost Version             = ${Boost_VERSION}")
+message("Boost Includes            = ${Boost_INCLUDE_DIRS}")
+message("Boost Link Libraries      = ${Boost_LIBRARY_DIRS}")
+message("Boost Component Libraries = ${Boost_LIBRARIES}")
+#message("Boost_<C>_FOUND           = ${Boost_<C>_FOUND}") # Specific Component
+
+#
+#---------------------------------------------------------------------
+# Compiler Feature Detection
+#---------------------------------------------------------------------
+# Hasn't proven to be very usefull. I find testing for the exact 
+# feature of interest in the following section much better.
+# Partialy because each compiler names features differently or 
+# some not at all.
+#
+if(USER_REQUEST_VERBOSE_CMAKE)
+	message("")
+	message("------------------ Compiler Feature Detection ---------------------")
+	message("")
+	message("CMAKE_CXX_COMPILER         = ${CMAKE_CXX_COMPILER}")
+	message("CMAKE_CXX_COMPILER_ID      = ${CMAKE_CXX_COMPILER_ID}")
+	message("CMAKE_CXX_COMPILER_VERSION = ${CMAKE_CXX_COMPILER_VERSION}")
+
+	message("")
+	message("CMake Version Can Test For C++ Features:")
+	get_property(known_features GLOBAL PROPERTY CMAKE_CXX_KNOWN_FEATURES)
+	foreach(i ${known_features})
+		message("${i}")
+	endforeach()
+	
+	message("")
+	message("Compiler C++ Features:")
+	foreach(i ${CMAKE_CXX_COMPILE_FEATURES})
+		message("${i}")
+	endforeach()
+endif(USER_REQUEST_VERBOSE_CMAKE)
+
+#---------------------------------------------------------------------
+# Set Project Level Compiler Options
+#---------------------------------------------------------------------
+# ONLY those options which impact level of compiler errors
+add_compile_options("-Werror")
+
+#---------------------------------------------------------------------
+# Check Platform Support
+#---------------------------------------------------------------------
+
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+message("")
+message("------------------------ Platform Support -------------------------")
+message("")
+
+#include(cpp_chrono)   # Returns HAVE_CPP_CHRONO_H, C11_CHRONO_WORKS, C20_CHRONO_WORKS
+#include(cpp_optional) # Returns HAVE_CPP_OPTIONAL_H, C17_OPTIONAL_WORKS
+#include(cpp_variant)  # Returns HAVE_CPP_VARIANT_H, C17_VARIANT_WORKS
+#include(posix_time)   # Returns POSIX_TIME_WORKS
+
+#---------------------------------------------------------------------
+# 
+#---------------------------------------------------------------------
+
+add_subdirectory(src/geoflow)
+
+
+enable_testing()
+add_subdirectory(test/tbox)
+
+
+
