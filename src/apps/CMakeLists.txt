@@ -6,7 +6,7 @@
 # Build list of all tests to create
 #
 set(exec_files  
-        main.cpp
+        geoflow.cpp
 )
 
 #

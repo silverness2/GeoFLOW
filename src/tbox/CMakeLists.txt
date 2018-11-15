@@ -30,10 +30,13 @@ target_compile_options(tbox
 		"$<$<BOOL:${MPI_CXX_FOUND}>:${MPI_CXX_FLAGS}>"	
 )
 
+# Note: The configure.hpp file is within ${MY_INSTALL_SRCDIR}
+# until it gets installed to ${MY_INSTALL_INCDIR} at the end.
 target_include_directories(tbox
-	PUBLIC
-		"$<INSTALL_INTERFACE:${MY_INSTALL_INCDIR}>"    
+	PUBLIC  
+		"$<INSTALL_INTERFACE:${MY_INSTALL_INCDIR}>"
 		"$<BUILD_INTERFACE:${MY_PROJECT_INCDIR}>"
+		"$<BUILD_INTERFACE:${MY_INSTALL_SRCDIR}>"
 		"${Boost_INCLUDE_DIRS}"
 		"$<$<BOOL:${MPI_CXX_FOUND}>:${MPI_CXX_INCLUDE_PATH}>"
 )
@@ -47,8 +50,8 @@ target_link_libraries(tbox
 
 # Install public headers
 install(
-	DIRECTORY "${MY_PROJECT_INCDIR}/geoflow"
-	DESTINATION "${MY_INSTALL_INCDIR}/geoflow"  
+	DIRECTORY "${MY_PROJECT_INCDIR}/tbox"
+	DESTINATION "${MY_INSTALL_INCDIR}"  
 	FILES_MATCHING PATTERN "*.hpp"
 )
 
