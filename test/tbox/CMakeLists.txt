@@ -6,9 +6,13 @@
 # Build list of all tests to create
 #
 set(test_tbox_files  
+        enumerate.cpp
+        indices.cpp
 		mpixx.cpp
         property_tree.cpp
+        range.cpp
         tbox_main.cpp
+        zip.cpp
 )
 
 #
