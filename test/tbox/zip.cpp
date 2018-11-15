@@ -5,7 +5,7 @@
  *      Author: bryan.flynt
  */
 
-#include "geoflow/tbox/zip.hpp"
+#include "tbox/zip.hpp"
 
 #include <iostream>
 #include <list>

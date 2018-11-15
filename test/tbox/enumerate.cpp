@@ -5,7 +5,7 @@
  *      Author: bryan.flynt
  */
 
-#include "geoflow/tbox/enumerate.hpp"
+#include "tbox/enumerate.hpp"
 
 #include <iostream>
 #include <vector>

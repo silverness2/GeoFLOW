@@ -5,7 +5,7 @@
  *      Author: bflynt
  */
 
-#include "geoflow/tbox/property_tree.hpp"
+#include "tbox/property_tree.hpp"
 
 #include "boost/property_tree/json_parser.hpp"
 

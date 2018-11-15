@@ -5,7 +5,7 @@
  *      Author: bflynt
  */
 
-#include "geoflow/tbox/mpixx.hpp"
+#include "tbox/mpixx.hpp"
 
 #include <cstdlib> // exit()
 

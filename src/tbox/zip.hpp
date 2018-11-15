@@ -13,7 +13,7 @@
 #include <tuple>
 #include <type_traits>
 
-#include "geoflow/tbox/traits.hpp" // get_iterator<>
+#include "tbox/traits.hpp" // get_iterator<>
 
 namespace geoflow {
 namespace tbox {

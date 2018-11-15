@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include "geoflow/tbox/property_tree.hpp"
+#include "tbox/property_tree.hpp"
 
 
 namespace geoflow {

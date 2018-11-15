@@ -271,6 +271,6 @@ private:
 } // namespace tbox
 } // namespace geoflow
 
-#include "geoflow/tbox/property_tree.ipp"
+#include "tbox/property_tree.ipp"
 
 #endif /* SRC_GEOFLOW_TBOX_PROPERTY_TREE_HPP_ */

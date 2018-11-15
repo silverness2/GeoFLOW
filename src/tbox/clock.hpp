@@ -84,7 +84,7 @@
  *
  */
 
-#include "geoflow/configure.hpp"
+#include "configure.hpp"
 
 #if defined USE_C_TIME
 #include <ctime>

@@ -11,8 +11,8 @@
 #include <iterator>    // std::iterator_traits
 #include <type_traits>
 
-#include "geoflow/tbox/range.hpp"
-#include "geoflow/tbox/traits.hpp" // has_size<>
+#include "tbox/range.hpp"
+#include "tbox/traits.hpp" // has_size<>
 
 namespace geoflow {
 namespace tbox {

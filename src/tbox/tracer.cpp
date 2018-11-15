@@ -5,11 +5,11 @@
  *      Author: bflynt
  */
 
-#include "geoflow/tbox/tracer.hpp"
+#include "tbox/tracer.hpp"
 
 #if defined( MOSAIC_USE_TRACER )
 
-#include "geoflow/tbox/pio.hpp"
+#include "tbox/pio.hpp"
 
 namespace geoflow {
 namespace tbox {

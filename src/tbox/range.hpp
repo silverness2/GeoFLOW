@@ -12,7 +12,7 @@
 #include <iterator>    // std::iterator_traits
 #include <type_traits>
 
-//#include "geoflow/tbox/traits.hpp"
+//#include "tbox/traits.hpp"
 
 namespace geoflow {
 namespace tbox {
