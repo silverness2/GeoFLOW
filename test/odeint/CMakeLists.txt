@@ -5,10 +5,8 @@
 # 
 # Build list of all tests to create
 #
-set(test_tbox_files  
-		mpixx.cpp
-        property_tree.cpp
-        tbox_main.cpp
+set(test_odeint_files
+	harmonic_oscillator.cpp
 )
 
 #
@@ -19,13 +17,13 @@ set(compiler_options "$<$<CXX_COMPILER_ID:AppleClang>:-Wno-comment>"
 		             "$<$<BOOL:${MPI_CXX_FOUND}>:${MPI_CXX_FLAGS}>" )
 		       
 set(include_headers "${CMAKE_SOURCE_DIR}/src")
-set(linked_libraries tbox)
+set(linked_libraries tbox odeint)
 		             
 #
 # Loop over each test building and adding to ctest
 # - Build test name
 #	             
-FOREACH(test_src ${test_tbox_files})
+FOREACH(test_src ${test_odeint_files})
 	string(REPLACE ".cpp" "" test_name ${test_src})
 	add_executable(${test_name} ${test_src})
 	target_compile_options(${test_name} PRIVATE ${compiler_options})
@@ -36,8 +34,8 @@ ENDFOREACH(test_src)
 
 
 # Install test data
-install(
-	DIRECTORY "${MY_PROJECT_TESTDIR}/tbox/data"
-	DESTINATION "${MY_INSTALL_TESTDIR}/tbox"  
-	FILES_MATCHING PATTERN "*"
-)
+#install(
+#	DIRECTORY "${MY_PROJECT_TESTDIR}/tbox/data"
+#	DESTINATION "${MY_INSTALL_TESTDIR}/tbox"  
+#	FILES_MATCHING PATTERN "*"
+#)

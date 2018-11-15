@@ -226,6 +226,7 @@ add_subdirectory(src/geoflow)
 
 enable_testing()
 add_subdirectory(test/tbox)
+add_subdirectory(test/odeint)
 
 
 

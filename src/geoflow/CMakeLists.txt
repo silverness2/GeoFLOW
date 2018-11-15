@@ -7,3 +7,4 @@ configure_file(
 )
 
 add_subdirectory(tbox)
+add_subdirectory(odeint)
