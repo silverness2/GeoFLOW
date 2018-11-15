@@ -14,7 +14,7 @@ project("GeoFLOW" VERSION 0.0.0.1 LANGUAGES C CXX Fortran)
 #---------------------------------------------------------------------
 # User Configure Build Process
 #---------------------------------------------------------------------
-set(USER_REQUEST_VERBOSE_CMAKE TRUE)
+set(USER_REQUEST_VERBOSE_CMAKE FALSE)
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 set(CMAKE_COLOR_MAKEFILE TRUE)
 set(DEFAULT_BUILD_TYPE "Release")
@@ -80,6 +80,7 @@ set(MY_INSTALL_BINDIR  ${MY_INSTALL_PREFIX}/bin)
 set(MY_INSTALL_EXPLDIR ${MY_INSTALL_PREFIX}/examples)
 set(MY_INSTALL_INCDIR  ${MY_INSTALL_PREFIX}/include)
 set(MY_INSTALL_LIBDIR  ${MY_INSTALL_PREFIX}/lib)
+set(MY_INSTALL_SRCDIR  ${MY_INSTALL_PREFIX}/src)
 set(MY_INSTALL_TESTDIR ${MY_INSTALL_PREFIX}/test)
 
 if(USER_REQUEST_VERBOSE_CMAKE)
@@ -229,7 +230,7 @@ enable_testing()
 add_subdirectory(test/tbox)
 
 # Build Executables
-add_subdirectory(apps)
+add_subdirectory(src/apps)
 
 
 

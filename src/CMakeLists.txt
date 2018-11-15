@@ -1,9 +1,18 @@
 
-
 # Create the "configure.hpp" file
+# 
+# src/configure.hpp.in --> build/src/configure.hpp
+#
 configure_file(
-	"configure.hpp.in"
-    "configure.hpp" 
+	"${MY_PROJECT_LIBDIR}/configure.hpp.in"
+	"${MY_INSTALL_SRCDIR}/configure.hpp"
 )
+
+#
+# build/src/configure.hpp --> include/configure.hpp       
+#
+INSTALL(FILES "${MY_INSTALL_SRCDIR}/configure.hpp"
+        DESTINATION "${MY_INSTALL_INCDIR}")     
+
 
 add_subdirectory(tbox)
