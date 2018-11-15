@@ -1,8 +1,9 @@
 
 
-# Build Libraries
-add_subdirectory(geoflow)
+# Create the "configure.hpp" file
+configure_file(
+	"configure.hpp.in"
+    "configure.hpp" 
+)
 
-# Build Tests for Libraries
-#enable_testing()
-#add_subdirectory(test/tbox)
+add_subdirectory(tbox)

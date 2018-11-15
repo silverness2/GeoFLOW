@@ -2,7 +2,7 @@
 #ifndef PIO_H_
 #define PIO_H_
 
-#include "geoflow/configure.hpp"
+#include "configure.hpp"
 
 #include <fstream>
 #include <iostream>

@@ -6,7 +6,7 @@
  */
 
 
-#include "geoflow/tbox/indices.hpp"
+#include "tbox/indices.hpp"
 
 #include <iostream>
 #include <vector>

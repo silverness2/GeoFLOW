@@ -5,13 +5,13 @@
  *      Author: bflynt
  */
 
-#include "geoflow/tbox/global_manager.hpp"
+#include "tbox/global_manager.hpp"
 
-#include "geoflow/tbox/assert.hpp"
-#include "geoflow/tbox/error_handler.hpp"
-#include "geoflow/tbox/input_manager.hpp"
-#include "geoflow/tbox/mpixx.hpp"
-#include "geoflow/tbox/pio.hpp"
+#include "tbox/assert.hpp"
+#include "tbox/error_handler.hpp"
+#include "tbox/input_manager.hpp"
+#include "tbox/mpixx.hpp"
+#include "tbox/pio.hpp"
 
 namespace geoflow {
 namespace tbox {

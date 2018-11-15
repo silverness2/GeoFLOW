@@ -5,9 +5,9 @@
  *      Author: bflynt
  */
 
-#include "geoflow/tbox/pio.hpp"
-#include "geoflow/tbox/mpixx.hpp"
-#include "geoflow/tbox/global_manager.hpp"
+#include "tbox/pio.hpp"
+#include "tbox/mpixx.hpp"
+#include "tbox/global_manager.hpp"
 
 using namespace geoflow::tbox;
 

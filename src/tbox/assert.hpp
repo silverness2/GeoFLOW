@@ -7,7 +7,7 @@
 #ifndef GEOFLOW_DEBUG_ASSERT_H_
 #define GEOFLOW_DEBUG_ASSERT_H_
 
-#include "geoflow/configure.hpp"
+#include "configure.hpp"
 
 /*
  * Macros for:
@@ -77,7 +77,7 @@
 // realloc() with 0 size;
 //
 #ifdef GEOFLOW_USE_TRACEBACK
-	#include "geoflow/tbox/pio.hpp" // pio::
+	#include "tbox/pio.hpp" // pio::
 	#include <execinfo.h>          // backtrace
     #define MANUAL_TRACEBACK								  	        \
 		do {														    \
@@ -109,8 +109,8 @@
 // RunTime Asserts
 //
 #ifdef GEOFLOW_USE_RUNTIME_ASSERTIONS
-	#include "geoflow/tbox/error_handler.hpp" // EH::abort();
-	#include "geoflow/tbox/pio.hpp"   // pio::
+	#include "tbox/error_handler.hpp" // EH::abort();
+	#include "tbox/pio.hpp"   // pio::
 	#define ASSERT(EXP)                                                      \
 		do {                                                                 \
 			using namespace geoflow::tbox;                                 \

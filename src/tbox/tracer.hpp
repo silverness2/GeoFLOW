@@ -8,7 +8,7 @@
 #ifndef MOSAIC_DEBUG_TRACER_HPP_
 #define MOSAIC_DEBUG_TRACER_HPP_
 
-#include "geoflow/configure.hpp"
+#include "configure.hpp"
 
 /** \file tracer.hpp
  * Implementation of Tracer tools to trace program execution.

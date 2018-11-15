@@ -11,7 +11,7 @@
 #include <iterator> // std::iterator_traits
 #include <utility>  // std::pair<>
 
-#include "geoflow/tbox/traits.hpp" // has_begin_end<>
+#include "tbox/traits.hpp" // has_begin_end<>
 
 
 namespace geoflow {

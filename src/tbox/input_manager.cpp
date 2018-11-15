@@ -5,8 +5,8 @@
  *      Author: bflynt
  */
 
-#include "geoflow/tbox/input_manager.hpp"
-#include "geoflow/tbox/mpixx.hpp"
+#include "tbox/input_manager.hpp"
+#include "tbox/mpixx.hpp"
 
 namespace geoflow {
 namespace tbox {

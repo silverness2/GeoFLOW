@@ -8,8 +8,8 @@
 #ifndef SRC_GEOFLOW_TBOX_PROPERTY_TREE_IPP_
 #define SRC_GEOFLOW_TBOX_PROPERTY_TREE_IPP_
 
-#include "geoflow/tbox/assert.hpp"
-#include "geoflow/tbox/error_handler.hpp"
+#include "tbox/assert.hpp"
+#include "tbox/error_handler.hpp"
 
 #include "boost/archive/basic_archive.hpp"
 #include "boost/property_tree/ptree_serialization.hpp"
