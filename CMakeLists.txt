@@ -221,11 +221,15 @@ message("")
 # 
 #---------------------------------------------------------------------
 
-add_subdirectory(src/geoflow)
+# Build Libraries & Tests
+add_subdirectory(src)
 
-
+# Build Tests for Libraries
 enable_testing()
 add_subdirectory(test/tbox)
+
+# Build Executables
+add_subdirectory(apps)
 
 
 
