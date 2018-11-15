@@ -9,6 +9,12 @@
 
 // Always need this for Date Stamp
 #include <ctime>
+
+
+namespace geoflow {
+namespace tbox {
+
+
 /*
  *************************************************************************
  *                                                                       *
@@ -151,3 +157,6 @@ std::string Clock::getDateStamp(){
   time_t t = time(NULL);
   return ctime(&t);
 }
+
+} // namespace tbox
+} // namespace geoflow

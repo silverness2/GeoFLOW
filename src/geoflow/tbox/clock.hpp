@@ -110,6 +110,11 @@
 #include <string>
 
 
+
+namespace geoflow {
+namespace tbox {
+
+
 struct Clock {
   
   /**
@@ -161,5 +166,9 @@ private:
 #endif
 
 };
+
+} // namespace tbox
+} // namespace geoflow
+
 
 #endif /* CLOCK_H_ */
