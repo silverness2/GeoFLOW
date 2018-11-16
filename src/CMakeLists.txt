@@ -4,7 +4,7 @@
 # src/configure.hpp.in --> build/src/configure.hpp
 #
 configure_file(
-	"${MY_PROJECT_LIBDIR}/configure.hpp.in"
+	"${MY_PROJECT_INCDIR}/configure.hpp.in"
 	"${MY_INSTALL_SRCDIR}/configure.hpp"
 )
 
