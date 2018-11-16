@@ -19,29 +19,21 @@ set(CMAKE_VERBOSE_MAKEFILE TRUE)
 set(CMAKE_COLOR_MAKEFILE TRUE)
 set(DEFAULT_BUILD_TYPE "Release")
 
+#---------------------------------------------------------------------
+# Set location of *.cmake modules
+#---------------------------------------------------------------------
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
 #
 #---------------------------------------------------------------------
 # Force build in seperate directory
 #---------------------------------------------------------------------
 #
-if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
-	message("")
-	message("===================================================================")
-	message("~~~~~~~~~~~~~~ In-source builds are not permitted ~~~~~~~~~~~~~~~~~")
-	message("===================================================================")
-	message("")
-	message("This library has been configured to prevent building within the")
-	message("source tree. You must build within a seperate directory to keep")
-	message("configurations seperate.  Follow these steps:")
-	message("")
-	message("1. Remove the cache files already created.")
-	message("> rm -r CMakeCache.txt CMakeFiles")
-	message("")
-	message("2. Create a build directory and configure.")
-	message("> mkdir build; cd build; cmake ..")
-	message("")
-	message(FATAL_ERROR "In-source builds are not allowed.")
-endif(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" LOC_PATH)
+if(EXISTS "${LOC_PATH}")
+	include(oos_error)   
+	message(FATAL_ERROR)
+endif()
 
 #
 #---------------------------------------------------------------------
@@ -97,6 +89,7 @@ if(USER_REQUEST_VERBOSE_CMAKE)
 	message("MY_INSTALL_BINDIR   = ${MY_INSTALL_BINDIR}")
 	message("MY_INSTALL_EXPLDIR  = ${MY_INSTALL_EXPLDIR}")
 	message("MY_INSTALL_INCDIR   = ${MY_INSTALL_INCDIR}")
+	message("MY_INSTALL_SRCDIR   = ${MY_INSTALL_SRCDIR}")
 	message("MY_INSTALL_LIBDIR   = ${MY_INSTALL_LIBDIR}")
 	message("MY_INSTALL_TESTDIR  = ${MY_INSTALL_TESTDIR}")
 endif(USER_REQUEST_VERBOSE_CMAKE)
@@ -158,7 +151,7 @@ message("")
 message("Searching Boost:")
 message("BOOST_ROOT = ${BOOST_ROOT}")
 message("Boost_NO_SYSTEM_PATHS = ${Boost_NO_SYSTEM_PATHS}")
-FIND_PACKAGE(Boost 1.65.0 COMPONENTS filesystem mpi serialization REQUIRED)
+FIND_PACKAGE(Boost 1.65.0 COMPONENTS mpi serialization REQUIRED)
 message("Boost Found               = ${Boost_FOUND}")
 message("Boost Version             = ${Boost_VERSION}")
 message("Boost Includes            = ${Boost_INCLUDE_DIRS}")
@@ -207,8 +200,6 @@ add_compile_options("-Werror")
 # Check Platform Support
 #---------------------------------------------------------------------
 
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-
 message("")
 message("------------------------ Platform Support -------------------------")
 message("")
@@ -227,7 +218,7 @@ add_subdirectory(src)
 
 # Build Tests for Libraries
 enable_testing()
-add_subdirectory(test/tbox)
+add_subdirectory(test)
 
 # Build Executables
 add_subdirectory(src/apps)
