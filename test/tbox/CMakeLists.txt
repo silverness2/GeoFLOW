@@ -22,7 +22,11 @@ set(compiler_options "$<$<CXX_COMPILER_ID:AppleClang>:-Wno-comment>"
 		             "$<$<BOOL:${OpenMP_FOUND}>:${OpenMP_CXX_FLAGS}>"
 		             "$<$<BOOL:${MPI_CXX_FOUND}>:${MPI_CXX_FLAGS}>" )
 		       
-set(include_headers "${CMAKE_SOURCE_DIR}/src")
+# Set include headers unique to testing
+set(include_headers "")
+
+# Set libraries the test need
+# - Gets library include paths from here
 set(linked_libraries tbox)
 		             
 #
@@ -36,13 +40,12 @@ FOREACH(test_src ${test_tbox_files})
 	target_include_directories(${test_name} PRIVATE ${include_headers})
 	target_link_libraries(${test_name} ${linked_libraries})
 	add_test(${test_name} ${test_name})
-	install(TARGETS ${test_name} DESTINATION "${MY_INSTALL_TESTDIR}/tbox")
 ENDFOREACH(test_src)
 
 
 # Install test data
 install(
-	DIRECTORY "${MY_PROJECT_TESTDIR}/tbox/data"
-	DESTINATION "${MY_INSTALL_TESTDIR}/tbox"  
+	DIRECTORY "${MY_PROJECT_TSTDIR}/tbox/data"
+	DESTINATION "${MY_INSTALL_TSTDIR}/tbox"  
 	FILES_MATCHING PATTERN "*"
 )

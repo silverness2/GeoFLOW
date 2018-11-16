@@ -15,10 +15,14 @@ set(exec_files
 set(compiler_options "$<$<CXX_COMPILER_ID:AppleClang>:-Wno-comment>"
 		             "$<$<BOOL:${OpenMP_FOUND}>:${OpenMP_CXX_FLAGS}>"
 		             "$<$<BOOL:${MPI_CXX_FOUND}>:${MPI_CXX_FLAGS}>" )
-		       
-set(include_headers "${CMAKE_SOURCE_DIR}/src")
-set(linked_libraries tbox)
-		             
+		       	
+# Set include headers unique to main only
+set(include_headers "")
+
+# Set libraries the test need
+# - Gets library include paths from here
+set(linked_libraries tbox)	
+				             
 #
 # Loop over each building & installing
 #	             

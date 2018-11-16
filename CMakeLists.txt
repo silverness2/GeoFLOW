@@ -14,34 +14,26 @@ project("GeoFLOW" VERSION 0.0.0.1 LANGUAGES C CXX Fortran)
 #---------------------------------------------------------------------
 # User Configure Build Process
 #---------------------------------------------------------------------
-set(USER_REQUEST_VERBOSE_CMAKE FALSE)
+set(USER_REQUEST_VERBOSE_CMAKE TRUE)
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 set(CMAKE_COLOR_MAKEFILE TRUE)
 set(DEFAULT_BUILD_TYPE "Release")
+
+#---------------------------------------------------------------------
+# Set location of *.cmake modules
+#---------------------------------------------------------------------
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 #
 #---------------------------------------------------------------------
 # Force build in seperate directory
 #---------------------------------------------------------------------
 #
-if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
-	message("")
-	message("===================================================================")
-	message("~~~~~~~~~~~~~~ In-source builds are not permitted ~~~~~~~~~~~~~~~~~")
-	message("===================================================================")
-	message("")
-	message("This library has been configured to prevent building within the")
-	message("source tree. You must build within a seperate directory to keep")
-	message("configurations seperate.  Follow these steps:")
-	message("")
-	message("1. Remove the cache files already created.")
-	message("> rm -r CMakeCache.txt CMakeFiles")
-	message("")
-	message("2. Create a build directory and configure.")
-	message("> mkdir build; cd build; cmake ..")
-	message("")
-	message(FATAL_ERROR "In-source builds are not allowed.")
-endif(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" LOC_PATH)
+if(EXISTS "${LOC_PATH}")
+	include(oos_error)   
+	message(FATAL_ERROR)
+endif()
 
 #
 #---------------------------------------------------------------------
@@ -51,17 +43,14 @@ endif(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
 if(USER_REQUEST_VERBOSE_CMAKE)
 	message("")
 	message("--------------------- Directory Report -----------------------")
-
 	message(" ") # CMAKE directories are from top level CMakeLists.txt
 	message("Top Level Directories:")
-	message("CMAKE_SOURCE_DIR       = ${CMAKE_SOURCE_DIR}")
-	message("CMAKE_BINARY_DIR       = ${CMAKE_BINARY_DIR}")
-	message("CMAKE_CURRENT_LIST_DIR = ${CMAKE_CURRENT_LIST_DIR}")
+	message("CMAKE_SOURCE_DIR  = ${CMAKE_SOURCE_DIR}")
+	message("CMAKE_BINARY_DIR  = ${CMAKE_BINARY_DIR}")
 	message(" ") # PROJECT directories are for recent project call
 	message("Project Level Directories:")
-	message("PROJECT_SOURCE_DIR     = ${PROJECT_SOURCE_DIR}")
-	message("PROJECT_BINARY_DIR     = ${PROJECT_BINARY_DIR}")
-	#message("<Name>_BINARY_DIR     = ${<Name>_BINARY_DIR}") # By project name
+	message("PROJECT_SOURCE_DIR = ${PROJECT_SOURCE_DIR}")
+	message("PROJECT_BINARY_DIR = ${PROJECT_BINARY_DIR}")
 endif(USER_REQUEST_VERBOSE_CMAKE)
 
 #---------------------------------------------------------------------
@@ -69,36 +58,37 @@ endif(USER_REQUEST_VERBOSE_CMAKE)
 #---------------------------------------------------------------------
 
 # Source locations in source tree
-set(MY_PROJECT_PREFIX  ${PROJECT_SOURCE_DIR})
-set(MY_PROJECT_INCDIR  ${MY_PROJECT_PREFIX}/src)
-set(MY_PROJECT_LIBDIR  ${MY_PROJECT_PREFIX}/src)
-set(MY_PROJECT_TESTDIR ${MY_PROJECT_PREFIX}/test)
+set(MY_PROJECT_PREFIX ${PROJECT_SOURCE_DIR})
+set(MY_PROJECT_INCDIR ${MY_PROJECT_PREFIX}/src)
+set(MY_PROJECT_SRCDIR ${MY_PROJECT_PREFIX}/src)
+set(MY_PROJECT_TSTDIR ${MY_PROJECT_PREFIX}/test)
 
 # Where to place all libraries
-set(MY_INSTALL_PREFIX  ${CMAKE_BINARY_DIR})
-set(MY_INSTALL_BINDIR  ${MY_INSTALL_PREFIX}/bin)
-set(MY_INSTALL_EXPLDIR ${MY_INSTALL_PREFIX}/examples)
-set(MY_INSTALL_INCDIR  ${MY_INSTALL_PREFIX}/include)
-set(MY_INSTALL_LIBDIR  ${MY_INSTALL_PREFIX}/lib)
-set(MY_INSTALL_SRCDIR  ${MY_INSTALL_PREFIX}/src)
-set(MY_INSTALL_TESTDIR ${MY_INSTALL_PREFIX}/test)
+set(MY_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
+set(MY_INSTALL_BINDIR ${MY_INSTALL_PREFIX}/bin)
+set(MY_INSTALL_INCDIR ${MY_INSTALL_PREFIX}/include)
+set(MY_INSTALL_SRCDIR ${MY_INSTALL_PREFIX}/src)
+set(MY_INSTALL_LIBDIR ${MY_INSTALL_PREFIX}/lib)
+set(MY_INSTALL_TSTDIR ${MY_INSTALL_PREFIX}/test)
+set(MY_INSTALL_EXADIR ${MY_INSTALL_PREFIX}/examples)
 
 if(USER_REQUEST_VERBOSE_CMAKE)
 	message(" ")
 	message("Using Directories:")
 	message("--- Original Locations ---")
-	message("MY_PROJECT_PREFIX    = ${MY_PROJECT_PREFIX}")
-	message("MY_PROJECT_INCDIR    = ${MY_PROJECT_INCDIR}")
-	message("MY_PROJECT_LIBDIR    = ${MY_PROJECT_LIBDIR}")
-	message("MY_PROJECT_TESTDIR   = ${MY_PROJECT_TESTDIR}")
+	message("MY_PROJECT_PREFIX = ${MY_PROJECT_PREFIX}")
+	message("MY_PROJECT_INCDIR = ${MY_PROJECT_INCDIR}")
+	message("MY_PROJECT_SRCDIR = ${MY_PROJECT_SRCDIR}")
+	message("MY_PROJECT_TSTDIR = ${MY_PROJECT_TSTDIR}")
 	message(" ")
 	message("--- Installation Locations ---")
-	message("MY_INSTALL_PREFIX   = ${MY_INSTALL_PREFIX}")
-	message("MY_INSTALL_BINDIR   = ${MY_INSTALL_BINDIR}")
-	message("MY_INSTALL_EXPLDIR  = ${MY_INSTALL_EXPLDIR}")
-	message("MY_INSTALL_INCDIR   = ${MY_INSTALL_INCDIR}")
-	message("MY_INSTALL_LIBDIR   = ${MY_INSTALL_LIBDIR}")
-	message("MY_INSTALL_TESTDIR  = ${MY_INSTALL_TESTDIR}")
+	message("MY_INSTALL_PREFIX = ${MY_INSTALL_PREFIX}")
+	message("MY_INSTALL_BINDIR = ${MY_INSTALL_BINDIR}")
+	message("MY_INSTALL_INCDIR = ${MY_INSTALL_INCDIR}")
+	message("MY_INSTALL_SRCDIR = ${MY_INSTALL_SRCDIR}")
+	message("MY_INSTALL_LIBDIR = ${MY_INSTALL_LIBDIR}")
+	message("MY_INSTALL_TSTDIR = ${MY_INSTALL_TSTDIR}")
+	message("MY_INSTALL_EXADIR = ${MY_INSTALL_EXADIR}")
 endif(USER_REQUEST_VERBOSE_CMAKE)
 
 #---------------------------------------------------------------------
@@ -158,7 +148,7 @@ message("")
 message("Searching Boost:")
 message("BOOST_ROOT = ${BOOST_ROOT}")
 message("Boost_NO_SYSTEM_PATHS = ${Boost_NO_SYSTEM_PATHS}")
-FIND_PACKAGE(Boost 1.65.0 COMPONENTS filesystem mpi serialization REQUIRED)
+FIND_PACKAGE(Boost 1.65.0 COMPONENTS mpi serialization REQUIRED)
 message("Boost Found               = ${Boost_FOUND}")
 message("Boost Version             = ${Boost_VERSION}")
 message("Boost Includes            = ${Boost_INCLUDE_DIRS}")
@@ -207,8 +197,6 @@ add_compile_options("-Werror")
 # Check Platform Support
 #---------------------------------------------------------------------
 
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-
 message("")
 message("------------------------ Platform Support -------------------------")
 message("")
@@ -227,7 +215,7 @@ add_subdirectory(src)
 
 # Build Tests for Libraries
 enable_testing()
-add_subdirectory(test/tbox)
+add_subdirectory(test)
 
 # Build Executables
 add_subdirectory(src/apps)
