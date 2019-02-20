@@ -5,6 +5,7 @@
  *      Author: bflynt
  */
 
+#include "tbox/command_line.hpp"
 #include "tbox/input_manager.hpp"
 #include "tbox/mpixx.hpp"
 
@@ -13,12 +14,12 @@ namespace tbox {
 
 PropertyTree InputManager::ptree_;
 
-
 void
 InputManager::initialize(int argc, char* argv[]){
 	std::string file_name = "input.jsn";
-	if( argc == 2 ){
-		file_name = argv[1];
+	CommandLine cline(argc,argv);
+	if( cline.tagExists("-i") ){
+		file_name = cline.getValue("-i");
 	}
 	InputManager::loadInputFile(file_name);
 }
@@ -30,7 +31,6 @@ InputManager::getInputPropertyTree(){
 
 void
 InputManager::loadInputFile(const std::string& file_name){
-	PropertyTree ptree_;
 	mpixx::communicator world;
 	if( world.rank() == 0 ){
 		ptree_.load_file(file_name);
