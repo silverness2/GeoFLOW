@@ -12,6 +12,7 @@
 #include "ifv/icos_grid.hpp"
 #include "tbox/input_manager.hpp"
 
+#include <cmath>
 
 using namespace geoflow::tbox;
 
@@ -35,6 +36,19 @@ int main(int argc, char* argv[]) {
 	auto stagger  = ptree.getValue<char>("stagger",'A');
 	auto filename = ptree.getValue<std::string>("filename","sph_var_G04.dat");
 	grid.load(stagger,nlevel,filename);
+
+	// Run function "sw_test_init"
+
+	// Save Initial Condition
+
+	// Run SWM Dynamics
+	auto itsbeg = ptree.getValue<int>("itsbeg",0);
+	auto ForcastLength = ptree.getValue<int>("ForcastLength",100);
+	double dt = 1456.0/std::pow(2.0,(nlevel-3));    // choice 1600/x, NICAM G4 dt=728  original comparable with NICAM
+	int itsend = ForcastLength * 86400.0 / dt;
+	for(int iter = itsbeg; iter < itsend; ++iter){
+
+	}
 
 
 
