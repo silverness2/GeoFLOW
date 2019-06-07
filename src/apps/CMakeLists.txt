@@ -21,7 +21,7 @@ set(include_headers "")
 
 # Set libraries the test need
 # - Gets library include paths from here
-set(linked_libraries tbox)	
+set(linked_libraries tbox ifv)	
 				             
 #
 # Loop over each building & installing

@@ -14,5 +14,6 @@ configure_file(
 INSTALL(FILES "${MY_INSTALL_SRCDIR}/configure.hpp"
         DESTINATION "${MY_INSTALL_INCDIR}")     
 
-
+add_subdirectory(xstd)
 add_subdirectory(tbox)
+add_subdirectory(ifv)
