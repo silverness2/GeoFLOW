@@ -10,8 +10,7 @@
 
 #include <cmath>
 
-IcosGrid::IcosGrid()
-	: stagger('A'){
+IcosGrid::IcosGrid() {
 }
 
 void
