@@ -110,7 +110,7 @@ void sw_test_init(const int iswcase, const double alpha, IcosGrid& grid, IcosSol
 			//        ht = h0 + h0*std::cos(lat)**2.0;
 		}
 		else {
-			ht=0.0;
+			ht = 0.0;
 		}
 		soln.h[ip] = ht;
 	}
@@ -213,17 +213,17 @@ void sw_test_init(const int iswcase, const double alpha, IcosGrid& grid, IcosSol
 			const auto slat = std::sin(lat);
 			const auto clon = std::cos(lon);
 			const auto slon = std::sin(lon);
-			std::array<Real,grid.ndim> P_sph({lon,lat,0});
-			std::array<std::array<Real,grid.ndim>,grid.ndim> basis;
+			std::array<Real,IcosGrid::ndim> P_sph({lon,lat,0});
+			std::array<std::array<Real,IcosGrid::ndim>,IcosGrid::ndim> basis;
 			basis[0] = { -slon, -slat*clon, clat*clon};
 			basis[1] = {  clon, -slat*slon, clat*slon};
 			basis[2] = {     0,       clat,      slat};
 
-			std::array<Real,grid.ndim> X({u[ipt],v[ipt],0});
+			std::array<Real,IcosGrid::ndim> X({u[ipt],v[ipt],0});
 
 			auto Y = matmul(basis,X);    // Y(1:3) cartesian velocity
 			if (grid.stagger == 'A') {
-				FV.velo[ipt] = Y;
+				soln.velo[ipt] = Y;
 				//FV.velo[ipt][0] = Y[0];
 				//FV.velo[ipt][1] = Y[1];
 				//FV.velo[ipt][2] = Y[2];
@@ -242,9 +242,9 @@ void sw_test_init(const int iswcase, const double alpha, IcosGrid& grid, IcosSol
 				const auto vec2 = grid.Tvec[ip][is];
 				auto s2 = dot_product(Y,vec2);
 
-				FV.velo[ipt][0]=s;             //  Un
-				FV.velo[ipt][1]=s2;            //  Ut
-				FV.velo[ipt][2]=0;
+				soln.velo[ipt][0]=s;             //  Un
+				soln.velo[ipt][1]=s2;            //  Ut
+				soln.velo[ipt][2]=0;
 				//           //
 				//           //-- ck
 				//           write(6,121) 'iE,is,ip       ', ipt,is,ip
@@ -265,12 +265,12 @@ void sw_test_init(const int iswcase, const double alpha, IcosGrid& grid, IcosSol
 			// vec1(1)=-std::sin(alpha);
 			// vec1(2)=0.0;
 			// vec1(3)=std::cos(alpha);  // \vec Omegasw
-			// call vect_from_sph_2_car (P_sph, P_car, grid.ndim);           // \vec R
-			// call XY_cross (vec1, P_car, vec2, grid.ndim);                 //  omega \cross R
+			// call vect_from_sph_2_car (P_sph, P_car, IcosGrid::ndim);           // \vec R
+			// call XY_cross (vec1, P_car, vec2, IcosGrid::ndim);                 //  omega \cross R
 			// vec2(1:3)=u0*vec2(1:3);
-			// call X_2norm(vec2, s2, grid.ndim);
-			// call X_2norm(vec3, s3, grid.ndim);
-			// call X_2norm(Y, s, grid.ndim);
+			// call X_2norm(vec2, s2, IcosGrid::ndim);
+			// call X_2norm(vec3, s3, IcosGrid::ndim);
+			// call X_2norm(Y, s, IcosGrid::ndim);
 			//        //
 			//        //-- ck
 			//        //

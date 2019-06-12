@@ -17,8 +17,10 @@ void dyn_A(const IcosGrid& grid, const IcosSoln& soln, IcosSoln& afv){
 	using Integer = typename IcosGrid::Integer;
 
 	const Real g(9.80616);            // Gravity  (m/s^2))
-	std::vector<std::array<Real,4>> Fc(grid.ipe);
-	std::vector<std::array<Real,4>> Fs(grid.ipe);
+	IcosSoln   Fc(grid.ipe);
+	IcosSoln   Fs(grid.ipe);
+	//std::vector<std::array<Real,4>> Fc(grid.ipe);
+	//std::vector<std::array<Real,4>> Fs(grid.ipe);
 	std::vector<Real>               Ec(grid.ipe);
 	std::vector<Real>               Es(grid.ipe);
 
@@ -40,13 +42,13 @@ void dyn_A(const IcosGrid& grid, const IcosSoln& soln, IcosSoln& afv){
 
 	        //-- weighted h,vx,vy,vz in Cartesian cord for upper corner
 
-	        Fc[is][0] = soln.h[ip]*grid.wtsph[ip][is][0]
+	        Fc.h[is]  = soln.h[ip]*grid.wtsph[ip][is][0]
 					  + soln.h[jp]*grid.wtsph[ip][is][1]
 					  + soln.h[kp]*grid.wtsph[ip][is][2];
-	        for(Integer j = 1; j < grid.ndimFV; ++j){
-		        Fc[is][j] = soln.velo[ip]*grid.wtsph[ip][is][0]
-						  + soln.velo[jp]*grid.wtsph[ip][is][1]
-						  + soln.velo[kp]*grid.wtsph[ip][is][2];
+	        for(Integer j = 0; j < IcosSoln::ndim; ++j){
+		        Fc.velo[is][j] = soln.velo[ip][j]*grid.wtsph[ip][is][0]
+						       + soln.velo[jp][j]*grid.wtsph[ip][is][1]
+						       + soln.velo[kp][j]*grid.wtsph[ip][is][2];
 	        }
 	        //-- interpolate E = 1/2*v*v+g(h+h0) to prepare for grad(E)
 	        const auto vmag2_jp = dot_product(soln.velo[jp],soln.velo[jp]);
@@ -64,10 +66,8 @@ void dyn_A(const IcosGrid& grid, const IcosSoln& soln, IcosSoln& afv){
 	     //--  One-half rule for mid of edge: 1/2 * (X_ims + X_im)
 		for(Integer is = 0; is < nb; ++is){
 			auto ism = (is+nb-2) % nb;
-			for(Integer j = 0; j < grid.ndimFV; ++j){
-				Fs[is][j] = 0.5 * (Fc[ism][j] + Fc[is][j]);      // h^*,Vx,Vy,Vz
-				//Fsx(j,is,ip)=Fs(j,is)
-			}
+			Fs.h[is]    = 0.5 * (Fc.h[ism]    + Fc.h[is]);
+			Fs.velo[is] = 0.5 * (Fc.velo[ism] + Fc.velo[is]);
 		}
 
 	     //
@@ -94,7 +94,7 @@ void dyn_A(const IcosGrid& grid, const IcosSoln& soln, IcosSoln& afv){
 			s = 0;
 			t = 0;
 			for(Integer is = 0; is < nb; ++is){
-				s += (Fs[is][0] - soln.h[ip]) * grid.Nvec[ip][is][j] * grid.slen[ip][is];
+				s += (Fs.h[is] - soln.h[ip]) * grid.Nvec[ip][is][j] * grid.slen[ip][is];
 				t += (Es[is] - E0p) * grid.Nvec[ip][is][j] * grid.slen[ip][is];
 			}
 			gradh[j] = s / grid.area[ip];
@@ -117,8 +117,8 @@ void dyn_A(const IcosGrid& grid, const IcosSoln& soln, IcosSoln& afv){
 	     Real div_V = 0;
 	     Real vort  = 0;
 	     for(Integer is = 0; is < nb; ++is){
-	    	 s = dot_product(Fs[is],grid.Nvec[ip][is]);   // projection to N
-	    	 t = dot_product(Fs[is],grid.Tvec[ip][is]);   // proj to T
+	    	 s = dot_product(Fs.velo[is], grid.Nvec[ip][is]);   // projection to N
+	    	 t = dot_product(Fs.velo[is], grid.Tvec[ip][is]);   // proj to T
 	    	 div_V += s * grid.slen[ip][is];
 	    	 vort  += t * grid.slen[ip][is];	    	  // (v_i dot T) * ds_i
 	     }
@@ -141,8 +141,8 @@ void dyn_A(const IcosGrid& grid, const IcosSoln& soln, IcosSoln& afv){
 	     //
 	     Real div_hV = 0;
 	     for(Integer is = 0; is < nb; ++is){
-	    	 s = dot_product(Fs[is],grid.Nvec[ip][is]);   // projection to N
-	    	 div_hV += s * Fs[is][0] * grid.slen[ip][is];  // h^*  (V dot N)
+	    	 s = dot_product(Fs.velo[is], grid.Nvec[ip][is]);   // projection to N
+	    	 div_hV += s * Fs.h[is] * grid.slen[ip][is];       // h^*  (V dot N)
 	     }
 	     div_hV /= grid.area[ip];
 	     afv.h[ip] = -div_hV;
@@ -156,12 +156,13 @@ void dyn_A(const IcosGrid& grid, const IcosSoln& soln, IcosSoln& afv){
 	     //                          (r_unit \cross V)_i = \Epsil_ijk Rj Vk
 	     //----------------------------------------------------------------------
 	     //
-	     for(Integer i = 0; i < 3; ++i){
-	    	 const auto j = i % 3;
-	    	 const auto k = j % 3;
-	    	 afv.velo[ip][i] = -(vort+grid.fcori[ip]) * (grid.Rcvec[ip][j] * soln.velo[ip][k] - grid.Rcvec[ip][k] * soln.velo[ip][j]) - gradE[i];
+	     afv.velo[ip] = -(vort+grid.fcori[ip]) * cross_product(grid.Rcvec[ip], soln.velo[ip]) - gradE;
 
-	     }
+	     //for(Integer i = 0; i < 3; ++i){
+	     //	 const auto j = i % 3;
+	     //	 const auto k = j % 3;
+	     //	 afv.velo[ip][i] = -(vort+grid.fcori[ip]) * (grid.Rcvec[ip][j] * soln.velo[ip][k] - grid.Rcvec[ip][k] * soln.velo[ip][j]) - gradE[i];
+	     //}
 
 	     //
 	     //-- s6. remove radial component for \part V / \part t

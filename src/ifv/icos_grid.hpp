@@ -35,7 +35,9 @@ public:
 	static constexpr Integer ndim  = 3;
 	static constexpr Integer nside = 6;
 
+
 	std::vector<std::array<Real,2>>                      icos_grid;
+	/*
 	std::vector<std::array<std::array<Real,ndim>,nside>> wtsph;
 	std::vector<std::array<Real,nside>>                  slen;
 	std::vector<Real>                                    area;
@@ -72,8 +74,8 @@ public:
 	std::vector<Real>     lat_v;
 	std::vector<Real>     hb_a;
 	std::vector<Real>     fcori;
-	/*
-	std::vector<Real>     icos_grid;
+	*/
+	//std::vector<Real>     icos_grid;
 	std::vector<Real>     wtsph;
 	std::vector<Real>     slen;
 	std::vector<Real>     area;
@@ -109,7 +111,8 @@ public:
 	std::vector<Real>     lon_v;
 	std::vector<Real>     lat_v;
 	std::vector<Real>     hb_a;
-*/
+	std::vector<Real>     fcori;
+
 	Integer glvl;  // # grid level
 	Integer nip;   // # of icosahedral points
 	Integer niE;   // number of Edges

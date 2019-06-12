@@ -7,9 +7,12 @@
 
 #include "icos_soln.hpp"
 
+IcosSoln::IcosSoln(const Integer N){
+	this->resize(N);
+}
 
 void
-IcosSoln::resize(const int N){
+IcosSoln::resize(const Integer N){
 	h.resize(N);
 	velo.resize(N);
 }

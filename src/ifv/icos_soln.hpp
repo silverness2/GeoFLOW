@@ -18,11 +18,15 @@ struct IcosSoln {
 
 public:
 	using Real    = double;
+	using Integer = std::int32_t;
+	static constexpr Integer ndim  = 3;
 
-	void resize(const int N);
+	IcosSoln(const Integer N);
+
+	void resize(const Integer N);
 
 	std::vector<Real>               h;
-	std::vector<std::array<Real,3>> velo;
+	std::vector<std::array<Real,ndim>> velo;
 	//std::vector<std::array<Real,6>> ASV_ana;
 };
 

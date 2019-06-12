@@ -43,7 +43,10 @@ IcosGrid::load(const char stag, const Integer level, const std::string filename)
 		imex   = ime_E;
 	}
 
+
 	icos_grid.resize(nip);        // icos_grid.resize(2*nip);
+
+	/*
 	wtsph.resize(nip);            // wtsph.resize(ndim*nside*nip);
 	slen.resize(nip);             // slen.resize(nside*nip);
 	area.resize(nip);
@@ -72,6 +75,37 @@ IcosGrid::load(const char stag, const Integer level, const std::string filename)
 	RAiv4H.resize(nip);           // RAiv4H.resize(nside*nip);
 	iVtopkey.resize(nip);         // iVtopkey.resize(nside*nip);
 	V_sph_grid.resize(niE);       // V_sph_grid.resize(2*2*niE);
+	*/
+
+	//icos_grid.resize(2*nip);
+	wtsph.resize(ndim*nside*nip);
+	slen.resize(nside*nip);
+	area.resize(nip);
+	Nvec.resize(ndim*nside*nip);
+	Tvec.resize(ndim*nside*nip);
+	Rvec.resize(ndim*nside*nip);
+	Rcvec.resize(ndim*nip);
+	nprox.resize(nip);
+	prox.resize(nside*nip);
+	proxs.resize(nside*nip);
+	midE_grid.resize(2*niE);
+	dcenter.resize(niE);
+	C4E.resize(5*niE);
+	E4C.resize(nside*nip);
+	wtUt.resize(10*niE);
+	Eindex.resize(10*niE);
+	areaV.resize(2*niE);
+	areaE.resize(niE);
+	areaI.resize(nip);
+	LevdUn.resize(nside*niE);
+	NoutdUn.resize(nside*nip);
+	EindexVort.resize(nside*niE);
+	arctheta.resize(niE);
+	Edc.resize(nside*nip);
+	RAiv4T.resize(nside*niE);
+	RAiv4H.resize(nside*nip);
+	iVtopkey.resize(nside*nip);
+	V_sph_grid.resize(2*2*niE);
 
 	lat.resize(nip);
 	lon.resize(nip);
@@ -121,6 +155,7 @@ IcosGrid::load(const char stag, const Integer level, const std::string filename)
 	);
 	stream.close();
 
+	/*
 	for(Integer i = 0; i < nip; ++i){
 		lon[i] = icos_grid[i][0];
 		lat[i] = icos_grid[i][1];
@@ -139,5 +174,6 @@ IcosGrid::load(const char stag, const Integer level, const std::string filename)
 		lat_v = latE;
 		lon_v = lonE;
 	}
+	*/
 
 }
