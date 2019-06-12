@@ -10,6 +10,7 @@
 #include "tbox/global_manager.hpp"
 
 #include "ifv/icos_grid.hpp"
+#include "ifv/sw_test_init.hpp"
 #include "tbox/input_manager.hpp"
 
 #include <cmath>
@@ -28,7 +29,7 @@ int main(int argc, char* argv[]) {
 	// Call startup call backs
 	GlobalManager::startup();
 
-	// Create the IcosGrid
+	// Create the IcosGrid & Soln
 	IcosGrid grid;
 
 	auto ptree = InputManager::getInputPropertyTree();
@@ -38,6 +39,11 @@ int main(int argc, char* argv[]) {
 	grid.load(stagger,nlevel,filename);
 
 	// Run function "sw_test_init"
+	IcosSoln soln;
+	soln.resize(grid.NPTS);
+	auto iswcase = ptree.getValue<int>("iswcase",0);
+	auto alpha   = ptree.getValue<double>("alpha",0);
+	sw_test_init(iswcase,alpha,grid,soln);
 
 	// Save Initial Condition
 

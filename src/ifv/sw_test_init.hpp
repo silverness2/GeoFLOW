@@ -9,9 +9,9 @@
 #define SRC_IFV_SW_TEST_INIT_HPP_
 
 #include "icos_grid.hpp"
+#include "icos_soln.hpp"
 
-
-void sw_test_init(IcosGrid& grid);
+void sw_test_init(const int iswcase, const double alpha, IcosGrid& grid, IcosSoln& soln);
 
 
 
