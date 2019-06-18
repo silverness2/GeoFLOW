@@ -45,8 +45,6 @@ IcosGrid::load(const char stag, const Integer level, const std::string filename)
 
 
 	icos_grid.resize(nip);        // icos_grid.resize(2*nip);
-
-	/*
 	wtsph.resize(nip);            // wtsph.resize(ndim*nside*nip);
 	slen.resize(nip);             // slen.resize(nside*nip);
 	area.resize(nip);
@@ -75,9 +73,9 @@ IcosGrid::load(const char stag, const Integer level, const std::string filename)
 	RAiv4H.resize(nip);           // RAiv4H.resize(nside*nip);
 	iVtopkey.resize(nip);         // iVtopkey.resize(nside*nip);
 	V_sph_grid.resize(niE);       // V_sph_grid.resize(2*2*niE);
-	*/
 
-	//icos_grid.resize(2*nip);
+	/*
+	icos_grid.resize(2*nip);
 	wtsph.resize(ndim*nside*nip);
 	slen.resize(nside*nip);
 	area.resize(nip);
@@ -106,7 +104,7 @@ IcosGrid::load(const char stag, const Integer level, const std::string filename)
 	RAiv4H.resize(nside*nip);
 	iVtopkey.resize(nside*nip);
 	V_sph_grid.resize(2*2*niE);
-
+	*/
 	lat.resize(nip);
 	lon.resize(nip);
 	latE.resize(niE);
@@ -123,35 +121,35 @@ IcosGrid::load(const char stag, const Integer level, const std::string filename)
 		assert(false);
 	}
 	stream.read_record(
-			std::make_pair(           2*nip, icos_grid.data()),
-			std::make_pair(  ndim*nside*nip, wtsph.data()),
-			std::make_pair(       nside*nip, slen.data()),
+			std::make_pair(           2*nip, icos_grid[0].data()),
+			std::make_pair(  ndim*nside*nip, wtsph[0][0].data()),
+			std::make_pair(       nside*nip, slen[0].data()),
 			std::make_pair(     area.size(), area.data()),
-			std::make_pair(  ndim*nside*nip, Nvec.data()),
-			std::make_pair(  ndim*nside*nip, Tvec.data()),
-			std::make_pair(  ndim*nside*nip, Rvec.data()),
-			std::make_pair(        ndim*nip, Rcvec.data()),
+			std::make_pair(  ndim*nside*nip, Nvec[0][0].data()),
+			std::make_pair(  ndim*nside*nip, Tvec[0][0].data()),
+			std::make_pair(  ndim*nside*nip, Rvec[0][0].data()),
+			std::make_pair(        ndim*nip, Rcvec[0].data()),
 			std::make_pair(    nprox.size(), nprox.data()),
-			std::make_pair(       nside*nip, prox.data()),
-			std::make_pair(       nside*nip, proxs.data()),
-			std::make_pair(           2*niE, midE_grid.data()),
+			std::make_pair(       nside*nip, prox[0].data()),
+			std::make_pair(       nside*nip, proxs[0].data()),
+			std::make_pair(           2*niE, midE_grid[0].data()),
 			std::make_pair(  dcenter.size(), dcenter.data()),
-			std::make_pair(           5*niE, C4E.data()),
-			std::make_pair(       nside*nip, E4C.data()),
-			std::make_pair(          10*niE, wtUt.data()),
-			std::make_pair(          10*niE, Eindex.data()),
-			std::make_pair(           2*niE, areaV.data()),
+			std::make_pair(           5*niE, C4E[0].data()),
+			std::make_pair(       nside*nip, E4C[0].data()),
+			std::make_pair(          10*niE, wtUt[0].data()),
+			std::make_pair(          10*niE, Eindex[0].data()),
+			std::make_pair(           2*niE, areaV[0].data()),
 			std::make_pair(    areaE.size(), areaE.data()),
 			std::make_pair(    areaI.size(), areaI.data()),
-			std::make_pair(       nside*niE, LevdUn.data()),
-			std::make_pair(       nside*nip, NoutdUn.data()),
-			std::make_pair(       nside*niE, EindexVort.data()),
+			std::make_pair(       nside*niE, LevdUn[0].data()),
+			std::make_pair(       nside*nip, NoutdUn[0].data()),
+			std::make_pair(       nside*niE, EindexVort[0].data()),
 			std::make_pair( arctheta.size(), arctheta.data()),
-			std::make_pair(       nside*nip, Edc.data()),
-			std::make_pair(       nside*niE, RAiv4T.data()),
-			std::make_pair(       nside*nip, RAiv4H.data()),
-			std::make_pair(       nside*nip, iVtopkey.data()),
-			std::make_pair(         2*2*niE, V_sph_grid.data())
+			std::make_pair(       nside*nip, Edc[0].data()),
+			std::make_pair(       nside*niE, RAiv4T[0].data()),
+			std::make_pair(       nside*nip, RAiv4H[0].data()),
+			std::make_pair(       nside*nip, iVtopkey[0].data()),
+			std::make_pair(         2*2*niE, V_sph_grid[0][0].data())
 	);
 	stream.close();
 

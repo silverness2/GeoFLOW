@@ -40,7 +40,6 @@ int main(int argc, char* argv[]) {
 	auto filename = ptree.getValue<std::string>("filename","sph_var_G04.dat");
 	grid.load(stagger,nlevel,filename);
 
-	/*
 
 	// Run function "sw_test_init"
 	IcosSoln soln_rk(grid.NPTS);
@@ -48,6 +47,7 @@ int main(int argc, char* argv[]) {
 	auto alpha   = ptree.getValue<double>("alpha",0);
 	sw_test_init(iswcase,alpha,grid,soln_rk);
 
+	/*
 	// Save Initial Condition
 
 	// Run SWM Dynamics

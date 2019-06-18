@@ -8,7 +8,7 @@ target_sources(ifv
 		icos_grid.cpp
 		icos_soln.cpp
 		#rk4.cpp
-		#sw_test_init.cpp
+		sw_test_init.cpp
 )
 
 target_compile_features(ifv
