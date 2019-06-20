@@ -8,10 +8,12 @@
 #ifndef SRC_IFV_GRID_HPP_
 #define SRC_IFV_GRID_HPP_
 
-#include <array>
+//#include <array>
 #include <cstdint>
 #include <string>
-#include <vector>
+//#include <vector>
+
+#include "tbox/multi_array.hpp"
 
 
 struct IcosGrid {
@@ -114,10 +116,57 @@ public:
 	std::vector<Real>     fcori;
 	*/
 
+	using int_array_1  = tbox::multi_array<Integer,1>;
+	using int_array_2  = tbox::multi_array<Integer,2>;
+	using int_array_3  = tbox::multi_array<Integer,3>;
+	using real_array_1 = tbox::multi_array<Real,1>;
+	using real_array_2 = tbox::multi_array<Real,2>;
+	using real_array_3 = tbox::multi_array<Real,3>;
 
+	static constexpr auto int_f_order_1  = int_array_1::f_order;
+	static constexpr auto int_f_order_2  = int_array_2::f_order;
+	static constexpr auto int_f_order_3  = int_array_3::f_order;
+	static constexpr auto real_f_order_1 = real_array_1::f_order;
+	static constexpr auto real_f_order_2 = real_array_2::f_order;
+	static constexpr auto real_f_order_3 = real_array_3::f_order;
 
-
-
+	real_array_2	icos_grid;
+	real_array_3	wtsph;
+	real_array_2	slen;
+	real_array_1    area;
+	real_array_3 	Nvec;
+	real_array_3 	Tvec;
+	real_array_3 	Rvec;
+	real_array_2    Rcvec;
+	int_array_1     nprox;
+	int_array_2     prox;
+	int_array_2     proxs;
+	real_array_2    midE_grid;
+	real_array_1    dcenter;
+	int_array_2     C4E;
+	int_array_2	    E4C;
+	real_array_2	wtUt;
+	int_array_2     Eindex;
+	real_array_2    areaV;
+	real_array_1   	areaE;
+	real_array_1   	areaI;
+	real_array_2    LevdUn;
+	real_array_2    NoutdUn;
+	int_array_2     EindexVort;
+	real_array_1    arctheta;
+	int_array_2     Edc;
+	real_array_2    RAiv4T;
+	real_array_2    RAiv4H;
+	int_array_2     iVtopkey;
+	real_array_3    V_sph_grid;
+	real_array_1    lat;
+	real_array_1    lon;
+	real_array_1    latE;
+	real_array_1    lonE;
+	real_array_1    lon_v;
+	real_array_1    lat_v;
+	real_array_1    hb_a;
+	real_array_1    fcori;
 
 	Integer glvl;  // # grid level
 	Integer nip;   // # of icosahedral points

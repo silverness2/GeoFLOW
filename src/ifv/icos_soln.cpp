@@ -7,15 +7,17 @@
 
 #include "icos_soln.hpp"
 
+/*
 IcosSoln::IcosSoln(const Integer N){
 	this->resize(N);
 }
 
 void
 IcosSoln::resize(const Integer N){
-	h.resize(N);
-	velo.resize(N);
+	h.resize(N).reorder(real_f_order_1).rebase(1);
+	velo.resize(ndim,N).reorder(real_f_order_2).rebase(1);
 }
+*/
 
 
 

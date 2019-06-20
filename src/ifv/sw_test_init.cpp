@@ -7,17 +7,24 @@
 
 #include "sw_test_init.hpp"
 
-#include "xstd/array.hpp"
+#include "mathut.hpp"
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <vector>
 
 #include "tbox/pio.hpp"
 
 void sw_test_init(const int iswcase, const double alpha, IcosGrid& grid, IcosSoln& soln){
 	using Real    = double;
 	using Integer = int;
+	using std::sin;
+	using std::cos;
+	using std::acos;
+	using std::pow;
+	using std::min;
+	using std::sqrt;
 
 	//
 	// dimension: meter, m/s
@@ -33,7 +40,7 @@ void sw_test_init(const int iswcase, const double alpha, IcosGrid& grid, IcosSol
 	const Real thetae(pi/2.0);
 	const Real xe(0.30);
 
-	Real ht,c;
+	Real r, ht, h0, c, w, K, R;
 	Real R0      = 1;
 	Real latc    = 0;
 	Real lonc    = -pi/2.0;
@@ -49,129 +56,121 @@ void sw_test_init(const int iswcase, const double alpha, IcosGrid& grid, IcosSol
 
 
 	//
-	//-- s1:  h field defined at center (lat_h,lon_h) for both A and C grid
+	//-- s1:  h field defined at center (lat,lon) for both A and C grid
 	//
-	for(Integer ip = 0; ip < grid.nip; ++ip) {
-		const auto lat= grid.lat[ip];
-		const auto lon= grid.lon[ip];
+	for(std::size_t ip = 1; ip <= grid.nip; ++ip){
+		auto lat = grid.lat(ip);
+		auto lon = grid.lon(ip);
 		if (iswcase == 1) {
-			const Real h0 = 1000.0;
-			const Real r = std::acos( std::sin(lat)*std::sin(latc) + std::cos(lat)*std::cos(latc)*std::cos(lon-lonc) );
+			h0 = 1000;
+			r  = acos( sin(lat)*sin(latc) + cos(lat)*cos(latc)*cos(lon-lonc) );
 			if (r < R0) {
-				ht = 0.50 * h0 * (1.0 + std::cos(pi*r/R0));
+				ht = 0.5 * h0 * (1 + cos(pi*r/R0));
 			}
 			else {
-				//ht= 0.0          // original version
-				ht = 0.50 * h0;     // MPAS version
-				//ht= 0.10 * h0
+				//ht= 0.          // original version
+				ht = 0.5 * h0;     // MPAS version
+				//ht= 0.1 * h0
 			}
 		}
 		else if (iswcase == 2  || iswcase==3 ) {
 			//
 			// h0 is 3000 m in case-2
 			//
-			const Real h0= 3000.0;
-			// cos\Phi = omega \dot r = std::cos(delta);
-			c = -std::sin(alpha)*std::cos(lat)*std::cos(lon) + std::cos(alpha)*std::sin(lat);
-			ht = h0 - (0.50*omegasw*omegasw+omegasw*omega)*ae*ae*c*c/g;
+			h0 = 3000;
+			// cos\Phi = omega \dot r = cos(delta)
+			c  = -sin(alpha)*cos(lat)*cos(lon) + cos(alpha)*sin(lat);
+			ht = h0 - (0.5*omegasw*omegasw+omegasw*omega)*ae*ae*c*c/g;
 		}
 		else if (iswcase == 5) {
 			//
 			// h0 is 5960 m in case-5
 			//
-			const Real h0= 5960.0;
-			// cos\Phi = omega \dot r = std::cos(delta)
-			c  = -std::sin(alpha)*std::cos(lat)*std::cos(lon) + std::cos(alpha)*std::sin(lat);
-			ht = h0 - (0.50*omegasw*omegasw+omegasw*omega)*ae*ae*c*c/g;
+			h0 = 5960;
+			// cos\Phi = omega \dot r = cos(delta)
+			c  = -sin(alpha)*cos(lat)*cos(lon) + cos(alpha)*sin(lat);
+			ht = h0 - (0.5*omegasw*omegasw+omegasw*omega)*ae*ae*c*c/g;
 		}
 		else if (iswcase == 6) {
 			// Rossby-Haurwitz
-			const Real h0 = 8.0e+3;
-			const Real w = omega_RH;
-			const Real K = K_RH;
-			const Real R = R_RH;
+			h0 = 8000;
+			w  = omega_RH;
+			K  = K_RH;
+			R  = R_RH;
 			//
-			//        A_RH = 0.50 * w * (2.0 * omega + w) * std::cos(lat)**2.0 + & 0.250 * K**2.0 * &
-			//          std::cos(lat)**(2.0*R) * ((R+1.0)*std::cos(lat)**2.0 + 2.0*R**2.0 - R - 2.0 - &
-			//          2.0*R**2.0 * std::cos(lat)**(-2.0))
+			//        A_RH = 0.5 * w * (2. * omega + w) * cos(lat)**2. + & 0.25 * K**2. * &
+			//          cos(lat)**(2.*R) * ((R+1.)*cos(lat)**2. + 2.*R**2. - R - 2. - &
+			//          2.*R**2. * cos(lat)**(-2.))
 			//
-			const Real A_RH =
-					0.50 * w * (2.0 * omega + w) * std::cos(lat)*std::cos(lat) +
-					0.250 * K*K * std::pow(std::cos(lat),(2.0*R)) * ((R+1.0)*std::cos(lat)*std::cos(lat) + 2.0*R*R - R - 2.0) -
-					0.50  * K*K * std::pow(std::cos(lat),(2.0*R-2.0)) * R*R;
+			Real A_RH = 0.5 * w * (2 * omega + w) * cos(lat)*cos(lat)  +
+					0.25 * K*K * pow(cos(lat),(2*R)) * ((R+1)*cos(lat)*cos(lat) + 2*R*R - R - 2) -
+					0.5  * K*K * pow(cos(lat),(2*R-2)) * R*R;
 			//
-			const Real B_RH =
-					(2.0*(omega + w)*K / ((R+1.0)*(R+2.0))) * std::pow(std::cos(lat),R) * ((R*R +
-							2.0*R + 2.0) - std::pow(((R+1.0)*std::cos(lat)),2.0));
+			Real B_RH = (2*(omega + w)*K / ((R+1)*(R+2))) * pow(cos(lat),R) * ((R*R + 2*R + 2) - ((R+1)*pow(cos(lat),2)));
 			//
-			const Real C_RH =
-					0.250 * K*K * std::pow(std::cos(lat),(2.0*R)) * ((R+1.0)*std::cos(lat)*std::cos(lat) - R - 2.0);
+			Real C_RH = 0.25 * K*K * pow(cos(lat),2*R) * ((R+1.)*cos(lat)*cos(lat) - R - 2);
 			//
-			ht = h0 + ae*ae/g*(A_RH + B_RH*std::cos(R*lon) + C_RH*std::cos(2.0*R*lon));
-			//        ht = h0 + h0*std::cos(lat)**2.0;
+			ht = h0 + ae*ae/g*(A_RH + B_RH*cos(R*lon) + C_RH*cos(2.*R*lon));
+			//        ht = h0 + h0*cos(lat)**2.
 		}
 		else {
-			ht = 0.0;
+			ht = 0;
 		}
-		soln.h[ip] = ht;
+		soln(ip,1) = ht;
 	}
-
 	//
 	//-- terrain surface field
 	//
-	for(Integer ip = 0; ip < grid.nip; ++ip){
-		const auto lat= grid.lat[ip];
-		const auto lon= grid.lon[ip];
+	for(std::size_t ip = 1; ip <= grid.nip; ++ip){
+		Real lat = grid.lat(ip);
+		Real lon = grid.lon(ip);
 		if (iswcase == 5) {
 			//
 			//  add surface height
-			R0 = pi/9.0;
-			lonc= 1.50*pi;
-			latc= pi/6.0;
-			const Real r = std::min(R0, std::sqrt( std::pow((lon-lonc),2) + std::pow(lat-latc,2)));
-			const Real hs = 2000.0;
-			grid.hb_a[ip]= hs * (1.0 - r/R0);  // surface height
+			R0 = pi/9.;
+			lonc= 1.5*pi;
+			latc= pi/6.;
+			r  = min(R0, sqrt( pow((lon-lonc),2) + pow((lat-latc),2) ) );
+			Real hs = 2000;
+			grid.hb_a(ip) = hs * (1. - r/R0);   // surface height
 		}
 		else {
-			grid.hb_a[ip]= 0.0;
+			grid.hb_a(ip) = 0;
 		}
 	}
 	//
-	//note: in C-grid, we will not touch FV(nip+1:niE,1) --- the h-field
+	//note: in C-grid, we will not touch soln(grip.nip+1:niE,1) --- the h-field
 	//
 
 
 	//
 	//-- s2:  velocity field
 	//
-	Real ut, vt;
-	std::vector<Real> u(grid.NPTS);
-	std::vector<Real> v(grid.NPTS);
-	for(Integer ipt = 0; ipt < grid.NPTS; ++ipt){
-		const auto lat = grid.lat_v[ipt];     // lat velocity
-		const auto lon = grid.lon_v[ipt];     //
+	std::vector<Real> u(grid.NPTS+1);
+	std::vector<Real> v(grid.NPTS+1);
+	for(std::size_t ipt = 1; ipt <= grid.NPTS; ++ipt){
+		Real lat = grid.lat_v(ipt);     // lat velocity
+		Real lon = grid.lon_v(ipt);
+		Real ut, vt;
 		if (iswcase==1 || iswcase==2 || iswcase==5) {
 			//
 			// geostropic flow
 			// V = Omega \cross R
 			//
-			ut =  u0*(std::sin(alpha)*std::sin(lat)*std::cos(lon) + std::cos(alpha)*std::cos(lat));
-			vt = -u0*std::sin(alpha)*std::sin(lon);
+			ut =  u0*(sin(alpha)*sin(lat)*cos(lon) + cos(alpha)*cos(lat));
+			vt = -u0*sin(alpha)*sin(lon);
 		}
 		else if (iswcase == 3) {
-			ut =  u0*(std::cos(lat)*std::cos(alpha) + std::sin(lat)*std::sin(alpha)*std::cos(lon));
-	        vt = -u0*std::sin(alpha)*std::sin(lon);
+			ut =  u0*(cos(lat)*cos(alpha) + sin(lat)*sin(alpha)*cos(lon));
+			vt = -u0*sin(alpha)*sin(lon);
 		}
 		else if (iswcase == 6) {
-			const Real w = omega_RH;
-			const Real K = K_RH;
-			const Real R = R_RH;
-			ut =  ae*w*std::cos(lat) + std::pow(ae*K*std::cos(lat),(R-1.0))*(   std::pow(R*std::sin(lat),2.0) - std::pow(std::cos(lat),2.0))*std::cos(R*lon);
-			vt = -ae*K*R*std::pow(std::cos(lat),(R-1.0))*std::sin(lat)*std::sin(R*lon);
+			ut =  ae*w*cos(lat) + ae*K*pow(cos(lat),R-1)*(R*pow(sin(lat),2) - pow(cos(lat),2))*cos(R*lon);
+			vt = -ae*K*R*pow(cos(lat),R-1)*sin(lat)*sin(R*lon);
 		}
 		else {
-			ut = 0.0;
-			vt = 0.0;
+			ut = 0;
+			vt = 0;
 		}
 		u[ipt] = ut;
 		v[ipt] = vt;
@@ -184,94 +183,94 @@ void sw_test_init(const int iswcase, const double alpha, IcosGrid& grid, IcosSol
 	//        note velocity and acceleration
 	//        for A-grid at center, C-grid on edge
 	//
-	for(Integer ipt = 0; ipt < grid.NPTS; ++ipt){
-		const auto lat = grid.lat_v[ipt];
-		const auto lon = grid.lon_v[ipt];
-		// unit omega \dot r = std::cos(delta)
-		c  = -std::sin(alpha)*std::cos(lat)*std::cos(lon) + std::cos(alpha)*std::sin(lat);
+	for(std::size_t ipt = 1; ipt <= grid.NPTS; ++ipt){
+		Real lat = grid.lat_v(ipt);
+		Real lon = grid.lon_v(ipt);
+		// unit omega \dot r = cos(delta)
+		c = -sin(alpha)*cos(lat)*cos(lon) + cos(alpha)*sin(lat);
 		if (iswcase == 1) {
-			grid.fcori[ipt]= 0.0;          // pure advection
+			grid.fcori(ipt)= 0;           // pure advection
 		}
-		else if (iswcase >= 2 || iswcase <= 6) {    // case-3 included
-			grid.fcori[ipt]= 2.0*omega*c;   //  2 * Omega * (\Ome \dot R)
-		}                              // global for Earth
+		else if (iswcase>=2 || iswcase<=6) {    // case-3 included
+			grid.fcori(ipt)= 2.*omega*c;   //  2 * Omega * (\Ome \dot R)
+			// global for Earth
+		}
 		else {
-			grid.fcori[ipt]= 0.0;
+			grid.fcori(ipt)= 0;
 		}
 	}
-
 
 	//
 	//---  transform velocity (u, v) to cartesian
 	//---    (Four vector:  h/Vx/Vy/Vz)
 	//
 	if (iswcase != 4) {
-		for(Integer ipt = 0; ipt < grid.NPTS; ++ipt){
-			const auto lat = grid.lat_v[ipt];
-			const auto lon = grid.lon_v[ipt];
+		std::array<Real,3> P_sph,X,Y;
+		std::array<std::array<Real,3>,3> basis;
+		for(std::size_t ipt = 1; ipt <= grid.NPTS; ++ipt){
+			Real lat = grid.lat_v(ipt);
+			Real lon = grid.lon_v(ipt);
+			P_sph[0] = lon;
+			P_sph[1] = lat;
+			P_sph[2] = 1;
+			basis_between_sph_car(P_sph,basis);
 
-			const auto clat = std::cos(lat);
-			const auto slat = std::sin(lat);
-			const auto clon = std::cos(lon);
-			const auto slon = std::sin(lon);
-			std::array<Real,IcosGrid::ndim> P_sph({lon,lat,0});
-			std::array<std::array<Real,IcosGrid::ndim>,IcosGrid::ndim> basis;
-			basis[0] = { -slon, -slat*clon, clat*clon};
-			basis[1] = {  clon, -slat*slon, clat*slon};
-			basis[2] = {     0,       clat,      slat};
-
-			std::array<Real,IcosGrid::ndim> X({u[ipt],v[ipt],0});
-
-			auto Y = matmul(basis,X);    // Y(1:3) cartesian velocity
+			X[0] = u[ipt];
+			X[1] = v[ipt];
+			X[2] = 0;
+			AX_mult(basis,X,Y);
 			if (grid.stagger == 'A') {
-				soln.velo[ipt] = Y;
-				//FV.velo[ipt][0] = Y[0];
-				//FV.velo[ipt][1] = Y[1];
-				//FV.velo[ipt][2] = Y[2];
-				//vec3(1:3)=0.0;       //  aux
+				soln(ipt,2)=Y[0];
+				soln(ipt,3)=Y[1];
+				soln(ipt,4)=Y[2];
 			}
 			else if (grid.stagger == 'C') {
+				std::array<Real,3> vec1;
 				//
 				// Proj velocity to N T direction for C-grid
 				//      Un=(V,N)N,  Ut=(V,T)T
 				//
-				const auto ip   = grid.C4E[ipt][0]; //  (1,ipt);
-				const auto is   = grid.C4E[ipt][4]; //  (5,ipt); // Left:  1:4=i,j,k,Lp, 5=is
-				const auto vec1 = grid.Nvec[ip][is];
-				auto s = dot_product(Y,vec1);
+				auto ip = grid.C4E(1,ipt);
+				auto is = grid.C4E(5,ipt);   // Left:  1:4=i,j,k,Lp, 5=is
+				//vec1(1:3) = grid.Nvec(1:3,is,ip);     // for iE;  NoutdUn(is,ip)= + 1
+				vec1[0] = grid.Nvec(1,is,ip);
+				vec1[1] = grid.Nvec(2,is,ip);
+				vec1[2] = grid.Nvec(3,is,ip);
+				XY_dot(Y,vec1,soln(ipt,2));  //  Un
 
-				const auto vec2 = grid.Tvec[ip][is];
-				auto s2 = dot_product(Y,vec2);
+				vec1[0] = grid.Tvec(1,is,ip);
+				vec1[1] = grid.Tvec(2,is,ip);
+				vec1[2] = grid.Tvec(3,is,ip);
+				XY_dot(Y,vec1,soln(ipt,3));  //  Ut
 
-				soln.velo[ipt][0]=s;             //  Un
-				soln.velo[ipt][1]=s2;            //  Ut
-				soln.velo[ipt][2]=0;
+				//soln(ipt,2) = s;             //  Un
+				//soln(ipt,3) = s2;            //  Ut
 				//           //
 				//           //-- ck
 				//           write(6,121) 'iE,is,ip       ', ipt,is,ip
-				//           write(6,101) 'Nvec(1:3,is,ip)', Nvec(1:3,is,ip)
+				//           write(6,101) 'grid.Nvec(1:3,is,ip)', grid.Nvec(1:3,is,ip)
 				//           write(6,101) 'Tvec(1:3,is,ip)', Tvec(1:3,is,ip)
 				//           write(6,101) 'V_xyz(1:3)     ', Y(1:3)
 				//           write(6,101) 'VdN            ', s
 				//           write(6,101) 'Vdt            ', s2
 				//
 				// backward test  Un* \vec U_n + Ut * \vec U_T = V = omega \cross R
-				// for(Integer j = 0; j < 3; ++j){
-				// 	vec3(j)= s * Nvec(j,is,ip) + s2 * Tvec(j,is,ip);
+				// for(std::size_t j = 1; j <= grid.ndim; ++j){
+				// 	vec3(j)= s * grid.Nvec(j,is,ip) + s2 * Tvec(j,is,ip);
 				// }
 			}
 			//
 			// check with  V = omega \cross R
 			//
-			// vec1(1)=-std::sin(alpha);
-			// vec1(2)=0.0;
-			// vec1(3)=std::cos(alpha);  // \vec Omegasw
-			// call vect_from_sph_2_car (P_sph, P_car, IcosGrid::ndim);           // \vec R
-			// call XY_cross (vec1, P_car, vec2, IcosGrid::ndim);                 //  omega \cross R
-			// vec2(1:3)=u0*vec2(1:3);
-			// call X_2norm(vec2, s2, IcosGrid::ndim);
-			// call X_2norm(vec3, s3, IcosGrid::ndim);
-			// call X_2norm(Y, s, IcosGrid::ndim);
+			//vec1(1) = -sin(alpha);
+			//vec1(2) = 0;
+			//vec1(3) = cos(alpha);  // \vec Omegasw
+			//call vect_from_sph_2_car (P_sph, P_car, ndim);           // \vec R
+			//call XY_cross (vec1, P_car, vec2, ndim);                 //  omega \cross R
+			//vec2(1:3)=u0*vec2(1:3);
+			//call X_2norm(vec2, s2, ndim);
+			//call X_2norm(vec3, s3, ndim);
+			//call X_2norm(Y, s, ndim);
 			//        //
 			//        //-- ck
 			//        //
@@ -282,14 +281,16 @@ void sw_test_init(const int iswcase, const double alpha, IcosGrid& grid, IcosSol
 			//        write(6,101) '\vec Omega \cross R', vec2(1:3)
 			//        write(6,101) 'vec1(1:3)-Y(1:3), norm diff', vec2(1:3)-Y(1:3), s-s2
 			//        write(6,101) 'vec3(1:3)-Y(1:3), norm diff', vec3(1:3)-Y(1:3), s-s3
-			//        write(6,101) 'Un, Ut    ', FV(ipt,2)  , FV(ipt,3)
+			//        write(6,101) 'Un, Ut    ', soln(ipt,2)  , soln(ipt,3)
 			//        write(6,'(//)')
 			//
 		}      // ipt
+
+
 	}
 
 
-/*
+	/*
 	if (iswcase==2 || iswcase==3) {
 		// steady state let's save initial state to compute Error norms
 		// 1  2  3  4
@@ -297,31 +298,29 @@ void sw_test_init(const int iswcase, const double alpha, IcosGrid& grid, IcosSol
 		//
 		// h
 		if (grid.stagger=='A') {
-			for(Integer ip = 0; ip < grid.nip; ++ip){
-				ASV_ana(ip, 0) = FV[ip][0];
+			for(std::size_t ip = 1; ip <= grid.nip; ++ip){
+				ASV_ana(ip, 1)=soln(ip, 1);
 			}
 			// velocity cartesian
-			for(Integer ipt = 0; ipt < NPTS; ++ipt){
-				for(Integer j = 1; j < 4; ++j){
-					ASV_ana(ipt, j) = FV[ipt][j];
+			for(std::size_t ipt = 1; ipt <= grid.NPTS; ++ipt){
+				for(std::size_t j = 2; j <= 4; ++j){
+					ASV_ana(ipt, j)=soln(ipt, j);
 				}
 			}
 		}
 		else if (grid.stagger=='C') {
-			for(Integer ip = 0; ip < grid.nip; ++ip){
-				ASV_ana(ip, 0) = FV[ip][0];
+			for(std::size_t ip = 1; ip <= grid.nip; ++ip){
+				ASV_ana(ip, 1)=soln(ip, 1);
 			}
 			// velocity Un
-			for(Integer ipt = 0; ipt < NPTS; ++ipt){
-				for(Integer j = 1; j < 3; ++j){
-					ASV_ana(ipt, j) = FV[ipt][j];  //  U_n and U_t  vel
+			for(std::size_t ipt = 1; ipt <= grid.NPTS; ++ipt){
+				for(std::size_t j = 2; j <= 3; ++j){
+					ASV_ana(ipt, j)=soln(ipt, j);  //  U_n and U_t  vel
 				}
 			}
 		}
 	}
-*/
-
-
+	 */
 
 }
 

@@ -12,7 +12,7 @@
 #include "icos_soln.hpp"
 
 
-void dyn_A(const IcosGrid& grid, const IcosSoln& soln, IcosSoln& acc);
+void dyn_A(const int iswcase, const IcosGrid& grid, const IcosSoln& soln, IcosSoln& acc);
 
 
 #endif /* SRC_IFV_DYN_A_HPP_ */

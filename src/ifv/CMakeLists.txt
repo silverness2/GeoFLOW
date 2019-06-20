@@ -4,10 +4,10 @@ add_library(ifv STATIC "")
 
 target_sources(ifv
 	PRIVATE
-	    #dyn_A.cpp
+	    dyn_A.cpp
 		icos_grid.cpp
 		icos_soln.cpp
-		#rk4.cpp
+		rk4.cpp
 		sw_test_init.cpp
 )
 
