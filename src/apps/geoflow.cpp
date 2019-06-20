@@ -11,6 +11,7 @@
 
 #include "ifv/dyn_A.hpp"
 #include "ifv/icos_grid.hpp"
+#include "ifv/output_icos.hpp"
 #include "ifv/rk4.hpp"
 #include "ifv/sw_test_init.hpp"
 #include "tbox/input_manager.hpp"
@@ -48,8 +49,10 @@ int main(int argc, char* argv[]) {
 	auto alpha   = ptree.getValue<double>("alpha",0);
 	sw_test_init(iswcase,alpha,grid,soln_rk);
 
-
 	// Save Initial Condition
+	if( grid.stagger == 'A' ){
+		output_icos(0,grid,soln_rk);
+	}
 
 	// Run SWM Dynamics
 	auto itsbeg = ptree.getValue<int>("itsbeg",1);
@@ -73,14 +76,20 @@ int main(int argc, char* argv[]) {
 			dyn_A(iswcase, grid, soln_temp, afv);
 			RK4th_true_Var_increment(istage,dt,soln_rk,afv);
 		}
-	}
 
-	pio::pout << itsend << std::endl;
+	     //------------------------------------------------------
+	     //  output every 12 or 6 hours     !  post time = dt * iter
+	     //------------------------------------------------------
 
+		if( grid.stagger == 'A' ){
+			auto nstep = int( 86400 / 2 / dt );
+			if( iter%nstep == 0 ){
+				auto j = int(iter/nstep);
+				output_icos(j,grid,soln_rk);
+			}
+		}
 
-
-	// Entry Point to your application
-	// -->
+	} // end iter loop
 
 	// Call shutdown call backs
 	GlobalManager::shutdown();

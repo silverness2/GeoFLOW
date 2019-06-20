@@ -192,8 +192,6 @@ endif(USER_REQUEST_VERBOSE_CMAKE)
 #---------------------------------------------------------------------
 # ONLY those options which impact level of compiler errors
 add_compile_options("-Werror")
-add_compile_options("-O3")
-add_compile_options("-DNDEBUG")
 
 #---------------------------------------------------------------------
 # Check Platform Support

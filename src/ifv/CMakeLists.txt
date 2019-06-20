@@ -7,6 +7,7 @@ target_sources(ifv
 	    dyn_A.cpp
 		icos_grid.cpp
 		icos_soln.cpp
+		output_icos.cpp
 		rk4.cpp
 		sw_test_init.cpp
 )

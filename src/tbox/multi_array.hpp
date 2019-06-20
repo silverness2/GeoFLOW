@@ -262,7 +262,7 @@ template<typename T, std::size_t N, typename A>
 template<typename ...Args>
 multi_array<T,N,A>&
 multi_array<T,N,A>::resize(const Args... args){
-	static_assert(sizeof...(args) == dimensionality);
+	static_assert(sizeof...(args) == dimensionality, "");
 	const size_type new_shape[] = {static_cast<size_type>(args)...};
 	std::copy(std::begin(new_shape),std::end(new_shape),std::begin(shape_));
 	this->update_stride_();
@@ -274,7 +274,7 @@ template<typename T, std::size_t N, typename A>
 template<typename ...Args>
 multi_array<T,N,A>&
 multi_array<T,N,A>::reshape(const Args... args){
-	static_assert(sizeof...(args) == dimensionality);
+	static_assert(sizeof...(args) == dimensionality, "");
 	const size_type new_shape[] = {static_cast<size_type>(args)...};
 	const auto old_size = this->size();
 	std::copy(std::begin(new_shape),std::end(new_shape),std::begin(shape_));
@@ -288,7 +288,7 @@ template<typename ...Args>
 multi_array<T,N,A>&
 multi_array<T,N,A>::rebase(const Args... args){
 	constexpr auto arg_size = sizeof...(args);
-	static_assert(arg_size == 1 || arg_size == dimensionality);
+	static_assert(arg_size == 1 || arg_size == dimensionality, "");
 	const index_type new_base[] = {static_cast<index_type>(args)...};
 	if( arg_size == 1 ){
 		std::fill(std::begin(base_),std::end(base_),new_base[0]);
@@ -384,7 +384,7 @@ template<typename T, std::size_t N, typename A>
 template<typename... Args>
 typename multi_array<T,N,A>::index_type
 multi_array<T,N,A>::index_(const Args... args) const {
-	static_assert(sizeof...(args) == dimensionality);
+	static_assert(sizeof...(args) == dimensionality, "");
     const index_type ijk[] = {static_cast<index_type>(args)...};
 	index_type ans(0);
 	for(size_type i = 0; i < dimensionality; ++i){
