@@ -11,17 +11,18 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <string>
 
 void output_icos(const int nstep, const IcosGrid& grid, const IcosSoln& soln){
 	std::string filename;
 	std::ofstream myfile;
 
 	// Write Height
-	filename = "d.h_it." << nstep;
+	filename = "d.h_it." + std::to_string(nstep);
 	myfile.open(filename);
 	myfile.precision(2);
 	myfile << std::fixed; // std::scientific;
-	for(std::size_t i = 1; grid.nip; ++i){
+	for(std::size_t i = 1; i <= grid.nip; ++i){
 		myfile << std::setw(12) << grid.lon_v(i);
 		myfile << std::setw(12) << grid.lat_v(i);
 		myfile << std::setw(25) << soln(i,1);
@@ -29,11 +30,11 @@ void output_icos(const int nstep, const IcosGrid& grid, const IcosSoln& soln){
 	}
 	myfile.close();
 
-	filename = "d.vx_it." << nstep;
+	filename = "d.vx_it." + std::to_string(nstep);
 	myfile.open(filename);
 	myfile.precision(2);
 	myfile << std::fixed; // std::scientific;
-	for(std::size_t i = 1; grid.nip; ++i){
+	for(std::size_t i = 1; i <= grid.nip; ++i){
 		myfile << std::setw(12) << grid.lon_v(i);
 		myfile << std::setw(12) << grid.lat_v(i);
 		myfile << std::setw(25) << soln(i,2);
@@ -41,11 +42,11 @@ void output_icos(const int nstep, const IcosGrid& grid, const IcosSoln& soln){
 	}
 	myfile.close();
 
-	filename = "d.vy_it." << nstep;
+	filename = "d.vy_it." + std::to_string(nstep);
 	myfile.open(filename);
 	myfile.precision(2);
 	myfile << std::fixed; // std::scientific;
-	for(std::size_t i = 1; grid.nip; ++i){
+	for(std::size_t i = 1; i <= grid.nip; ++i){
 		myfile << std::setw(12) << grid.lon_v(i);
 		myfile << std::setw(12) << grid.lat_v(i);
 		myfile << std::setw(25) << soln(i,3);
@@ -53,11 +54,11 @@ void output_icos(const int nstep, const IcosGrid& grid, const IcosSoln& soln){
 	}
 	myfile.close();
 
-	filename = "d.vz_it." << nstep;
+	filename = "d.vz_it." + std::to_string(nstep);
 	myfile.open(filename);
 	myfile.precision(2);
 	myfile << std::fixed; // std::scientific;
-	for(std::size_t i = 1; grid.nip; ++i){
+	for(std::size_t i = 1; i <= grid.nip; ++i){
 		myfile << std::setw(12) << grid.lon_v(i);
 		myfile << std::setw(12) << grid.lat_v(i);
 		myfile << std::setw(25) << soln(i,4);

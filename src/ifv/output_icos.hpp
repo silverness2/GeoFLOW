@@ -11,8 +11,6 @@
 #include "icos_grid.hpp"
 #include "icos_soln.hpp"
 
-#include <string>
-
 void output_icos(const int nstep, const IcosGrid& grid, const IcosSoln& soln);
 
 
