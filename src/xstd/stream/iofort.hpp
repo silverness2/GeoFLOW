@@ -222,7 +222,7 @@ iofort::get_record_size(){
 template<typename I, typename T, typename... Pairs>
 typename iofort::RecordSize
 iofort::calc_record_size(const std::pair<I,T*> pair){
-	return static_cast<RecordSize>(pair.first);
+	return (sizeof(T) * static_cast<RecordSize>(pair.first));
 }
 
 template<typename I, typename T, typename... Pairs>
@@ -249,9 +249,11 @@ iofort::read_record(std::pair<I,T*> pair){
 template<typename I, typename T, typename... Pairs>
 void
 iofort::read_record(std::pair<I,T*> pair, Pairs... pairs){
-	auto header = this->get_record_size();
+	const auto exp_size = this->calc_record_size(pair,pairs...);
+	const auto header = this->get_record_size();
+	assert(header==exp_size);
 	this->read_binary(pair,pairs...);
-	auto footer = this->get_record_size();
+	const auto footer = this->get_record_size();
 	assert(header==footer);
 }
 

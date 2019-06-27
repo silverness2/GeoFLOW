@@ -123,10 +123,10 @@ public:
 	}
 
 private:
-	memory_type                    data_;
 	size_array                     shape_;
 	index_array                    stride_;
 	index_array                    base_;
+	memory_type                    data_;
 	strider_type                   order_;
 
 
@@ -150,10 +150,10 @@ multi_array<T,N,A>::multi_array() :
 
 template<typename T, std::size_t N, typename A>
 multi_array<T,N,A>::multi_array(const multi_array& other) :
-	data_(other.data_),
 	shape_(other.shape_),
 	stride_(other.stride_),
 	base_(other.base_),
+	data_(other.data_),
 	order_(other.order_) {
 }
 

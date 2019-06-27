@@ -5,8 +5,12 @@
  *      Author: bflynt
  */
 
+//#include "tbox/pio.hpp"
+
+
 #include "icos_grid.hpp"
 #include "xstd/fstream.hpp"
+
 
 #include <cmath>
 
@@ -183,6 +187,13 @@ IcosGrid::load(const char stag, const Integer level, const std::string filename)
 			std::make_pair( V_sph_grid.size(), V_sph_grid.data())
 	);
 	stream.close();
+
+	//using namespace geoflow::tbox;
+	//pio::pout << "icos_grid.data() = " << std::endl;
+	//pio::pout << icos_grid.data()[0] << std::endl;
+	//pio::pout << icos_grid.data()[1] << std::endl;
+	//pio::pout << icos_grid.data()[2] << std::endl;
+	//pio::pout << icos_grid.data()[3] << std::endl;
 
 
 	for(Integer ip = 1; ip <= nip; ++ip){

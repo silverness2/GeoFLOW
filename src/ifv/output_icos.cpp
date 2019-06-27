@@ -14,7 +14,7 @@
 #include <string>
 
 void output_icos(const int nstep, const IcosGrid& grid, const IcosSoln& soln){
-	const int num_decimals = 2;
+	const int num_decimals = 3;
 
 	std::string filename;
 	std::ofstream myfile;
