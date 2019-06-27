@@ -8,11 +8,11 @@
 #ifndef TEST_SCRATCH_MULTI_ARRAY_HPP_
 #define TEST_SCRATCH_MULTI_ARRAY_HPP_
 
-#include <algorithm>
+
+#include <array>
 #include <cassert>
 #include <functional>
-#include <iterator>
-#include <memory>
+#include <vector>
 
 
 namespace tbox {
@@ -23,15 +23,18 @@ class multi_array {
 public:
 
 	using value_type       = T;
-	using reference        = value_type&;
-	using const_reference  = const value_type&;
-	using pointer          = value_type*;
-	using const_pointer    = const value_type*;
-	using size_type        = std::size_t;        // UnSigned/Signed Type
-	using difference_type  = std::int64_t;       // Signed Type
+	using memory_type      = std::vector<T,Alloc>;
+	using reference        = typename memory_type::reference;
+	using const_reference  = typename memory_type::const_reference;
+	using pointer          = typename memory_type::pointer;
+	using const_pointer    = typename memory_type::const_pointer;
+	using size_type        = typename memory_type::size_type;
+	using difference_type  = typename memory_type::difference_type;
 	using index_type       = difference_type;    // Signed Type
-	using allocator_type   = Alloc;
+	using allocator_type   = typename memory_type::allocator_type;
 	using strider_type     = std::function<void(const size_type*,index_type*)>;
+	using size_array       = std::array<size_type,N>;
+	using index_array      = std::array<index_type,N>;
 
 	static constexpr size_type dimensionality = N;
 
@@ -120,12 +123,10 @@ public:
 	}
 
 private:
-	size_type                      shape_[dimensionality];
-	index_type                     stride_[dimensionality];
-	index_type                     base_[dimensionality];
-	std::shared_ptr<value_type[]>  shared_data_ptr_;
-	allocator_type                 allocator_;
-	index_type                     offset_;
+	memory_type                    data_;
+	size_array                     shape_;
+	index_array                    stride_;
+	index_array                    base_;
 	strider_type                   order_;
 
 
@@ -141,29 +142,23 @@ private:
 
 template<typename T, std::size_t N, typename A>
 multi_array<T,N,A>::multi_array() :
-	shared_data_ptr_(nullptr),
-	allocator_(allocator_type()),
-	offset_(0),
-	order_(c_order){
-	std::fill(std::begin(shape_), std::end(shape_), 0);
-	std::fill(std::begin(stride_),std::end(stride_),0);
-	std::fill(std::begin(base_),  std::end(base_),  0);
+	order_(c_order) {
+	shape_.fill(0);
+	stride_.fill(0);
+	base_.fill(0);
 }
 
 template<typename T, std::size_t N, typename A>
 multi_array<T,N,A>::multi_array(const multi_array& other) :
-	shared_data_ptr_(other.shared_data_ptr_),
-	allocator_(other.allocator_),
-	offset_(other.offset_),
-	order_(c_order){
-	std::copy(std::begin(other.shape_), std::end(other.shape_), std::begin(shape_));
-	std::copy(std::begin(other.stride_),std::end(other.stride_),std::begin(stride_));
-	std::copy(std::begin(other.base_),  std::end(other.base_),  std::begin(base_));
+	data_(other.data_),
+	shape_(other.shape_),
+	stride_(other.stride_),
+	base_(other.base_),
+	order_(other.order_) {
 }
 
 template<typename T, std::size_t N, typename A>
 multi_array<T,N,A>::~multi_array(){
-	this->clear();
 }
 
 template<typename T, std::size_t N, typename A>
@@ -173,25 +168,12 @@ multi_array<T,N,A>::operator=(multi_array other){
 	return *this;
 }
 
-//template<typename T, std::size_t N, typename A>
-//template<typename ...Args>
-//multi_array<T,N,A>::multi_array(const Args... args) :
-//	shared_data_ptr_(nullptr),
-//	offset_(0),
-//	order_(c_order){
-//	std::fill(std::begin(base_),std::end(base_),0);
-//	this->resize(args...);
-//}
-
 template<typename T, std::size_t N, typename A>
 multi_array<T,N,A>::multi_array(const strider_type order) :
-	shared_data_ptr_(nullptr),
-	allocator_(allocator_type()),
-	offset_(0),
 	order_(order){
-	std::fill(std::begin(shape_), std::end(shape_), 0);
-	std::fill(std::begin(stride_),std::end(stride_),0);
-	std::fill(std::begin(base_),  std::end(base_),  0);
+	shape_.fill(0);
+	stride_.fill(0);
+	base_.fill(0);
 }
 
 //template<typename T, std::size_t N, typename A>
@@ -229,33 +211,33 @@ multi_array<T,N,A>::size() const{
 template<typename T, std::size_t N, typename A>
 const typename multi_array<T,N,A>::size_type*
 multi_array<T,N,A>::shape() const{
-	return this->shape_;
+	return this->shape_.data();
 }
 
 template<typename T, std::size_t N, typename A>
 const typename multi_array<T,N,A>::index_type*
 multi_array<T,N,A>::stride() const{
-	return this->stride_;
+	return this->stride_.data();
 }
 
 template<typename T, std::size_t N, typename A>
 const typename multi_array<T,N,A>::index_type*
 multi_array<T,N,A>::base() const{
-	return this->base_;
+	return this->base_.data();
 }
 
 template<typename T, std::size_t N, typename A>
 template<typename ...Args>
 typename multi_array<T,N,A>::reference
 multi_array<T,N,A>::operator()(const Args... args){
-	return this->origin()[index_(args...)];
+	return data_[index_(args...)];
 }
 
 template<typename T, std::size_t N, typename A>
 template<typename ...Args>
 typename multi_array<T,N,A>::const_reference
 multi_array<T,N,A>::operator()(const Args... args) const{
-	return this->origin()[index_(args...)];
+	return data_[index_(args...)];
 }
 
 template<typename T, std::size_t N, typename A>
@@ -309,73 +291,62 @@ multi_array<T,N,A>::reorder(const strider_type order){
 
 template<typename T, std::size_t N, typename A>
 void multi_array<T,N,A>::swap(multi_array& other){
+	std::swap(data_,other.data_);
 	std::swap(shape_,other.shape_);
 	std::swap(stride_,other.stride_);
 	std::swap(base_,other.base_);
-	std::swap(shared_data_ptr_,other.shared_data_ptr_);
-	std::swap(allocator_,other.allocator_);
-	std::swap(offset_,other.offset_);
 	std::swap(order_,other.order_);
 }
 
 template<typename T, std::size_t N, typename A>
 void
 multi_array<T,N,A>::copy(const multi_array& other){
-	std::copy(std::begin(other.shape_),  std::end(other.shape_),  std::begin(shape_));
-	std::copy(std::begin(other.stride_), std::end(other.stride_), std::begin(stride_));
-	std::copy(std::begin(other.base_),   std::end(other.base_),   std::begin(base_));
-	allocator_ = other.allocator_;
-	offset_    = other.offset_;
-	order_     = other.order_;
-	this->allocate_();
-	const size_type sz = this->size();
-	for(size_type i = 0; i < sz; ++i){
-		shared_data_ptr_[i] = other.shared_data_ptr_[i];
-	}
+	data_   = other.data_;
+	shape_  = other.shape_;
+	stride_ = other.stride_;
+	base_   = other.base_;
+	order_  = other.order_;
 }
 
 template<typename T, std::size_t N, typename A>
 void
 multi_array<T,N,A>::fill(const value_type& value){
-	const size_type sz = this->size();
-	for(size_type i = 0; i < sz; ++i){
-		shared_data_ptr_[i] = value;
-	}
+	data_.assign(this->size(),value);
 }
 
 template<typename T, std::size_t N, typename A>
 void
 multi_array<T,N,A>::clear() {
-	shared_data_ptr_.reset();
-	std::fill(std::begin(shape_),std::end(shape_),0);
-	std::fill(std::begin(stride_),std::end(stride_),0);
+	shape_.fill(0);
+	stride_.fill(0);
+	data_.clear();
 }
 
 
 template<typename T, std::size_t N, typename A>
 typename multi_array<T,N,A>::pointer
 multi_array<T,N,A>::data(){
-	return shared_data_ptr_.get();
+	return data_.data();
 }
 
 template<typename T, std::size_t N, typename A>
 typename multi_array<T,N,A>::const_pointer multi_array<T,N,A>::data() const{
-	return shared_data_ptr_.get();
+	return data_.data();
 }
 
 template<typename T, std::size_t N, typename A>
 typename multi_array<T,N,A>::pointer multi_array<T,N,A>::origin(){
-	return this->data() + offset_;
+	return this->data();
 }
 
 template<typename T, std::size_t N, typename A>
 typename multi_array<T,N,A>::const_pointer multi_array<T,N,A>::origin() const{
-	return this->data() + offset_;
+	return this->data();
 }
 
 template<typename T, std::size_t N, typename A>
 void multi_array<T,N,A>::update_stride_(){
-	this->order_(shape_,stride_);
+	this->order_(shape_.data(),stride_.data());
 }
 
 
@@ -398,9 +369,7 @@ multi_array<T,N,A>::index_(const Args... args) const {
 template<typename T, std::size_t N, typename A>
 void
 multi_array<T,N,A>::allocate_(){
-	const auto new_size = this->size();
-	auto dealloc = [=](T* ptr){ allocator_.deallocate(ptr,new_size); };
-	shared_data_ptr_.reset(allocator_.allocate(this->size()), dealloc);
+	data_.resize(this->size());
 }
 
 
