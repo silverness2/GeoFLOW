@@ -164,12 +164,8 @@ iofort::flush(){
 template<typename T>
 void
 iofort::read_binary(const std::size_t num_values, T* data_ptr){
-	if( fstream_ ){
-		fstream_.read(reinterpret_cast<char*>(data_ptr), num_values*sizeof(T));
-	}
-	else {
-		assert(false);
-	}
+	assert( fstream_ );
+	fstream_.read(reinterpret_cast<char*>(data_ptr), num_values*sizeof(T));
 }
 
 template<typename I, typename T, typename... Pairs>
@@ -190,12 +186,8 @@ iofort::read_binary(std::pair<I,T*> pair, Pairs... pairs){
 template<typename T>
 void
 iofort::write_binary(const std::size_t num_values, const T* data_ptr){
-	if( fstream_ ){
-		fstream_.write(reinterpret_cast<const char*>(data_ptr), num_values*sizeof(T));
-	}
-	else {
-		assert(false);
-	}
+	assert( fstream_ );
+	fstream_.write(reinterpret_cast<const char*>(data_ptr), num_values*sizeof(T));
 }
 
 template<typename I, typename T, typename... Pairs>
