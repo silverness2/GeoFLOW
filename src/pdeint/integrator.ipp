@@ -17,19 +17,58 @@ namespace pdeint {
 
 template<typename EquationType>
 Integrator<EquationType>::Integrator(const EqnBasePtr& equation,
-		                             const ObsBasePtr& observer,
-		                             const Traits& traits) :
-	traits_(traits), eqn_ptr_(equation), obs_ptr_(observer) {
+		                     const StirBasePtr& stirrer,
+		                     const ObsBasePtr& observer,
+                                     Grid&             grid,
+		                     const Traits&     traits) :
+	cycle_(0), traits_(traits), eqn_ptr_(equation), stir_ptr_(stirrer), obs_ptr_(observer), grid_(&grid) {
 	ASSERT(nullptr != eqn_ptr_);
+	ASSERT(nullptr != stir_ptr_);
 	ASSERT(nullptr != obs_ptr_);
 }
 
 template<typename EquationType>
-void Integrator<EquationType>::time( const Time& t0,
-		                             const Time& t1,
-		                             const Time& dt,
-		                             State&      u ){
+void Integrator<EquationType>::time_integrate( Time&       t,
+                                               State&      uf,
+                                               State&      ub,
+		                               State&      u ){
 	ASSERT(nullptr != eqn_ptr_);
+	ASSERT(nullptr != obs_ptr_);
+	using std::min;
+
+        Time t0 = t;
+        Size n  = traits_.cycle_end - traits_.cycle ;
+        if      ( traits_.integ_type == INTEG_CYCLE ) {
+          steps( t0 
+               , traits_.dt
+               , n
+               , uf
+               , ub
+               , u
+               , t);
+        } 
+        else if ( traits_.integ_type == INTEG_TIME  ) {
+          time ( t
+               , traits_.time_end
+               , traits_.dt
+               , uf
+               , ub
+               , u);
+          t = traits_.time_end;
+        }
+
+}
+
+
+template<typename EquationType>
+void Integrator<EquationType>::time( const Time& t0,
+		                     const Time& t1,
+		                     const Time& dt,
+		                     State&      uf,
+		                     State&      ub,
+		                     State&      u ){
+	ASSERT(nullptr != eqn_ptr_);
+	ASSERT(nullptr != stir_ptr_);
 	ASSERT(nullptr != obs_ptr_);
 	using std::min;
 
@@ -45,27 +84,38 @@ void Integrator<EquationType>::time( const Time& t0,
 		}
 
 		// Take Step
-		this->eqn_ptr_->step(t,dt_eff,u);
+		this->eqn_ptr_->step(t, u, uf, ub, dt_eff);
 		t += dt_eff;
 
+                ++cycle_;
+
+                // Call stirrer to upate forcing:
+		this->stir_ptr_->stir(t,u, uf);
+
 		// Call observer on solution
-		this->obs_ptr_->observe(t,u);
+                for ( auto j = 0 ; j < this->obs_ptr_->size(); j++ ) 
+		  (*this->obs_ptr_)[j]->observe(t,u,uf);
+ 
 
 	} while( t != t1 );
+
 
 }
 
 template<typename EquationType>
-void Integrator<EquationType>::steps( const Time& t0,
-		                              const Time& dt,
-			                          const Size& n,
-		                              State&      u,
-			                          Time&       t ){
+void Integrator<EquationType>::steps( const Time&  t0,
+		                      const Time&  dt,
+			              const Size&  n,
+		                      State&       uf,
+		                      State&       ub,
+		                      State&       u,
+			              Time&        t ){
 	ASSERT(nullptr != eqn_ptr_);
+	ASSERT(nullptr != stir_ptr_);
 	ASSERT(nullptr != obs_ptr_);
 
 	t = t0;
-	for(Size i = 0; i < n; ++i){
+	for(Size i = 0; i < n; ++i, ++cycle_){
 
 		// Limit dt if requested
 		Time dt_eff = dt;
@@ -75,18 +125,24 @@ void Integrator<EquationType>::steps( const Time& t0,
 		}
 
 		// Take Step
-		this->eqn_ptr_->step(t,dt_eff,u);
+		this->eqn_ptr_->step(t, u, uf, ub, dt_eff);
 		t += dt_eff;
 
+                // Call stirrer to upate forcing:
+		this->stir_ptr_->stir(t,u, uf);
+
 		// Call observer on solution at new t
-		this->obs_ptr_->observe(t,u);
+                for ( auto j = 0 ; j < this->obs_ptr_->size(); j++ ) 
+		  (*this->obs_ptr_)[j]->observe(t,u,uf);
 	}
 
 }
 
 template<typename EquationType>
 void Integrator<EquationType>::list( const std::vector<Time>& tlist,
-	                                 State&                   u ){
+		                     State&                   uf,
+		                     State&                   ub,
+	                             State&                   u ){
 	ASSERT(nullptr != eqn_ptr_);
 	ASSERT(nullptr != obs_ptr_);
 
@@ -96,11 +152,10 @@ void Integrator<EquationType>::list( const std::vector<Time>& tlist,
 		Time dt = tlist[i+1] - tlist[i];
 
 		// Step till next time
-		this->time(tlist[i],tlist[i+1],dt,u);
+		this->time(tlist[i],tlist[i+1],dt,uf,ub,u);
 	}
 
 }
-
 
 
 template<typename EquationType>
@@ -109,7 +164,7 @@ void Integrator<EquationType>::init_dt(const Time& t, State& u, Time& dt) const{
 	using std::min;
 
 	// Get pointer to equation
-	auto eqn_ptr = this->eqn_ptr_->getEquationPtr();
+	auto eqn_ptr = this->eqn_ptr_; // ->getEquationPtr();
 	ASSERT(nullptr != eqn_ptr);
 
 	// Make sure dt is between absolute limits
@@ -119,9 +174,10 @@ void Integrator<EquationType>::init_dt(const Time& t, State& u, Time& dt) const{
 	// Make sure dt is between CFL limits
 	if( eqn_ptr->has_dt() ){
 		Time dt_cfl_1 = std::numeric_limits<Time>::max()/(1+traits_.cfl_max);
-		eqn_ptr->dt(t,u,dt_cfl_1);
-		dt = min(dt, dt_cfl_1*traits_.cfl_max);
-		dt = max(dt, dt_cfl_1*traits_.cfl_min);
+//              eqn_ptr->dt(t,u,dt_cfl_1);
+                eqn_ptr->dt(t,u,dt);
+//              dt = min(dt, dt_cfl_1*traits_.cfl_max);
+//              dt = max(dt, dt_cfl_1*traits_.cfl_min);
 	}
 
 }

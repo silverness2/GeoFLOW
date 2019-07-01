@@ -60,13 +60,20 @@ virtual  GTVector<TE>    *getWeights();
 virtual  TE              *getWeights(TE *ret, GINT  num);
 virtual  void             getWeights(GTVector<TE> &ret);
 
+virtual  GTVector<TE>    *getiWeights();
+virtual  void             getiWeights(GTVector<TE> &ret);
+
 virtual  GTMatrix<T>     *getStiffMatrixComp();
 virtual  GTMatrix<TE>    *getStiffMatrix();
 virtual  void             getStiffMatrix(GTMatrix<TE> &ret);
 
 virtual  GTMatrix<T>     *getDerivMatrixComp(GBOOL btranspose=FALSE);
 virtual  GTMatrix<TE>    *getDerivMatrix(GBOOL btranspose=FALSE);
+virtual  GTMatrix<TE>    *getDerivMatrixW(GBOOL btranspose=FALSE);
+virtual  GTMatrix<TE>    *getDerivMatrixiW(GBOOL btranspose=FALSE);
 virtual  void             getDerivMatrix(GTMatrix<TE> &ret, GBOOL btranspose=FALSE);
+virtual  void             getDerivMatrixW(GTMatrix<TE> &ret, GBOOL btranspose=FALSE);
+virtual  void             getDerivMatrixiW(GTMatrix<TE> &ret, GBOOL btranspose=FALSE);
 
 virtual  void             getLegMatrix(GTMatrix<TE> &ret);
 
@@ -76,6 +83,7 @@ virtual  GTVector<TE>    *evalBasis(GINT  i, GTVector<TE> &eta, GTVector<TE> &vr
 virtual  GTMatrix<TE>    *evalBasis(GTVector<TE> &eta, GTMatrix<TE> &mret);
 virtual  GTVector<TE>    *evalBasis(GTVector<TE> &eta, GTVector<TE> &vret);
 virtual  GTMatrix<TE>    *evalBasis(TE eta[], GINT neta, GTMatrix<TE> &mret);
+virtual  TE               evalDBasis(GINT i, TE eta);
 virtual  GTMatrix<TE>    *evalDBasis(GTVector<TE> &eta, GTMatrix<TE> &mret);
 virtual  GTMatrix<TE>    *evalDBasis(TE eta[], GINT n, GTMatrix<TE> &mret);
 virtual  GTVector<TE>    *evalDBasis (GINT i, GTVector<TE> &eta, GTVector<TE> &vret);
@@ -125,8 +133,13 @@ GTMatrix<T>      LegMatrix_;
 // Data evaluated at the TE type:
 GTVector<TE>     xiNodesEv_;
 GTVector<TE>     weightsEv_;
+GTVector<TE>     iweightsEv_;
 GTMatrix<TE>     dPhiEv_;
 GTMatrix<TE>     dPhiTEv_;
+GTMatrix<TE>     dPhiWEv_;
+GTMatrix<TE>     dPhiWTEv_;
+GTMatrix<TE>     dPhiiWEv_;
+GTMatrix<TE>     dPhiiWTEv_;
 GTMatrix<TE>     stiffMatrixEv_;
 
 };

@@ -18,20 +18,24 @@ class GMass: public GLinOp
 
 public:
 
-                          GMass(GGrid &grid);
+                          GMass(GGrid &grid, GBOOL doinverse=FALSE);
                           GMass(const GMass &);
                          ~GMass();
 
-        void              opVec_prod(GTVector<GFTYPE> &in, GTVector<GFTYPE> &out); // Operator-vector product
+        void              opVec_prod(GTVector<GFTYPE> &in, 
+                                     GTVector<GTVector<GFTYPE>*> &utmp,
+                                     GTVector<GFTYPE> &out);                       // Operator-vector product
+        GTVector<GFTYPE>  *data() { return &mass_; }
 //      void              do_mass_lumping(GBOOL bml);                              // Set mass lumping flag
-        void              init();
 
 private:
+        void              init();
         void              init1d();
         void              init2d();
         void              init3d();
 
 
+        GBOOL             bdoinverse_;
         GBOOL             bmasslumped_;
         GTVector<GFTYPE>  mass_;
         GGrid            *grid_;

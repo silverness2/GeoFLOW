@@ -19,6 +19,9 @@ set(CDG_INC
           ${GHOME}/sem
           ${GHOME}/utils
           ${GHOME}/grid
+          ${GHOME}/pdes
+          ${GHOME}/io
+          ${GHOME}/..
     )
 
 # Add preproc defs:
@@ -37,6 +40,11 @@ if (USE_GBLAS)
   set(DEF_GBLAS "-D_G_USE_GBLAS")
 endif()
 
+set(DEF_GPTL "") 
+if (USE_GPTL)
+  set(DEF_GPTL "-D_G_USE_GPTL")
+endif()
+
 set(DEF_PAPI "") 
 if (HAVE_PAPI)
   set(DEF_PAPI "-DHAVE_PAPI")
@@ -47,6 +55,14 @@ if (USE_MPI)
   set(DEF_MPI "-D_G_USE_MPI")
 endif()
 
+set(DEF_DIM "") 
+if (GDIM MATCHES "2")
+  set(DEF_DIM "-D_G_IS2D")
+endif()
+if (GDIM MATCHES "3")
+  set(DEF_DIM "-D_G_IS3D")
+endif()
+
 add_definitions(
-                ${DEF_ACC} ${DEF_DEBUG} ${DEF_GBLAS} ${DEF_PAPI} ${DEF_MPI}
+                ${DEF_ACC} ${DEF_DEBUG} ${DEF_GBLAS} ${DEF_GPTL} ${DEF_PAPI} ${DEF_MPI} ${DEF_DIM}
                )

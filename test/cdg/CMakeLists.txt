@@ -11,9 +11,9 @@ cmake_minimum_required(VERSION 2.8)
 #   > cmake -DCMAKE_C_COMPILER=pgcc 
 # etc..  These 'sets' must be done before 'project'
 # is specified:
- set(CMAKE_C_COMPILER       mpicc)
- set(CMAKE_CXX_COMPILER     mpicxx)
- set(CMAKE_Fortran_COMPILER mpifort)
+ set(CMAKE_C_COMPILER       mpiicc)
+ set(CMAKE_CXX_COMPILER     mpiicpc)
+ set(CMAKE_Fortran_COMPILER mpiifort)
 
 # Following may be used to instrument entire code
 # using TAU:
@@ -35,14 +35,17 @@ enable_language (Fortran)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/gtest_macros.cmake)
 
 # Define and set default CMake logical variables here:
-option(DO_DEBUG        "DO_DEBUG"     ON)   # Compile for DEBUG
+option(DO_DEBUG        "DO_DEBUG"    OFF)   # Compile for DEBUG
 option(DO_OPENMP       "DO_OPENMP"    ON)   # Compile for OpenMP
 option(DO_OPENACC      "DO_OPENACC"  OFF)   # Compile for OpenACC
 option(USE_GBLAS       "USE_GBLAS"    ON)   # Use GBlas instead of C 
 option(USE_MPI         "USE_MPI"      ON)   # Build with MPI?
+option(USE_GPTL        "USE_GPTL"     ON)   # Build with GPTL?
 option(HAVE_PAPI       "HAVE_PAPI"   OFF)   # Is GPTL built with PAPI support?
 option(DO_AUTO_PROF "DO_AUTO_PROF"   OFF)   # Do auto-profing with GPTL?
  
+set (GDIM "2")     # Dimensionality
+
 # Following should be set in call to cmake as
 # cmake -DCMAKE_BUILD_TYPE=DEBUG [or RELEASE]:
 set(CMAKE_BUILD_TYPE DEBUG) 
@@ -78,38 +81,67 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/gsrc_tests.cmake)
 # Fix compiler options here (don't let CMake do this for us):
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/gcomp_options.cmake)
 
+set(Boost_DEBUG OFF)                          # Enable debug output from FIND_PACKAGE
+set(Boost_NO_SYSTEM_PATHS ON)       # Do not search system paths before BOOST_ROOT
+set(Boost_USE_STATIC_LIBS ON)           # Static link to Boost libraries
+set(Boost_USE_STATIC_RUNTIME OFF)  # Use Boost static linked to C++ runtime
+set(Boost_USE_MULTITHREADED OFF)   # Use Boost multi-threaded code
+#FIND_PACKAGE(Boost 1.65.0 COMPONENTS mpi serialization REQUIRED)
+
+# BOOST path; may be changed in glocale.cmake:
+set(BOOST_ROOT 
+#   /scratch/duane.rosenberg/lib/boost_1_69_0_gcc
+    /home/Duane.Rosenberg/lib/boost_1_69_0_intel_18.1
+   )
 
 # Define libs/paths to link to (used based on target);
 # may be changed in glocale.cmake:
 set(MPI_PATH 
-    /scratch/duane.rosenberg/lib/mpich-3.2_gcc
+#   /scratch/duane.rosenberg/lib/mpich-3.2_gcc
    )
 
 # GPTL path; may be changed in glocale.cmake:
 set(GPTL_PATH 
-    /home/duane.rosenberg/lib/gptl-v5.5_gcc
+#   /home/duane.rosenberg/lib/gptl-v5.5_gcc
 #   /home/Duane.Rosenberg/lib/gptl-v5.4.4_pgi_openmpi
-#   /home/Duane.Rosenberg/lib/gptl-v5.4.4_intel_impi_theia
+    /home/Duane.Rosenberg/lib/gptl-v5.4.4_intel_impi_theia
    )
 
+
+########################################################################
+########################################################################
 set(CDG_COMMON_LIBS  
-    ${GPTL_PATH}/lib/libgptl.a
+    ${BOOST_ROOT}/lib/libboost_chrono.a
+    ${BOOST_ROOT}/lib/libboost_mpi.a
+    ${BOOST_ROOT}/lib/libboost_serialization.a
+    ${BOOST_ROOT}/lib/libboost_wserialization.a
+    ${BOOST_ROOT}/lib/libboost_system.a
    )
 
+if (USE_GPTL)
+  set(CDG_COMMON_LIBS ${CDG_COMMON_LIBS} 
+    ${GPTL_PATH}/lib/libgptl.a
+     )
+endif()
 if (HAVE_PAPI)
   set(CDG_COMMON_LIBS ${CDG_COMMON_LIBS} 
      /apps/papi/5.4.0/lib/libpapi.a
      )
-
 endif()
 
 set(CDG_COMMON_INC ${CDG_COMMON_INC}
-    ${GPTL_PATH}/include
+    ${BOOST_ROOT}/include
    )
+
+if (USE_GPTL)
+  set(CDG_COMMON_INC ${CDG_COMMON_INC}
+      ${GPTL_PATH}/include
+     )
+endif()
 
 if (USE_MPI)
   set(CDG_COMMON_LIBS ${CDG_COMMON_LIBS}
-      ${MPI_PATH}/lib/libmpi.a
+#     ${MPI_PATH}/lib/libmpi.a
      )
 set(CDG_COMMON_INC ${CDG_COMMON_INC}
     ${MPI_PATH}/include

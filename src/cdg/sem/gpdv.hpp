@@ -25,23 +25,20 @@ public:
                           GpdV(const GpdV &);
                          ~GpdV();
 
-        void              apply(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, 
+        void              apply(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &utmp, GTVector<GTVector<GFTYPE>*> &u, 
                                 GTVector<GFTYPE> &po);                       // Operator-field evaluation
         void              init();                                            // must call after all 'sets'
-        void              set_tmp(GTVector<GTVector<GFTYPE>*> &utmp) 
-                          { utmp_.resize(utmp.size()); utmp_ = utmp; }       // Set temp space 
 
 private:
         void              def_init();
         void              reg_init();
-        void              def_prod(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, 
+        void              def_prod(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &utmp, GTVector<GTVector<GFTYPE>*> &u, 
                                    GTVector<GFTYPE> &po);
-        void              reg_prod(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, 
+        void              reg_prod(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &utmp,  GTVector<GTVector<GFTYPE>*> &u, 
                                    GTVector<GFTYPE> &po);
 
         GBOOL                         bInitialized_;
         GTVector<GFTYPE>              etmp1_;  // elem-based (non-global) tmp vector
-        GTVector<GTVector<GFTYPE>*>   utmp_;   // global array of temp vectors
         GTVector<GTVector<GFTYPE>*>   G_;      // metric components
         GMass                        *massop_; // mass matrix, required
         GGrid                        *grid_;   // grid set on construction

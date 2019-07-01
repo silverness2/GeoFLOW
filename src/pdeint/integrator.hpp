@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "pdeint/null_observer.hpp"
+#include "pdeint/stirrer_base.hpp"
 #include "pdeint/equation_base.hpp"
 
 namespace geoflow {
@@ -31,25 +32,33 @@ template<typename EquationType>
 class Integrator {
 
 public:
+        enum IntegType     {INTEG_CYCLE=0, INTEG_TIME};
 	using Equation     = EquationType;
-	using EquationBase = typename Equation::Base;
+        using EqnBase      = EquationBase<EquationType>;
 	using State        = typename Equation::State;
+	using Grid         = typename Equation::Grid;
 	using Value        = typename Equation::Value;
 	using Derivative   = typename Equation::Derivative;
 	using Time         = typename Equation::Time;
 	using Jacobian     = typename Equation::Jacobian;
 	using Size         = typename Equation::Size;
-	using EqnBasePtr   = std::shared_ptr<EquationBase>;
-	using ObsBasePtr   = std::shared_ptr<ObserverBase<Equation>>;
-
+	using EqnBasePtr   = std::shared_ptr<EqnBase>;
+	using StirBasePtr  = std::shared_ptr<StirrerBase<Equation>>;
+	using ObsBasePtr   = std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<Equation>>>>;
+      
 	/**
 	 * Data structure to hold user selected parameters
 	 */
 	struct Traits {
-		Value cfl_min;
-		Value cfl_max;
-		Time  dt_min;
-		Time  dt_max;
+		IntegType integ_type;
+		size_t    cycle       = 0; 
+		size_t    cycle_end   = 1;
+		Value     cfl_min     = std::numeric_limits<Value>::min();
+		Value     cfl_max     = std::numeric_limits<Value>::max();
+		Time      dt_min      = std::numeric_limits<Time>::min();
+		Time      dt_max      = std::numeric_limits<Time>::max();   
+		Time      dt          = static_cast<Time>(1.0e-2);
+		Time      time_end    = static_cast<Time>(1.0);
 	};
 
 	Integrator() = delete;
@@ -58,17 +67,38 @@ public:
 	 * Constructor to initialize everything needed to run
 	 *
 	 * @param[in] stepper  Pointer to the time stepping algorithm
+	 * @param[in] stirrer  Pointer to the stirrer-update to use
 	 * @param[in] observer Pointer to the observer to use
+	 * @param[in] grid     Pointer to the grid
 	 * @param[in] traits   Use selected traits for time step options
 	 */
 	Integrator(const EqnBasePtr&  equation,
-			   const ObsBasePtr&  observer,
-			   const Traits& traits);
+		   const StirBasePtr& stirrer,
+		   const ObsBasePtr&  observer,
+                         Grid&        grid,
+		   const Traits&      traits); 
 
 	Integrator(const Integrator& I) = default;
 	~Integrator() = default;
 	Integrator& operator=(const Integrator& I) = default;
 
+	/**
+	 * Integrate state at t, as required by prop tree input
+	 *
+	 * The time_integrate method integrates from current state 
+         * using either 'time' or 'steps' methods according to the 
+         * property tree input. The state time, t, will be updated
+         * with the final integration time.
+	 *
+	 * @param[in,out] t  Initial time at start, and final time
+	 * @param[in,out] uf Forcing tendency
+	 * @param[in,out] ub Boundary condition vectors
+	 * @param[in,out] u  Current and final equation state values
+	 */
+	void time_integrate( Time&        t,
+                             State&       uf,
+                             State&       ub,
+			     State&       u );
 	/**
 	 * Take as many steps required to progress from time t0 to t1.
 	 *
@@ -81,12 +111,16 @@ public:
 	 * @param[in]     t0 Initial time at start
 	 * @param[in]     t1 Final time an completion of time stepping
 	 * @param[in]     dt Recommend time step size
+	 * @param[in,out] uf Forcing tendency
+	 * @param[in,out] ub Boundary condition vectors
 	 * @param[in,out] u  Current and final equation state values
 	 */
-	void time( const Time& t0,
-			   const Time& t1,
-			   const Time& dt,
-			   State&      u );
+	void time( const Time&  t0,
+		   const Time&  t1,
+		   const Time&  dt,
+                   State&       uf,
+                   State&       ub,
+		   State&       u );
 
 	/**
 	 * Take an exact number of time steps.
@@ -99,14 +133,18 @@ public:
 	 * @param[in]     t0 Initial time at start
 	 * @param[in]     dt Recommend time step size
 	 * @param[in]     n  Number of steps to take
+	 * @param[in,out] uf Forcing tendency
+	 * @param[in,out] ub Boundary condition vectors
 	 * @param[in,out] u  Current and final equation state values
 	 * @param[out]    t  Final time resulting from taking n steps
 	 */
-	void steps( const Time& t0,
-			    const Time& dt,
-				const Size& n,
-			    State&      u,
-				Time&       t );
+	void steps( const Time&  t0,
+		    const Time&  dt,
+		    const Size&  n,
+                    State&       uf,
+                    State&       ub,
+		    State&       u,
+	    	    Time&        t );
 
 	/**
 	 * Take steps that correspond to the provided list of times
@@ -118,16 +156,34 @@ public:
 	 * steps will be taken to reach the listed times exactly.
 	 *
 	 * @param[in]     tvec Vector of time points to march through
+	 * @param[in,out] uf Forcing tendency
+	 * @param[in,out] ub Boundary condition vectors
 	 * @param[in,out] u  Current and final equation state values
 	 */
 	void list( const std::vector<Time>& tvec,
-		       State&                   u );
+                   State&                   uf,
+                   State&                   ub,
+		   State&                   u );
 
+        /**
+         * Get number steps taken.
+         *
+         */
+        size_t &get_numsteps() {return cycle_;}
+
+        /**
+         * Get traits.
+         *
+         */
+        Traits &get_traits() {return traits_;}
 
 protected:
+        size_t      cycle_; // no. time cycles taken so far
 	Traits      traits_;
 	EqnBasePtr  eqn_ptr_;
+	StirBasePtr stir_ptr_;
 	ObsBasePtr  obs_ptr_;
+        Grid*       grid_;
 
 	/**
 	 * Used to calculate the limited time step size if required.

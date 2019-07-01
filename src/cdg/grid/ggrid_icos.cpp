@@ -1,80 +1,70 @@
 //==================================================================================
-// Module       : ggrid_icos
-// Date         : 8/31/18 (DLR)
 // Description  : Object defining a (global) icosahedral grid, that
 //                uses gnomonic projections to locate element vertices.
 // Copyright    : Copyright 2018. Colorado State University. All rights reserved
-// Derived From : none.
+// Derived From : GGrid.
 //==================================================================================
 
 #include <stdlib.h>
 #include <memory.h>
 #include <math.h>
 #include <omp.h>
+#include "geoflow.hpp"
 #include "gelem_base.hpp"
 #include "ggrid_icos.hpp"
 
-
+using namespace std;
 
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : Constructor method (1)
-// DESC   : Instantiate with radius, refinement level, directional basis, and
-//          domain decompoisition object. This generates a 2d grid.
-// ARGS   : radius: radius
-//          ilevel: refinement level. Level 0 is just the icos generator 
-//          b     : vector of basis pointers, of size at least ndim=2
-//          nprocs : no. MPI tasks
+// DESC   : Instantiate for 2d grid
+// ARGS   : ptree: Property tree
+//          b     : vector of basis pointers, of size at least ndim=2.Determies 
+//                  dimensionality
+//          comm  : communicator
 // RETURNS: none
 //**********************************************************************************
-GGridIcos::GGridIcos(GFTYPE radius, GINT ilevel, GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GINT nprocs) :
-ilevel_     (ilevel),
-ndim_            (2),
-radiusi_    (radius),
-radiuso_    (radius),
-nprocs_     (nprocs),
-gdd_       (NULLPTR),
-lshapefcn_ (NULLPTR),
-bdycallback_(NULLPTR)
+GGridIcos::GGridIcos(const geoflow::tbox::PropertyTree &ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GC_COMM &comm)
+:          GGrid(ptree, b, comm),
+ilevel_                      (0),
+ndim_                     (GDIM),
+radiusi_                   (0.0),
+radiuso_                   (0.0), // don't need this one in 2d
+gdd_                   (NULLPTR),
+lshapefcn_             (NULLPTR)
 {
+  assert(b.size() == GDIM && "Basis has incorrect dimensionality");
 
   gbasis_.resize(b.size());
   gbasis_ = b;
   lshapefcn_ = new GShapeFcn_linear();
-  init2d();
+  ilevel_  = ptree.getValue<GINT>("ilevel");
+  
+  if ( ndim_ == 2 ) {
+    assert(GDIM == 2 && "GDIM must be 2");
+    radiusi_ = ptree.getValue<GFTYPE>("radius");
+    init2d();
+  }
+  else if ( ndim_ == 3 ) {
+    assert(GDIM == 3 && "GDIM must be 3");
+    GTVector<GBdyType> bdytype(2);
+    std::vector<GINT> ne(3);
+    radiusi_   = ptree.getValue<GFTYPE>("radiusi");
+    radiuso_   = ptree.getValue<GFTYPE>("radiuso");
+    bdytype[0] = geoflow::str2bdytype(ptree.getValue<GString>("bdy_inner"));
+    bdytype[1] = geoflow::str2bdytype(ptree.getValue<GString>("bdy_outer"));
+    ne         = ptree.getArray<GINT>("num_elems");
+    global_bdy_types_ = bdytype;
+    ne_     = ne;
+    init3d();
+  }
+  else {
+    assert(FALSE && "Invalid dimensionality");
+  }
+
 } // end of constructor method (1)
 
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : Constructor method (2)
-// DESC   : Instantiate with iner/outer radii, refinement level, 
-//          directional basis, and domain decompoisition object. This generates 
-//          a 3d grid.
-// ARGS   : radiusi: inner radius
-//          radiuso: outer radius
-//          ne     : no. elements in each coord direction (r,theta,phi)=(r,lat,long)
-//          b      : vector of basis pointers, of size at least ndim=2. 
-//          nprocs : no. MPI tasks
-// RETURNS: none
-//**********************************************************************************
-GGridIcos::GGridIcos(GFTYPE radiusi, GFTYPE radiuso, GTVector<GINT> &ne, GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GINT nprocs) :
-ilevel_           (0),
-ndim_             (3),
-radiusi_    (radiusi),
-radiuso_    (radiuso),
-nprocs_      (nprocs),
-gdd_        (NULLPTR),
-lshapefcn_  (NULLPTR),
-bdycallback_(NULLPTR)
-{
-  assert(b.size() == 3 && "Insufficient number of bases");
-  gbasis_.resize(b.size());
-  gbasis_ = b;
-  lshapefcn_ = new GShapeFcn_linear();
-  ne_     = ne;
-  init3d();
-} // end of constructor method (2)
 
 
 //**********************************************************************************
@@ -130,22 +120,6 @@ void GGridIcos::set_partitioner(GDD_base *gdd)
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : set_basis 
-// DESC   : Set basis object for coord. direction, idir in (1, 2, 3)
-// ARGS   :
-// RETURNS: none
-//**********************************************************************************
-void GGridIcos::set_basis(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b)
-{
-  GString serr = "GridIcos::set_basis: ";
-
-  gbasis_.resize(b.size());
-  gbasis_ = b;
-} // end of method set_basis
-
-
-//**********************************************************************************
-//**********************************************************************************
 // METHOD : init2d
 // DESC   : Initialize base state/base icosahedron
 // ARGS   : none.
@@ -191,8 +165,8 @@ fv0_(10,0) = -0.276393202250021; fv0_(10,1) =  0.850650808352040; fv0_(10,2) = -
 fv0_(11,0) = -0.276393202250021; fv0_(11,1) = -0.850650808352040; fv0_(11,2) = -0.447213595499958;
 
   
-  // Normalize vertices to be at radiusi_:
-  GFTYPE fact = radiusi_/sqrt(phi*phi + 1.0);
+  // Normalize vertices to be at 1.0:
+  GFTYPE fact = 1.0/sqrt(phi*phi + 1.0);
   fv0_ *= fact;
 
   // Points in verts array that make up 
@@ -341,8 +315,11 @@ void GGridIcos::lagrefine()
   } // end, t-loop
 
   
-  // Project all vertices to sphere:
-  project2sphere(tmesh_,radiusi_);
+  // Project all vertices to unit sphere:
+  project2sphere(tmesh_,1.0);
+
+  // Order triangles (set iup_ flags):
+  order_triangles(tmesh_);
 
   // Compute centroids of all triangles:
   ftcentroids_.clear();
@@ -427,40 +404,54 @@ GGridIcos::lagvert(GTPoint<GFTYPE>&a, GTPoint<GFTYPE> &b, GTPoint<GFTYPE> &c,
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : do_grid
+// METHOD : do_elems (1)
 // DESC   : Public entry point for grid computation
-// ARGS   : grid: GGrid object
+// ARGS   : 
 //          rank: MPI rank or partition id
 // RETURNS: none.
 //**********************************************************************************
-void GGridIcos::do_grid(GGrid &grid, GINT irank)
+void GGridIcos::do_elems()
 {
-  if ( ndim_ == 2 ) do_grid2d(grid, irank);
-  if ( ndim_ == 3 ) do_grid3d(grid, irank);
-  grid.do_typing();
+  if ( ndim_ == 2 ) do_elems2d(irank_);
+  if ( ndim_ == 3 ) do_elems3d(irank_);
 
-  // Inititialized global grid quantities:
-  grid.init();
-
-} // end, method do_grid
+} // end, method do_elems (1)
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : do_grid2d
+// METHOD : do_elems (2)
+// DESC   : Public entry point for grid element computation, for restart
+// ARGS   : p     : matrix of size the number of elements X GDIM containing 
+//                  the poly expansion order in each direction
+//          xnodes: vector of GDIM vectors containing Cartesian coords of elements
+//                  for each node point
+// RETURNS: none.
+//**********************************************************************************
+void GGridIcos::do_elems(GTMatrix<GINT> &p,
+                        GTVector<GTVector<GFTYPE>> &xnodes)
+{
+  if ( ndim_ == 2 ) do_elems2d(p, xnodes);
+  if ( ndim_ == 3 ) do_elems3d(p, xnodes);
+
+} // end, method do_elems (2)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : do_elems2d (1)
 // DESC   : Build 2d elemental grid on base mesh
-// ARGS   : grid: GGrid object
-//          rank: MPI rank or partition id
+// ARGS   : 
+//          irank: MPI rank or partition id
 // RETURNS: none.
 //**********************************************************************************
-void GGridIcos::do_grid2d(GGrid &grid, GINT irank)
+void GGridIcos::do_elems2d(GINT irank)
 {
-  GString           serr = "GridIcos::do_grid2d: ";
+  GString           serr = "GridIcos::do_elems2d (1): ";
   GFTYPE            fact, xlatc, xlongc;
   GTVector<GFPoint> cverts(4), gverts(4), tverts(4);
   GTPoint<GFTYPE>   c(3), ct(3), v1(3), v2(3), v3(3); // 3d points
   GElem_base        *pelem;
-  GElemList         *gelems = &grid.elems();
   GTVector<GINT>    iind;
   GTVector<GINT>    I(1);
   GTVector<GFTYPE>  Ni;
@@ -468,6 +459,8 @@ void GGridIcos::do_grid2d(GGrid &grid, GINT irank)
   GTVector<GTVector<GFTYPE>*> *xiNodes;
   GTVector<GTVector<GFTYPE>>   xgtmp(3);
 
+  // Do eveything on unit sphere, then project to radiusi_
+  // as a final step.
 
   assert(gbasis_.size()>0 && "Must set basis first");
 
@@ -514,6 +507,11 @@ void GGridIcos::do_grid2d(GGrid &grid, GINT irank)
     // (placement of +/-1 with physical point)?
     for ( GSIZET j=0; j<3; j++ ) { // 3 new elements for each triangle
       pelem = new GElem_base(GE_2DEMBEDDED, gbasis_);
+      cverts[0] = v1; cverts[1] = (v1+v2)*0.5; cverts[2] = ct; cverts[3] = (v1+v3)*0.5;
+#if 0
+      order_latlong2d(cverts);
+#else
+      if ( iup_[i] == 1 ) {
       switch (j) {
       case 0: 
       cverts[0] = v1; cverts[1] = (v1+v2)*0.5; cverts[2] = ct; cverts[3] = (v1+v3)*0.5; break;
@@ -522,17 +520,30 @@ void GGridIcos::do_grid2d(GGrid &grid, GINT irank)
       case 2: 
       cverts[0] = ct; cverts[1] = (v2+v3)*0.5; cverts[2] = v3; cverts[3] = (v1+v3)*0.5; break;
       }
+      }
+      else {
+      switch (j) {
+      case 0: 
+      cverts[0] = v1; cverts[1] = (v1+v2)*0.5; cverts[2] = ct; cverts[3] = (v1+v3)*0.5; break;
+      case 1: 
+      cverts[0] = ct; cverts[1] = (v1+v2)*0.5; cverts[2] = v2; cverts[3] = (v2+v3)*0.5; break;
+      case 2: 
+      cverts[0] = (v1+v3)*0.5; cverts[1] = ct; cverts[2] = (v2+v3)*0.5; cverts[3] = v3; break;
+      }
+      }
+#endif
       
       xNodes  = &pelem->xNodes();  // node spatial data
       xiNodes = &pelem->xiNodes(); // node ref interval data
       Ni.resize(pelem->nnodes());
 
-      project2sphere(cverts, radiusi_); // project verts to sphere     
+      project2sphere(cverts, 1.0); // project verts to unit sphere     
       c = (cverts[0] + cverts[1] + cverts[2] + cverts[3])*0.25; // elem centroid
-      xlatc  = asin(c.x3/radiusi_); // reference lat/long
+      xlatc  = asin(c.x3)         ; // reference lat/long
       xlongc = atan2(c.x2,c.x1);
+      xlongc = xlongc < 0.0 ? 2*PI+xlongc : xlongc;
 
-      cart2gnomonic(cverts, radiusi_, xlatc, xlongc, tverts); // gnomonic vertices of quads
+      cart2gnomonic(cverts, 1.0, xlatc, xlongc, tverts); // gnomonic vertices of quads
       reorderverts2d(tverts, isort, gverts); // reorder vertices consistenet with shape fcn
       for ( GSIZET l=0; l<2; l++ ) { // loop over available gnomonic coords
         xgtmp[l].resizem(pelem->nnodes());
@@ -544,28 +555,36 @@ void GGridIcos::do_grid2d(GGrid &grid, GINT irank)
           xgtmp[l] += (Ni * (gverts[m][l]*0.25)); // gnomonic node coordinate
         }
       }
-      gnomonic2cart(xgtmp, radiusi_, xlatc, xlongc, *xNodes); //
+      gnomonic2cart(xgtmp, 1.0, xlatc, xlongc, *xNodes); //
       project2sphere(*xNodes, radiusi_);
       pelem->init(*xNodes);
-      gelems->push_back(pelem);
+      gelems_.push_back(pelem);
+
       nfnodes = 0;
-      for ( GSIZET j=0; j<(*gelems)[n]->nfaces(); j++ )  // get # face nodes
-        nfnodes += (*gelems)[n]->face_indices(j).size();
+      for ( GSIZET j=0; j<gelems_[n]->nfaces(); j++ )  // get # face nodes
+        nfnodes += gelems_[n]->face_indices(j).size();
       pelem->igbeg() = icurr;      // beginning global index
       pelem->igend() = icurr+pelem->nnodes()-1; // end global index
       pelem->ifbeg() = fcurr;
       pelem->ifend() = fcurr+nfnodes-1; // end global face index
       icurr += pelem->nnodes();
       fcurr += nfnodes;
+
     } // end of element loop for this triangle
   } // end of triangle base mesh loop
 
-} // end of method do_grid2d
+  // Can set individual nodes and internal bdy conditions
+  // with callback here:
+  if ( bdycallback_ != NULLPTR ) {
+    (*bdycallback_)(gelems_);
+  }
+
+} // end of method do_elems2d (1)
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : do_grid3d
+// METHOD : do_elems3d (1)
 // DESC   : Build 3d elemental grid. It's assumed that init3d has been called
 //          prior to entry, and that the hmesh_ has beed set. This arrays
 //          of hexagonal 3d elements provides for each hex its vertices in Cartesian
@@ -574,19 +593,18 @@ void GGridIcos::do_grid2d(GGrid &grid, GINT irank)
 //          converted into sherical coordinates, and the GShapeFcn_linear
 //          will be used in spherical coords to compute the interior nodes. These
 //          will then be converted to Cartesian coords.
-// ARGS   : grid: GGrid object
-//          rank: MPI rank or partition id
+// ARGS   : 
+//          irank: MPI rank or partition id
 // RETURNS: none.
 //**********************************************************************************
-void GGridIcos::do_grid3d(GGrid &grid, GINT irank)
+void GGridIcos::do_elems3d(GINT irank)
 {
-  GString                      serr = "GridIcos::do_grid3d: ";
+  GString                      serr = "GridIcos::do_elems3d (1): ";
   GTVector<GINT>               iind;
   GTVector<GINT>               I(3);
   GTVector<GINT>              *bdy_ind;
   GTVector<GINT>              *face_ind;
   GTVector<GFTYPE>             Ni;
-  GElemList                   *gelems = &grid.elems();
   GElem_base                  *pelem;
   GTVector<GTVector<GFTYPE>>  *xNodes;
   GTVector<GTVector<GFTYPE>*> *xiNodes;
@@ -630,15 +648,24 @@ void GGridIcos::do_grid3d(GGrid &grid, GINT irank)
     // ... need to check only vertex 0 for this:
     if ( hmesh_[i].v[0]->x1 == radiusi_ || hmesh_[i].v[0]->x1 == radiuso_ ) { 
       face_ind = &pelem->face_indices(0);
-      for ( GSIZET k=0; k<face_ind->size(); k++ ) bdy_ind->push_back((*face_ind)[k]); 
+      for ( GSIZET k=0; k<face_ind->size(); k++ ) {
+        // Do not allow face indices to be repeated in bdy list:
+        if ( !bdy_ind->contains((*face_ind)[k]) ) 
+          bdy_ind->push_back((*face_ind)[k]); 
+      }
     }
 
     spherical2xyz(*xNodes); // convert nodal coords to Cartesian coords
     pelem->init(*xNodes);
-    gelems->push_back(pelem);
+    gelems_.push_back(pelem);
+
+    // Set global bdy types at each bdy_ind (this is a coarse
+    // application; finer control may be exercised in callback):
+    set_global_bdy_3d(*pelem);
+
     nfnodes = 0;
-    for ( GSIZET j=0; j<(*gelems)[n]->nfaces(); j++ )  // get # face nodes
-      nfnodes += (*gelems)[n]->face_indices(j).size();
+    for ( GSIZET j=0; j<gelems_[n]->nfaces(); j++ )  // get # face nodes
+      nfnodes += gelems_[n]->face_indices(j).size();
     pelem->igbeg() = icurr;      // beginning global index
     pelem->igend() = icurr + pelem->nnodes()-1; // end global index
     pelem->ifbeg() = fcurr;
@@ -649,25 +676,181 @@ void GGridIcos::do_grid3d(GGrid &grid, GINT irank)
 
   // If we have a callback function, set the boundary conditions here:
   if ( bdycallback_ != NULLPTR ) {
-    (*bdycallback_)(grid);
+    (*bdycallback_)(gelems_);
   }
 
-} // end of method do_grid3d
+} // end of method do_elems3d (1)
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : set_bdy_callback
-// DESC   : Set the callback object and method pointers for setting bdy conditions
-// ARGS   : ptr2obj : pointer to object that hosts method callback
-//          callback: method name
+// METHOD : do_elems2d (2)
+// DESC   : Build 2d elemental grid on base mesh
+// ARGS   : p      : matrix of size the number of elements X GDIM containing 
+//                   the poly expansion order in each direction
+//          gxnodes: vector of GDIM vectors containing Cartesian coords of elements
 // RETURNS: none.
 //**********************************************************************************
-void GGridIcos::set_bdy_callback(std::function<void(GGrid &)> &callback)
+void GGridIcos::do_elems2d(GTMatrix<GINT> &p,
+                           GTVector<GTVector<GFTYPE>> &gxnodes)
 {
-  bdycallback_  = &callback;
-} // end of method set_bdy_callback
+  GString                     serr = "GridIcos::do_elems2d (2): ";
+  GElem_base                  *pelem;
+  GTVector<GTVector<GFTYPE>>  *xNodes;
+  GTVector<GTVector<GFTYPE>*> *xiNodes;
+  GTVector<GNBasis<GCTYPE,GFTYPE>*>
+                               gb(GDIM);
+  GTVector<GINT>               ppool(gbasis_.size());
 
+  // Now, treat the gbasis_ as a pool that we search
+  // to find bases we need:
+  for ( GSIZET j=0; j<ppool.size(); j++ ) ppool[j] = gbasis_[j]->getOrder();
+
+
+  // Set element internal dof from input data:
+  GSIZET iwhere ;
+  GSIZET nvnodes;   // no. vol nodes
+  GSIZET nfnodes;   // no. face nodes
+  GSIZET icurr = 0; // current global index
+  GSIZET fcurr = 0; // current global face index
+  // For each triangle in base mesh owned by this rank...
+  for ( GSIZET i=0; i<p.size(1); i++ ) { 
+    nvnodes = 1;
+    for ( GSIZET j=0; j<GDIM; j++ ) { // set basis from pool
+      assert(ppool.contains(p(i,j),iwhere) && "Expansion order not found");
+      gb[j] = gbasis_[iwhere];
+      nvnodes *= (p(i,j) + 1);
+    }
+    pelem = new GElem_base(GE_REGULAR, gb);
+    xNodes  = &pelem->xNodes();  // node spatial data
+    xiNodes = &pelem->xiNodes(); // node ref interval data
+#if 0
+    bdy_ind = &pelem->bdy_indices(); // get bdy indices data member
+    bdy_typ = &pelem->bdy_types  (); // get bdy types data member
+    bdy_ind->clear(); bdy_typ->clear();
+#endif
+
+    // Set internal node positions from input data.
+    // Note that gxnodes are 'global' and xNodes is
+    // element-local:
+    for ( GSIZET j=0; j<GDIM; j++ ) {
+       gxnodes[j].range(icurr, icurr+nvnodes-1);
+      (*xNodes)[j] = gxnodes[j];
+    }
+    for ( GSIZET j=0; j<GDIM; j++ ) gxnodes[j].range_reset();
+
+    pelem->init(*xNodes);
+    gelems_.push_back(pelem);
+
+    assert(nvnodes == gelems_[i]->nnodes() && "Incompatible node count");
+    nfnodes = gelems_[i]->nfnodes();
+    pelem->igbeg() = icurr;      // beginning global index
+    pelem->igend() = icurr+nvnodes-1; // end global index
+    pelem->ifbeg() = fcurr;
+    pelem->ifend() = fcurr+nfnodes-1; // end global face index
+    icurr += nvnodes;
+    fcurr += nfnodes;
+  } // end of triangle base mesh loop
+
+  // Can set individual nodes and internal bdy conditions
+  // with callback here:
+  if ( bdycallback_ != NULLPTR ) {
+    (*bdycallback_)(gelems_);
+  }
+
+} // end of method do_elems2d (2)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : do_elems3d (2)
+// DESC   : Build 3d elemental grid. It's assumed that init3d has been called
+//          prior to entry, and that the hmesh_ has beed set. This arrays
+//          of hexagonal 3d elements provides for each hex its vertices in Cartesian
+//          coordinates. Also, the centroids of these hexes (in Cartesian coords)
+//          should also have been computed. The Cartesian hex vertices will be
+//          converted into sherical coordinates, and the GShapeFcn_linear
+//          will be used in spherical coords to compute the interior nodes. These
+//          will then be converted to Cartesian coords.
+// ARGS   : p      : matrix of size the number of elements X GDIM containing 
+//                   the poly expansion order in each direction
+//          gxnodes: vector of GDIM vectors containing Cartesian coords of elements
+// RETURNS: none.
+//**********************************************************************************
+void GGridIcos::do_elems3d(GTMatrix<GINT> &p,
+                           GTVector<GTVector<GFTYPE>> &gxnodes)
+{
+  GString                      serr = "GridIcos::do_elems3d (2): ";
+  GTVector<GINT>              *bdy_ind;
+  GTVector<GINT>              *face_ind;
+  GElem_base                  *pelem;
+  GTVector<GTVector<GFTYPE>>  *xNodes;
+  GTVector<GNBasis<GCTYPE,GFTYPE>*>
+                               gb(GDIM);
+  GTVector<GINT>               ppool(gbasis_.size());
+
+  assert(gbasis_.size()>0 && "Must set basis first");
+
+  // Now, treat the gbasis_ as a pool that we search
+  // to find bases we need:
+  for ( GSIZET j=0; j<ppool.size(); j++ ) ppool[j] = gbasis_[j]->getOrder();
+
+  GSIZET i, iwhere, n;
+  GSIZET nvnodes;   // no. vol nodes
+  GSIZET nfnodes;   // no. face nodes
+  GSIZET icurr = 0; // current global index
+  GSIZET fcurr = 0; // current global face index
+  for ( GSIZET i=0; i<p.size(1); i++ ) { // for each hex in irank's mesh
+    nvnodes = 1;
+    for ( GSIZET j=0; j<GDIM; j++ ) { // set basis from pool
+      assert(ppool.contains(p(i,j),iwhere) && "Expansion order not found");
+      gb[j] = gbasis_[iwhere];
+      nvnodes *= (p(i,j) + 1);
+    }
+
+    // Set internal node positions from input data.
+    // Note that gxnodes are 'global' and xNodes is
+    // element-local:
+    for ( GSIZET j=0; j<GDIM; j++ ) {
+       gxnodes[j].range(icurr, icurr+nvnodes-1);
+      (*xNodes)[j] = gxnodes[j];
+    }
+    for ( GSIZET j=0; j<GDIM; j++ ) gxnodes[j].range_reset();
+
+    // Set element's bdy indices:
+    // ... need to check only vertex 0 for this:
+    if ( hmesh_[i].v[0]->x1 == radiusi_ || hmesh_[i].v[0]->x1 == radiuso_ ) { 
+      face_ind = &pelem->face_indices(0);
+      for ( GSIZET k=0; k<face_ind->size(); k++ ) {
+        // Do not allow face indices to be repeated in bdy list:
+        if ( !bdy_ind->contains((*face_ind)[k]) ) 
+          bdy_ind->push_back((*face_ind)[k]); 
+      }
+    }
+
+    pelem->init(*xNodes);
+    gelems_.push_back(pelem);
+
+    // Set global bdy types at each bdy_ind (this is a coarse
+    // application; finer control may be exercised in callback):
+    set_global_bdy_3d(*pelem);
+
+    assert(nvnodes == gelems_[i]->nnodes() && "Incompatible node count");
+    nfnodes = gelems_[i]->nfnodes();
+    pelem->igbeg() = icurr;      // beginning global index
+    pelem->igend() = icurr + nvnodes; // end global index
+    pelem->ifbeg() = fcurr;
+    pelem->ifend() = fcurr+nfnodes-1; // end global face index
+    icurr += nvnodes;
+    fcurr += nfnodes;
+  } // end of hex mesh loop
+
+  // If we have a callback function, set the boundary conditions here:
+  if ( bdycallback_ != NULLPTR ) {
+    (*bdycallback_)(gelems_);
+  }
+
+} // end of method do_elems3d (2)
 
 
 //**********************************************************************************
@@ -698,6 +881,7 @@ void GGridIcos::print(const GString &filename, GCOORDSYST icoord)
         r = sqrt(pt.x1*pt.x1 + pt.x2*pt.x2 + pt.x3*pt.x3);
         xlat  = asin(pt.x3/r);
         xlong = atan2(pt.x2,pt.x1);
+        xlong = xlong < 0.0 ? 2*PI+xlong : xlong;
 #if defined(_G_IS2D)
         ios << xlat << " " <<  xlong << std::endl;
 #elif defined(_G_IS3D)
@@ -742,6 +926,7 @@ void GGridIcos::project2sphere(GTVector<GTriangle<GFTYPE>> &tmesh, GFTYPE rad)
       r = v.norm();
       xlat  = asin(v.x3/r);
       xlong = atan2(v.x2,v.x1);
+      xlong = xlong < 0.0 ? 2*PI+xlong : xlong;
       v.x1 = rad*cos(xlat)*cos(xlong);
       v.x2 = rad*cos(xlat)*sin(xlong);
       v.x3 = rad*sin(xlat);
@@ -773,6 +958,7 @@ void GGridIcos::project2sphere(GTVector<GTPoint<GFTYPE>> &plist, GFTYPE rad)
     r = v.norm();
     xlat  = asin(v.x3/r);
     xlong = atan2(v.x2,v.x1);
+    xlong = xlong < 0.0 ? 2*PI+xlong : xlong;
     v.x1 = rad*cos(xlat)*cos(xlong);
     v.x2 = rad*cos(xlat)*sin(xlong);
     v.x3 = rad*sin(xlat);
@@ -802,6 +988,7 @@ void GGridIcos::project2sphere(GTVector<GTVector<GFTYPE>> &plist, GFTYPE rad)
     r = sqrt(x*x + y*y + z*z);
     xlat  = asin(z/r);
     xlong = atan2(y,x);
+    xlong = xlong < 0.0 ? 2*PI+xlong : xlong;
     plist[0][i] = rad*cos(xlat)*cos(xlong);
     plist[1][i] = rad*cos(xlat)*sin(xlong);
     plist[2][i] = rad*sin(xlat);
@@ -902,6 +1089,7 @@ void GGridIcos::xyz2spherical(GTVector<GTPoint<GFTYPE>*> &plist)
    plist[i]->x1 = r;
    plist[i]->x2 = asin(z/r);
    plist[i]->x3 = atan2(y,x);
+   plist[i]->x3 = plist[i]->x3 < 0.0 ? 2*PI+plist[i]->x3 : plist[i]->x3;
   }
 
 } // end of method xyz2spherical (1)
@@ -927,6 +1115,7 @@ void GGridIcos::xyz2spherical(GTVector<GTPoint<GFTYPE>> &plist)
    plist[i].x1 = r;
    plist[i].x2 = asin(z/r);
    plist[i].x3 = atan2(y,x);
+   plist[i].x3 = plist[i].x3 < 0.0 ? 2*PI+plist[i].x3 : plist[i].x3;
   }
 
 } // end of method xyz2spherical (2)
@@ -969,6 +1158,7 @@ void GGridIcos::cart2gnomonic(GTVector<GTPoint<GFTYPE>> &clist, GFTYPE rad, GFTY
     r      = clist[i].norm();
     xlat   = asin(clist[i].x3/r);
     xlong  = atan2(clist[i].x2,clist[i].x1);
+    xlong  = xlong < 0.0 ? 2*PI+xlong : xlong;
 #if 0
     den    = sin(xlatc)*sin(xlat) + cos(xlatc)*cos(xlat)*cos(xlong-xlongc);  
     xlatp  = asin( cos(xlatc)*sin(xlat) - sin(xlatc)*cos(xlat)*cos(xlong-xlongc) );
@@ -1155,3 +1345,168 @@ void GGridIcos::reorderverts2d(GTVector<GTPoint<GFTYPE>> &uverts, GTVector<GSIZE
 } // end of method reorderverts2d
 
 
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : set_global_bdy_3d
+// DESC   : Set global boundary conditions in 3d
+//            NOTE: element node coordinate may change in this call!
+// ARGS   : pelem : Element under consideration
+// RETURNS: none.
+//**********************************************************************************
+void GGridIcos::set_global_bdy_3d(GElem_base &pelem)
+{
+  GTVector<GINT>              *bdy_ind=&pelem.bdy_indices();
+  GTVector<GBdyType>          *bdy_typ=&pelem.bdy_types  ();
+  GTVector<GTVector<GFTYPE>>  *xNodes =&pelem.xNodes();
+
+  GSIZET ib;
+  GFTYPE x, y, z, r;
+  for ( GSIZET m=0; m<2; m++ ) { // for each radiusi face
+    for ( GSIZET k=0; k<bdy_ind->size(); k++ ) { // for each bdy index
+      ib = (*bdy_ind)[k];
+      x = (*xNodes)[0][ib]; y = (*xNodes)[1][ib]; z = (*xNodes)[2][ib];
+      r = sqrt( x*x + y*y + z*z );
+      if ( r == radiusi_  )
+        bdy_typ->push_back( global_bdy_types_[0] );
+    }
+  }
+
+  for ( GSIZET m=0; m<2; m++ ) { // for each radiuso face
+    for ( GSIZET k=0; k<bdy_ind->size(); k++ ) { // for each bdy index
+      ib = (*bdy_ind)[k];
+      x = (*xNodes)[0][ib]; y = (*xNodes)[1][ib]; z = (*xNodes)[2][ib];
+      r = sqrt( x*x + y*y + z*z );
+      if ( r == radiuso_  )
+        bdy_typ->push_back( global_bdy_types_[1] );
+    }
+  }
+
+} // end, method set_global_bdy_3d
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : order_latlong2d
+// DESC   : Order 2d vertices on exit s.t. they roughly define a 'box' 
+//          in spherical coords. Used only for quad elements.
+// ARGS   : verts : Array of vertices, re-ordered on exit
+// RETURNS: none.
+//**********************************************************************************
+void GGridIcos::order_latlong2d(GTVector<GFPoint> &verts)
+{
+
+  assert(verts.size() == 4 && "4 vertices must be provided");
+
+  GString           serr = "GGridIcos::order_latlong2d: ";
+  GTVector<GSIZET>  isortlon(4);
+  GTVector<GFTYPE>  lon(4), lat(4);
+  GTVector<GFPoint> cverts(4);       // copy of input verts
+  GTVector<GFPoint> sverts(4);       // sverts in sph coords
+
+  cverts = verts;
+  sverts = verts;
+  xyz2spherical(sverts); // convert verts to latlon
+
+  // Isolate lat, lon:
+  for ( GSIZET j=0; j<4; j++ ) {
+    lat[j] = sverts[j].x2;
+    lon[j] = sverts[j].x3;
+  }
+
+  // Sort lon in increasing order:
+  lon.sortincreasing(isortlon);
+
+  // Check vertices near 0-2pi axis:
+  if ( fabs(lon[isortlon[0]] - lon[isortlon[3]]) < PI ) {
+    for ( GSIZET j=0; j<4; j++ ) {
+      if ( lon[j] > 1.5*PI && lon[j] <=2.0*PI ) lon[j] -= 2.0*PI;
+    }
+  }
+
+  lon.sortincreasing(isortlon);
+
+  // Find 2 points with smallest lon, set v0 and v3
+  // based on lat to define 'box':
+  if ( lat[isortlon[0]] < lat[isortlon[1]] ) {
+    verts[0] = cverts[isortlon[0]];
+    verts[3] = cverts[isortlon[1]];
+  }
+  else {
+    verts[0] = cverts[isortlon[1]];
+    verts[3] = cverts[isortlon[0]];
+  }
+  
+  // Find 2 points with largest lon, set v1 and v2
+  // based on lat to define 'box':
+  if ( lat[isortlon[2]] < lat[isortlon[3]] ) {
+    verts[1] = cverts[isortlon[2]];
+    verts[2] = cverts[isortlon[3]];
+  }
+  else {
+    verts[1] = cverts[isortlon[3]];
+    verts[2] = cverts[isortlon[2]];
+  }
+
+#if 0
+  cout << serr << " on entry: verts=" << cverts << endl;
+  cout << serr << " on exit : verts=" << verts << endl;
+#endif
+
+} // end, method order_latlong2d
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : order_triangles
+// DESC   : Order triangle vertices
+// ARGS   : tmesh: Array of vertices, re-ordered on exit
+// RETURNS: none.
+//**********************************************************************************
+void GGridIcos::order_triangles(GTVector<GTriangle<GFTYPE>> &tmesh)
+{
+
+  GString           serr = "GGridIcos::order_triangles: ";
+  GTVector<GSIZET>  isortlon(3);
+  GTVector<GFTYPE>  lon(3), lat(3);
+  GTVector<GFPoint> cverts(3);       // copy of input verts
+  GTVector<GFPoint> sverts(3);       // sverts in sph coords
+
+  iup_.resize(tmesh.size());
+  iup_ = 0;
+  for ( GSIZET i=0; i<tmesh.size(); i++ ) {
+    for ( GSIZET j=0; j<3; j++ ) cverts[j] = *tmesh[i].v[j];
+    sverts = cverts;
+    xyz2spherical(sverts); // convert verts to latlon
+    for ( GSIZET j=0; j<3; j++ ) {
+      lat[j] = sverts[j].x2;
+      lon[j] = sverts[j].x3;
+    }
+    lon.sortincreasing(isortlon);
+
+    // Check vertices near 0-2pi axis; if triangle
+    // spans it, subtract 2pi to make longitude negative:
+    if ( fabs(lon[isortlon[0]] - lon[isortlon[2]]) < PI ) {
+      for ( GSIZET j=0; j<3; j++ ) {
+        if ( lon[j] > 1.5*PI && lon[j] <= 2.0*PI ) lon[j] -= 2.0*PI;
+      }
+    }
+    lon.sortincreasing(isortlon);
+    
+    if ( lat[isortlon[1]] > lat[isortlon[0]]
+      && lat[isortlon[1]] > lat[isortlon[2]] ) { // pointing upwards
+     *tmesh[i].v[0] =  cverts[isortlon[0]];
+     *tmesh[i].v[1] =  cverts[isortlon[2]];
+     *tmesh[i].v[2] =  cverts[isortlon[1]];
+      iup_[i] = 1;
+    }
+
+    if ( lat[isortlon[1]] < lat[isortlon[0]]
+      && lat[isortlon[1]] < lat[isortlon[2]] ) { // pointing downwards
+     *tmesh[i].v[0] =  cverts[isortlon[1]];
+     *tmesh[i].v[1] =  cverts[isortlon[2]];
+     *tmesh[i].v[2] =  cverts[isortlon[0]];
+    }
+  }
+
+} // end, method order_triangles

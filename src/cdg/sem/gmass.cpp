@@ -20,9 +20,10 @@
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
-GMass::GMass(GGrid &grid)
+GMass::GMass(GGrid &grid, GBOOL bdoinverse)
 : GLinOp(grid),
-bmasslumped_      (TRUE)
+bdoinverse_  (bdoinverse),
+bmasslumped_       (TRUE)
 {
   grid_ = &grid;
   init();
@@ -73,6 +74,12 @@ void GMass::init()
   #elif defined(_G_IS3D)
     init3d();
   #endif
+
+  if ( bdoinverse_ ) {
+    for ( GSIZET j=0; j<mass_.size(); j++ ) {
+      mass_[j] = 1.0 / mass_[j];
+    }
+  }
   bInitialized_ = TRUE;
 
 } // end of method init
@@ -149,7 +156,12 @@ void GMass::init2d()
       }
     }
   }
-  mass_.pointProd(*Jac);
+  if ( Jac->size() > 1 ) {
+    mass_.pointProd(*Jac);
+  }
+  else {
+    if ( (*Jac)[0] != 1.0 ) mass_ *= (*Jac)[0];
+  }
 
 } // end of method init2d
 
@@ -180,7 +192,7 @@ void GMass::init3d()
   mass_ = 0.0;
   for ( GSIZET i=0, n=0; i<gelems->size(); i++ ) {
     for ( GSIZET j=0; j<GDIM; j++ ) {
-      W[i]    = (*gelems)[i]->gbasis(j)->getWeights();
+      W[j]    = (*gelems)[i]->gbasis(j)->getWeights();
       N[j]    = (*gelems)[i]->size(j);
     }
     for ( GSIZET l=0; l<N[2]; l++ ) {
@@ -202,10 +214,12 @@ void GMass::init3d()
 // DESC   : Compute application of this operator to input vector.
 // ARGS   : input : input vector
 //          output: output (result) vector
+//          utmp  : required tmp space. Not used here.
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GMass::opVec_prod(GTVector<GFTYPE> &input, GTVector<GFTYPE> &output) 
+void GMass::opVec_prod(GTVector<GFTYPE> &input, GTVector<GTVector<GFTYPE>*> &utmp, 
+                       GTVector<GFTYPE> &output)
 {
 
   mass_.pointProd(input, output);

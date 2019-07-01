@@ -19,15 +19,18 @@ namespace pdeint {
 template<typename EquationType>
 struct IntegratorFactory {
 	using Equation      = EquationType;
-	using EqnBase       = typename Equation::Base;
-	using EqnBasePtr    = std::shared_ptr<EqnBase>;
+//      using EqnBase       = typename Equation::Base;
+	using EqnBase       = EquationBase<EquationType>;
 	using ObsBase       = ObserverBase<Equation>;
-	using ObsBasePtr    = std::shared_ptr<ObsBase>;
+	using EqnBasePtr    = std::shared_ptr<EqnBase>;
+	using StirBasePtr   = std::shared_ptr<StirrerBase<Equation>>;
+	using ObsBasePtr    = std::shared_ptr<std::vector<std::shared_ptr<ObsBase>>>;
 	using IntegratorPtr = std::shared_ptr<Integrator<Equation>>;
+	using Grid          = typename Equation::Grid;
 	using Value         = typename Equation::Value;
 	using Time          = typename Equation::Time;
 
-	static IntegratorPtr build(const tbox::PropertyTree& ptree, const EqnBasePtr& eqn, const ObsBasePtr& obs);
+	static IntegratorPtr build(const tbox::PropertyTree& ptree, const EqnBasePtr& eqn, const StirBasePtr& stir, const ObsBasePtr& obs, Grid& grid);
 
 };
 

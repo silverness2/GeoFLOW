@@ -19,6 +19,7 @@
 #include <cstdlib>
 #include <limits>
 #include <iostream>
+#include <vector>
 #include "gindex.hpp"
 #include "cff_blas.h"
 
@@ -42,6 +43,7 @@ template <class T> class GTVector
    ~GTVector<T>();
     
     T *data();
+    const T *data() const;
     GSIZET size() const;        // Return used buffer size
     GSIZET capacity() const;    // Return total available buffer size
     void   reserve(GSIZET n);   // Set capacity before having to initialize
@@ -50,13 +52,16 @@ template <class T> class GTVector
     void   resizem(GSIZET n);   // Resize data buffer only if n > current
     void   clear();             // Set capacity to 0
     void   push_back(T const &);// Push new element to end of data buffer
-    void   bconstdata(GBOOL);   // If data const, all access access 1 element only
+    T     &back();              // Get reference to last element
+    T     &back() const;        // Get reference to last element
 
     void range(GSIZET ibeg, GSIZET end);    // Set range of vector within capacity
+    void range_reset();                     // Reset range of vector 
     GIndex &getIndex() ;        // Return generalized index member
 
     #pragma acc routine vector
     GTVector<T>       &operator=(const GTVector<T> &b);
+    GTVector<T>       &operator=(const std::vector<T> &b);
     #pragma acc routine vector
     void               operator=(T b);
     #pragma acc routine vector
@@ -80,23 +85,23 @@ template <class T> class GTVector
 inline   T &operator[](const GSIZET i) {
     #if defined(_G_BOUNDS_CHK)
       const char serr[] = "GTVector<T>::operator[]: ";
-      if ( !bconstdata_ && i+gindex_.beg() > gindex_.end() ) {
+      if ( i+gindex_.beg() > gindex_.end() ) {
         std::cout << serr << "Access error: " << i << std::endl;
         while(1){}; exit(1);
       }
     #endif
-      return bconstdata_ ? data_[0] : data_[i+gindex_.beg()];
+      return data_[i+gindex_.beg()];
     };
 
 inline    T operator[](const GSIZET i) const {
     #if defined(_G_BOUNDS_CHK)
       const char serr[] = "GTVector<T>::operator[] const: ";
-      if ( !bconstdata_  && i+gindex_.beg() > gindex_.end() ) {
+      if ( i+gindex_.beg() > gindex_.end() ) {
         std::cout << serr << "Access error: " << i << std::endl;
         while(1){}; exit(1);
       }
     #endif
-      T ret = bconstdata_ ? data_[0] : data_[i+gindex_.beg()];
+      T ret = data_[i+gindex_.beg()];
       return ret;
     };
 
@@ -126,17 +131,29 @@ inline    T operator[](const GSIZET i) const {
     #pragma acc routine vector
     T max();
     #pragma acc routine vector
+    T amax();
+    #pragma acc routine vector
     T maxn(GSIZET n);
+    #pragma acc routine vector
+    GSIZET imax();
     #pragma acc routine vector
     T min();
     #pragma acc routine vector
+    T amin();
+    #pragma acc routine vector
     T minn(GSIZET n);
+    #pragma acc routine vector
+    GSIZET imin();
     #pragma acc routine vector
     T sum();
     #pragma acc routine vector
-    T L1norm();
+    T infnorm();
     #pragma acc routine vector
-    T L2norm();
+    T Eucnorm();
+    #pragma acc routine vector
+    void pow(GDOUBLE p);
+    #pragma acc routine vector
+    void abs();
     #pragma acc routine vector
     GBOOL contains(T val);     // Buffer contains val?
     #pragma acc routine vector
@@ -186,11 +203,11 @@ inline    T operator[](const GSIZET i) const {
 
   private:
 
-    GIndex gindex_; // gen. index object
+    GIndex gindex_; // gen. index object, changeable
+    GIndex gindex_keep_; // gen. index object, stored
     T     *data_;
     GSIZET n_;
     GBOOL  bdatalocal_; // tells us that data_ is owned by caller
-    GBOOL  bconstdata_; // says data is const, and access is to 1st element only
 
 
   #pragma acc routine vector 
@@ -212,9 +229,12 @@ inline    T operator[](const GSIZET i) const {
 //
 template<typename T>
 std::ostream &operator<<(std::ostream &os, GTVector<T> &obj) {
-  for ( GLONG j=0; j < obj.size(); j++ ) {
-    os << obj[j] << " ";
+  if ( obj.size() == 0 ) return os;
+  os << obj[0];
+  for ( GLONG j=1; j<obj.size(); j++ ) {
+    os << " " << obj[j];
   }
+  os << std::endl;
   return os;
 };
 

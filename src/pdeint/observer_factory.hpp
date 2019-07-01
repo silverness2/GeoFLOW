@@ -9,9 +9,14 @@
 #define SRC_PDEINT_OBSERVER_FACTORY_HPP_
 
 #include <memory>
-
+#include <string>
+#include "tbox/error_handler.hpp"
+#include "pdeint/null_observer.hpp"
 #include "pdeint/observer_base.hpp"
 #include "tbox/property_tree.hpp"
+#include "gposixio_observer.hpp"
+#include "gglobaldiag_basic.hpp"
+
 
 namespace geoflow {
 namespace pdeint {
@@ -22,8 +27,9 @@ struct ObserverFactory {
 	using Equation    = EquationType;
 	using ObsBase     = ObserverBase<Equation>;
 	using ObsBasePtr  = std::shared_ptr<ObsBase>;
+	using Grid        = typename EquationType::Grid;
 
-	static ObsBasePtr build(const tbox::PropertyTree& ptree);
+	static ObsBasePtr build(const tbox::PropertyTree& ptree, Grid& grid);
 
 };
 

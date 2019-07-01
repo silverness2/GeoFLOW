@@ -7,12 +7,17 @@
 
  # Include only sources that contain main here:
  set(CDG_TEST_MAIN  
+                    ${GTHOME}/gtest_burgers.cpp
+#                   ${GTHOME}/gtest_ggfx.cpp
+#                   ${GTHOME}/gtest_advect.cpp
+#                   ${GTHOME}/gtest_derivs.cpp
+#                   ${GTHOME}/gtest_rk.cpp
+#                   ${GTHOME}/gtest_helm.cpp
 #                   ${GTHOME}/gtest_mass.cpp
-                    ${GTHOME}/gtest_ggrid.cpp
+#                   ${GTHOME}/gtest_ggrid.cpp
 #                   ${GTHOME}/gtest_gmtk.cpp
 #                   ${GTHOME}/gtest_gll.cpp
 #                   ${GTHOME}/gtest_tmp.cpp
-#                   ${GTHOME}/gtest_ggfx.cpp
 #                   ${GTHOME}/gtest_vec.cpp
 #                   ${GTHOME}/gtest_blas.cpp
 #                   ${GTHOME}/gtest_contig.cpp
@@ -24,7 +29,9 @@
     )
 
  # Include misc other sources:
- set(CDG_TEST_SRC_MISC ${GTHOME}/ftest_binding.f90
+ set(CDG_TEST_SRC_MISC 
+                    ${GTHOME}/ftest_binding.f90
+                    ${GTHOME}/gtools.cpp
     )
 
  # Fill main source list (don't include CDG_TEST_MAIN):

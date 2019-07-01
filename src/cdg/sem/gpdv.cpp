@@ -50,22 +50,23 @@ GpdV::~GpdV()
 // METHOD : apply
 // DESC   : Compute application of this operator to input vector:
 //            po = p Div u
-// ARGS   : p : input p field
-//          u : input vector field
-//          po: output (result) vector
+// ARGS   : p   : input p field
+//          u   : input vector field
+//          utmp: array of tmp arrays
+//          po  : output (result) vector
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GpdV::apply(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, GTVector<GFTYPE> &po) 
+void GpdV::apply(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, GTVector<GTVector<GFTYPE>*> &utmp, GTVector<GFTYPE> &po) 
 {
   assert(bInitialized_ && "Operator not initialized");
     
   if ( grid_->itype(GE_REGULAR).size() > 0 ) {
-    reg_prod(p, u, po);
+    reg_prod(p, u, utmp, po);
   }
   else if ( grid_->itype(GE_DEFORMED).size() > 0 
          || grid_->itype(GE_2DEMBEDDED).size() > 0 ) {
-    def_prod(p, u, po);
+    def_prod(p, u, utmp, po);
   }
 
 } // end of method apply
@@ -75,16 +76,17 @@ void GpdV::apply(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, GTVector<G
 //**********************************************************************************
 // METHOD : def_prod
 // DESC   : Compute this term for 2d & 3d GE_DEFORMED elements.
-//          NOTE: must have GDIM+1 utmp_ vectors set via set_tmp method
-// ARGS   : p : input vector (global)
-//          u : input vector field (global)
-//          po: output (result) field (global)
+//          NOTE: must have 2 utmp vectors provided
+// ARGS   : p   : input vector (global)
+//          u   : input vector field (global)
+//          utmp: array of tmp arrays. 2 arrays are required.
+//          po  : output (result) field (global)
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GpdV::def_prod(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, GTVector<GFTYPE> &po) 
+void GpdV::def_prod(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, GTVector<GTVector<GFTYPE>*> &utmp, GTVector<GFTYPE> &po) 
 {
-  assert( utmp_.size() >= GDIM+1
+  assert( utmp.size() >= GDIM+1
        && "Insufficient temp space specified");
 
   GElemList *gelems=&grid_->elems();
@@ -97,13 +99,12 @@ void GpdV::def_prod(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, GTVecto
 // and Gj are the 'metric' terms computed in the element, dXi^j/dX^j
 // that include the weights and Jacobian
 
-  GMTK::compute_grefderivs(*grid_, p, etmp1_, utmp_); // utmp stores tensor-prod derivatives, Dj u
-
-  // Compute po += Gj (D^j u): 
+  // Compute po += Gj (D^j u_j): 
   po = 0.0;
   for ( GSIZET j=0; j<GDIM; j++ ) { 
-    utmp_[j]->pointProd(*G_[j],*utmp_[GDIM]); // Gj * du^j
-    po += *utmp_[GDIM];
+    GMTK::compute_grefdiv(*grid_, u, etmp1_, FALSE, *utmp[0]); 
+    utmp[0]->pointProd(*G_[j],*utmp[1]); // Gj * du^j. Mass included in Gj
+    po += *utmp[1];
   }
 
   // Point-multiply by p:
@@ -117,23 +118,24 @@ void GpdV::def_prod(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, GTVecto
 // METHOD : reg_prod
 // DESC   : Compute application of this operator to input vector for 
 //          GE_REGULAR elements
-//          NOTE: must have GDIM+1 utmp_ vectors set via set_tmp method
-// ARGS   : p : input vector (global)
-//          u : input vector field (global)
-//          po: output (result) field (global)
+//          NOTE: must have 1 utmp vectors provided
+// ARGS   : p   : input vector (global)
+//          u   : input vector field (global)
+//          utmp: array of tmp arrays
+//          po  : output (result) field (global)
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GpdV::reg_prod(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, GTVector<GFTYPE> &po) 
+void GpdV::reg_prod(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, GTVector<GTVector<GFTYPE>*> &utmp, GTVector<GFTYPE> &po) 
 {
 
-  assert( utmp_.size() >= GDIM+1
+  assert( utmp.size() >= GDIM+1
        && "Insufficient temp space specified");
 
   GElemList *gelems=&grid_->elems();
 
 // Must compute:
-//    po = p Div u = p (G1 D1 + G2 D2 + G3 D3 ) u
+//    po = p Div u = p (G1 D1 u1 + G2 D2 u2 + G3 D3 u3 )
 //
 // where
 //    D1u = (I_X_I_X_Dx)u; D2u = (I_X_Dy_X_I)u; D3u = (Dz_X_I_X_I)u
@@ -143,20 +145,21 @@ void GpdV::reg_prod(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, GTVecto
 // as is the Jacobian. Weights are provided by mass matrix, which
 // is set on construction, so that we don't have to re-compute it here:
 
-  GMTK::compute_grefderivs(*grid_, p, etmp1_, utmp_); // utmp stores tensor-prod derivatives, Dj u
+  GMTK::compute_grefdiv(*grid_, u, etmp1_, FALSE, *utmp[0]); // utmp stores tensor-prod divergence: Dj u^j
 
-  // Compute po += Gj (D^j u): 
+  // Compute po += Gj (D^j u_j): 
   po = 0.0;
   for ( GSIZET j=0; j<GDIM; j++ ) { 
-    *utmp_[j] *= (*G_[j])[0]; // remember, mass not included in G here
-    po += *utmp_[GDIM];
+    GMTK::compute_grefdiv(*grid_, u, etmp1_, FALSE, *utmp[0]); 
+    *utmp[0] *= (*G_[j])[0]; // remember, mass not included in G here
+    po += *utmp[0];
   }
 
   // Point-multiply by p:
-  po.pointProd(p,*utmp_[0]);
+  po.pointProd(p,*utmp[0]);
 
   // apply mass:
-  massop_->opVec_prod(*utmp_[0], po);
+  massop_->opVec_prod(*utmp[0], utmp, po); // last arg is unused
 
 } // end of method reg_prod
 
@@ -217,6 +220,9 @@ void GpdV::def_init()
     G_ [j] = new GTVector<GFTYPE>(grid_->ndof());
   }
 
+  Jac = &grid_->Jac();
+  dXidX = &grid_->dXidX();
+
 
   // Cycle through all elements; fill metric elements
   for ( GSIZET e=0; e<grid_->elems().size(); e++ ) {
@@ -228,8 +234,9 @@ void GpdV::def_init()
       W[j]= (*gelems)[e]->gbasis(j)->getWeights();
       N[j]= (*gelems)[e]->size(j);
     }
-    Jac = &(*gelems)[e]->Jac();
-    dXidX = &(*gelems)[e]->dXidX();
+    Jac->range(ibeg, iend);
+    for ( GSIZET j=0; j<nxy; j++ )
+      for ( GSIZET i=0; i<nxy; i++ ) (*dXidX)(i,j).range(ibeg, iend);
 
 #if defined(_G_IS2D)
 
@@ -241,7 +248,7 @@ void GpdV::def_init()
                       * (*W[0])[l] * (*W[1])[m] * (*Jac)[n];
         }
       }
-      (*G_[j]).range(0, grid_->ndof()-1); // reset to global range
+      (*G_[j]).range_reset(); // reset to global range
     }
 
 #else
@@ -256,11 +263,17 @@ void GpdV::def_init()
             }
           }
         }
-      (*G_[j]).range(0, grid_->ndof()-1); // reset global vec to global range
+      (*G_[j]).range_reset(); // reset global vec to global range
     }
 
 #endif
   } // end, element list
+
+  // Reset ranges to global scope:
+  Jac->range_reset();
+  for ( GSIZET j=0; j<nxy; j++ )
+    for ( GSIZET i=0; i<nxy; i++ ) (*dXidX)(i,j).range_reset();
+
 
 } // end of method def_init
 
@@ -268,7 +281,8 @@ void GpdV::def_init()
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : reg_init
-// DESC   : Compute metric components for regular elements.
+// DESC   : Compute metric components for regular elements. Mass *is not* included
+//          here, so application must be done via mass operator.
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
@@ -279,6 +293,7 @@ void GpdV::reg_init()
 
   GTVector<GSIZET>             N(GDIM);
   GTMatrix<GTVector<GFTYPE>>  *dXidX;    // element-based dXi/dX matrix
+  GTVector<GFTYPE>            *Jac;      // element-based Jacobian
   GElemList                   *gelems = &grid_->elems();
 
   // Compute 'metric' components:
@@ -298,16 +313,17 @@ void GpdV::reg_init()
   //  G1 = dXi^1/dX^1 = 2 / L1
   //  G2 = dXi^2/dX^2 = 2 / L2
   //  G3 = dXi^3/dX^3 = 2 / L3
-  // These values should already be set in dXidX data within each
-  // element.
+  // These values should already be set in dXidX in grid
+
+  Jac = &grid_->Jac();
+  dXidX = &grid_->dXidX();
 
   GSIZET nxy = grid_->itype(GE_2DEMBEDDED).size() > 0 ? GDIM+1: GDIM;
   GSIZET ibeg, iend; // beg, end indices for global array
   G_ .resize(nxy);
   G_ = NULLPTR;
   for ( GSIZET j=0; j<nxy; j++ ) {
-    G_ [j] = new GTVector<GFTYPE>(1);
-    G_ [j]->bconstdata(TRUE); // treat as constant; any access returns constant
+    G_ [j] = new GTVector<GFTYPE>(grid_->ndof());
   }
 
 
@@ -315,10 +331,9 @@ void GpdV::reg_init()
   for ( GSIZET e=0; e<grid_->elems().size(); e++ ) {
     if ( (*gelems)[e]->elemtype() != GE_REGULAR ) continue;
 
-    dXidX = &(*gelems)[e]->dXidX();
-
     for ( GSIZET j=0; j<GDIM; j++ ) {
-      (*G_[j])[0] = (*dXidX)(j,0)[0];
+     *G_[j] = (*dXidX)(j,0);
+      G_[j]->pointProd(*Jac);
     }
   } // end, element list
 

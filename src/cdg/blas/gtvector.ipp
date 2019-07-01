@@ -22,12 +22,12 @@
 //**********************************************************************************
 template<class T>
 GTVector<T>::GTVector():
-data_   (NULLPTR),
-n_      (0),
-bdatalocal_ (TRUE),
-bconstdata_ (FALSE)
+data_    (NULLPTR),
+n_             (0),
+bdatalocal_ (TRUE)
 {
   gindex_(n_, n_, 0, n_-1, 1,  0);
+  gindex_keep_ = gindex_;
 
   #if defined(_G_AUTO_CREATE_DEV)
     #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
@@ -44,13 +44,14 @@ bconstdata_ (FALSE)
 //**********************************************************************************
 template<class T>
 GTVector<T>::GTVector(GSIZET n):
-data_   (NULLPTR),
-n_      (n),
-bdatalocal_ (TRUE),
-bconstdata_ (FALSE)
+data_    (NULLPTR),
+n_             (n),
+bdatalocal_ (TRUE)
 {
   data_ = new T [n_];
+  assert(this->data_!= NULLPTR );
   gindex_(n_, n_, 0, n_-1, 1,  0);
+  gindex_keep_ = gindex_;
 
   #if defined(_G_AUTO_CREATE_DEV)
     #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
@@ -66,14 +67,15 @@ bconstdata_ (FALSE)
 //**********************************************************************************
 template<class T>
 GTVector<T>::GTVector(GIndex &gi):
-data_   (NULLPTR),
-bdatalocal_ (TRUE),
-bconstdata_ (FALSE)
+data_    (NULLPTR),
+bdatalocal_ (TRUE)
 {
   gindex_ = gi;
+  gindex_keep_ = gindex_;
   n_=gindex_.end()+1+gindex_.pad();
 
   data_ = new T [n_];
+  assert(this->data_!= NULLPTR );
 
   #if defined(_G_AUTO_CREATE_DEV)
     #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
@@ -90,17 +92,18 @@ bconstdata_ (FALSE)
 //**********************************************************************************
 template<class T>
 GTVector<T>::GTVector(GTVector<T> &obj):
-data_   (NULLPTR),
+data_      (NULLPTR),
 n_      (obj.size()),
-bdatalocal_ (TRUE),
-bconstdata_ (FALSE)
+bdatalocal_   (TRUE)
 {
   data_ = new T [n_];
+  assert(this->data_!= NULLPTR );
   
   for ( GLLONG j=0; j<obj.capacity(); j++ ) {
     this->data_[j] = obj[j];
   }
   gindex_(n_, n_, 0, n_-1, 1,  0);
+  gindex_keep_ = gindex_;
 
   #if defined(_G_AUTO_CREATE_DEV)
     #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
@@ -120,12 +123,12 @@ bconstdata_ (FALSE)
 //**********************************************************************************
 template<class T>
 GTVector<T>::GTVector(T *indata, GSIZET n, GSIZET istride):
-data_   (NULLPTR),
+data_     (NULLPTR),
 n_      (n/istride),
-bdatalocal_ (TRUE),
-bconstdata_ (FALSE)
+bdatalocal_  (TRUE)
 {
   data_ = new T [n_];
+  assert(this->data_!= NULLPTR );
 
   GLLONG k=0;
   for ( GLLONG j=0; j<n_; j++ ) {
@@ -133,6 +136,7 @@ bconstdata_ (FALSE)
     k += istride;
   }
   gindex_(n_, n_, 0, n_-1, 1,  0);
+  gindex_keep_ = gindex_;
 
   #if defined(_G_AUTO_CREATE_DEV)
     #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
@@ -153,13 +157,13 @@ bconstdata_ (FALSE)
 //**********************************************************************************
 template<class T>
 GTVector<T>::GTVector(T *indata, GSIZET n, GSIZET istride, GBOOL blocmgd):
-data_   (NULLPTR),
+data_     (NULLPTR),
 n_      (n/istride),
-bdatalocal_ (TRUE),
-bconstdata_ (FALSE)
+bdatalocal_  (TRUE)
 {
   if ( bdatalocal_ ) {
     data_ = new T [n_];
+    assert(this->data_!= NULLPTR );
     GLLONG k=0;
     for ( GLLONG j=0; j<n_; j++ ) {
       data_[j] = indata[k];
@@ -171,7 +175,7 @@ bconstdata_ (FALSE)
     data_ = indata;
     gindex_(n_, n_, 0, n_-1, istride,  0);
   }
-
+  gindex_keep_ = gindex_;
 
   #if defined(_G_AUTO_CREATE_DEV)
     #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
@@ -188,16 +192,17 @@ bconstdata_ (FALSE)
 //**********************************************************************************
 template<class T>
 GTVector<T>::GTVector(const GTVector<T> &obj):
-data_   (NULLPTR),
+data_      (NULLPTR),
 n_      (obj.size()),
-bdatalocal_ (TRUE),
-bconstdata_ (FALSE)
+bdatalocal_   (TRUE)
 {
   data_ = new T [n_];
+  assert(this->data_!= NULLPTR );
   for ( GLLONG j=0; j<obj.capacity(); j++ ) {
     data_[j] = obj[j];
   }
   gindex_ = obj.gindex_;
+  gindex_keep_ = gindex_;
 
   #if defined(_G_AUTO_CREATE_DEV)
     #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
@@ -218,29 +223,6 @@ GTVector<T>::~GTVector()
   #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
   if ( data_  != NULLPTR  && bdatalocal_ ) delete [] data_;
 }
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : bconstdata
-// DESC   : Sets vector to be a 'constant'. Member data is resized to be of
-//          capacity 1, and any get of the data (for any index) returns the
-//          value in element 0 of data block
-// ARGS   : bdoconst : TRUE or false to make vector 'constant' or not.
-// RETURNS: none.
-//**********************************************************************************
-template<class T>
-void GTVector<T>::bconstdata(GBOOL doconst) 
-{
-  bconstdata_ = doconst;
-
-  if ( bconstdata_ ) {
-    if ( data_ != NULLPTR ) delete data_;
-    n_ = 1;
-    data_ = new T [n_];
-    gindex_(n_, n_, 0, n_-1, 1,  0);
-  }
-} // end, method bconstdata
 
 
 //**********************************************************************************
@@ -297,11 +279,6 @@ GIndex &GTVector<T>::getIndex()
 template<class T> 
 void GTVector<T>::resize(GSIZET nnew)
 {
-  if ( bconstdata_ ) {
-    clear();
-    resizem(1);
-  }
-
   assert(bdatalocal_ && "Data not local; cannot resize");
 
   #if defined(_G_AUTO_CREATE_DEV)
@@ -315,11 +292,16 @@ void GTVector<T>::resize(GSIZET nnew)
   GLLONG ipad    = gindex_.pad();
 
   if ( (iend-ibeg+1+ipad) > n_ ) {      // must reallocate; change capacity
-    if ( this->data_ != NULLPTR ) delete [] this->data_;
-    this->data_ = new T [nnew];
+    if ( this->data_ != NULLPTR ) { 
+      delete [] this->data_; 
+      this->data_ = NULLPTR; 
+    }
+    this->data_ = new T [ibeg+nnew+ipad];
+    assert(this->data_ != NULLPTR );
     n_ = nnew;
   }
   gindex_(nnew, nnew, ibeg, iend, istride, ipad);
+  gindex_keep_ = gindex_;
 
   #if defined(_G_AUTO_CREATE_DEV)
 //  #pragma acc enter data create( data_[0:n_-1] )
@@ -340,11 +322,6 @@ void GTVector<T>::resize(GSIZET nnew)
 template<class T> 
 void GTVector<T>::resize(GIndex &gi)
 {
-  if ( bconstdata_ ) {
-    clear();
-    resize(1);
-  }
-
   assert(bdatalocal_ && "Data not local; cannot resize");
 
   #if defined(_G_AUTO_CREATE_DEV)
@@ -359,8 +336,12 @@ void GTVector<T>::resize(GIndex &gi)
   GLLONG ipad    = gi.pad();
 
   if ( nnew != n_ ) {
-    if ( data_ != NULLPTR ) delete [] data_;
-    data_ = new T [nnew];
+    if ( this->data_ != NULLPTR ) { 
+      delete [] this->data_; 
+      this->data_ = NULLPTR; 
+    }
+    this->data_ = new T [ibeg+nnew+ipad];
+    assert(this->data_ != NULLPTR );
     n_ = nnew;
   }
   gindex_(nnew, nnew, ibeg, iend, istride, ipad);
@@ -383,11 +364,6 @@ void GTVector<T>::resize(GIndex &gi)
 template<class T>
 void GTVector<T>::resizem(GSIZET nnew)
 {
-  if ( bconstdata_ ) {
-    clear();
-    resize(1);
-  }
-
   if ( nnew > n_ ) {
 
     assert(bdatalocal_ && "Data not local; cannot resize");
@@ -419,11 +395,6 @@ void GTVector<T>::resizem(GSIZET nnew)
 template<class T> 
 void GTVector<T>::reserve(GSIZET nnew)
 {
-  if ( bconstdata_ ) {
-    clear();
-    resize(1);
-  }
-
   assert(bdatalocal_ && "Can reserve only on data local vector");
 
   #if defined(_G_AUTO_CREATE_DEV)
@@ -431,39 +402,48 @@ void GTVector<T>::reserve(GSIZET nnew)
     #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
   #endif
 
-  T *ttmp;
+  T *ttmp=NULLPTR;
   GLLONG ibeg    = gindex_.beg();
   GLLONG iend    = gindex_.end();
   GLLONG istride = gindex_.stride();
   GLLONG ipad    = gindex_.pad();
 
   // Check: is following exception-safe? No....
-  ttmp  = new T [nnew];
+  ttmp  = new T [ibeg+nnew+ipad];
+  assert(ttmp != NULLPTR );
 
   // Copy old data to temp buffer:
   if ( nnew > n_ ) { // growing
     for ( GSIZET j=0; j<n_; j++ ) ttmp[j] = this->data_[j];
-    if ( data_ != NULLPTR ) delete [] data_;
-    data_ = new T [nnew];
+    if ( this->data_ != NULLPTR ){
+      delete [] this->data_;
+      this->data_ = NULLPTR; 
+    }
+    this->data_ = new T [ibeg+nnew+ipad];
+    assert(this->data_ != NULLPTR );
 
-    // Copy only what was there already to expanded buffer:
-    for ( GSIZET j=0; j<n_; j++ ) data_[j] = ttmp[j];
+    // Copy only what was there already to expanded buffer,
+    // leaving remainder 'uninitialized':
+    for ( GSIZET j=0; j<n_; j++ ) this->data_[j] = ttmp[j];
     gindex_(nnew, nnew, ibeg, iend, istride, ipad);
     n_ = nnew;
   }
   else if ( nnew < n_ ) { // shrinking
     for ( GSIZET j=0; j<nnew; j++ ) ttmp[j] = this->data_[j];
-    if ( this->data_ != NULLPTR ) delete [] this->data_;
-    this->data_ = new T [nnew];
+    if ( this->data_ != NULLPTR ) {
+      delete [] this->data_;
+      this->data_ = NULLPTR; 
+    }
+    this->data_ = new T [ibeg+nnew+ipad];
+    assert(this->data_ != NULLPTR );
 
-    // Copy only the new amount, leaving the reminder
-    // 'uninitialized':
+    // Copy only what of the original amount fills new buffer:
     n_ = nnew;
     for ( GSIZET j=0; j<n_; j++ ) this->data_[j] = ttmp[j];
     gindex_(n_, n_, ibeg, MIN(n_-1,iend), istride, ipad);
   }
 
-  delete [] ttmp;
+  if ( ttmp != NULLPTR ) delete [] ttmp;
 
   #if defined(_G_AUTO_CREATE_DEV)
 //  #pragma acc enter data create( data_[0:n_-1] )
@@ -489,7 +469,10 @@ void GTVector<T>::clear()
     #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
   #endif
 
-  if ( data_ != NULLPTR ) delete [] data_;
+  if ( data_ != NULLPTR ) {
+    delete [] data_;
+    this->data_ = NULLPTR; 
+  }
   gindex_(0, 0, 0, -1, 0,  0);
 
   #if defined(_G_AUTO_CREATE_DEV)
@@ -510,7 +493,6 @@ void GTVector<T>::clear()
 template<class T>
 void GTVector<T>::push_back(const T &obj)
 {
-  if ( bconstdata_ ) return;
 
   GSIZET nnew = gindex_.end() + gindex_.pad() + 2;
 
@@ -519,7 +501,7 @@ void GTVector<T>::push_back(const T &obj)
   }
 
 
-  GIndex gi      = gindex_; 
+  GIndex  gi      = gindex_; 
   GLLONG  iglob   = gindex_.szglobal();
   GLLONG  iloc    = gindex_.szlocal();
   GLLONG  istride = gindex_.stride();
@@ -539,6 +521,34 @@ void GTVector<T>::push_back(const T &obj)
 
 //**********************************************************************************
 //**********************************************************************************
+// METHOD : back
+// DESC   : Get reference to last element
+// ARGS   : none
+// RETURNS: T reference
+//**********************************************************************************
+template<class T>
+T &GTVector<T>::back()
+{
+  return data_[n_-1];
+} // end, method back
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : back
+// DESC   : Get reference to last element
+// ARGS   : none
+// RETURNS: T reference
+//**********************************************************************************
+template<class T>
+T &GTVector<T>::back() const
+{
+  return data_[n_-1];
+} // end, method back
+
+
+//**********************************************************************************
+//**********************************************************************************
 // METHOD : data
 // DESC   : Get pointer to data block. 
 // ARGS   : 
@@ -549,6 +559,20 @@ T *GTVector<T>::data()
 {
   return data_+gindex_.beg();
 } // end, method data 
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : data (const)
+// DESC   : Get (const) pointer to data block. 
+// ARGS   : 
+// RETURNS: T* pointer to data
+//**********************************************************************************
+template<class T> 
+const T *GTVector<T>::data() const 
+{
+  return data_+gindex_.beg();
+} // end, method data (const)
 
 
 //**********************************************************************************
@@ -572,11 +596,13 @@ GTVector<T> &GTVector<T>::operator=(const GTVector<T> &obj)
   if ( data_ == NULLPTR ) {
     n_ = obj.capacity();
     data_ = new T [n_];
-    gindex_(n_, n_, 0, n_-1, 1,  0);
+    assert(this->data_ != NULLPTR );
+    gindex_ = obj.gindex_;
+    gindex_keep_ = gindex_;
   }
 
-  for ( GLLONG j=0; j<obj.capacity(); j++ ) {
-    data_[j] = obj[j];
+  for ( GLLONG j=gindex_.beg(); j<=gindex_.end(); j++ ) {
+    data_[j] = obj[j-gindex_.beg()];
   }
 
   #if defined(_G_AUTO_UPDATE_DEV)
@@ -585,6 +611,41 @@ GTVector<T> &GTVector<T>::operator=(const GTVector<T> &obj)
   
   return *this;
 } // end, operator=(GTVector &)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : assignment operator= std::vector
+// DESC   : Equate to std::vector of same template type
+// ARGS   : GTVector<T> & right-hand side arg 
+// RETURNS: GTVector & 
+//**********************************************************************************
+template<class T> 
+GTVector<T> &GTVector<T>::operator=(const std::vector<T> &obj) 
+{
+  
+  if ( n_ > 0 ) { // If not allocated, allocate; else it's an error
+    assert( (this->n_ < obj.capacity() || this->data_ != NULLPTR) && "L-vector has insufficient size");
+  }
+
+  if ( data_ == NULLPTR ) {
+    n_ = obj.capacity();
+    data_ = new T [n_];
+    assert(this->data_ != NULLPTR );
+    gindex_(n_, n_, 0, n_-1, 1,  0);
+    gindex_keep_ = gindex_;
+  }
+
+  for ( GLLONG j=gindex_.beg(); j<=gindex_.end(); j++ ) {
+    data_[j] = obj[j-gindex_.beg()];
+  }
+
+  #if defined(_G_AUTO_UPDATE_DEV)
+  updatedev();
+  #endif
+  
+  return *this;
+} // end, operator=(std::vector &)
 
 
 //**********************************************************************************
@@ -611,7 +672,8 @@ void GTVector<T>::operator=(T a)
 //************************************************************************************
 //************************************************************************************
 // METHOD : range 
-// DESC   : Sets GTVector<T> range ibeg, iend.
+// DESC   : Sets GTVector<T> range ibeg, iend, by
+//          re-defining variable gindex_ object.
 // ARGS   : ibeg : starting index
 //          iend : ending index
 // RETURNS: none.
@@ -619,15 +681,29 @@ void GTVector<T>::operator=(T a)
 template<class T> 
 void  GTVector<T>::range(GSIZET ibeg, GSIZET iend) 
 {
-
-  if ( bconstdata_ ) return;
-
-  assert(ibeg < iend && ibeg < iend && iend < n_ && "Invalid range specification");
+//assert(ibeg <= n_ && iend <= n_ && "Invalid range specification");
 
   gindex_.beg() = ibeg;
   gindex_.end() = iend;
   
 } // end of method range
+
+
+//************************************************************************************
+//************************************************************************************
+// METHOD : range_reset
+// DESC   : Resets range to that stored in gindex_keep object.
+//          Capacity, etc does not change.
+// ARGS   : none.
+// RETURNS: none.
+//************************************************************************************
+template<class T> 
+void  GTVector<T>::range_reset() 
+{
+
+  gindex_ = gindex_keep_;
+  
+} // end of method range_reset
 
 
 //**********************************************************************************
@@ -954,6 +1030,32 @@ GTVector<T>::maxn(GSIZET n)
 
 //**********************************************************************************
 //**********************************************************************************
+// METHOD : imax
+// DESC   : Find position of max of vector
+// ARGS   : none.
+// RETURNS: GSIZET position of max
+//**********************************************************************************
+template<class T>
+GSIZET
+GTVector<T>::imax()
+{
+  GSIZET imax;
+  T fm = std::numeric_limits<T>::min();
+
+  for ( GLLONG j=this->gindex_.beg(); j<this->gindex_.end() && j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+    if ( this->data_[j] > fm ) {
+      imax= j;
+      fm = this->data_[j];
+    }
+  }
+ 
+  return imax;
+
+} // end imax
+
+
+//**********************************************************************************
+//**********************************************************************************
 // METHOD : max
 // DESC   : Find max of all members
 // ARGS   : none.
@@ -972,6 +1074,28 @@ GTVector<T>::max()
   return fm;
 
 } // end max
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : amax
+// DESC   : Find absolute max of all members
+// ARGS   : none.
+// RETURNS: T-type max
+//**********************************************************************************
+template<class T>
+T
+GTVector<T>::amax()
+{
+  T fm = std::numeric_limits<T>::min();
+
+  for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+    fm = MAX(fm,fabs(this->data_[j]));
+  }
+
+  return fm;
+
+} // end amax
 
 
 //**********************************************************************************
@@ -998,10 +1122,36 @@ GTVector<T>::minn(GSIZET n)
 
 //**********************************************************************************
 //**********************************************************************************
+// METHOD : imin
+// DESC   : Find position of min of vector
+// ARGS   : none.
+// RETURNS: GSIZET position of min
+//**********************************************************************************
+template<class T>
+GSIZET
+GTVector<T>::imin()
+{
+  GSIZET imin;
+  T fm = std::numeric_limits<T>::max();
+
+  for ( GLLONG j=this->gindex_.beg(); j<this->gindex_.end() && j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+    if ( this->data_[j] < fm ) {
+      imin= j;
+      fm = this->data_[j];
+    }
+  }
+
+  return imin;
+
+} // end imin
+
+
+//**********************************************************************************
+//**********************************************************************************
 // METHOD : min
 // DESC   : Find max of all members
 // ARGS   : none.
-// RETURNS: T-type max
+// RETURNS: T-type min
 //**********************************************************************************
 template<class T>
 T
@@ -1016,6 +1166,28 @@ GTVector<T>::min()
   return fm;
 
 } // end min
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : amin
+// DESC   : Find absolute min of all members
+// ARGS   : none.
+// RETURNS: T-type min
+//**********************************************************************************
+template<class T>
+T
+GTVector<T>::amin()
+{
+  T fm = std::numeric_limits<T>::max();
+
+  for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+    fm = MIN(fm,fabs(this->data_[j]));
+  }
+
+  return fm;
+
+} // end amin
 
 
 //**********************************************************************************
@@ -1040,7 +1212,7 @@ while(1){};
 
   GLLONG j; 
   for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    ret[j] = this->data_[j] * obj[j];
+    ret[j] = this->data_[j-gindex_.beg()] * obj[j-gindex_.beg()];
   }
 
 } // end, pointProd (1)
@@ -1067,7 +1239,7 @@ while(1){};
 
   GLLONG j;
   for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    data_[j] *= obj[j];
+    data_[j] *= obj[j-gindex_.beg()];
   }
 
 } // end, pointProd (2)
@@ -1126,38 +1298,38 @@ GTVector<T>::sum()
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : L1norm
-// DESC   : Computes infinity (max) norm
+// METHOD : infnorm
+// DESC   : Computes infinity (max)
 // ARGS   : none.
 // RETURNS: T norm
 //**********************************************************************************
 template<class T>
 T
-GTVector<T>::L1norm() 
+GTVector<T>::infnorm() 
 {
-  T      xnorm = std::numeric_limits<T>::min();
+  GDOUBLE xnorm;
   GLLONG j;
 
   for ( j=this->gindex_.beg(), xnorm=0; j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
     xnorm = MAX(xnorm,fabs(this->data_[j]));
   }
-
-  return xnorm;
-} // end,L1norm 
+  
+  return static_cast<T>(xnorm);
+} // end, infnorm
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : L2norm
-// DESC   : Computes L2 (RMS) norm
+// METHOD : Eucnorm
+// DESC   : Computes Euclidean (RMS) norm
 // ARGS   : none.
 // RETURNS: T norm
 //**********************************************************************************
 template<class T>
 T
-GTVector<T>::L2norm() 
+GTVector<T>::Eucnorm() 
 {
-  GDOUBLE xnorm = 0.0;
+  GDOUBLE xnorm;
   GLLONG j;
 
   for ( j=this->gindex_.beg(), xnorm=0; j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
@@ -1165,7 +1337,51 @@ GTVector<T>::L2norm()
   }
   
   return static_cast<T>(sqrt(xnorm));
-} // end, L2norm
+} // end, Eucnorm
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : pow
+// DESC   : Raise vector elems to power p, and modify array contents
+// ARGS   : p: power
+// RETURNS: none
+//**********************************************************************************
+template<class T>
+void
+GTVector<T>::pow(const GDOUBLE p)
+{
+  assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
+  GDOUBLE tmp;
+  GLLONG j;
+  for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+    tmp = std::pow(static_cast<GDOUBLE>(data_[j]),p);
+    data_[j] = static_cast<T>(tmp);
+  }
+
+} // end, pow
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : abs
+// DESC   : Replace each elem with absolute value
+// ARGS   : none
+// RETURNS: none
+//**********************************************************************************
+template<class T>
+void
+GTVector<T>::abs()
+{
+  assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
+  GDOUBLE tmp;
+  GLLONG j;
+  for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+    tmp = sqrt( std::pow(static_cast<GDOUBLE>(data_[j]),2) );
+    data_[j] = static_cast<T>(tmp);
+  }
+
+} // end, abs
 
 
 //**********************************************************************************
@@ -1180,8 +1396,8 @@ template<class T>
 GSIZET
 GTVector<T>::multiplicity(T val)
 {
-  assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value || std::is_pointer<T>::value &&
-    "Invalid template type: multiplicity(T)");
+//assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value || std::is_pointer<T>::value &&
+//  "Invalid template type: multiplicity(T)");
 
   GSIZET mult=0;
   for ( GLLONG i=this->gindex_.beg(); i<=this->gindex_.end(); i+=this->gindex_.stride() ) {
@@ -1211,8 +1427,8 @@ template<class T>
 GSIZET
 GTVector<T>::multiplicity(T val, GSIZET *&index, GSIZET &n)
 {
-  assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value || std::is_pointer<T>::value &&
-    "Invalid template type: multiplicity(T,GSIZET*,GSIZET&)");
+//assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value || std::is_pointer<T>::value &&
+//  "Invalid template type: multiplicity(T,GSIZET*,GSIZET&)");
 
   GLLONG  m=0;
   GSIZET mult=0;
@@ -1252,9 +1468,8 @@ template<class T>
 GSIZET
 GTVector<T>::multiplicity_floor(T val, T floor)
 {
-
-  assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value &&
-    "Invalid template type: multiplicity_floor(T,T)");
+//assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value &&
+//  "Invalid template type: multiplicity_floor(T,T)");
 
   GSIZET mult=0;
 
@@ -1285,8 +1500,8 @@ template<class T>
 GSIZET
 GTVector<T>::multiplicity_floor(T val, GSIZET *&index, GSIZET &n, T floor)
 {
-  assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value &&
-    "Invalid template type: multiplicity_floor(T,GSIZET *,GSIZE&,T)");
+//assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value &&
+//  "Invalid template type: multiplicity_floor(T,GSIZET *,GSIZE&,T)");
 
   GLLONG  m=0;
   GSIZET mult=0;
@@ -1326,8 +1541,8 @@ template<class T>
 GSIZET
 GTVector<T>::multiplicity_ceil(T val, T ceil)
 {
-  assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value &&
-    "Invalid template type: multiplicity_ceil(T,T)");
+//assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value &&
+//  "Invalid template type: multiplicity_ceil(T,T)");
 
   GSIZET index, mult=1;
 
@@ -1358,8 +1573,11 @@ template<class T>
 GBOOL
 GTVector<T>::contains(T val, GSIZET &iwhere)
 {
-  assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value || std::is_pointer<T>::value &&
+
+#if 0
+  assert(std::is_arithmetic<T>::value || std::is_string<T>::value || std::is_pointer<T>::value &&
     "Invalid template type: contains(T, GSIZET&)");
+#endif
 
   if ( this->data_ == NULLPTR ) return FALSE;
 
@@ -1392,8 +1610,10 @@ template<class T>
 GSIZET
 GTVector<T>::contains(T val, GSIZET *&iwhere, GSIZET &nw)
 {
+#if 0
   assert(std::is_arithmetic<T>::value || std::is_enum<T>::value || std::is_pointer<T>::value &&
     "Invalid template type: contains(T, GSIZET&)");
+#endif
 
   if ( this->data_ == NULLPTR ) return FALSE;
 
@@ -1403,7 +1623,9 @@ GTVector<T>::contains(T val, GSIZET *&iwhere, GSIZET &nw)
     n += this->data_[i] == val ? 1 : 0;
   }
 
-  if ( n == 0 ) return 0;
+  if ( n == 0 ) {
+     return 0;
+  }
 
   if ( nw < n ) {
     if ( iwhere != NULLPTR ) delete [] iwhere;
@@ -1436,14 +1658,16 @@ template<class T>
 GBOOL
 GTVector<T>::containsn(T val, GSIZET n, GSIZET &iwhere)
 {
+#if 0
   assert(std::is_arithmetic<T>::value || std::is_enum<T>::value || std::is_pointer<T>::value &&
     "Invalid template type: containsn(T, GSIZET, GSIZET&)");
+#endif
 
   if ( data_ == NULLPTR  ) return FALSE;
 
   GLLONG i=this->gindex_.beg();
 
-  while ( i < this->gindex_.beg()+n &&  data_[i] != val ) i++;
+  while ( i < MIN(this->gindex_.beg()+n,n_) &&  data_[i] != val ) i++;
 
   if ( i >= this->gindex_.beg()+n ) return FALSE;
 
@@ -1466,8 +1690,10 @@ template<class T>
 GBOOL
 GTVector<T>::contains(T val)
 {
+#if 0
   assert(std::is_arithmetic<T>::value || std::is_enum<T>::value || std::is_pointer<T>::value &&
     "Invalid template type: contains(T)");
+#endif
 
   GSIZET nd;
 
@@ -1490,14 +1716,16 @@ template<class T>
 GBOOL
 GTVector<T>::containsn(T val, GSIZET n)
 {
+#if 0
   assert(std::is_arithmetic<T>::value || std::is_enum<T>::value || std::is_pointer<T>::value &&
     "Invalid template type: containsn(T, GSIZET)");
+#endif
 
   if ( data_ == NULLPTR ) return FALSE;
 
   GLLONG i=this->gindex_.beg();
 
-  while ( i < this->gindex_.beg()+n && data_[i] != val ) i++;
+  while ( i < MIN(this->gindex_.beg()+n,n_) && data_[i] != val ) i++;
 
   return i < this->gindex_.beg()+n;
 
@@ -1628,11 +1856,13 @@ GTVector<T>::distinctrng(GSIZET ibeg, GSIZET n, GSIZET is, T *&vals,
     }
   }
   if ( nd < nfound ) {
-    if ( vals    != NULLPTR ) delete [] vals;
-    if ( indices != NULLPTR ) delete [] indices;
+    if ( vals    != NULLPTR ) delete [] vals;   vals = NULLPTR;
+    if ( indices != NULLPTR ) delete [] indices; indices = NULLPTR;
     nd = nfound;
     vals    = new T      [nd];
+    assert(vals != NULLPTR );
     indices = new GSIZET [nd];
+    assert(indices != NULLPTR );
   }
   for ( i=0; i<nfound; i++ ) {
     vals   [i] = tunique[i];
@@ -1759,11 +1989,13 @@ GTVector<T>::distinctrng_floor(GSIZET ibeg, GSIZET n, GSIZET is, T *&vals,
   }
 
   if ( nd < nfound ) {
-    if ( vals    != NULLPTR ) delete [] vals;
-    if ( indices != NULLPTR ) delete [] indices;
+    if ( vals    != NULLPTR ) delete [] vals;   vals = NULLPTR;
+    if ( indices != NULLPTR ) delete [] indices; indices = NULLPTR;
     nd = nfound;
-    indices = new GSIZET [nd];
     vals    = new T      [nd];
+    assert(vals != NULLPTR );
+    indices = new GSIZET [nd];
+    assert(indices != NULLPTR );
   }
   for ( i=0; i<nfound; i++ ) {
     vals   [i] = tunique[i];
@@ -1932,7 +2164,8 @@ GTVector<T>::sortdecreasing()
 //**********************************************************************************
 // METHOD : sortdecreasing (2)
 // DESC   : Sorts buffer in decreasing order, in place. 
-// ARGS   : none.
+// ARGS   : isort: integer array that contains indices in decreasing order.
+//                 resized if necessary. 
 // RETURNS: none
 //**********************************************************************************
 #pragma acc routine vector

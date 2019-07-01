@@ -14,17 +14,23 @@ namespace pdeint {
 
 template<typename EquationType>
 typename IntegratorFactory<EquationType>::IntegratorPtr
-IntegratorFactory<EquationType>::build(const tbox::PropertyTree& ptree, const EqnBasePtr& eqn, const ObsBasePtr& obs){
+IntegratorFactory<EquationType>::build(const tbox::PropertyTree& ptree, const EqnBasePtr& eqn, const StirBasePtr& stir, const ObsBasePtr& obs,
+                                                                               Grid&       grid){
 
 	// Get the integrator traits
 	typename Integrator<Equation>::Traits traits;
-	traits.cfl_min = ptree.getValue("cfl_min", std::numeric_limits<Value>::lowest() );
-	traits.cfl_max = ptree.getValue("cfl_max", std::numeric_limits<Value>::max() );
-	traits.dt_min  = ptree.getValue("dt_min",  std::numeric_limits<Time>::lowest() );
-	traits.dt_max  = ptree.getValue("dt_max",  std::numeric_limits<Time>::max() );
+        std::string stype;
+
+        // Get integrator cadence type: integrate by time or by cycle:
+	stype             = ptree.getValue<std::string>("integ_type", "cycle" );
+        if ( "cycle" == stype ) traits.integ_type = Integrator<EquationType>::INTEG_CYCLE;
+        if ( "time"  == stype ) traits.integ_type = Integrator<EquationType>::INTEG_TIME;
+	traits.cycle_end  = ptree.getValue<size_t>("cycle_end", 1);
+	traits.dt         = ptree.getValue<Value>("dt",  std::numeric_limits<Time>::lowest() );
+	traits.time_end   = ptree.getValue<Value>("time_end",  std::numeric_limits<Time>::max() );
 
 	// Allocate Integrator Implementation
-	IntegratorPtr integrator_ptr(new Integrator<Equation>(eqn,obs,traits));
+	IntegratorPtr integrator_ptr(new Integrator<Equation>(eqn, stir, obs, grid, traits));
 
 	// Set any parameters we need to set
 	// NA

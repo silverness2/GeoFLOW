@@ -279,7 +279,25 @@ void  GTMatrix<T>::operator=(T m)
       data_[i] = m; 
   }
 
-} // end = operator
+} // end = operator (2)
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : operator = (3)
+// DESC   : Set diagonal of matrix. Must be a square matrix
+// ARGS   : from scalar vector, representing diagonal
+// RETURNS: none
+//**********************************************************************************
+template<class T> 
+void  GTMatrix<T>::operator=(const GTVector<T> &v)
+{
+  assert(n1_ == n2_ && "Matrix is not square");
+
+  GSIZET   i;
+
+  for ( i=0; i<n1_; i++ )  (*this)(i,i) = v[i];
+
+} // end = operator(3)
 
 
 //**********************************************************************************
@@ -1134,8 +1152,8 @@ GSIZET  GTMatrix<T>::isamax(GSIZET n, T *sx, GSIZET incx)
 
   if( n <= 1 ) return( istmp );
   if( incx != 1 ) {
-    /* Code for increment not equal to 1. */
-    if( incx < 0 ) sx = sx + ((-n+1)*incx + 1);
+    // Code for increment not equal to 1. 
+//  if( incx < 0 ) sx = sx + ((-n+1)*incx + 1);
     istmp = 0;
     smax  = fabs( *sx );
     sx += incx;
@@ -1146,7 +1164,7 @@ GSIZET  GTMatrix<T>::isamax(GSIZET n, T *sx, GSIZET incx)
       }
     return( istmp );
   }
-  /* Code for increment equal to 1. */
+  // Code for increment equal to 1.
   istmp = 0;
   smax  = fabs(*sx);
   sx++;

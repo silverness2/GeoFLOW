@@ -41,8 +41,8 @@ beta_                  (0.0),
 ximin_                 (-1.0),
 ximax_                 (1.0),
 eps_                   (1.0e-8),
-ttiny_                 (10.0*std::numeric_limits<T>::epsilon()),
-tetiny_                (10.0*std::numeric_limits<TE>::epsilon())
+ttiny_                 (100.0*std::numeric_limits<T>::epsilon()),
+tetiny_                (100.0*std::numeric_limits<TE>::epsilon())
 {
   if ( Np_ < 1 ) {
     std::cout << "GLLBasis<T,TE>::GLLBasis: invalid expansion order Np_=" << Np_ << std::endl;
@@ -74,8 +74,8 @@ beta_                  (0.0),
 ximin_                 (-1.0),
 ximax_                 (1.0),
 eps_                   (1.0e-8),
-ttiny_                 (10.0*std::numeric_limits<T>::epsilon()),
-tetiny_                (10.0*std::numeric_limits<TE>::epsilon())
+ttiny_                 (100.0*std::numeric_limits<T>::epsilon()),
+tetiny_                (100.0*std::numeric_limits<TE>::epsilon())
 {
 } // end of constructor method
 
@@ -100,8 +100,8 @@ beta_                  (0.0),
 ximin_                 (-1.0),
 ximax_                 (1.0),
 eps_                   (1.0e-8),
-ttiny_                 (10.0*std::numeric_limits<T>::epsilon()),
-tetiny_                (10.0*std::numeric_limits<TE>::epsilon())
+ttiny_                 (100.0*std::numeric_limits<T>::epsilon()),
+tetiny_                (100.0*std::numeric_limits<TE>::epsilon())
 {
   if ( Np_ < 1 ) {
     std::cout << "GLLBasis<T,TE>::GLLBasis: invalid expansion order Np_=" << Np_ << std::endl;
@@ -345,6 +345,7 @@ GBOOL GLLBasis<T,TE>::resize(GINT  newOrder)
   //  resize weights_:
   weights_.resize(Np_+1);
   weightsEv_.resize(Np_+1);
+  iweightsEv_.resize(Np_+1);
 
   //  resize Pn_:
   Pn_.resize(Np_+1);
@@ -360,6 +361,10 @@ GBOOL GLLBasis<T,TE>::resize(GINT  newOrder)
   dPhiT_ .resize(Np_+1,Np_+1);
   dPhiEv_ .resize(Np_+1,Np_+1);
   dPhiTEv_.resize(Np_+1,Np_+1);
+  dPhiWEv_ .resize(Np_+1,Np_+1);
+  dPhiWTEv_ .resize(Np_+1,Np_+1);
+  dPhiiWEv_ .resize(Np_+1,Np_+1);
+  dPhiiWTEv_ .resize(Np_+1,Np_+1);
 
   //  resize stiffMatrix_:
   stiffMatrix_  .resize(Np_+1,Np_+1);
@@ -709,15 +714,20 @@ GBOOL GLLBasis<T,TE>::init()
   // Copy computated data to the 'evaluated' structures:
   getXiNodes(xiNodesEv_);
   getWeights(weightsEv_);
+  getiWeights(iweightsEv_); // computes inverse and cast
   getStiffMatrix(stiffMatrixEv_);
-  getDerivMatrix(dPhiEv_,FALSE);
-  getDerivMatrix(dPhiTEv_,TRUE);
+  getDerivMatrix(dPhiEv_,FALSE);     //  D
+  getDerivMatrix(dPhiTEv_,TRUE);     //  D^T
+  getDerivMatrixW(dPhiWEv_,FALSE);   //  Diag(W)*D
+  getDerivMatrixW(dPhiWTEv_,TRUE);   // (Diag(W)*D)^T
+  getDerivMatrixiW(dPhiiWEv_,FALSE); //  Diag(W^-1)*D
+  getDerivMatrixiW(dPhiiWTEv_,TRUE); // (Diag(W^-1)*D)^T
 
   bInit_ = TRUE;
 
   return TRUE;
 
-} // end of method solve
+} // end of method init
 
 
 //************************************************************************************
@@ -833,7 +843,7 @@ GTVector<T> *GLLBasis<T,TE>::getWeightsComp()
 //************************************************************************************
 //************************************************************************************
 // METHOD : getWeights
-// DESC   : Get GTVector<TE> member data vector _evaluation_ weighters 
+// DESC   : Get GTVector<TE> member data vector _evaluation_ weights
 // ARGS   : none
 // RETURNS: pointer to GTVector member data
 //************************************************************************************
@@ -861,9 +871,8 @@ TE *GLLBasis<T,TE>::getWeights(TE *ret, GINT  num)
     exit(1);
   }
 
-  GINT  i;
 
-  for ( i=0; i<weights_.size(); i++ )
+  for ( GINT  i=0; i<weights_.size(); i++ )
     ret[i] = static_cast<TE>(weights_[i]);
 
   return ret;
@@ -883,6 +892,38 @@ void GLLBasis<T,TE>::getWeights(GTVector<TE> &ret)
   getWeights(ret.data(), ret.size());
 
 } // end of method getWeights (3)
+
+
+//************************************************************************************
+//************************************************************************************
+// METHOD : getiWeights (1)
+// DESC   : Get GTVector<TE> member data pointer to  vector _evaluation_ 
+//          inverse weights 
+// ARGS   : none
+// RETURNS: pointer to GTVector member data
+//************************************************************************************
+template<typename T, typename TE>
+GTVector<TE> *GLLBasis<T,TE>::getiWeights()
+{
+  return &iweightsEv_;
+} // end of method getiWeights (1) 
+
+
+//************************************************************************************
+//************************************************************************************
+// METHOD : getiWeights (2)
+// DESC   : Get deep copy of inverse weights in specified return object
+// ARGS   : ret : GTVector<TE> array
+// RETURNS: pointer to ret GTVector
+//************************************************************************************
+template<typename T, typename TE>
+void GLLBasis<T,TE>::getiWeights(GTVector<TE> &ret)
+{
+
+  for ( GINT  i=0; i<weights_.size(); i++ )
+    ret[i] = 1.0 / static_cast<TE>(weights_[i]);
+
+} // end of method getiWeights (2)
 
 
 //************************************************************************************
@@ -988,7 +1029,7 @@ GTMatrix<TE> *GLLBasis<T,TE>::getDerivMatrix(GBOOL bTranspose)
 
 //************************************************************************************
 //************************************************************************************
-// METHOD : getDerivMatrix (1)
+// METHOD : getDerivMatrix (2)
 // DESC   : Get deep copy of deriv matrix in specified return object
 // ARGS   : ret: GTMatrix to return data
 //          bTranspose: flag to get transpose (TRUE); else, not
@@ -1010,7 +1051,92 @@ void GLLBasis<T,TE>::getDerivMatrix(GTMatrix<TE> &ret, GBOOL bTranspose)
         ret(i,j) = static_cast<TE>(dPhi_(i,j));
   }
   
-} // end of method getDerivMatrix
+} // end of method getDerivMatrix (2)
+
+
+//************************************************************************************
+//************************************************************************************
+// METHOD : getDerivMatrixW (1)
+// DESC   : Get W X derivative matrix member data
+// ARGS   : bTranspose: TRUE==>return transpose; else don't
+// RETURNS: pointer to member data GTMatrix
+//************************************************************************************
+template<typename T, typename TE>
+GTMatrix<TE> *GLLBasis<T,TE>::getDerivMatrixW(GBOOL bTranspose)
+{
+  if ( bTranspose ) return &dPhiWTEv_;
+  else              return &dPhiWEv_;
+} // end of method getDerivMatrixW (1)
+
+
+
+//************************************************************************************
+//************************************************************************************
+// METHOD : getDerivMatrixW (2)
+// DESC   : Get deep copy of W X deriv matrix in specified return object
+// ARGS   : ret: GTMatrix to return data
+//          bTranspose: flag to get transpose (TRUE); else, not
+// RETURNS: pointer to ret GTMatrix on success; else NULLPTR
+//************************************************************************************
+template<typename T, typename TE>
+void GLLBasis<T,TE>::getDerivMatrixW(GTMatrix<TE> &ret, GBOOL bTranspose)
+{
+  if ( ret.size(1) < dPhi_.size(1) || ret.size(2) < dPhi_.size(2) ) return ;
+
+  if ( bTranspose ) {
+    for ( GINT i=0; i<dPhi_.size(1); i++ ) 
+      for ( GINT j=0; j<dPhi_.size(2); j++ ) 
+        ret(i,j) = static_cast<TE>(dPhiT_(i,j)*weights_[j]);
+  } 
+  else {
+    for ( GINT i=0; i<dPhi_.size(1); i++ ) 
+      for ( GINT j=0; j<dPhi_.size(2); j++ ) 
+        ret(i,j) = static_cast<TE>(dPhi_(i,j)*weights_[i]);
+  }
+  
+} // end of method getDerivMatrixW (2)
+
+
+//************************************************************************************
+//************************************************************************************
+// METHOD : getDerivMatrixiW (1)
+// DESC   : Get W^-1 X derivative matrix member data
+// ARGS   : bTranspose: TRUE==>return transpose; else don't
+// RETURNS: pointer to member data GTMatrix
+//************************************************************************************
+template<typename T, typename TE>
+GTMatrix<TE> *GLLBasis<T,TE>::getDerivMatrixiW(GBOOL bTranspose)
+{
+  if ( bTranspose ) return &dPhiiWTEv_;
+  else              return &dPhiiWEv_;
+} // end of method getDerivMatrixiW (1)
+
+
+//************************************************************************************
+//************************************************************************************
+// METHOD : getDerivMatrixiW (2)
+// DESC   : Get deep copy of W^-1  X deriv matrix in specified return object
+// ARGS   : ret: GTMatrix to return data
+//          bTranspose: flag to get transpose (TRUE); else, not
+// RETURNS: pointer to ret GTMatrix on success; else NULLPTR
+//************************************************************************************
+template<typename T, typename TE>
+void GLLBasis<T,TE>::getDerivMatrixiW(GTMatrix<TE> &ret, GBOOL bTranspose)
+{
+  if ( ret.size(1) < dPhi_.size(1) || ret.size(2) < dPhi_.size(2) ) return ;
+
+  if ( bTranspose ) {
+    for ( GINT i=0; i<dPhi_.size(1); i++ ) 
+      for ( GINT j=0; j<dPhi_.size(2); j++ ) 
+        ret(i,j) = static_cast<TE>(dPhiT_(i,j)/weights_[j]);
+  } 
+  else {
+    for ( GINT i=0; i<dPhi_.size(1); i++ ) 
+      for ( GINT j=0; j<dPhi_.size(2); j++ ) 
+        ret(i,j) = static_cast<TE>(dPhi_(i,j)/weights_[i]);
+  }
+  
+} // end of method getDerivMatrixiW (2)
 
 
 //************************************************************************************
@@ -1225,6 +1351,53 @@ GTMatrix<TE> *GLLBasis<T,TE>::evalBasis (TE eta[], GINT neta, GTMatrix<TE> &mret
 //************************************************************************************
 //************************************************************************************
 // METHOD : evalDBasis (1)
+// DESC   : Evaluates basis j, derivative at input parent domain point , eta
+//              Deriv. is derived from :
+//              dh_j(eta)/dxi =  -1/(Np_*(Np_-1)) * (1-eta**2) dL_Np_ (eta)dxi / (L_Np_(xi_j) (eta-xi_j))
+// ARGS   : 
+//           j   : basis function to evaluate derivative of
+//           eta : refereince interval at which evaluate
+// RETURNS: derivative value 
+//************************************************************************************
+template<typename T, typename TE>
+TE GLLBasis<T,TE>::evalDBasis (GINT j, TE eta)
+{
+  GString serr = "GLLBasis::evalDBasis(1): ";
+  T     ppn_j, pm1, pdm1, pm2, pdm2, ppn_xi, pder_xi, pdd;
+  T     fact=-1.0/(Np_*(Np_+1.0)), gfact, g1, g1i, g2, xi ;
+  TE    fRet;
+  
+  if ( !bInit_ && !init() ) {
+    std::cout << serr << "basis data incomplete" << std::endl;
+    exit(1);
+  }
+
+  fRet = 0.0;
+  xi     = eta;
+  g1     = xi - xiNodes_[j];
+  if      ( xi == ximin_ && j == 0 ) {
+    fRet = -0.25*Np_*(Np_+1.0); 
+  }
+  else if ( xi == ximax_ && j == Np_ ) {
+    fRet = 0.25*Np_*(Np_+1.0); 
+  }
+  else if ( fabs(g1) > tetiny_) {
+    ppn_j = Pn_[j];
+    computeJacobi(Np_, alpha_, beta_, ppn_xi, pder_xi,pm1, pdm1, pm2, pdm2, xi);
+    gfact = fact / ppn_j;
+    g1i   = 1.0/g1;
+    g2    = (1.0 - xi*xi)*g1i;
+    pdd   = 2.0*xi*pder_xi - Np_*(Np_ + 1.)*ppn_xi; 
+    fRet  = static_cast<TE>(gfact * g1i * ( pdd - (2.0*xi + g2 )*pder_xi) );
+  }
+  return fRet;
+
+} // end of method evalDBasis (1)
+
+
+//************************************************************************************
+//************************************************************************************
+// METHOD : evalDBasis (2)
 // DESC   : Evaluates basis derivative at input parent domain points , eta_i
 //              Deriv. is derived from :
 //              dh_j(eta)/dxi =  -1/(Np_*(Np_-1)) * (1-eta**2) dL_Np_ (eta)dxi / (L_Np_(xi_j) (eta-xi_j))
@@ -1235,32 +1408,37 @@ GTMatrix<TE> *GLLBasis<T,TE>::evalBasis (TE eta[], GINT neta, GTMatrix<TE> &mret
 template<typename T, typename TE>
 GTMatrix<TE> *GLLBasis<T,TE>::evalDBasis (GTVector<TE> &eta, GTMatrix<TE> &mret)
 {
-  GString serr = "GLLBasis::evalDBasis(1): ";
+  GString serr = "GLLBasis::evalDBasis(2): ";
   GINT  i, j, mm, nn;
   T     ppn_j, pm1, pdm1, pm2, pdm2, ppn_xi, pder_xi, pdd;
   T     fact=-1.0/(Np_*(Np_+1.0)), gfact, g1, g1i, g2, xi ;
   TE    fRet;
   
   if ( !bInit_ && !init() ) {
-    std::cout << serr << "evalDBasis: basis data incomplete" << std::endl;
+    std::cout << serr << "basis data incomplete" << std::endl;
     exit(1);
   }
 
   nn = MIN(eta.size(),mret.size(1));
   mm = MIN(Np_+1,mret.size(2)); 
   for ( i=0; i<nn; i++) {
+    xi     = static_cast<T>(eta[i]);
     for ( j=0; j<mm;  j++) {
       fRet = 0.0;
-      xi     = static_cast<T>(eta[i]);
       g1     = xi - xiNodes_[j];
-      if ( xi < ximin_ || xi > ximax_ ) fRet = 0.0;
+      if      ( xi == ximin_ && j == 0 ) {
+        fRet = -0.25*Np_*(Np_+1.0); 
+      }
+      else if ( xi == ximax_ && j == Np_ ) {
+        fRet = 0.25*Np_*(Np_+1.0); 
+      }
       else if ( fabs(g1) > tetiny_) {
         ppn_j = Pn_[j];
         computeJacobi(Np_, alpha_, beta_, ppn_xi, pder_xi,pm1, pdm1, pm2, pdm2, xi);
         gfact = fact / ppn_j;
         g1i   = 1.0/g1;
         g2    = (1.0 - xi*xi)*g1i;
-        pdd   = 2.*xi*pder_xi - Np_*(Np_ + 1.)*ppn_xi; 
+        pdd   = 2.0*xi*pder_xi - Np_*(Np_ + 1.)*ppn_xi; 
         fRet  = static_cast<TE>(gfact * g1i * ( pdd - (2.0*xi + g2 )*pder_xi) );
       } 
       mret(i,j) = fRet;
@@ -1268,12 +1446,12 @@ GTMatrix<TE> *GLLBasis<T,TE>::evalDBasis (GTVector<TE> &eta, GTMatrix<TE> &mret)
   }
   return &mret;
 
-} // end of method evalDBasis (1)
+} // end of method evalDBasis (2)
 
 
 //************************************************************************************
 //************************************************************************************
-// METHOD : evalDBasis (2)
+// METHOD : evalDBasis (3)
 // DESC   : Evaluates basis derivative at input parent domain points , eta_i
 //          Deriv. is derived from :
 //          h_j(eta) =  -1/(Np_*(Np_-1)) * (1-eta**2) dL_Np_ (eta)dxi / (L_Np_(xi_j) (eta-xi_j))
@@ -1285,45 +1463,50 @@ GTMatrix<TE> *GLLBasis<T,TE>::evalDBasis (GTVector<TE> &eta, GTMatrix<TE> &mret)
 template<typename T, typename TE>
 GTMatrix<TE> *GLLBasis<T,TE>::evalDBasis (TE eta[], GINT n, GTMatrix<TE> &mret)
 {
-  GString serr = "GLLBasis::evalDBasis(2): ";
+  GString serr = "GLLBasis::evalDBasis(3): ";
   GINT  i, j, mm, nn;
   T     ppn_j, pm1, pdm1, pm2, pdm2, ppn_xi, pder_xi, pdd;
   T     fact=-1.0/(Np_*(Np_+1.0)), gfact, g1, g1i, g2, xi ;
   TE    fRet;
   
   if ( !bInit_ && !init() ) {
-    std::cout << serr << "evalDBasis: basis data incomplete" << std::endl;
+    std::cout << serr << "basis data incomplete" << std::endl;
     exit(1);
   }
 
   nn = MIN(n,mret.size(1));
   mm = MIN(Np_+1,mret.size(2)); 
-  for ( i=0; i<nn; i++) {
-    for ( j=0; j<mm;  j++) {
+  for ( i=0; i<nn; i++) { // loop over nodes
+    xi     = static_cast<T>(eta[i]);
+    for ( j=0; j<mm;  j++) { // loop over modes
       fRet = 0.0;
-      xi     = static_cast<T>(eta[i]);
       g1     = xi - xiNodes_[j];
-      if ( xi < ximin_ || xi > ximax_ ) fRet = 0.0;
+      if      ( xi == ximin_ && j == 0 ) {
+        fRet = -0.25*Np_*(Np_+1.0); 
+      }
+      else if ( xi == ximax_ && j == Np_ ) {
+        fRet = 0.25*Np_*(Np_+1.0); 
+      }
       else if ( fabs(g1) > tetiny_ ) {
         ppn_j = Pn_[j];
         computeJacobi(Np_, alpha_, beta_, ppn_xi, pder_xi,pm1, pdm1, pm2, pdm2, xi);
         gfact = fact / ppn_j;
         g1i   = 1.0/g1;
         g2    = (1.0 - xi*xi)*g1i;
-        pdd   = 2.*xi*pder_xi - Np_*(Np_ + 1.)*ppn_xi; 
+        pdd   = 2.0*xi*pder_xi - Np_*(Np_ + 1.)*ppn_xi; 
         fRet  = static_cast<TE>( gfact * g1i * ( pdd - (2.0*xi + g2 )*pder_xi) );
       } 
       mret(i,j) = fRet;
     }
   }
   return &mret;
-} // end of method evalDBasis
+} // end of method evalDBasis (3)
 
 
 //************************************************************************************
 //************************************************************************************
-// METHOD : evalDBasis (3)
-// DESC   : Evaluates i-th basis derivative at input parent domain points , eta_i
+// METHOD : evalDBasis (4)
+// DESC   : Evaluates j-th basis derivative at input parent domain points , eta_i
 //          Deriv. is derived from :
 //          h_i(eta) =  -1/(Np_*(Np_-1)) * (1-eta**2) dL_Np_ (eta)dxi / (L_Np_(xi_j) (eta-xi_j))
 // ARGS   : j   : which polynomial to evaluat (0,... Np_)
@@ -1334,7 +1517,7 @@ GTMatrix<TE> *GLLBasis<T,TE>::evalDBasis (TE eta[], GINT n, GTMatrix<TE> &mret)
 template<typename T, typename TE>
 GTVector<TE> *GLLBasis<T,TE>::evalDBasis (GINT j, GTVector<TE> &eta, GTVector<TE> &vret)
 {
-  GString serr = "GLLBasis::evalDBasis(3): ";
+  GString serr = "GLLBasis::evalDBasis(4): ";
   GINT  i;
   T     ppn_j, pm1, pdm1, pm2, pdm2, ppn_xi, pder_xi, pdd;
   T     fact=-1.0/(Np_*(Np_+1.0)), gfact, g1, g1i, g2, xi ;
@@ -1350,20 +1533,25 @@ GTVector<TE> *GLLBasis<T,TE>::evalDBasis (GINT j, GTVector<TE> &eta, GTVector<TE
     fRet = 0.0;
     xi     = static_cast<T>(eta[i]);
     g1     = xi - xiNodes_[j];
-    if ( xi < ximin_ || xi > ximax_ ) fRet = 0.0;
+    if      ( xi == ximin_ && j == 0 ) {
+      fRet = -0.25*Np_*(Np_+1.0); 
+    }
+    else if ( xi == ximax_ && j == Np_ ) {
+      fRet = 0.25*Np_*(Np_+1.0); 
+    }
     else if ( fabs(g1) > tetiny_) {
       ppn_j = Pn_[j];
       computeJacobi(Np_, alpha_, beta_, ppn_xi, pder_xi,pm1, pdm1, pm2, pdm2, xi);
       gfact = fact / ppn_j;
       g1i   = 1.0/g1;
       g2    = (1.0 - xi*xi)*g1i;
-      pdd   = 2.*xi*pder_xi - Np_*(Np_ + 1.)*ppn_xi; 
+      pdd   = 2.0*xi*pder_xi - Np_*(Np_ + 1.)*ppn_xi; 
       fRet  = static_cast<TE>(gfact * g1i * ( pdd - (2.0*xi + g2 )*pder_xi) );
     } 
     vret[i] = fRet;
   }
 
   return &vret;
-} // end of method evalDBasis (3)
+} // end of method evalDBasis (4)
 
 
