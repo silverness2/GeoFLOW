@@ -27,7 +27,7 @@
 #include "gposixio_observer.hpp"
 #include "pdeint/equation_base.hpp"
 #include "pdeint/integrator_factory.hpp"
-#include "pdeint/stirrer_factory.hpp"
+#include "pdeint/mixer_factory.hpp"
 #include "pdeint/observer_factory.hpp"
 #include "pdeint/null_observer.hpp"
 #include "tbox/property_tree.hpp"
@@ -49,7 +49,7 @@ typename ValueType = GFTYPE,
 typename DerivType = StateType,
 typename TimeType  = ValueType,
 typename JacoType  = StateType,
-typename SizeType  = GSIZET
+typename SizeType  = GSIZET,
 >
 struct EquationTypes {
         using State      = StateType;
@@ -78,19 +78,19 @@ GC_COMM      comm_ ;      // communicator
 
 
 using MyTypes = EquationTypes<>;       // Define types used
-using EqnBase = EquationBase<MyTypes>; // Equation Base Type
-using EqnImpl = GBurgers<MyTypes>;     // Equation Implementa
-using StirBase= StirrerBase<MyTypes>;  // Stirring Base Type
-using StirBasePtr 
-              = std::shared_ptr<StirBase>; // Stirring Base ptr
-using ObsBase = ObserverBase<EqnBase>; // Observer Base Type
+using EqnBase = EquationBase<MyTypes>; // Equation base type
+using EqnImpl = GBurgers<MyTypes>;     // Equation implementation
+using MixBase= MixerBase<MyTypes>;  // Mixing base Type
+using MixBasePtr 
+              = std::shared_ptr<MixBase>; // Mixing base ptr
+using ObsBase = ObserverBase<EqnBase>; // Observer base Type
 
 void compute_analytic(GGrid &grid, GFTYPE &t, const PropertyTree& ptree, GTVector<GTVector<GFTYPE>*> &u);
 void update_dirichlet(const GFTYPE &t, GTVector<GTVector<GFTYPE>*> &u, GTVector<GTVector<GFTYPE>*> &ub);
 void steptop_callback(const GFTYPE &t, GTVector<GTVector<GFTYPE>*> &u, const GFTYPE &dt);
 void create_observers(PropertyTree &ptree, GSIZET icycle, GFTYPE time, 
 std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers);
-void create_stirrer(PropertyTree &ptree, StirBasePtr &pStirrer);
+void create_mixer(PropertyTree &ptree, MixBasePtr &pMixer);
 void gresetart(PropertyTree &ptree);
 void do_bench(GString sbench, GSIZET ncyc);
 
@@ -147,7 +147,7 @@ int main(int argc, char **argv)
     // Create other prop trees for various objects:
     sgrid       = ptree.getValue<GString>("grid_type");
     pstd        = ptree.getArray<GINT>("exp_order");
-    eqptree     = ptree.getPropertyTree("adv_equation_traits");
+    eqptree     = ptree.getPropertyTree("burgers_traits");
     gridptree   = ptree.getPropertyTree(sgrid);
     stepptree   = ptree.getPropertyTree("stepper_props");
     dissptree   = ptree.getPropertyTree("dissipation_traits");
@@ -211,26 +211,19 @@ int main(int argc, char **argv)
     // Set solver traits from prop tree:
     GFTYPE nu_scalar;
     GBurgers<MyTypes>::Traits solver_traits;
-    solver_traits.doheat     = eqptree  .getValue<GBOOL>("doheat", FALSE);
-    solver_traits.bpureadv   = eqptree  .getValue<GBOOL>("bpureadv", FALSE);
-    solver_traits.bconserved = eqptree  .getValue<GBOOL>("bconserved", FALSE);
-    solver_traits.bforced    = eqptree  .getValue<GBOOL>("use_forcing", FALSE);
-    solver_traits.variabledt = eqptree  .getValue<GBOOL>("variable_dt", FALSE);
-    solver_traits.courant    = eqptree  .getValue<GFTYPE>("courant", 0.5);
-    solver_traits.itorder    = stepptree.getValue <GINT>("time_deriv_order");
-    solver_traits.inorder    = stepptree.getValue <GINT>("extrap_order");
-    nu_scalar                = dissptree.getValue<GFTYPE>("nu");
+    solver_traits.doheat     = eqptree  .getValue<GBOOL>  ("doheat", FALSE);
+    solver_traits.bpureadv   = eqptree  .getValue<GBOOL>  ("bpureadv", FALSE);
+    solver_traits.bconserved = eqptree  .getValue<GBOOL>  ("bconserved", FALSE);
+    solver_traits.bforced    = eqptree  .getValue<GBOOL>  ("use_forcing", FALSE);
+    solver_traits.variabledt = eqptree  .getValue<GBOOL>  ("variable_dt", FALSE);
+    solver_traits.courant    = eqptree  .getValue<GFTYPE> ("courant", 0.5);
+    solver_traits.ssteptype  = stepptree.getValue<GString>("stepping_method");
+    solver_traits.itorder    = stepptree.getValue <GINT>  ("time_deriv_order");
+    solver_traits.inorder    = stepptree.getValue <GINT>  ("extrap_order");
+    nu_scalar                = dissptree.getValue<GFTYPE> ("nu");
     nu_.resize(1); 
     nu_ = nu_scalar; 
-    GTVector<GString> ssteppers;
-    for ( GSIZET j=0; j<GSTEPPER_MAX; j++ ) ssteppers.push_back(sGStepperType[j]);
-    GSIZET itype; 
-    GString stepmthd = stepptree.getValue<GString>("stepping_method");
-    GBOOL  bfound = ssteppers.contains(stepmthd,itype);
-    assert( bfound && "Invalid stepping method in JSON file");
     
-    solver_traits.steptype   = static_cast<GStepperType>(itype);
-
 #if defined(_G_USE_GPTL)
     // Set GTPL options:
     GPTLsetoption (GPTLcpu, 1);
@@ -305,10 +298,10 @@ int main(int argc, char **argv)
     eqn_impl->set_steptop_callback(stcallback);
     eqn_impl->set_nu(nu_);
 
-    // Create the stirrer (to update forcing)
-    EH_MESSAGE("main: create stirrer...");
-    StirBasePtr pStirrer;
-    create_stirrer(ptree, pStirrer);
+    // Create the mixer (to update forcing)
+    EH_MESSAGE("main: create mixer...");
+    MixBasePtr pMixer;
+    create_mixer(ptree, pMixer);
 
     // Initialize state:
     EH_MESSAGE("main: Initializing state...");
@@ -336,12 +329,12 @@ int main(int argc, char **argv)
     // Create the observers: 
     EH_MESSAGE("main: create observers...");
     std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> pObservers(new std::vector<std::shared_ptr<ObserverBase<MyTypes>>>());
-    create_observers(ptree, icycle, t, pObservers);
+    create_observers(ptree, icycle, t, eqn_base, pObservers);
     for ( GSIZET j=0; j<pObservers->size(); j++ ) (*pObservers)[j]->set_tmp(utmp_);
 
     // Create integrator:
     EH_MESSAGE("main: create integrator...");
-    auto pIntegrator = IntegratorFactory<MyTypes>::build(tintptree, eqn_base, pStirrer, pObservers, *grid_);
+    auto pIntegrator = IntegratorFactory<MyTypes>::build(tintptree, eqn_base, pMixer, pObservers, *grid_);
     pIntegrator->get_traits().cycle = icycle;
 
 
@@ -635,7 +628,7 @@ void compute_dirgauss_lump(GGrid &grid, GFTYPE &t, const PropertyTree& ptree,  G
 
   PropertyTree heatptree = ptree.getPropertyTree("init_lump");
   PropertyTree boxptree = ptree.getPropertyTree("grid_box");
-  PropertyTree advptree  = ptree.getPropertyTree("adv_equation_traits");
+  PropertyTree advptree  = ptree.getPropertyTree("burgers_traits");
   GBOOL doheat   = advptree.getValue<GBOOL>("doheat");
   GBOOL bpureadv = advptree.getValue<GBOOL>("bpureadv");
 
@@ -730,7 +723,7 @@ void compute_icosgauss(GGrid &grid, GFTYPE &t, const PropertyTree& ptree,  GTVec
 
   PropertyTree lumpptree = ptree.getPropertyTree("init_icosgauss");
   PropertyTree icosptree = ptree.getPropertyTree("grid_icos");
-  PropertyTree advptree  = ptree.getPropertyTree("adv_equation_traits");
+  PropertyTree advptree  = ptree.getPropertyTree("burgers_traits");
   GBOOL doheat   = advptree.getValue<GBOOL>("doheat");
   GBOOL bpureadv = advptree.getValue<GBOOL>("bpureadv");
 
@@ -872,7 +865,7 @@ void compute_icosdefgauss(GGrid &grid, GFTYPE &t, const PropertyTree& ptree,  GT
 
   PropertyTree lumpptree = ptree.getPropertyTree("init_icosdefgauss");
   PropertyTree icosptree = ptree.getPropertyTree("grid_icos");
-  PropertyTree advptree  = ptree.getPropertyTree("adv_equation_traits");
+  PropertyTree advptree  = ptree.getPropertyTree("burgers_traits");
   GBOOL doheat           = advptree.getValue<GBOOL>("doheat");
   GBOOL bpureadv         = advptree.getValue<GBOOL>("bpureadv");
 
@@ -976,7 +969,7 @@ void compute_icosbell(GGrid &grid, GFTYPE &t, const PropertyTree& ptree,  GTVect
 
   PropertyTree lumpptree = ptree.getPropertyTree("init_icosbell");
   PropertyTree icosptree = ptree.getPropertyTree("grid_icos");
-  PropertyTree advptree  = ptree.getPropertyTree("adv_equation_traits");
+  PropertyTree advptree  = ptree.getPropertyTree("burgers_traits");
   GBOOL doheat   = advptree.getValue<GBOOL>("doheat");
   GBOOL bpureadv = advptree.getValue<GBOOL>("bpureadv");
 
@@ -1079,7 +1072,7 @@ void compute_pergauss_lump(GGrid &grid, GFTYPE &t, const PropertyTree& ptree,  G
 
   PropertyTree heatptree = ptree.getPropertyTree("init_lump");
   PropertyTree boxptree = ptree.getPropertyTree("grid_box");
-  PropertyTree advptree  = ptree.getPropertyTree("adv_equation_traits");
+  PropertyTree advptree  = ptree.getPropertyTree("burgers_traits");
   GBOOL doheat   = advptree.getValue<GBOOL>("doheat");
   GBOOL bpureadv = advptree.getValue<GBOOL>("bpureadv");
 
@@ -1197,7 +1190,7 @@ void steptop_callback(const GFTYPE &t, GTVector<GTVector<GFTYPE>*>  &u, const GF
 //**********************************************************************************
 void compute_analytic(GGrid &grid, GFTYPE &t, const PropertyTree& ptree, GTVector<GTVector<GFTYPE>*>  &ua)
 {
-  PropertyTree advptree  = ptree.getPropertyTree("adv_equation_traits");
+  PropertyTree advptree  = ptree.getPropertyTree("burgers_traits");
   GBOOL doheat   = advptree.getValue<GBOOL>("doheat");
   GBOOL bpureadv = advptree.getValue<GBOOL>("bpureadv");
 
@@ -1268,26 +1261,26 @@ void compute_analytic(GGrid &grid, GFTYPE &t, const PropertyTree& ptree, GTVecto
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD: create_observers
-// DESC  : Create observer list from main ptree
+// METHOD: create_mixer
+// DESC  : Create mixer from main ptree
 // ARGS  : grid    : GGrid object
 //         ggfx    : gather/scatter op, GGFX
 //**********************************************************************************
-void create_stirrer(PropertyTree &ptree, StirBasePtr  &pStirrer)
+void create_mixer(PropertyTree &ptree, MixBasePtr &pMixer)
 {
-    PropertyTree     stirptree;    // observer props 
-    StirBase::Traits traits;
+    PropertyTree     mixptree;    // observer props 
+    MixBase::Traits traits;
 
-    GString sstirrer = ptree.getValue<GString>("default_stirrer","none");
-    if ( "none" == sstirrer ) {
-      pStirrer= std::make_shared<NullStirrer<MyTypes>>(traits, *grid_);
+    GString smixer = ptree.getValue<GString>("default_mixer","none");
+    if ( "none" == smixer ) {
+      pMixer= std::make_shared<NullMixer<MyTypes>>(traits, *grid_);
     }
     else {
-      stirptree = ptree.getPropertyTree(sstirrer);
-      pStirrer = StirrerFactory<MyTypes>::build(stirptree, *grid_);
+      mixptree = ptree.getPropertyTree(smixer);
+      pMixer = MixerFactory<MyTypes>::build(mixptree, *grid_);
     }
 
-} // end method create_stirrer
+} // end method create_mixer
 
 
 //**********************************************************************************
@@ -1297,9 +1290,11 @@ void create_stirrer(PropertyTree &ptree, StirBasePtr  &pStirrer)
 // ARGS  : grid      : GGrid object
 //         icycle    : initial icycle
 //         time      : initial time
+//         equation  : shared ptr to EqnBasePtr type
 //         pObservers: gather/scatter op, GGFX
 //**********************************************************************************
 void create_observers(PropertyTree &ptree, GSIZET icycle, GFTYPE time,
+std::shared_ptr<EqnBase> &equation,
 std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers)
 {
     GINT    ivers;
@@ -1347,7 +1342,7 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
         obsptree.setValue <GSIZET>("cycle_interval",MAX(1.0,deltac/ofact));
         obsptree.setValue<GString>("cadence_type",ctype);
 
-        pObservers->push_back(ObserverFactory<MyTypes>::build(obsptree,*grid_));
+        pObservers->push_back(ObserverFactory<MyTypes>::build(obsptree, equation, *grid_));
       }
     }
 

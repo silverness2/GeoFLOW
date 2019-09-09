@@ -12,7 +12,7 @@ namespace pdeint {
 
 template<typename ET>
 typename ObserverFactory<ET>::ObsBasePtr
-ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
+ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, EqnBasePtr& equation, Grid& grid){
 
 
 	// Set the default observer type
@@ -48,10 +48,10 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
 	// Create the observer and cast to base type
 	ObsBasePtr base_ptr;
 	if( "none" == observer_name ){
-		using ObsImpl = NullObserver<Equation>;
+		using ObsImpl = NullObserver<ET>;
 
 		// Allocate observer Implementation
-		std::shared_ptr<ObsImpl> obs_impl(new ObsImpl(traits, grid));
+		std::shared_ptr<ObsImpl> obs_impl(new ObsImpl(equation, grid));
 
 		// Set any parameters we need to set
 		// NA
@@ -60,14 +60,14 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
 		base_ptr = obs_impl;
 	}
         else if( "posixio_observer" == observer_name ) {
-		using ObsImpl = GPosixIOObserver<Equation>;
+		using ObsImpl = GPosixIOObserver<ET>;
 
                 traits.itag1  = ptree.getValue <GINT>("time_field_width",6);  
                 traits.itag2  = ptree.getValue <GINT>("task_field_width",5);  
                 traits.itag3  = ptree.getValue <GINT>("filename_size",2048);  
 
 		// Allocate observer Implementation
-		std::shared_ptr<ObsImpl> obs_impl(new ObsImpl(traits, grid));
+		std::shared_ptr<ObsImpl> obs_impl(new ObsImpl(equation, grid, traits));
 
 		// Set back to base type
 		base_ptr = obs_impl;
@@ -76,7 +76,7 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
 		using ObsImpl = GGlobalDiag_basic<Equation>;
 
 		// Allocate observer Implementation
-		std::shared_ptr<ObsImpl> obs_impl(new ObsImpl(traits, grid));
+		std::shared_ptr<ObsImpl> obs_impl(new ObsImpl(equation, grid, traits));
 
 		// Set back to base type
 		base_ptr = obs_impl;

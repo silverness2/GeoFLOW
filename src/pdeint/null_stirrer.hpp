@@ -17,21 +17,21 @@ namespace pdeint {
 /**
  * Do nothing Stir implementation
  *
- * The NullStirrer is the default stirrer when nothing else is
+ * The NullMixer is the default stirrer when nothing else is
  * provided and does nothing when called.
  *
- * @see StirrerBase
+ * @see MixerBase
  */
 template<typename EquationType>
-class NullStirrer : public StirrerBase<EquationType> {
+class NullMixer: public MixerBase<EquationType> {
 
 public:
-	using Interface  = StirrerBase<EquationType>;
+	using Interface  = MixerBase<EquationType>;
 	using State      = typename Interface::State;
 	using Grid       = typename Interface::Grid;
 	using Time       = typename Interface::Time;
         
-        NullStirrer(typename StirrerBase<EquationType>::Traits &traits, Grid &grid){
+        NullMixer(typename MixerBase<EquationType>::Traits &traits, Grid &grid){
         }
 
 protected:

@@ -11,7 +11,6 @@ all:
 	make         ; \
 	make install ; \
 	cd ../test/cdg
-        
 clean:  
 	cd ../../build ; \
 	make clean  ; \
@@ -19,8 +18,17 @@ clean:
 dist: 
 	/bin/rm -rf ../../build/* ; \
 	cd ../../build            ; \
-	cmake ../test/cdg         ; \
-	make                   ; \
-	make install           ; \
+	cmake ../src/cdg          ; \
+	make                      ; \
+	make install              ; \
+	cd ../test/cdg
+tdist: 
+	/bin/rm -rf ../../build/* ; \
+	cd ../../build            ; \
+	cmake -DDO_TESTS=TRUE       \
+              -DDO_GEOFLOW=FALSE    \
+              ../test/cdg         ; \
+	make                      ; \
+	make install              ; \
 	cd ../test/cdg
 

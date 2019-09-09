@@ -53,7 +53,7 @@ Ntot_            (0),
 Nftot_           (0),
 bInitialized_    (FALSE),
 bbasis_          (FALSE),
-elemtype_        (GE_MAX),
+elemtype_        (GE_REGULAR),
 elemid_          (0),
 rootid_          (0),
 nVertices_       ((GINT )pow(2.0,GDIM)),
@@ -1243,6 +1243,7 @@ cout << serr << "cos(_x_, _G_)=" << cost << " |G|=" << jacv[n] << " xGx=" << x*G
     }
     return;
   }
+
   
   if ( pind != NULLPTR ) { // 3x3 matrix:
     for ( k=0; k<nind; k++ ) { // loop over desired indices only
@@ -1929,7 +1930,7 @@ void GElem_base::init(GVVFType &xNodes)
 {
   GString serr = "GElem_base::init: ";
 
-  assert( bbasis_ && elemtype_ != GE_MAX && "Basis or element type not set");
+  assert( bbasis_ && "Basis or element type not set");
   
   // Set xNodes_ data member. Note that the input array sizes may be
   // larger than for xNodes_:

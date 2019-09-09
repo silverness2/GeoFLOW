@@ -63,6 +63,9 @@ public:
                            &get_hmesh(){ return hmesh_;}                  // get complete hex  mesh
         void                print(const GString &filename, 
                             GCOORDSYST icoord=GICOS_LATLONG);             // print grid to file
+        void                config_bdy(const PropertyTree &ptree,
+                                       GTVector<GSIZET> &igbdy,
+                                       GTVector<GSIZET> &igbdyt);         // config dy cond
 
 friend  std::ostream&       operator<<(std::ostream&, GGridIcos &);       // Output stream operator
  
@@ -80,6 +83,7 @@ friend  std::ostream&       operator<<(std::ostream&, GGridIcos &);       // Out
          void               spherical2xyz(GTVector<GTPoint<GFTYPE>>  &);    // (r,lat,long) to (x,y,z)
          void               spherical2xyz(GTVector<GTVector<GFTYPE>> &);    // (r,lat,long) to (x,y,z)
          void               xyz2spherical(GTVector<GTPoint<GFTYPE>*> &);    // (x,y,z) to (r, lat, long) 
+         void               xyz2spherical(GTVector<GTVector<GFTYPE>> &);    // (x,y,z) to (r, lat, long) 
          void               xyz2spherical(GTVector<GTPoint<GFTYPE>>  &);    // (x,y,z) to (r, lat, long) 
          void               cart2gnomonic(GTVector<GTPoint<GFTYPE>> &, GFTYPE, GFTYPE, GFTYPE, 
                                           GTVector<GTPoint<GFTYPE>> &);     // transform to gnomonic space
@@ -103,27 +107,26 @@ friend  std::ostream&       operator<<(std::ostream&, GGridIcos &);       // Out
          void               order_triangles(GTVector<GTriangle<GFTYPE>> &);    // order triangle verts
 
        
-
-private:
          void               do_elems2d(GINT rank);              // do 2d grid
          void               do_elems3d(GINT rank);              // do 3d grid
          void               do_elems2d(GTMatrix<GINT> &p,
                               GTVector<GTVector<GFTYPE>> &xnodes); // do 2d grid restart
          void               do_elems3d(GTMatrix<GINT> &p,
                               GTVector<GTVector<GFTYPE>> &xnodes); // do 3d grid restart
-
-         void               set_global_bdy_2d(GElem_base &);    // set 2d bdy info
-         void               set_global_bdy_3d(GElem_base &);    // set 3d bdy info
-
+         void               config_bdy(const PropertyTree &ptree,
+                            GTVector<GTVector<GSIZET>>   &igbdy,
+                            GTVector<GTVector<GBdyType>> &igbdyt); // configure bdy
+         void               find_bdy_ind3d(GFTYPE radius, 
+                                           GTVector<GSIZET> &ibdy);// find bdy indices for bdy=radius
 
          GINT               ilevel_;        // refinement level (>= 0)
          GINT               ndim_;          // grid dimensionality (2 or 3)
+         GSIZET             nradelem_;      // # radial elements
          GFTYPE             radiusi_;       // inner radius
          GFTYPE             radiuso_;       // outer radius (=radiusi in 2d)
          GDD_base          *gdd_;           // domain decomposition/partitioning object
          GShapeFcn_linear  *lshapefcn_;     // linear shape func to compute 2d coords
          GTVector<GINT>     iup_;           // triangle pointing 'up' flag
-         GTVector<GBdyType> global_bdy_types_;  // global types for each surface (in 3D only)
 
          GTVector<GTriangle<GFTYPE>>    
                             tmesh_;         // array of final mesh triangles
@@ -137,7 +140,6 @@ private:
                              hmesh_;        // list of vertices for each 3d (hex) element
          GTMatrix<GFTYPE>    fv0_;          // vertex list for base icosahedron
          GIMatrix            ifv0_;         // indices into fv0_ for each face of base icosahedron 
-         GTVector<GINT>      ne_;           // # elems in each coord direction in 3d
 
 };
 

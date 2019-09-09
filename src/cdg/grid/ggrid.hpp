@@ -19,7 +19,12 @@
 #include "gdd_base.hpp"
 #include "ggrid.hpp"
 #include "gcomm.hpp"
+#include "ggfx.hpp"
 #include "tbox/property_tree.hpp"
+
+
+using namespace geoflow::tbox;
+using namespace std;
 
 class GMass;
 
@@ -32,16 +37,19 @@ public:
                              GGrid() = delete;
                              GGrid(const geoflow::tbox::PropertyTree &ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GC_COMM &comm);
 
-                            ~GGrid();
+virtual                       ~GGrid();
 //static                       GGrid *build(geoflow::tbox::PropertyTree &ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GC_COMM comm);
 
 virtual void                 do_elems() = 0;                            // compute grid for irank
 virtual void                 do_elems(GTMatrix<GINT> &p,
                                GTVector<GTVector<GFTYPE>> &xnodes) = 0; // compute grid on restart
 virtual void                 set_partitioner(GDD_base *d) = 0;         // set and use GDD object
+
+#if 0
 virtual void                 set_bdy_callback(
                              std::function<void(GElemList &)> *callback) 
                              {bdycallback_ =  callback; }              // set bdy-set callback
+#endif
 
 virtual void                 print(const GString &filename){}          // print grid to file
 
@@ -90,23 +98,37 @@ virtual void                 print(const GString &filename){}          // print 
         GTVector<GTVector<GFTYPE>>
                             &bdyNormal();                              // global bdy normals
         GTVector<GTVector<GSIZET>>
-                            &igbdy() { return igbdy_;}                 // global dom bdy indices into u for eacb GBdyType
+                            &igbdy_binned() { return igbdy_binned_;}   // global dom bdy indices binned into GBdyType
+        GTVector<GTVector<GSIZET>>
+                            &igbdy_byface() { return igbdy_byface_;}   // global dom bdy indices for each face
+        GTVector<GTVector<GBdyType>>
+                            &igbdyt_byface(){ return igbdyt_byface_;}  // global dom bdy indices for each face
+        GTVector<GSIZET>
+                            &igbdy() { return igbdy_;}                 // global dom bdy indices into u
 
         GC_COMM              get_comm() { return comm_; }              // get communicator
+
+virtual void                 config_bdy(const PropertyTree &ptree, 
+                             GTVector<GTVector<GSIZET>>   &igbdy, 
+                             GTVector<GTVector<GBdyType>> &igbdyt)=0;  // config bdy
+
+        GGFX<GFTYPE>        &get_ggfx() { return *ggfx_; }             // get GGFX op
+        void                 set_ggfx(GGFX<GFTYPE> &ggfx) 
+                               { ggfx_ = &ggfx; }                      // set GGFX op    
 
 friend  std::ostream&        operator<<(std::ostream&, GGrid &);       // Output stream operator
  
 
 protected:
        
+        void                        init_local_face_info();           // get local face info
+        void                        init_bc_info();                   // configure bdys
         void                        def_init();                       // iniitialze deformed elems
         void                        reg_init();                       // initialize regular elems
-
-         
         GFTYPE                      find_min_dist(); 
-        void                        init_bc_info(); 
 
         GBOOL                       bInitialized_;  // object initialized?
+        GBOOL                       is_bdy_time_dep_; // time-dep bdy vals?
         GElemType                   gtype_;         // element types comprising grid
         GINT                        irank_;         // MPI task id
         GINT                        nprocs_;        // number of MPI tasks
@@ -124,10 +146,14 @@ protected:
         GTVector<GTVector<GSIZET>>  igface_;        // index into global field indicating elem face node
         GTVector<GTVector<GFTYPE>>  bdyNormal_;     // normal to surface at each bdy node point (2d & 3d), global
         GFTYPE                      minnodedist_;   // min node length array (for each elem)
-        GTVector<GTVector<GSIZET>>  igbdy_;         // index into global field indicating a domain bdy
-        GTVector<GBdyType>          igbdytypes_;    // global domain bdy types for each igbdy index
-        std::function<void(GElemList &)> 
-                                   *bdycallback_;   // bdy callback function (e.g., for internal bdy types)
+        GTVector<GTVector<GSIZET>>  igbdy_binned_;  // index into global field indicating a domain bdy--by type
+        GTVector<GSIZET>            igbdy_;         // index into global field indicating a domain bdy
+        GTVector<GTVector<GSIZET>>  igbdy_byface_;  // index into global field indicating a domain bdy
+        GTVector<GBdyType>          igbdyt_;        // global domain bdy types for each igbdy index
+        GTVector<GTVector<GBdyType>>
+                                    igbdyt_byface_; // global domain bdy types for each igbdy index
+        PropertyTree                ptree_;         // main prop tree
+        GGFX<GFTYPE>               *ggfx_;          // connectivity operator
 
 };
 

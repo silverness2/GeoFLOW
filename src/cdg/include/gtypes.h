@@ -11,6 +11,9 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#if defined(_G_USE_GPTL)
+  #include <gptl.h>
+#endif
 
 // Following is a list of preprocessor variables that may be set:
 // _G_AUTO_CREATE_DEV : Auto-copy/create classes on device
@@ -151,26 +154,36 @@ enum GC_OP              {GC_OP_MAX=0,GC_OP_MIN  ,GC_OP_SUM  ,GC_OP_PROD,
 
 #if !defined(_G_BDYTYPE_DEF)
 #define _G_BDYTYPE_DEF
-enum GBdyType                    { GBDY_DIRICHLET=0 , GBDY_NEUMANN, GBDY_NOSLIP , GBDY_0FLUX , GBDY_PERIODIC , GBDY_INFLOW , GBDY_OUTFLOW , GBDY_REFLECT , GBDY_SPONGE , GBDY_NONE };
-const char * const sGBdyType [] ={"GBDY_DIRICHLET"  ,"GBDY_NEUMANN","GBDY_NOSLIP","GBDY_0FLUX","GBDY_PERIODIC","GBDY_OUTFLOW","GBDY_REFLECT","GBDY_SPONGE","GBDY_NONE"};
+enum GBdyType                    { GBDY_DIRICHLET=0 , GBDY_INFLOWT, GBDY_NOSLIP , GBDY_0FLUX , GBDY_PERIODIC , GBDY_OUTFLOW , GBDY_SPONGE , GBDY_USER0 , GBDY_USER1 , GBDY_NONE };
+const char * const sGBdyType [] ={"GBDY_DIRICHLET"  ,"GBDY_INFLOWT","GBDY_NOSLIP","GBDY_0FLUX","GBDY_PERIODIC","GBDY_OUTFLOW","GBDY_SPONGE","GBDY_USER0","GBDY_USER1","GBDY_NONE"};
+#define GBDY_MAX GBDY_NONE
 #endif
 
 #if !defined(_G_ELEMTYPE_DEF)
 #define _G_ELEMTYPE_DEF
-enum GElemType           {GE_REGULAR=0, GE_DEFORMED, GE_2DEMBEDDED, GE_MAX}; // regular, deformed, embedded 2d
+enum GElemType           {GE_REGULAR=0, GE_DEFORMED, GE_2DEMBEDDED}; // regular, deformed, embedded 2d
+#define GE_MAX 3
 #endif
 
 #if !defined(_G_STEPPERTYPE_DEF)
 #define _G_STEPPERTYPE_DEF
-enum GStepperType        { GSTEPPER_EXRK=0 , GSTEPPER_BDFAB , GSTEPPER_BDFEXT , GSTEPPER_MAX};
+enum GStepperType        { GSTEPPER_EXRK=0 , GSTEPPER_BDFAB , GSTEPPER_BDFEXT };
 const char * const sGStepperType[] =  
-                         {"GSTEPPER_EXRK"  ,"GSTEPPER_BDFAa","GSTEPPER_BDFEXT"};
+                         {"GSTEPPER_EXRK"  ,"GSTEPPER_BDFAB","GSTEPPER_BDFEXT"};
+#define GSTEPPER_MAX 3
 #endif
 
 #if !defined(_G_VECTORTYPE_DEF)
 #define _G_VECTORTYPE_DEF
 enum GVectorType        {GVECTYPE_PHYS=0 , GVECTYPE_CONTRAVAR, GVECTYPE_COVAR};
 #endif
+
+#if !defined(_G_STATE_COMP_TYPE_DEF)
+#define _G_STATE_COMP_TYPE_DEF
+enum GStateCompType     {GSC_KINETIC=0, GSC_MAGNETIC, GSC_ACTIVE_SCALAR, GSC_PASSIVE_SCALAR, GSC_PRESCRIBED, GSC_NONE };
+#define GSC_MAX GSC_NONE
+#endif
+
 
 // Variables used to set dimension & operational stack size:
 #undef GDIM
@@ -203,10 +216,10 @@ enum GVectorType        {GVECTYPE_PHYS=0 , GVECTYPE_CONTRAVAR, GVECTYPE_COVAR};
 #if !defined(GTIMER_DEFINED)
   #define GTIMER_DEFINED 
   #if defined(_G_USE_GPTL)
-    #define GTimerInit(a) GPTLinitialize()
-    #define GTimerFinal(a) GPTLfinalize();
-    #define GTimerStart(a) GPTLstart(a)
-    #define GTimerStop(a)  GPTLstop(a)
+    #define GTimerInit(a)   GPTLinitialize()
+    #define GTimerFinal(a)  GPTLfinalize()
+    #define GTimerStart(a)  GPTLstart(a)
+    #define GTimerStop(a)   GPTLstop(a)
     #define GTimerReset(a)  GPTLreset()
   #else
     #define GTimerInit(a) 

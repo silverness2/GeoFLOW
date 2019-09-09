@@ -18,7 +18,6 @@
 #include "gcomm.hpp"
 #include "tbox/error_handler.hpp"
 
-using namespace std;
 
 //**********************************************************************************
 //**********************************************************************************
@@ -35,8 +34,9 @@ bInitialized_                   (FALSE),
 nprocs_        (GComm::WorldSize(comm)),
 irank_         (GComm::WorldRank(comm)),
 minnodedist_   (std::numeric_limits<GFTYPE>::max()),
-bdycallback_                  (NULLPTR),
-comm_                            (comm)
+comm_                            (comm),
+ggfx_                         (NULLPTR),
+ptree_                          (ptree)
 {
 } // end of constructor method (1)
 
@@ -236,8 +236,8 @@ GSIZET GGrid::nbdydof()
    // face indices, may conatin embedded booundary 
    // surfaces too:
    GSIZET nftot=0;
-   for ( GSIZET j=0; j<igbdy_.size(); j++ ) 
-     nftot += igbdy_[j].size();
+   for ( GSIZET j=0; j<igbdy_binned_.size(); j++ ) 
+     nftot += igbdy_binned_[j].size();
        
    return nftot;
 } // end of method nbdydof
@@ -344,15 +344,17 @@ GFTYPE GGrid::maxlength()
 void GGrid::grid_init()
 {
 
-  GPTLstart("GGrid::grid_init: do_elems");
+  GTimerStart("GGrid::grid_init: do_elems");
   do_elems(); // generate element list from derived class
-  GPTLstop("GGrid::grid_init: do_elems");
+  GTimerStop("GGrid::grid_init: do_elems");
 
   GComm::Synch(comm_);
 
-  GPTLstart("GGrid::grid_init: do_typing");
+  GTimerStart("GGrid::grid_init: do_typing");
   do_typing(); // do element-typing check
-  GPTLstop("GGrid::grid_init: do_typing");
+  GTimerStop("GGrid::grid_init: do_typing");
+
+  init_local_face_info(); // find glob vec of face indices
 
   // Have elements been set yet?
   assert(gelems_.size() > 0 && "Elements not set");
@@ -366,30 +368,31 @@ void GGrid::grid_init()
   else if ( itype_[GE_DEFORMED]  .size() > 0 ) gtype_ = GE_DEFORMED;
   else if ( itype_[GE_REGULAR]   .size() > 0 ) gtype_ = GE_REGULAR;
 
-  GPTLstart("GGrid::grid_init: init_bc_info");
-  // All element bdy/face data should have been set by now:
-  init_bc_info();
-  GPTLstop("GGrid::grid_init: init_bc_info");
-
-  GPTLstart("GGrid::grid_init: def_init");
+  GTimerStart("GGrid::grid_init: def_init");
   if ( itype_[GE_2DEMBEDDED].size() > 0
     || itype_  [GE_DEFORMED].size() > 0 ) {
     def_init();
   }
-  GPTLstop("GGrid::grid_init: def_init");
+  GTimerStop("GGrid::grid_init: def_init");
 
-  GPTLstart("GGrid::grid_init: reg_init");
+  GTimerStart("GGrid::grid_init: reg_init");
   if ( itype_[GE_REGULAR].size() > 0 ) {
     reg_init();
   }
-  GPTLstop("GGrid::grid_init: reg_init");
+  GTimerStop("GGrid::grid_init: reg_init");
+
+  GTimerStart("GGrid::grid_init: init_bc_info");
+  // All element bdy/face data should have been set by now:
+  init_bc_info();
+  GTimerStop("GGrid::grid_init: init_bc_info");
+
 
   bInitialized_ = TRUE;
   mass_ = new GMass(*this);
   
-  GPTLstart("GGrid::grid_init: find_min_dist");
+  GTimerStart("GGrid::grid_init: find_min_dist");
   minnodedist_ = find_min_dist();
-  GPTLstop("GGrid::grid_init: find_min_dist");
+  GTimerStop("GGrid::grid_init: find_min_dist");
 
 
 } // end of method grid_init (1)
@@ -399,7 +402,7 @@ void GGrid::grid_init()
 //**********************************************************************************
 // METHOD : grid_init (2)
 // DESC   : Initialize global (metric) variables. All elements are assumed to be
-//          of the same type.
+//          of the same type. Called for restart.
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
@@ -407,15 +410,15 @@ void GGrid::grid_init(GTMatrix<GINT> &p,
                       GTVector<GTVector<GFTYPE>> &xnodes)
 {
 
-  GPTLstart("GGrid::grid_init: do_elems");
+  GTimerStart("GGrid::grid_init: do_elems");
   do_elems(p, xnodes); // generate element list from derived class
-  GPTLstop("GGrid::grid_init: do_elems");
+  GTimerStop("GGrid::grid_init: do_elems");
 
   GComm::Synch(comm_);
 
-  GPTLstart("GGrid::grid_init: do_typing");
+  GTimerStart("GGrid::grid_init: do_typing");
   do_typing(); // do element-typing check
-  GPTLstop("GGrid::grid_init: do_typing");
+  GTimerStop("GGrid::grid_init: do_typing");
 
   // Have elements been set yet?
   assert(gelems_.size() > 0 && "Elements not set");
@@ -429,28 +432,28 @@ void GGrid::grid_init(GTMatrix<GINT> &p,
   else if ( itype_[GE_DEFORMED]  .size() > 0 ) gtype_ = GE_DEFORMED;
   else if ( itype_[GE_REGULAR]   .size() > 0 ) gtype_ = GE_REGULAR;
 
-  GPTLstart("GGrid::grid_init: init_bc_info");
+  GTimerStart("GGrid::grid_init: init_bc_info");
   // All element bdy/face data should have been set by now:
   init_bc_info();
-  GPTLstop("GGrid::grid_init: init_bc_info");
+  GTimerStop("GGrid::grid_init: init_bc_info");
 
-  GPTLstart("GGrid::grid_init: def_init");
+  GTimerStart("GGrid::grid_init: def_init");
   if ( itype_[GE_2DEMBEDDED].size() > 0
     || itype_  [GE_DEFORMED].size() > 0 ) {
     def_init();
   }
-  GPTLstop("GGrid::grid_init: def_init");
+  GTimerStop("GGrid::grid_init: def_init");
 
-  GPTLstart("GGrid::grid_init: reg_init");
+  GTimerStart("GGrid::grid_init: reg_init");
   if ( itype_[GE_REGULAR].size() > 0 ) {
     reg_init();
   }
-  GPTLstop("GGrid::grid_init: reg_init");
+  GTimerStop("GGrid::grid_init: reg_init");
 
 
-  GPTLstart("GGrid::grid_init: find_min_dist");
+  GTimerStart("GGrid::grid_init: find_min_dist");
   minnodedist_ = find_min_dist();
-  GPTLstop("GGrid::grid_init: find_min_dist");
+  GTimerStop("GGrid::grid_init: find_min_dist");
 
   bInitialized_ = TRUE;
 
@@ -917,43 +920,31 @@ void GGrid::deriv(GTVector<GFTYPE> &u, GINT idir, GTVector<GFTYPE> &utmp,
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : init_bc_info
-// DESC   : Set global bdy condition data from the element bdy data,
+// METHOD : init_local_face_info
+// DESC   : Set local face info from element face data,
 //          to be called after elements have been set.
 // ARGS   : none
 // RETURNS: none.
 //**********************************************************************************
-void GGrid::init_bc_info()
+void GGrid::init_local_face_info()
 {
+  GBOOL                        bret;
   GSIZET                       ibeg, iend; // beg, end indices for global array
   GTVector<GINT>              *iebdy;  // domain bdy indices
   GTVector<GTVector<GINT>>    *ieface; // domain face indices
-  GTVector<GBdyType>          *iebdyt; // domain bdy types
 
-  // Collect all element bdy types and indicection indices
-  // into global vectors (so we can use the GTVector 
-  // to do sorting):
-  GSIZET        m, n, nn=0; 
-  GSIZET                ig; 
-  GTVector <GBdyType> btmp; 
-  GTVector   <GSIZET> itmp; 
-
-  // Set some array sizes. Note: we could use
-  // push_back, but this is slow:
-  n = 0;
-  for ( GSIZET e=0; e<gelems_.size(); e++ ) { // get global # bdy indices and types
-    iebdy  = &gelems_[e]->bdy_indices();  // set in child class
-    n += iebdy->size();
-  }
-  itmp.resize(n);
-  btmp.resize(n);
+  GSIZET  m, n, nn; 
+  GSIZET        ig; // index into global array
 
   n = 0;
   for ( GSIZET e=0; e<gelems_.size(); e++ ) { // get global # face nodes
+#if 0
     ieface = &gelems_[e]->face_indices(); // set in child class
-    for ( GSIZET j=0; j<ieface->size(); j++ ) { // elem faces
+    for ( GSIZET j=0; j<ieface->size(); j++ ) { // count elem face nodes
       for ( GSIZET k=0; k<(*ieface)[j].size(); k++) n++; 
     }
+#endif
+    n += gelems_[e]->nfnodes();
   }
   igface_.resize(n);
 
@@ -962,17 +953,8 @@ void GGrid::init_bc_info()
   m  = 0;
   for ( GSIZET e=0; e<gelems_.size(); e++ ) { // get global bdy ind and types
     ibeg   = gelems_[e]->igbeg(); iend  = gelems_[e]->igend();
-    iebdy  = &gelems_[e]->bdy_indices();  // set in child class
     ieface = &gelems_[e]->face_indices(); // set in child class
-    iebdyt = &gelems_[e]->bdy_types();    // set in child class
-    for ( GSIZET j=0; j<iebdy->size(); j++ ) { // elem bdys (if any)
-      ig = nn + (*iebdy)[j];
-      itmp[n] = ig; // index in global arrays
-      btmp[n] = (*iebdyt)[j];
-      n++;
-    }
-
-    for ( GSIZET j=0; j<ieface->size(); j++ ) { // get global elem face node idices
+    for ( GSIZET j=0; j<ieface->size(); j++ ) { // get global elem face node indices
       for ( GSIZET k=0; k<(*ieface)[j].size(); k++ ) {
         ig = nn + (*ieface)[j][k];
         igface_[m] = ig;
@@ -981,19 +963,57 @@ void GGrid::init_bc_info()
     }
     nn += gelems_[e]->nnodes();
   } // end, element loop
+
+
+} // end, init_local_face_info
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : init_bc_info
+// DESC   : Set global bdy condition data from the element bdy data,
+//          to be called after elements have been set.
+// ARGS   : none
+// RETURNS: none.
+//**********************************************************************************
+void GGrid::init_bc_info()
+{
+  GBOOL                        bret;
+  GSIZET                       ibeg, iend; // beg, end indices for global array
+  GTVector<GINT>              *iebdy;  // domain bdy indices
+  GTVector<GTVector<GINT>>    *ieface; // domain face indices
+
+  // Find boundary indices & types from config file 
+  // specification, for _each_ natural/canonical face:
+  config_bdy(ptree_, igbdy_byface_, igbdyt_byface_);
+
+  // Flatten these 2 bdy index & types indirection arrays:
+  GSIZET      nind=0, nw=0;
+  for ( auto j=0; j<igbdy_byface_.size(); j++ ) {
+    nind += igbdy_byface_[j].size();
+  }
+  igbdy_ .resize(nind);
+  igbdyt_.resize(nind);
+  nind = 0;
+  for ( auto j=0; j<igbdy_byface_.size(); j++ ) {
+    for ( auto i=0; i<igbdy_byface_.size(); i++ ) {
+      igbdy_ [nind  ] = igbdy_byface_ [j][i];
+      igbdyt_[nind++] = igbdyt_byface_[j][i];
+    }
+  }
  
+  
+
   // Create bdy type-bins (one bin for each GBdyType), and
   // for each type, set the indirection indices into global
   // vectors that have that type:
   GBdyType         itype;
   GSIZET    *ind=NULLPTR;
-  GSIZET      nind, nw=0;
-  igbdy_.resize(GBDY_NONE); // set of bdy indices for each type
-  for ( GSIZET k=0; k<GBDY_NONE; k++ ) { // cycle over each bc type
+  igbdy_binned_.resize(GBDY_MAX); // set of bdy indices for each type
+  for ( GSIZET k=0; k<GBDY_MAX; k++ ) { // cycle over each bc type
     itype = static_cast<GBdyType>(k);
-    nind = btmp.contains(itype, ind, nw);
-    igbdy_[k].resize(nind);
-    for ( GSIZET j=0; j<nind; j++ ) igbdy_[k][j] = itmp[ind[j]];
+    nind = igbdyt_.contains(itype, ind, nw);
+    igbdy_binned_[k].resize(nind);
+    for ( GSIZET j=0; j<nind; j++ ) igbdy_binned_[k][j] = igbdy_[ind[j]];
     nind = 0;
   } // end, element loop
 

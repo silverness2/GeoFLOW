@@ -29,14 +29,16 @@ class GGlobalDiag_basic : public ObserverBase<EquationType>
 
 public:
         using Equation    = EquationType;
+        using EqnBase     = EquationBase<EquationType>;
+        using EqnBasePtr  = std::shared_ptr<EqnBase>;
         using State       = typename Equation::State;
         using Grid        = typename Equation::Grid;
         using Value       = typename Equation::Value;
         using Derivative  = typename Equation::Derivative;
         using Time        = typename Equation::Time;
+        using CompDesc    = typename Equation::CompDesc;
         using Jacobian    = typename Equation::Jacobian;
         using Size        = typename Equation::Size;
-        using EquationPtr = std::shared_ptr<Equation>;
         using ObserverBase<EquationType>::utmp_;
         using ObserverBase<EquationType>::grid_;
         using ObserverBase<EquationType>::traits_;
@@ -53,7 +55,7 @@ public:
                "Grid is of incorrect type");
 
                            GGlobalDiag_basic() = delete;
-                           GGlobalDiag_basic(typename ObserverBase<EquationType>::Traits &traits, Grid &grid);
+                           GGlobalDiag_basic(const EqnBasePtr &equation, Grid &grid, typename ObserverBase<EquationType>::Traits &traits);
                           ~GGlobalDiag_basic() = default;
                            GGlobalDiag_basic(const GGlobalDiag_basic &a) = default;
                            GGlobalDiag_basic &operator=(const GGlobalDiag_basic &bu) = default;
@@ -63,20 +65,22 @@ public:
 private:
 // Private methods:
         void               init(const Time t, const State &u);
-        void               do_L2 (const Time t, const State &u, const State &uf, const GString file);
-        void               do_max(const Time t, const State &u, const State &uf, const GString file);
+        void               do_kinetic_L2 (const Time t, const State &u, const State &uf, const GString file);
+        void               do_kinetic_max(const Time t, const State &u, const State &uf, const GString file);
 // Private data:
         GBOOL              bInit_;
         GINT               myrank_;     // MPI rank
         GSIZET             cycle_last_; // most recent output cycle
         GSIZET             cycle_;      // continuously-running cycle
         GSIZET             ocycle_;     // output cycle number
+        GTVector<GINT>     ikinetic_;   // stores GSC_KINETIC component types
         GFTYPE             time_last_;  // most recent output time
         GFTYPE             ivol_;       // inverse of grid volume
         GTVector<GINT>     state_index_;// list of state indices to print
         GTVector<GString>  state_names_;// list of names of states to print
         GString            sidir_;      // directory from which to read
         GString            sodir_;      // directory in which to write
+        State              ku_;         // vector of pointers to kinetic components
 
 };
 

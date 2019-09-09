@@ -30,11 +30,12 @@ public:
 	using Value      = typename TypePack::Value;
 	using Derivative = typename TypePack::Derivative;
 	using Time       = typename TypePack::Time;
+	using CompDesc   = typename TypePack::CompDesc;
 	using Jacobian   = typename TypePack::Jacobian;
 	using Size       = typename TypePack::Size;
 
 
-	EquationBase() = default;
+	EquationBase() { update_bdy_callback_ = nullptr; }
 	EquationBase(const EquationBase& eb) = default;
 	virtual ~EquationBase() = default;
 	EquationBase& operator=(const EquationBase& eb) = default;
@@ -111,6 +112,23 @@ public:
 		this->step_impl(t,uin,uf,ub,dt,uout);
 	}
 
+	/** Return State component description data
+         * 
+         */
+        CompDesc& comptype() {
+                return icomptype_;
+        }
+
+
+	/** Set boundary update callback function
+	 *
+	 *
+	 * \param[in]     fcn   bdy update function
+	 */
+	virtual void set_bdy_update_callback(std::function<void(const Time& t, State& u, State& ub)> fcn){
+		update_bdy_callback_ = fcn;
+	}
+
 protected:
 
 	/**
@@ -137,6 +155,12 @@ protected:
 	 * Must be provided by implementation
 	 */
 	virtual void step_impl(const Time& t, const State& uin, State& uf, State& ub, const Time& dt, State& uout) = 0;
+  
+        std::function<void(const Time &t, State &u, State &ub)> 
+                 update_bdy_callback_;
+
+private:
+        CompDesc icomptype_;
 };
 
 

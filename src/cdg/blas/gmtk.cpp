@@ -1980,27 +1980,27 @@ void matmat_prod<GQUAD>(GTMatrix<GQUAD> &C, GTMatrix<GQUAD> &A, GTMatrix<GQUAD> 
 //          idir : curl component to compute. Must be appropriate for 
 //                 problem dimension.
 //          tmp  : tmp vector; must be of at least length 2.
-//          curl : result
+//          curlc: result
 // RETURNS: none.
 //**********************************************************************************
 template<>
 void curl(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &u, const GINT idir, 
-          GTVector<GTVector<GFTYPE>*> &tmp, GTVector<GFTYPE> &curl)
+          GTVector<GTVector<GFTYPE>*> &tmp, GTVector<GFTYPE> &curlc)
 {
 
   if ( GDIM == 2 && u.size() > GDIM ) {
     switch (idir) {
       case 1:
-        grid.deriv(*u[2], 2, *tmp[0], curl);
-        curl *= -1.0;
+        grid.deriv(*u[2], 2, *tmp[0], curlc);
+        curlc *= -1.0;
         break;
       case 2:
-        grid.deriv(*u[2], 1, *tmp[0], curl);
+        grid.deriv(*u[2], 1, *tmp[0], curlc);
         break;
       case 3:
-        grid.deriv(*u[1], 1, *tmp[0], curl);
+        grid.deriv(*u[1], 1, *tmp[0], curlc);
         grid.deriv(*u[0], 2, *tmp[0], *tmp[1]);
-        curl -= *tmp[1];
+        curlc -= *tmp[1];
         break;
       default:
         assert( FALSE && "Invalid component specified");
@@ -2012,9 +2012,9 @@ void curl(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &u, const GINT idir,
   if ( GDIM == 2 ) {
     switch (idir) {
       case 3:
-        grid.deriv(*u[1], 1, *tmp[0], curl);
+        grid.deriv(*u[1], 1, *tmp[0], curlc);
         grid.deriv(*u[0], 2, *tmp[0], *tmp[1]);
-        curl -= *tmp[1];
+        curlc -= *tmp[1];
         break;
       default:
         assert( FALSE && "Invalid component specified");
@@ -2026,25 +2026,49 @@ void curl(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &u, const GINT idir,
   if ( GDIM == 3 ) {
     switch (idir) {
       case 1:
-        grid.deriv(*u[1], 3, *tmp[0], curl);
+        grid.deriv(*u[1], 3, *tmp[0], curlc);
         grid.deriv(*u[2], 2, *tmp[0], *tmp[1]);
-        curl -= *tmp[1];
+        curlc -= *tmp[1];
         break;
       case 2:
-        grid.deriv(*u[2], 1, *tmp[0], curl);
+        grid.deriv(*u[2], 1, *tmp[0], curlc);
         grid.deriv(*u[0], 3, *tmp[0], *tmp[1]);
-        curl -= *tmp[1];
+        curlc -= *tmp[1];
         break;
       case 3:
-        grid.deriv(*u[1], 1, *tmp[0], curl);
+        grid.deriv(*u[1], 1, *tmp[0], curlc);
         grid.deriv(*u[0], 2, *tmp[0], *tmp[1]);
-        curl -= *tmp[1];
+        curlc -= *tmp[1];
         break;
     }
   }
   return;
 
 } // end of method curl
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : grad
+// DESC   : Compute gradient component, idir, of input vector field
+//          
+// ARGS   : grid : grid
+//          u    : input (scalar) field. 
+//          idir : gradient component to compute. Must be appropriate for 
+//                 problem dimension.
+//          tmp  : tmp vector; must be of at least length 1.
+//          gradc: result
+// RETURNS: none.
+//**********************************************************************************
+template<>
+void grad(GGrid &grid, GTVector<GFTYPE> &u, const GINT idir, 
+          GTVector<GTVector<GFTYPE>*> &tmp, GTVector<GFTYPE> &gradc)
+{
+  assert ( idir >0 && idir <=3 && "Invalid compoment specified");
+
+  grid.deriv(u, idir, *tmp[0], gradc);
+
+} // end of method grad
 
 
 //**********************************************************************************
@@ -2672,10 +2696,10 @@ template<>
 void vsphere2cart(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &vsph, GVectorType vtype, GTVector<GTVector<GFTYPE>*> &vcart)
 {
 
-  if      ( grid.gtype() != GE_2DEMBEDDED ) {
+  if      ( GDIM == 2 && grid.gtype() == GE_2DEMBEDDED ) {
     assert( vsph.size() >= 2 && "GE_2DEMBEDDED grid requires 2 spherical components");
   }
-  else if ( grid.gtype() != GE_DEFORMED ) {
+  else if ( grid.gtype() == GE_DEFORMED ) {
     assert( vsph.size() >= 3 && "GE_DEFORMED grid requires 3 spherical components");
   }
   else if ( grid.gtype() != GE_REGULAR ) {
@@ -2806,6 +2830,43 @@ void vsphere2cart(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &vsph, GVectorT
   }
 
 } // end of method vsphere2cart
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : normalize
+// DESC   : 
+//             Compute norm of input field, s.t.
+//             Integratl (u^2) dV = x0
+//          
+// ARGS   : x    : array of pointers to vectors; must each have at least 3
+//                 elements for 3-d vector product. All vector elements must
+//                 have the same length
+//          grid : grid object
+//          tmp  : tmp vector of length at least 2, each
+//                 of same length as x
+//          x0   : normalization constant
+// RETURNS: GTVector & 
+//**********************************************************************************
+template<>
+void normalize(GTVector<GTVector<GFTYPE>*> &x, GGrid &grid, GTVector<GTVector<GFTYPE>*> &tmp, GFTYPE x0)
+{
+  GSIZET n;
+  GFTYPE xn=0.0;
+
+  for ( GINT l=0; l<x.size(); l++ ) {
+    *tmp[0] = *x[l]; tmp[0]->pow(2);
+    xn += grid.integrate(*tmp[0], *tmp[1]);
+  }
+
+  xn = sqrt(x0/xn);
+  for ( GINT l=0; l<x.size(); l++ ) {
+    for ( GSIZET n=0; n<x[0]->size(); n++ ) { 
+      (*x[l])[n] *= xn;
+    }
+  }
+
+} // end of method normalize
 
 
 } // end, namespace GMTK

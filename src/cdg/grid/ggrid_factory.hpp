@@ -13,6 +13,8 @@
 #include "gtvector.hpp"
 #include "ggrid.hpp"
 
+typedef GFTYPE                      Time;
+typedef GTVector<GTVector<GFTYPE>*> State;
 
 class GGridFactory
 {
@@ -20,9 +22,12 @@ class GGridFactory
 
 	static GGrid *build(const geoflow::tbox::PropertyTree& ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> gbasis, GC_COMM &comm);
 
+
   private:
         static void   read_grid(const geoflow::tbox::PropertyTree& ptree, GC_COMM comm,  GTMatrix<GINT> &p, GTVector<GTVector<GFTYPE>> &xnodes);
-}; // namespace geoflow
+
+
+}; // class GGridFactory
 
 //#include "ggrid_factory.ipp"
 

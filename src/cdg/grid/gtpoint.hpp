@@ -25,15 +25,9 @@ template<typename T> class GTPoint
 {
 private:
   GINT           gdim_;
-  GTVector<GINT> nexp_;
   T              eps_;
-  GTVector<T>    lr_;
   GTVector<T*>   px_;
 
-  template<typename U=T> typename std::enable_if<std::is_floating_point<U>::value, void>::type
-  decompose()
-  { for ( GINT i=0; i<gdim_; i++ ) {
-    lr_[i] = roundl(frexp((*px_[i]), &nexp_[i])* 1.0e8); } }
 
 public:
                   GTPoint(); 
@@ -61,11 +55,9 @@ public:
 
   template<typename U=T> typename std::enable_if<std::is_floating_point<U>::value, GBOOL>::type
   operator==(const GTPoint<T> &pp) // Add 'fuzziness' to equality check
-  { GINT  i, n; GBOOL b; T r, del; GTPoint pq=pp;    
-    // p.x_i = g * 2^n = g * 10^m, where m=n log_10(2):
-    decompose();
-    for ( i=0,b=TRUE;i<gdim_;i++) { r=frexp(pq[i],&n); ; // scale bracket to point
-      b = b && ( nexp_[i]==n && lr_[i]==lround(r*1.0e8) ); }      // do check for equality
+  { GBOOL b;     
+    for ( GINT i=0,b=TRUE;i<gdim_;i++) { 
+      b = b && FUZZYEQ(*px_[i], pp[i], eps_); }  // do check for 'equality'
     return b; }
 
   template<typename U=T> typename std::enable_if<!std::is_floating_point<U>::value, GBOOL>::type
@@ -94,6 +86,10 @@ public:
 
   inline GTPoint<T> &operator=(T f)
   { x1 = f;  x2 = f;  x3 = f;  x4 = f; return *this;}
+
+  inline void assign(GTVector<GTVector<T>> &v, GSIZET i)
+  { for ( GINT j=0; j<gdim_; j++ ) *px_[j] = v[j][i];
+    if ( gdim_>0) x1 = v[0][i]; if ( gdim_>1) x2 = v[1][i]; if (gdim_>2) x3 = v[2][i]; if ( gdim_>3) x4 = v[3][i];}
 
   inline void  operator-(T f)
   { GTPoint<T> *ret = new GTPoint<T>(gdim_);
@@ -151,12 +147,14 @@ public:
 #endif
     return *px_[i]; }
 
-  template<typename U=T> typename std::enable_if<std::is_floating_point<U>::value, void >::type
-  truncate()
-  { GINT  i, n; T del, is;
-    // p.x_i = g * 2^n = g * 10^m, where m=n log_10(2):
-    for ( i=0;i<gdim_;i++ ) { frexp(*px_[i],&n); del=eps_*pow(10.0,0.30103*n); // scale bracket to point
-      is = *px_[i]>0?1.0:-1.0; *px_[i] = *px_[i]!=0.0 ? is*(fabs(*px_[i])-del): 0.0;} }
+  inline T operator[](const GINT i) const
+  { 
+#if defined(_G_BOUNDS_CHK)
+    if ( i<0 || i>=gdim_ ) { 
+      while(1);
+      std::cout << "GTPoint::[]: access error; bad index: " << i << std::endl; exit(1); }
+#endif
+    return *px_[i]; }
 
   inline T mag() { T v=0.0; for ( GINT j=0; j<gdim_; j++ ) v += pow(*px_[j],2.0); return sqrt(v); }
 
