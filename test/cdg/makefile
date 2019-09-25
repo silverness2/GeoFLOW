@@ -18,7 +18,7 @@ clean:
 dist: 
 	/bin/rm -rf ../../build/* ; \
 	cd ../../build            ; \
-	cmake GCONF=duane ../     ; \
+	cmake -D GCONF=duane ../     ; \
 	make                      ; \
 	make install              ; \
 	cd ../test/cdg
