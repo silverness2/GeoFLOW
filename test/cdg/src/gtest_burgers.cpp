@@ -7,11 +7,10 @@
 //==================================================================================
 #include "gexec.h"
 #include "gtypes.h"
-#include <stdio.h>
-#include <math.h>
+#include <cstdio>
+#include <cmath>
 #include <unistd.h>
 #include <iostream>
-#include <gptl.h>
 #include <memory>
 #include <cstdlib>
 #include <cassert>
@@ -36,6 +35,10 @@
 #include "tbox/input_manager.hpp"
 #include "gtools.h"
 //#include "gio.h"
+
+#if defined(_G_USE_GPTL)
+    #include "gptl.h"
+#endif
 
 using namespace geoflow::pdeint;
 using namespace geoflow::tbox;

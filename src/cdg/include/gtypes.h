@@ -5,6 +5,9 @@
 // Copyright    : Copyright 2018. Colorado State University. All rights reserved
 // Derived From : none.
 //==================================================================================
+#if !defined(_GTYPES_HPP)
+#define _GTYPES_HPP
+
 #include <cstddef>
 #include <cmath>
 #include <string>
@@ -13,6 +16,12 @@
 #include <iostream>
 #if defined(_G_USE_GPTL)
   #include <gptl.h>
+#endif
+
+#include "configure.hpp"
+
+#if defined(_G_USE_GPTL)
+  #include "gptl.h"
 #endif
 
 // Following is a list of preprocessor variables that may be set:
@@ -246,8 +255,15 @@ enum GStateCompType     {GSC_KINETIC=0, GSC_MAGNETIC, GSC_ACTIVE_SCALAR, GSC_PAS
   #define GError() printf("Error: %s; line: %d\n",__FILE__,__LINE__);
 #endif
 
-extern std::stringstream oss_global_;
-#define GPP(comm,a)    oss_global_ << a << std::endl; GComm::cout(comm,oss_global_.str().c_str()); oss_global_.str(std::string());
+#define GPP(comm,a)                                   \
+    do {                                              \
+        std::stringstream oss_global_;                \
+        oss_global_ << a << std::endl;                \
+        GComm::cout(comm,oss_global_.str().c_str());  \
+    } while(0)
 
 
 #endif // _G_TYPES_DEF
+
+#endif // !defined(_GTYPES_HPP)
+

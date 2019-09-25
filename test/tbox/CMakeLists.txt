@@ -19,16 +19,19 @@ set(test_tbox_files
 #
 # Build list of compiler options for tests
 #
-set(compiler_options "$<$<CXX_COMPILER_ID:AppleClang>:-Wno-comment>"
-		             "$<$<BOOL:${OpenMP_FOUND}>:${OpenMP_CXX_FLAGS}>"
-		             "$<$<BOOL:${MPI_CXX_FOUND}>:${MPI_CXX_FLAGS}>" )
+set(compiler_options 
+		"$<$<CXX_COMPILER_ID:AppleClang>:-Wno-comment>"
+		"$<$<BOOL:${OpenMP_FOUND}>:${OpenMP_CXX_FLAGS}>"
+	)
 		       
 # Set include headers unique to testing
 set(include_headers "")
 
 # Set libraries the test need
 # - Gets library include paths from here
-set(linked_libraries tbox)
+set(linked_libraries 
+		tbox
+	)
 		             
 #
 # Loop over each test building and adding to ctest
@@ -48,5 +51,6 @@ ENDFOREACH(test_src)
 install(
 	DIRECTORY "${MY_PROJECT_TSTDIR}/tbox/data"
 	DESTINATION "${MY_INSTALL_TSTDIR}/tbox"  
-	FILES_MATCHING PATTERN "*"
+	FILES_MATCHING 
+	PATTERN "*"
 )

@@ -8,15 +8,18 @@
 
 #include "gexec.h"
 #include "gtypes.h"
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
 #include <iostream>
-#include <gptl.h>
 #include <memory>
 #include <cstdlib>
 #include <cassert>
 #include <random>
 #include "gexrk_stepper.hpp"
+
+#if defined(_G_USE_GPTL)
+    #include "gptl.h"
+#endif
 
 typedef GTVector<GTVector<GFTYPE>*> State;
 typedef GFTYPE Time;
