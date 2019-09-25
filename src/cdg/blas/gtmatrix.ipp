@@ -2628,7 +2628,7 @@ GTMatrix<T>::matmat_impl_(const GTMatrix &obj, std::true_type)
 {
   GTMatrix mret(this->size(1),obj.size(2));
 
-  GMTK::matmat_prod(*mret, *this, obj);
+  GMTK::matmat_prod(mret, *this, obj);
 
   #if defined(_G_AUTO_UPDATE_DEV)
       vret->updatedev();
