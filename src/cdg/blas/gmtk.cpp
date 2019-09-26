@@ -1862,7 +1862,7 @@ void matvec_prod<GQUAD>(GTVector<GQUAD> &vret, GTMatrix<GQUAD> &A, GTVector<GQUA
 // RETURNS: none
 //**********************************************************************************
 template<>
-void matmat_prod<GFLOAT>(GTMatrix<GFLOAT> &C, GTMatrix<GFLOAT> &A, GTMatrix<GFLOAT> &B) 
+void matmat_prod<GFLOAT>(GTMatrix<GFLOAT> &C, const GTMatrix<GFLOAT> &A, const GTMatrix<GFLOAT> &B) 
 {
   #if defined(_G_BOUNDS_CHK)
   if ( A.size(2) != B.size(1) ) {
@@ -1884,8 +1884,11 @@ void matmat_prod<GFLOAT>(GTMatrix<GFLOAT> &C, GTMatrix<GFLOAT> &A, GTMatrix<GFLO
   #else
   GSIZET a1=A.size(1), a2 = A.size(2);
   GSIZET b1=B.size(1), b2 = B.size(2);
-  fmxm(C.data().data(),A.data().data(),&a1,&a2,
-       B.data().data(),&b1, &b2, &szMatCache_);
+  fmxm(C.data().data(),
+       const_cast<GFLOAT*>(A.data().data()),
+       &a1,&a2,
+       const_cast<GFLOAT*>(B.data().data()),
+       &b1, &b2, &szMatCache_);
   #endif
   
 
@@ -1901,7 +1904,7 @@ void matmat_prod<GFLOAT>(GTMatrix<GFLOAT> &C, GTMatrix<GFLOAT> &A, GTMatrix<GFLO
 // RETURNS: none
 //**********************************************************************************
 template<>
-void matmat_prod<GDOUBLE>(GTMatrix<GDOUBLE> &C, GTMatrix<GDOUBLE> &A, GTMatrix<GDOUBLE> &B) 
+void matmat_prod<GDOUBLE>(GTMatrix<GDOUBLE> &C, const GTMatrix<GDOUBLE> &A, const GTMatrix<GDOUBLE> &B) 
 {
   #if defined(_G_BOUNDS_CHK)
   if ( A.size(2) != B.size(1) ) {
@@ -1923,8 +1926,11 @@ void matmat_prod<GDOUBLE>(GTMatrix<GDOUBLE> &C, GTMatrix<GDOUBLE> &A, GTMatrix<G
   #else
   GSIZET a1=A.size(1), a2 = A.size(2);
   GSIZET b1=B.size(1), b2 = B.size(2);
-  dmxm(C.data().data(),A.data().data(),&a1,&a2,
-       B.data().data(),&b1, &b2, &szMatCache_);
+  dmxm(C.data().data(),
+       const_cast<GDOUBLE*>(A.data().data()),
+       &a1,&a2,
+       const_cast<GDOUBLE*>(B.data().data()),
+       &b1, &b2, &szMatCache_);
   #endif
   
 
@@ -1940,7 +1946,7 @@ void matmat_prod<GDOUBLE>(GTMatrix<GDOUBLE> &C, GTMatrix<GDOUBLE> &A, GTMatrix<G
 // RETURNS: none
 //**********************************************************************************
 template<>
-void matmat_prod<GQUAD>(GTMatrix<GQUAD> &C, GTMatrix<GQUAD> &A, GTMatrix<GQUAD> &B) 
+void matmat_prod<GQUAD>(GTMatrix<GQUAD> &C, const GTMatrix<GQUAD> &A, const GTMatrix<GQUAD> &B) 
 {
   #if defined(_G_BOUNDS_CHK)
   if ( A.size(2) != B.size(1) ) {
@@ -1962,8 +1968,11 @@ void matmat_prod<GQUAD>(GTMatrix<GQUAD> &C, GTMatrix<GQUAD> &A, GTMatrix<GQUAD> 
   #else
   GSIZET a1=A.size(1), a2 = A.size(2);
   GSIZET b1=B.size(1), b2 = B.size(2);
-  qmxm(C.data().data(),A.data().data(),&a1,&a2,
-       B.data().data(),&b1, &b2, &szMatCache_);
+  qmxm(C.data().data(),
+       const_cast<GQUAD*>(A.data().data()),
+       &a1,&a2,
+       const_cast<GQUAD*>(B.data().data()),
+       &b1, &b2, &szMatCache_);
   #endif
   
 

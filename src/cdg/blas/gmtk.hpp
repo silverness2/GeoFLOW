@@ -19,6 +19,7 @@ template<typename T> class GTMatrix;
 extern GINT szMatCache_;
 extern GINT szVecCache_;
 
+
 namespace GMTK
 {
 
@@ -45,7 +46,7 @@ namespace GMTK
   void matvec_prod(GTVector<T> &vret, GTMatrix<T> &A, GTVector<T> &b);
 
   template<typename T>     
-  void matmat_prod(GTMatrix<T> &C, GTMatrix<T> &A, GTMatrix<T> &B);
+  void matmat_prod(GTMatrix<T> &C, const GTMatrix<T> &A, const GTMatrix<T> &B);
 
   template<typename T>
   void cross_prod_k(GTVector<GTVector<T>*> &A, GINT *iind, GINT nind, 
