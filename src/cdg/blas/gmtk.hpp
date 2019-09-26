@@ -43,7 +43,7 @@ namespace GMTK
   void D3_X_I2_X_I1(GTMatrix<T> &D3T, GTVector<T> &u, GSIZET N1, GSIZET N2, GSIZET N3,
                     GTVector<T> &y);
   template<typename T>     
-  void matvec_prod(GTVector<T> &vret, GTMatrix<T> &A, GTVector<T> &b);
+  void matvec_prod(GTVector<T> &vret, const GTMatrix<T> &A, const GTVector<T> &b);
 
   template<typename T>     
   void matmat_prod(GTMatrix<T> &C, const GTMatrix<T> &A, const GTMatrix<T> &B);

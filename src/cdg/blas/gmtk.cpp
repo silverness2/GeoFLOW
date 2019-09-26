@@ -1756,7 +1756,7 @@ while(1){};
 // RETURNS: none
 //**********************************************************************************
 template<>
-void matvec_prod<GFLOAT>(GTVector<GFLOAT> &vret, GTMatrix<GFLOAT> &A, GTVector<GFLOAT> &b) 
+void matvec_prod<GFLOAT>(GTVector<GFLOAT> &vret, const GTMatrix<GFLOAT> &A, const GTVector<GFLOAT> &b) 
 {
   #if defined(_G_BOUNDS_CHK)
   if ( b.size() < A.size(2) ) {
@@ -1775,7 +1775,9 @@ void matvec_prod<GFLOAT>(GTVector<GFLOAT> &vret, GTMatrix<GFLOAT> &A, GTVector<G
   #else
   GSIZET n1 = A.size(1);
   GSIZET n2 = A.size(2);
-  fmxv(vret.data(), A.data().data(), b.data(), &n1, &n2, &szMatCache_);
+  fmxv(vret.data(), const_cast<GFLOAT*>(A.data().data()), 
+                    const_cast<GFLOAT*>(b.data())       , 
+                    &n1, &n2, &szMatCache_);
   #endif
 
 
@@ -1791,7 +1793,7 @@ void matvec_prod<GFLOAT>(GTVector<GFLOAT> &vret, GTMatrix<GFLOAT> &A, GTVector<G
 // RETURNS: none
 //**********************************************************************************
 template<>
-void matvec_prod<GDOUBLE>(GTVector<GDOUBLE> &vret, GTMatrix<GDOUBLE> &A, GTVector<GDOUBLE> &b) 
+void matvec_prod<GDOUBLE>(GTVector<GDOUBLE> &vret, const GTMatrix<GDOUBLE> &A, const GTVector<GDOUBLE> &b) 
 {
   #if defined(_G_BOUNDS_CHK)
   if ( b.size() < A.size(2) ) {
@@ -1810,7 +1812,9 @@ void matvec_prod<GDOUBLE>(GTVector<GDOUBLE> &vret, GTMatrix<GDOUBLE> &A, GTVecto
   #else
   GSIZET n1 = A.size(1);
   GSIZET n2 = A.size(2);
-  dmxv(vret.data(), A.data().data(), b.data(), &n1, &n2, &szMatCache_);
+  dmxv(vret.data(), const_cast<GDOUBLE*>(A.data().data()), 
+                    const_cast<GDOUBLE*>(b.data())       , 
+                    &n1, &n2, &szMatCache_);
   #endif
 
 
@@ -1826,7 +1830,7 @@ void matvec_prod<GDOUBLE>(GTVector<GDOUBLE> &vret, GTMatrix<GDOUBLE> &A, GTVecto
 // RETURNS: none
 //**********************************************************************************
 template<>
-void matvec_prod<GQUAD>(GTVector<GQUAD> &vret, GTMatrix<GQUAD> &A, GTVector<GQUAD> &b) 
+void matvec_prod<GQUAD>(GTVector<GQUAD> &vret, const GTMatrix<GQUAD> &A, const GTVector<GQUAD> &b) 
 {
   #if defined(_G_BOUNDS_CHK)
   if ( b.size() < A.size(2) ) {
@@ -1845,7 +1849,9 @@ void matvec_prod<GQUAD>(GTVector<GQUAD> &vret, GTMatrix<GQUAD> &A, GTVector<GQUA
   #else
   GSIZET n1 = A.size(1);
   GSIZET n2 = A.size(2);
-  qmxv(vret.data(), A.data().data(), b.data(), &n1, &n2, &szMatCache_);
+  qmxv(vret.data(), const_cast<GQUAD*>(A.data().data()), 
+                    const_cast<GQUAD*>(b.data())       , 
+                    &n1, &n2, &szMatCache_);
   #endif
 
 
