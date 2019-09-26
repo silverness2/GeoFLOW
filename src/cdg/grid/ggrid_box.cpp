@@ -11,7 +11,7 @@
 #include <memory>
 #include <cmath>
 #include "gcomm.hpp"
-#include "geoflow.hpp"
+#include "gutils.hpp"
 #include "ggrid_box.hpp"
 #include "gspecbdy_factory.hpp"
 #include "tbox/mpixx.hpp"
