@@ -1,5 +1,5 @@
 //==================================================================================
-// Module       : geoglow.cpp
+// Module       : geoflow.cpp
 // Date         : 7/7/19 (DLR)
 // Description  : GeoFLOW main driver
 // Copyright    : Copyright 2019. Colorado State University. All rights reserved.
