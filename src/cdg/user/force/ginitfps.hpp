@@ -12,7 +12,7 @@
 #include "gtypes.h"
 #include "gtvector.hpp"
 #include "ggrid.hpp"
-#include "geoflow.hpp"
+#include "gutils.hpp"
 
 
 using namespace geoflow;
