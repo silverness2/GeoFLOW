@@ -101,6 +101,11 @@ GTPoint<T>::GTPoint(const GTPoint<T> &e)
   x2 = e.x2;
   x3 = e.x3;
   x4 = e.x4;
+  px_.resizem(gdim_);
+  if ( gdim_ > 0 ) px_[0] = &x1;
+  if ( gdim_ > 1 ) px_[1] = &x2;
+  if ( gdim_ > 2 ) px_[2] = &x3;
+  if ( gdim_ > 3 ) px_[3] = &x4;
 } // end, copy constructor method
 
 
