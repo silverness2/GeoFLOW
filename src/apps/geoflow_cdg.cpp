@@ -783,10 +783,11 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
    *utmp [1]  = *utmp[0]; utmp [1]->abs();
    *utmp [2]  = *utmp[0]; utmp [2]->pow(2);
     lnorm[0]  = utmp [0]->infnorm (); // inf-norm
-    gnorm[1]  = grid.integrate(*utmp[1],*utmp[0])/sqrt(nnorm[j]) ; // L1-norm
-    gnorm[2]  = grid.integrate(*utmp[2],*utmp[0]) ; // L2-norm
+    gnorm[1]  = grid.integrate(*utmp[1],*utmp[0]); // L1-norm numerator
+    gnorm[2]  = grid.integrate(*utmp[2],*utmp[0]); // L2-norm numerator
     // Accumulate to find global errors for this field:
     GComm::Allreduce(lnorm.data()  , gnorm.data()  , 1, T2GCDatatype<GFTYPE>() , GC_OP_MAX, comm_);
+    gnorm[1] =  gnorm[1]/nnorm[j];
     gnorm[2] =  sqrt(gnorm[2]/nnorm[j]);
     // now find max errors of each type for each field:
     for ( GINT i=0; i<3; i++ ) maxerror[i] = MAX(maxerror[i],fabs(gnorm[i]));
@@ -795,8 +796,9 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
   // Compute some global quantities for output:
   dxmin = grid.minnodedist();
   lmin  = grid.minlength();
-  if ( myrank == 0 ) 
-  cout << "main: maxerror = " << maxerror << endl;
+  if ( myrank == 0 ) {
+    cout << "main: maxerror = " << maxerror << endl;
+  }
    
   GTVector<GSIZET> lsz(2), gsz(2);
   lsz[0] = grid.nelems();
