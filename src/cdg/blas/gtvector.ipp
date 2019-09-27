@@ -294,12 +294,11 @@ void GTVector<T>::resize(GSIZET nnew)
 
   if ( (iend-ibeg+1+ipad) > n_ ) {      // must reallocate; change capacity
     if ( this->data_ != NULLPTR ) { 
-      delete [] this->data_; 
+      delete [] this->data_;
       this->data_ = NULLPTR; 
     }
-    this->data_ = new T [ibeg+nnew+ipad];
-    assert(this->data_ != NULLPTR );
-    n_ = nnew;
+    this->n_ = iend-ibeg+1+ipad;
+    this->data_ = new T [this->n_];
   }
   gindex_(nnew, nnew, ibeg, iend, istride, ipad);
   gindex_keep_ = gindex_;
@@ -336,16 +335,16 @@ void GTVector<T>::resize(GIndex &gi)
   GLLONG istride = gi.stride();
   GLLONG ipad    = gi.pad();
 
-  if ( nnew != n_ ) {
+  if ( (iend-ibeg+1+ipad) > n_ ) {      // must reallocate; change capacity
     if ( this->data_ != NULLPTR ) { 
       delete [] this->data_; 
       this->data_ = NULLPTR; 
     }
-    this->data_ = new T [ibeg+nnew+ipad];
-    assert(this->data_ != NULLPTR );
-    n_ = nnew;
+    this->n_ = iend-ibeg+1+ipad;
+    this->data_ = new T [this->n_];
   }
   gindex_(nnew, nnew, ibeg, iend, istride, ipad);
+  gindex_keep_ = gindex_;
 
   #if defined(_G_AUTO_CREATE_DEV)
 //  #pragma acc enter data create( data_[0:n_-1] )
