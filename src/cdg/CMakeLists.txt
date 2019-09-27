@@ -69,8 +69,8 @@ target_include_directories(cdg
 target_link_libraries(cdg 
 	PUBLIC
 		tbox
-		"$<$<BOOL:${USE_PAPI}>:${PAPI_LIB_PATH}>"
-		"$<$<BOOL:${USE_GPTL}>:${GPTL_LIB_PATH}>"
+		"$<$<BOOL:${USE_PAPI}>:${PAPI_LIBRARIES}>"
+		"$<$<BOOL:${USE_GPTL}>:${GPTL_LIBRARIES}>"
 		"$<$<BOOL:${MPI_CXX_FOUND}>:${MPI_CXX_LIBRARIES}>"
 	)
 
