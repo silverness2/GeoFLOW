@@ -46,7 +46,7 @@ set(MPI_CXX_INCLUDE_PATH        "" )
 set(MPI_CXX_LINK_FLAGS          "" )
 set(MPI_CXX_LIBRARIES           "" )
 
-set(MPI_Fortran_COMPILER        "mpiif90" )
+set(MPI_Fortran_COMPILER        "mpiifort" )
 set(MPI_Fortran_COMPILE_FLAGS   "" )
 set(MPI_Fortran_INCLUDE_PATH    "" )
 set(MPI_Fortran_LINK_FLAGS      "" )
