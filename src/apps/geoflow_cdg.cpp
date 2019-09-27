@@ -460,7 +460,7 @@ void allocate(const PropertyTree &ptree)
       nstate_   = nladv + nsolve_;
     }
     if ( "grid_icos" == sgrid ) {
-      nsolve_   = 3;
+      nsolve_   = 1;
       nstate_   = nladv + nsolve_;
     }
     else {
