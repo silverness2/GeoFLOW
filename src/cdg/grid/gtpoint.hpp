@@ -92,13 +92,13 @@ public:
     if ( gdim_>0) x1 = v[0][i]; if ( gdim_>1) x2 = v[1][i]; if (gdim_>2) x3 = v[2][i]; if ( gdim_>3) x4 = v[3][i];}
 
   inline GTPoint<T> operator-(T f) {
-      GTPoint ret(*this);
+      GTPoint ret(this->dim());
       ret -= f;
       return ret;
   }
 
   inline GTPoint<T> operator-(GTPoint<T> &a){
-      GTPoint ret(*this);
+      GTPoint ret(this->dim());
       ret -= a;
       return ret;
   }
@@ -111,14 +111,14 @@ public:
 
   inline GTPoint<T> operator+(const T f)
   {
-      GTPoint ret(*this);
+      GTPoint ret(this->dim());
       ret += f;
       return ret;
   }
 
   inline GTPoint<T> operator+(const GTPoint<T> &a)
   {
-      GTPoint ret(*this);
+      GTPoint ret(this->dim());
       ret += a;
       return ret;
   }
@@ -131,7 +131,7 @@ public:
 
   inline GTPoint<T> operator*(const T a)
   {
-      GTPoint ret(*this);
+      GTPoint ret(this->dim());
       ret *= a;
       return ret;
   }
