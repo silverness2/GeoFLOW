@@ -55,7 +55,7 @@
     )
 
  set(CDG_UTILS_SRC  ${GHOME}/utils/gbitblock.cpp 
-                    ${GHOME}/utils/geoflow.cpp
+                    ${GHOME}/utils/gutils.cpp
     )
 
 # Aggregate source into CDG_SRC used in CMakeLists.txt:
