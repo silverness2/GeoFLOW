@@ -7,7 +7,7 @@ option(DO_TESTS       "DO_TESTS"      OFF)  # Build testing targets
 option(DO_GEOFLOW     "DO_GEOFLOW"    ON)   # Build GeoFLOW target
 
 option(DO_DEBUG       "DO_DEBUG"      ON)   # Compile for DEBUG
-option(USE_OPENMP     "USE_OPENMP"    ON)   # Compile for OpenMP
+option(USE_OPENMP     "USE_OPENMP"    OFF)   # Compile for OpenMP
 option(USE_OPENACC    "USE_OPENACC"   OFF)  # Compile for OpenACC
 option(USE_GBLAS      "USE_GBLAS"     ON)   # Use GBlas instead of C 
 option(USE_MPI        "USE_MPI"       ON)   # Build with MPI?
@@ -29,7 +29,7 @@ CACHE STRING "Type of build to configure")
 #
 # Select compiler vendor to load
 #
-include("${CMAKE_SOURCE_DIR}/cmake/compiler.gcc")
+#   include("${CMAKE_SOURCE_DIR}/cmake/compiler.gcc")
 #	include("${CMAKE_SOURCE_DIR}/cmake/compiler.pgi")
 #	include("${CMAKE_SOURCE_DIR}/cmake/compiler.intel")
 
@@ -40,7 +40,8 @@ include("${CMAKE_SOURCE_DIR}/cmake/compiler.gcc")
 # > cmake -D BOOST_ROOT=/opt/boost/boost_1_69_0/gcc/8.2.1 
 #
 set(BOOST_ROOT
-	"/home/bflynt/opt/boost/boost_1_71_0/gcc"
+#	"/home/bflynt/opt/boost/boost_1_71_0/gcc"
+	"/Users/bryan.flynt/opt/boost/boost_1_65_1"
 CACHE STRING "Location of Boost Library")
 
 #
