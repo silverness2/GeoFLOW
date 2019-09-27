@@ -9,6 +9,7 @@
 #if !defined(_GMTK_HPP)
 #define _GMTK_HPP
 
+#include <assert.h>
 #include "gtypes.h"
 #include "cff_blas.h"
 
@@ -77,7 +78,7 @@ namespace GMTK
   void saxpby(GTVector<T> &x, T a, GTVector<T> &y, T b); 
 
   template<typename T>  
-  void     add(GTVector<T> &vret, GTVector<T> &va, GTVector<T> &vb, T a, T b);
+  void     add(GTVector<T> &vret, const GTVector<T> &va, const GTVector<T> &vb, T a, T b);
 
   template<typename T>  
   void    Dg2_X_D1           (GTMatrix<T> &D1, GTVector<T> &Dg2, GTVector<T> &x, GTVector<T> &tmp, GTVector<T> &y);

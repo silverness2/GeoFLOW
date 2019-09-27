@@ -1654,7 +1654,7 @@ void D3_X_Dg2_X_Dg1<GQUAD>(GTVector<GQUAD> &Dg1, GTVector<GQUAD> &Dg2, GTMatrix<
 //**********************************************************************************
 #pragma acc routine vector
 template<>
-void add<GFLOAT>(GTVector<GFLOAT> &vret, GTVector<GFLOAT> &va, GTVector<GFLOAT> &vb, GFLOAT a, GFLOAT b) 
+void add<GFLOAT>(GTVector<GFLOAT> &vret, const GTVector<GFLOAT> &va, const GTVector<GFLOAT> &vb, GFLOAT a, GFLOAT b) 
 {
   #if defined(_G_BOUNDS_CHK)
   if ( va.size() < vret.size() || vb.size() < vret.size() ) {
@@ -1670,7 +1670,8 @@ while(1){};
   }
   #else
   GSIZET nn = vret.getIndex().end() - vret.getIndex().beg() + 1;
-  fzaxpby(vret.data(), va.data(), &a, vb.data(), &b, &nn, &szVecCache_);
+  fzaxpby(vret.data(), const_cast<GFLOAT*>(va.data()), &a, 
+                       const_cast<GFLOAT*>(vb.data()), &b, &nn, &szVecCache_);
   #endif
 
 } // end, add 
@@ -1689,7 +1690,7 @@ while(1){};
 //**********************************************************************************
 #pragma acc routine vector
 template<>
-void add<GDOUBLE>(GTVector<GDOUBLE> &vret, GTVector<GDOUBLE> &va, GTVector<GDOUBLE> &vb, GDOUBLE a, GDOUBLE b) 
+void add<GDOUBLE>(GTVector<GDOUBLE> &vret, const GTVector<GDOUBLE> &va, const GTVector<GDOUBLE> &vb, GDOUBLE a, GDOUBLE b) 
 {
   #if defined(_G_BOUNDS_CHK)
   if ( va.size() < vret.size() || vb.size() < vret.size() ) {
@@ -1705,7 +1706,8 @@ while(1){};
   }
   #else
   GSIZET nn = vret.getIndex().end() - vret.getIndex().beg() + 1;
-  dzaxpby(vret.data(), va.data(), &a, vb.data(), &b, &nn, &szVecCache_);
+  dzaxpby(vret.data(), const_cast<GDOUBLE*>(va.data()), &a, 
+                       const_cast<GDOUBLE*>(vb.data()), &b, &nn, &szVecCache_);
   #endif
 
 } // end, add 
@@ -1724,7 +1726,7 @@ while(1){};
 //**********************************************************************************
 #pragma acc routine vector
 template<>
-void add<GQUAD>(GTVector<GQUAD> &vret, GTVector<GQUAD> &va, GTVector<GQUAD> &vb, GQUAD a, GQUAD b) 
+void add<GQUAD>(GTVector<GQUAD> &vret, const GTVector<GQUAD> &va, const GTVector<GQUAD> &vb, GQUAD a, GQUAD b) 
 {
   #if defined(_G_BOUNDS_CHK)
   if ( va.size() < vret.size() || vb.size() < vret.size() ) {
@@ -1740,7 +1742,8 @@ while(1){};
   }
   #else
   GSIZET nn = vret.getIndex().end() - vret.getIndex().beg() + 1;
-  qzaxpby(vret.data(), va.data(), &a, vb.data(), &b, &nn, &szVecCache_);
+  qzaxpby(vret.data(), const_cast<GQUAD*>(va.data()), &a, 
+                       const_cast<GQUAD*>(vb.data()), &b, &nn, &szVecCache_);
   #endif
 
 } // end, add 
