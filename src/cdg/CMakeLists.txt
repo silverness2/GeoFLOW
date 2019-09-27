@@ -59,8 +59,8 @@ target_include_directories(cdg
 		"$<BUILD_INTERFACE:${MY_PROJECT_INCDIR}>"
 		"$<BUILD_INTERFACE:${MY_INSTALL_SRCDIR}>"
 		"$<$<BOOL:${MPI_CXX_FOUND}>:${MPI_CXX_INCLUDE_PATH}>"
-		"$<$<BOOL:${USE_PAPI}>:${PAPI_INC_PATH}>"
-		"$<$<BOOL:${USE_GPTL}>:${GPTL_INC_PATH}>"
+		"$<$<BOOL:${USE_PAPI}>:${PAPI_INCLUDE_DIRS}>"
+		"$<$<BOOL:${USE_GPTL}>:${GPTL_INCLUDE_DIRS}>"
 	)
 
 #
@@ -69,8 +69,8 @@ target_include_directories(cdg
 target_link_libraries(cdg 
 	PUBLIC
 		tbox
-		"$<$<BOOL:${USE_PAPI}>:${PAPI_LIB_PATH}>"
-		"$<$<BOOL:${USE_GPTL}>:${GPTL_LIB_PATH}>"
+		"$<$<BOOL:${USE_PAPI}>:${PAPI_LIBRARIES}>"
+		"$<$<BOOL:${USE_GPTL}>:${GPTL_LIBRARIES}>"
 		"$<$<BOOL:${MPI_CXX_FOUND}>:${MPI_CXX_LIBRARIES}>"
 	)
 
