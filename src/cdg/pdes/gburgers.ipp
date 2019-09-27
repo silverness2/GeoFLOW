@@ -68,12 +68,15 @@ nsteps_                      (0),
 itorder_        (traits.itorder),
 inorder_        (traits.inorder),
 courant_        (traits.courant),
-gadvect_               (NULLPTR),
-gmass_                  (NULLPTR),
-gpdv_                  (NULLPTR),
+gmass_                 (NULLPTR),
+gimass_                (NULLPTR),
 //gflux_                 (NULLPTR),
+ghelm_                 (NULLPTR),
+gadvect_               (NULLPTR),
+gexrk_                 (NULLPTR),
+gpdv_                  (NULLPTR),
 grid_                    (&grid),
-ggfx_                    (&grid.get_ggfx()),
+ggfx_         (&grid.get_ggfx()),
 steptop_callback_      (NULLPTR)
 {
   static_assert(std::is_same<State,GTVector<GTVector<GFTYPE>*>>::value,
@@ -117,13 +120,13 @@ steptop_callback_      (NULLPTR)
 template<typename TypePack>
 GBurgers<TypePack>::~GBurgers()
 {
-  if ( gmass_   != NULLPTR ) delete gmass_;
-  if ( gimass_  != NULLPTR ) delete gimass_;
+//if ( gmass_   != NULLPTR ) delete gmass_;
+//if ( gimass_  != NULLPTR ) delete gimass_;
 //if ( gflux_   != NULLPTR ) delete gflux_;
   if ( ghelm_   != NULLPTR ) delete ghelm_;
   if ( gadvect_ != NULLPTR ) delete gadvect_;
   if ( gpdv_    != NULLPTR ) delete gpdv_;
-  if ( gexrk_   != NULLPTR ) delete gexrk_;
+//if ( gexrk_   != NULLPTR ) delete gexrk_;
 
 } // end, destructor
 
