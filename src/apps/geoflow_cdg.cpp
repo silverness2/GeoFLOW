@@ -1,11 +1,12 @@
 //==================================================================================
-// Module       : geoflow.cpp
+// Module       : geoflow_cdg.cpp
 // Date         : 7/7/19 (DLR)
-// Description  : GeoFLOW main driver
+// Description  : GeoFLOW main driver for CG and DG initial value,
+//                boundary value problems
 // Copyright    : Copyright 2019. Colorado State University. All rights reserved.
 // Derived From : 
 //==================================================================================
-#include "geoflow.h"
+#include "geoflow_cdg.h"
 
 int main(int argc, char **argv)
 {
