@@ -110,10 +110,10 @@ void GComm::TermComm()
 
 #if defined(_G_USE_MPI)
   MPI_Finalize();
-  if ( mpi_recv_req_ == NULLPTR ) delete [] mpi_recv_req_; 
-  if ( mpi_send_req_ == NULLPTR ) delete [] mpi_send_req_; 
-  if ( grstatus_ != NULLPTR ) delete [] (MPI_Status *)grstatus_;
-  if ( gsstatus_ != NULLPTR ) delete [] (MPI_Status *)gsstatus_;
+  if ( mpi_recv_req_ != NULLPTR ) delete [] mpi_recv_req_; 
+  if ( mpi_send_req_ != NULLPTR ) delete [] mpi_send_req_; 
+  if ( grstatus_     != NULLPTR ) delete [] (MPI_Status *)grstatus_;
+  if ( gsstatus_     != NULLPTR ) delete [] (MPI_Status *)gsstatus_;
 #endif
 
 } // end of TermComm
