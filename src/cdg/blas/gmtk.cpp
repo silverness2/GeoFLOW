@@ -3084,7 +3084,7 @@ GFTYPE relhelicity(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<
 
   tmp[0]->pointProd(*tmp[4]); // compute |u| |curl u|
   for ( GINT k=0; k<utmp[0]->size(); k++ ) {
-   (*tmp[3])[k] = abs((*tmp[0])[k]) <= tiny ? 0.0 : (*tmp[3])[k]/(*tmp[0])[k];  
+   (*tmp[3])[k] = fabs((*tmp[0])[k]) <= tiny ? 0.0 : (*tmp[3])[k]/(*tmp[0])[k];  
   }
 
 
