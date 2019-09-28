@@ -184,7 +184,9 @@ int main(int argc, char **argv)
     EH_MESSAGE("geoflow: do shutdown...");
     GlobalManager::shutdown();
     GlobalManager::finalize();
+    GComm::TermComm();
     deallocate();
+
 
     return(0);
 
@@ -450,26 +452,24 @@ void allocate(const PropertyTree &ptree)
     for ( auto i=0; i<GDIM; i++ ) diforced.push_back(i);
     iforced   = eqn_ptree.getArray<GINT> ("forcing_comp", diforced);
     nladv     = 0;
-    nsolve_   = GDIM;
-    nstate_   = GDIM;
+    nsolve_   = sgrid == "grid_icos" ? 3 : GDIM;
+    nstate_   = nsolve_;
     if ( doheat || bpureadv ) {
       if ( bpureadv  ) {
         nladv     = sgrid == "grid_icos" ? 3 : GDIM;
       }
       nsolve_   = 1;
-      nstate_   = nladv + nsolve_;
     }
-    if ( "grid_icos" == sgrid ) {
-      nsolve_   = 1;
-      nstate_   = nladv + nsolve_;
-    }
-    else {
+    nstate_   = nladv + nsolve_;
+    
+    if ( "grid_icos" != sgrid ) {
       ibounded.resize(nsolve_);
       for ( auto i=0; i<nsolve_; i++ ) ibounded.push_back(i);
     }
     c_.resize(nladv);
     ntmp_     = 27;
-  }
+
+  } // end, pde_burgers test
   
   nforced = MIN(nsolve_,iforced.size());
 
@@ -505,6 +505,7 @@ void deallocate()
 {
 
   if ( grid_ != NULLPTR )                 delete grid_;
+  if ( ggfx_ != NULLPTR )                 delete ggfx_;
   for ( auto j=0; j<gbasis_.size(); j++ ) delete gbasis_[j];
   for ( auto j=0; j<utmp_  .size(); j++ ) delete utmp_  [j];
   for ( auto j=0; j<u_     .size(); j++ ) delete u_     [j];
@@ -834,7 +835,7 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
     ios.close();
   }
 
-  for ( GINT j=0; j<nstate_; j++ ) delete ua[j];
+  for ( GINT j=0; j<ua.size(); j++ ) delete ua[j];
 
 } // end method compare
 
