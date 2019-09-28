@@ -744,7 +744,7 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
   bret = GInitStateFactory<MyTypes>::init(ptree, grid, peqn, tt, utmp, ub, ua);
   assert(bret && "state initialization failed");
   for ( GSIZET j=0; j<nsolve_; j++ ) { // local errors
-   *utmp [1] = *ua [j]; utmp [1]->pow(2);
+   *utmp [1] = *ua [j]; utmp [1]->rpow(2);
     nnorm[j] = grid.integrate(*utmp   [1],*utmp [0]) ; // L2 norm of analyt soln at t=0
     nnorm[j] = nnorm[j] > std::numeric_limits<GFTYPE>::epsilon() ? nnorm[j] : 1.0;
     cout << "main: nnorm[" << j << "]=" << nnorm[j] << endl;
@@ -782,7 +782,7 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
   for ( GINT j=0; j<nsolve_; j++ ) { //local errors
    *utmp [0] = *u[j] - *ua[j];
    *utmp [1]  = *utmp[0]; utmp [1]->abs();
-   *utmp [2]  = *utmp[0]; utmp [2]->pow(2);
+   *utmp [2]  = *utmp[0]; utmp [2]->rpow(2);
     lnorm[0]  = utmp [0]->infnorm (); // inf-norm
     gnorm[1]  = grid.integrate(*utmp[1],*utmp[0]); // L1-norm numerator
     gnorm[2]  = grid.integrate(*utmp[2],*utmp[0]); // L2-norm numerator
