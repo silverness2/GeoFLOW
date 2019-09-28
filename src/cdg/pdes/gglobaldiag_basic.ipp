@@ -150,7 +150,7 @@ void GGlobalDiag_basic<EquationType>::do_kinetic_L2(const Time t, const State &u
   if ( ku_.size() == 1 ) {
     for ( GINT j=0; j<ndim; j++ ) {
       GMTK::grad<GFTYPE>(*grid_, *ku_[0], j+1, utmp, *utmp[2]);
-      utmp[2]->pow(2);
+      utmp[2]->rpow(2);
       lmax[1] += grid_->integrate(*utmp[2],*utmp[0], isreduced); 
     }
     lmax[1] *= 0.5*grid_->ivolume();
@@ -235,7 +235,7 @@ void GGlobalDiag_basic<EquationType>::do_kinetic_max(const Time t, const State &
   if ( ku_.size() == 1 ) {
     for ( GINT j=0; j<ndim; j++ ) {
       GMTK::grad<GFTYPE>(*grid_, *ku_[0], j+1, utmp, *utmp[2]);
-      utmp[2]->pow(2);
+      utmp[2]->rpow(2);
       lmax[1] += grid_->integrate(*utmp[2],*utmp[0], isreduced); 
     }
     lmax[1] *= 0.5*grid_->ivolume();
