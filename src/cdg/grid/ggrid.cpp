@@ -53,6 +53,9 @@ ptree_                          (ptree)
 GGrid::~GGrid()
 {
   if ( mass_ != NULLPTR ) delete mass_;
+  for ( auto j=0; j<gelems_.size(); j++ ) {
+    if ( gelems_[j] != NULLPTR ) delete gelems_[j];
+  }
 } // end, destructor
 
 
