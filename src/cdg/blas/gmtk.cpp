@@ -2881,9 +2881,9 @@ GFTYPE energy(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<GTVec
   GDOUBLE                     ener, local;
   GC_COMM                     comm = grid.get_comm();
 
- *tmp[1] = *u[0]; tmp[1]->pow(2);
+ *tmp[1] = *u[0]; tmp[1]->rpow(2);
   for ( GINT l=1; l<u.size(); l++ ) {
-    *tmp[0] = *u[l]; tmp[0]->pow(2);
+    *tmp[0] = *u[l]; tmp[0]->rpow(2);
     *tmp[1] += *tmp[0];
   }
 
@@ -2939,7 +2939,7 @@ GFTYPE enstrophy(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<GT
  *tmp[3] = 0.0;
   for ( GINT l=1; l<u.size(); l++ ) {
     GMTK::curl(grid, u, l, utmp, *cc);
-    cc->pow(2);
+    cc->rpow(2);
    *tmp[3] += *cc;
   }
 
@@ -3063,20 +3063,20 @@ GFTYPE relhelicity(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<
   // Compute |curl u|:
   for ( GINT l=0; l<u.size(); l++ ) {
     GMTK::curl(grid, u, l, utmp, *cc);
-    cc->pow(2);
+    cc->rpow(2);
     *tmp[4] += *cc;
   }
-  tmp[4]->pow(0.5);
+  tmp[4]->rpow(0.5);
 
 
   // Compute |u|:
   *tmp[0] = 0.0;
   for ( GINT l=0; l<u.size(); l++ ) {
    *tmp[1] = *u[l];
-    tmp[1]->pow(2);
+    tmp[1]->rpow(2);
     *tmp[0] += *tmp[1];
   }
-  tmp[0]->pow(0.5);
+  tmp[0]->rpow(0.5);
 
 
   // Compute u. (curl u) /|u| |curl u| integrand:

@@ -1383,21 +1383,22 @@ GTVector<T>::Eucnorm()
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : pow
+// METHOD : rpow
 // DESC   : Raise vector elems to power p, and modify array contents
 // ARGS   : p: power
 // RETURNS: none
 //**********************************************************************************
 template<class T>
 void
-GTVector<T>::pow(const GDOUBLE p)
+GTVector<T>::rpow(const GDOUBLE p)
 {
   assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
-  for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    data_[j] = std::pow(data_[j],p);
+  GLLONG j;
+  for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+    data_[j] = std::pow(data_[j], p);
   }
 
-} // end, pow
+} // end, rpow
 
 
 //**********************************************************************************

@@ -158,7 +158,7 @@ template <class T> class GTVector
     #pragma acc routine vector
     T Eucnorm();
     #pragma acc routine vector
-    void pow(GDOUBLE p);
+    void rpow(GDOUBLE p);
     #pragma acc routine vector
     void abs();
     #pragma acc routine vector
