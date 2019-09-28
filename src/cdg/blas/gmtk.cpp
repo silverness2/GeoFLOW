@@ -2214,7 +2214,7 @@ void compute_grefderiv(GGrid &grid, GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
   GSIZET               ibeg, iend; // beg, end indices for global array
   GBOOL                bembedded;
   GTVector<GSIZET>     N(GDIM);
-  GTMatrix<GFTYPE>     *Di;         // element-based 1d derivative operators
+  GTMatrix<GFTYPE>    *Di;         // element-based 1d derivative operators
   GElemList           *gelems = &grid.elems();
 
   bembedded = grid.gtype() == GE_2DEMBEDDED;
