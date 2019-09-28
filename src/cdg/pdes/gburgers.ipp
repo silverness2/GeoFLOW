@@ -120,13 +120,13 @@ steptop_callback_      (NULLPTR)
 template<typename TypePack>
 GBurgers<TypePack>::~GBurgers()
 {
-//if ( gmass_   != NULLPTR ) delete gmass_;
-//if ( gimass_  != NULLPTR ) delete gimass_;
+  if ( gmass_   != NULLPTR ) delete gmass_;
+  if ( gimass_  != NULLPTR ) delete gimass_;
 //if ( gflux_   != NULLPTR ) delete gflux_;
   if ( ghelm_   != NULLPTR ) delete ghelm_;
   if ( gadvect_ != NULLPTR ) delete gadvect_;
   if ( gpdv_    != NULLPTR ) delete gpdv_;
-//if ( gexrk_   != NULLPTR ) delete gexrk_;
+  if ( gexrk_   != NULLPTR ) delete gexrk_;
 
 } // end, destructor
 
