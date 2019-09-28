@@ -241,6 +241,7 @@ void GBurgers<TypePack>::dudt_impl(const Time &t, const State &u, const State &u
     GTimerStart("advection_time");
     gadvect_->apply   (*u[0], c_ , uoptmp_, *dudt[0]); // apply advection
     GTimerStop("advection_time");
+
     ghelm_->opVec_prod(*u[0], uoptmp_, *urhstmp_[0]);  // apply diffusion
     GMTK::saxpby<GFTYPE>(*urhstmp_[0], -1.0, *dudt[0], -1.0);
     gimass_->opVec_prod(*urhstmp_[0], uoptmp_, *dudt[0]); // apply M^-1
@@ -299,16 +300,10 @@ void GBurgers<TypePack>::step_impl(const Time &t, State &uin, State &uf, State &
     for ( auto j=0; j<uin.size(); j++ ) uevolve_ [j] = uin[j];
   }
 
-GFTYPE ener ;
-
   switch ( isteptype_ ) {
     case GSTEPPER_EXRK:
       for ( auto j=0; j<uold_.size(); j++ ) *uold_[j] = *uevolve_[j];
-ener = GMTK::energy(*grid_, uold_, utmp_, TRUE, FALSE);
-cout << "GBurgers<TypePack>::step_impl: 0: ener=" << ener << endl;
       step_exrk(t, uold_, uf, ub, dt, uevolve_);
-ener = GMTK::energy(*grid_, uevolve_, utmp_, TRUE, FALSE);
-cout << "GBurgers<TypePack>::step_impl: 1: ener=" << ener << endl;
       break;
     case GSTEPPER_BDFAB:
     case GSTEPPER_BDFEXT:
