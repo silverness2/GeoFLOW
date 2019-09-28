@@ -223,6 +223,7 @@ GTVector<T>::~GTVector()
 {
   #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
   if ( data_  != NULLPTR  && bdatalocal_ ) delete [] data_;
+  data_ = NULLPTR;
 }
 
 
