@@ -1392,11 +1392,8 @@ void
 GTVector<T>::pow(const GDOUBLE p)
 {
   assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
-  GDOUBLE tmp;
-  GLLONG j;
-  for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    tmp = std::pow(static_cast<GDOUBLE>(data_[j]),p);
-    data_[j] = static_cast<T>(tmp);
+  for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+    data_[j] = std::pow(data_[j],p);
   }
 
 } // end, pow
@@ -1414,11 +1411,9 @@ void
 GTVector<T>::abs()
 {
   assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
-  GDOUBLE tmp;
-  GLLONG j;
-  for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    tmp = sqrt( std::pow(static_cast<GDOUBLE>(data_[j]),2) );
-    data_[j] = static_cast<T>(tmp);
+  for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+//  tmp = sqrt( std::pow<GDOUBLE>(static_cast<GDOUBLE>(data_[j]),2) );
+    data_[j] = std::fabs(data_[j]);
   }
 
 } // end, abs
