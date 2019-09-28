@@ -16,14 +16,14 @@ set(EXTRA_FLAGS "${INSTR_FLAGS}")
 # ========================== Compiler (Serial) ==========================
 #
 set(CMAKE_C_COMPILER            "gcc")
-set(CMAKE_C_FLAGS               "-O0 -std=c++11 -finline-limit=2000 --param max-inline-insns-single=100000 -Winline ${EXTRA_FLAGS}")
-set(CMAKE_C_FLAGS_DEBUG         "-g -std=c++11 -finline-limit=2000 --param max-inline-insns-single=100000 -Winline ${EXTRA_FLAGS}")
-set(CMAKE_C_FLAGS_RELEASE       "-O0 -std=c++11 -finline-limit=2000 --param max-inline-insns-single=100000 -Winline ${EXTRA_FLAGS}")
+set(CMAKE_C_FLAGS               "-O0 -finline-limit=2000 --param max-inline-insns-single=100000 -Winline ${EXTRA_FLAGS}")
+set(CMAKE_C_FLAGS_DEBUG         "-g -finline-limit=2000 --param max-inline-insns-single=100000 -Winline ${EXTRA_FLAGS}")
+set(CMAKE_C_FLAGS_RELEASE       "-O0 -finline-limit=2000 --param max-inline-insns-single=100000 -Winline ${EXTRA_FLAGS}")
 
 set(CMAKE_CXX_COMPILER          "g++")
-set(CMAKE_CXX_FLAGS             "-O0 -finline-limit=2000 --param max-inline-insns-single=100000  -Winline ${EXTRA_FLAGS}")
-set(CMAKE_CXX_FLAGS_DEBUG       "-g -finline-limit=2000 --param max-inline-insns-single=100000  -Winline ${EXTRA_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELEASE     "-O0 -finline-limit=2000 --param max-inline-insns-single=100000  -Winline ${EXTRA_FLAGS}")
+set(CMAKE_CXX_FLAGS             "-O0 -std=c++11 -finline-limit=2000 --param max-inline-insns-single=100000  -Winline ${EXTRA_FLAGS}")
+set(CMAKE_CXX_FLAGS_DEBUG       "-g -std=c++11 -finline-limit=2000 --param max-inline-insns-single=100000  -Winline ${EXTRA_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELEASE     "-O0 -std=c++11 -finline-limit=2000 --param max-inline-insns-single=100000  -Winline ${EXTRA_FLAGS}")
 
 set(CMAKE_Fortran_COMPILER      "gfortran")
 set(CMAKE_Fortran_FLAGS         "-O0 -finline-limit=2000 --param max-inline-insns-single=100000 -Winline ${EXTRA_FLAGS}")
