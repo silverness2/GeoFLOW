@@ -294,11 +294,17 @@ void normalizeL2(GGrid &grid, GTVector<GTVector<T>*> &u, GTVector<GTVector<T>*> 
   GSIZET  n;
   GDOUBLE xn, xint;
 
+  // xinit gives 0.5  Int _u_^2 dV / Int dV:
   xint = static_cast<GDOUBLE>(GMTK::energy(grid, u, tmp, TRUE, FALSE));
-  xn   = E0 / sqrt(0.5*xint);
+  xn   = sqrt(E0 / xint);
   for ( GINT l=0; l<u.size(); l++ ) {
     *u[l] *= xn;
   }
+
+  // Check:
+  xint = static_cast<GDOUBLE>(GMTK::energy(grid, u, tmp, TRUE, FALSE));
+  std::cout << " GMTK: normalizeL2: E_final=" <<  xint << std::endl;
+  
 
 } // end of method normalizeL2
 

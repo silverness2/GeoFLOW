@@ -2864,7 +2864,8 @@ void vsphere2cart(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &vsph, GVectorT
 // METHOD : energy
 // DESC   : 
 //             Compute volume-integrated mean of energy from input 
-//             vector field
+//             vector field:
+//               energy = 0.5 * Int _u_^2 dV / Int dV
 //          
 // ARGS   : 
 //          grid    : grid object
@@ -2881,6 +2882,7 @@ GFTYPE energy(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<GTVec
   GDOUBLE                     ener, local;
   GC_COMM                     comm = grid.get_comm();
 
+  // Find _u_^2 = Sum_l u_l ^2
  *tmp[1] = *u[0]; tmp[1]->rpow(2);
   for ( GINT l=1; l<u.size(); l++ ) {
     *tmp[0] = *u[l]; tmp[0]->rpow(2);
