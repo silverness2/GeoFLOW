@@ -2104,7 +2104,7 @@ void grad(GGrid &grid, GTVector<GFTYPE> &u, const GINT idir,
 // DESC   : Project/constrain input 3-vector to sphere:
 //          -  -     -                           -   -  -
 //          |vx|     |(r^2-x^2)   -xy     -xz    |   |vx|
-//        P |vy| =   |   -yx    (r^2-x^2) -yz    |   |vy|
+//        P |vy| =   |   -yx    (r^2-y^2) -yz    |   |vy|
 //          |vz|     |   -zx      -zy   (r^2-z^2)|   |vz|
 //          -  -     -                           -   -  -
 //
