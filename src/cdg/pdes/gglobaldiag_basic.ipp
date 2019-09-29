@@ -18,7 +18,7 @@ GGlobalDiag_basic<EquationType>::GGlobalDiag_basic(const EqnBasePtr &equation, G
 ObserverBase<EquationType>(equation, grid, traits),
 bInit_          (FALSE),
 cycle_          (0),
-ocycle_         (1),
+ocycle_         (0),
 cycle_last_     (0),
 time_last_      (0.0),
 grid_           (&grid)
@@ -52,7 +52,8 @@ void GGlobalDiag_basic<EquationType>::observe_impl(const Time &t, const State &u
   if ( (traits_.itype == ObserverBase<EquationType>::OBS_CYCLE 
         && (cycle_-cycle_last_+1) >= traits_.cycle_interval)
     || (traits_.itype == ObserverBase<EquationType>::OBS_TIME  
-        &&  t-time_last_ >= traits_.time_interval) ) {
+        &&  t-time_last_ >= traits_.time_interval
+    || cycle_ == 0 ) ) {
 
     do_kinetic_L2 (t, u, uf, "gbalance.txt");
     do_kinetic_max(t, u, uf, "gmax.txt");
