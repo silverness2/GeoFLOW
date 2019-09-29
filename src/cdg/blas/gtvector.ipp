@@ -1393,9 +1393,12 @@ void
 GTVector<T>::rpow(const GDOUBLE p)
 {
   assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
-  GLLONG j;
+
+  GLLONG  j;
+  GDOUBLE b;
   for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    data_[j] = std::pow(data_[j], p);
+    b        = static_cast<GDOUBLE>(data_[j]);
+    data_[j] = static_cast<T>(pow(b, p));
   }
 
 } // end, rpow
