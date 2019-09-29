@@ -97,8 +97,6 @@ void GGlobalDiag_basic<EquationType>::init(const Time t, const State &u)
    icomptype->contains(GSC_KINETIC, iwhere, nwhere);
    for ( GSIZET j=0; j<nwhere; j++ ) ikinetic_.push_back(iwhere[j]);
 
-   if ( iwhere != NULLPTR ) delete [] iwhere;
-
    ku_.resize(ikinetic_.size());
    
    if ( iwhere != NULLPTR ) {
