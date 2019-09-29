@@ -187,6 +187,7 @@ GBOOL impl_abc_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Ti
 
 #endif
 
+  GMTK::constrain2sphere(grid, uf);
   GMTK::normalizeL2<GFTYPE>(grid, uf, utmp, E0);
 
   return TRUE;
