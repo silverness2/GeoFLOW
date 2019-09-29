@@ -301,10 +301,6 @@ void normalizeL2(GGrid &grid, GTVector<GTVector<T>*> &u, GTVector<GTVector<T>*> 
     *u[l] *= xn;
   }
 
-  // Check:
-  xint = static_cast<GDOUBLE>(GMTK::energy(grid, u, tmp, TRUE, FALSE));
-  std::cout << " GMTK: normalizeL2: E_final=" <<  xint << std::endl;
-  
 
 } // end of method normalizeL2
 
