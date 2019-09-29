@@ -1128,10 +1128,12 @@ template<class T>
 T
 GTVector<T>::amax()
 {
+  assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
+
   T fm = std::numeric_limits<T>::min();
 
   for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    fm = MAX(fm,fabs(this->data_[j]));
+    fm = MAX(fm,std::fabs(this->data_[j]));
   }
 
   return fm;
@@ -1150,6 +1152,8 @@ template<class T>
 T
 GTVector<T>::minn(GSIZET n)
 {
+  assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
+
   T fm = std::numeric_limits<T>::max();
 
   for ( GLLONG j=this->gindex_.beg(); j<this->gindex_.beg()+n && j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
@@ -1172,6 +1176,8 @@ template<class T>
 GSIZET
 GTVector<T>::imin()
 {
+  assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
+
   GSIZET imin;
   T fm = std::numeric_limits<T>::max();
 
@@ -1220,6 +1226,8 @@ template<class T>
 T
 GTVector<T>::amin()
 {
+  assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
+
   T fm = std::numeric_limits<T>::max();
 
   for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {

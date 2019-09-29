@@ -3083,20 +3083,26 @@ GFTYPE relhelicity(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<
   GFTYPE tiny = 100.0*numeric_limits<GFTYPE>::epsilon();
 
   tmp[0]->pointProd(*tmp[4]); // compute |u| |curl u|
-  for ( GINT k=0; k<utmp[0]->size(); k++ ) {
-   (*tmp[3])[k] = fabs((*tmp[0])[k]) <= tiny ? 0.0 : (*tmp[3])[k]/(*tmp[0])[k];  
+  for ( GSIZET k=0; k<utmp[0]->size(); k++ ) {
+    // (*tmp[1])[k] = fabs((*tmp[0])[k]) <= tiny ? 0.0 : (*tmp[3])[k]/(*tmp[0])[k];  
+    if ( fabs((*tmp[0])[k]) <= tiny ) {
+      (*tmp[1])[k] = 0.0;
+    }
+    else {
+      (*tmp[1])[k] = (*tmp[3])[k]/(*tmp[0])[k];
+    }
   }
 
 
   if ( ismax ) {
-    rhel =  static_cast<GDOUBLE>(tmp[3]->amax());
+    rhel =  static_cast<GDOUBLE>(tmp[1]->amax());
     if ( isglobal ) {
       local = rhel;
       GComm::Allreduce(&local, &rhel, 1, T2GCDatatype<GDOUBLE>() , GC_OP_MAX, comm);
     }
   }
   else {
-    rhel  = static_cast<GDOUBLE>(grid.integrate(*tmp[3], *tmp[0], isglobal));
+    rhel  = static_cast<GDOUBLE>(grid.integrate(*tmp[1], *tmp[0], isglobal));
     rhel *= static_cast<GDOUBLE>(grid.ivolume());
   }
 
