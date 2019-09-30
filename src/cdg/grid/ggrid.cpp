@@ -1077,7 +1077,7 @@ void GGrid::init_bc_info()
   igbdyt_.resize(nind);
   nind = 0;
   for ( auto j=0; j<igbdy_bydface_.size(); j++ ) {
-    for ( auto i=0; i<igbdy_bydface_.size(); i++ ) {
+    for ( auto i=0; i<igbdy_bydface_[j].size(); i++ ) {
       igbdy_ [nind  ] = igbdy_bydface_ [j][i];
       igbdyt_[nind++] = igbdyt_bydface_[j][i];
     }
