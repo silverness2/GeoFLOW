@@ -618,7 +618,6 @@ void GGrid::reg_geom_init()
      ibeg  = gelems_[e]->igbeg(); iend  = gelems_[e]->igend();
      ifbeg = gelems_[e]->ifbeg(); ifend = gelems_[e]->ifend();
      ibbeg = gelems_[e]->ibbeg(); ibend = gelems_[e]->ibend();
-cout << "reg_geom_init: ibbeg=" << ibbeg << " ibend=" << ibend << endl;
   
      xe    = &gelems_[e]->xNodes();
 

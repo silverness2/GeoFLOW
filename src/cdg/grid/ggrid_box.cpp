@@ -1002,7 +1002,6 @@ void GGridBox::config_bdy(const PropertyTree &ptree,
       }
     }
 
-cout << "GGridBox::config_bdy: itmp[" << j << "]=" << itmp << endl;
 
     // Set type for each bdy index:
     btmp.resize(itmp.size());
