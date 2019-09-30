@@ -14,17 +14,11 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include "configure.hpp"
 #if defined(_G_USE_GPTL)
   #include <gptl.h>
 #endif
 
-#include "configure.hpp"
-
-#if 0
-#if defined(_G_USE_GPTL)
-  #include "gptl.h"
-#endif
-#endif
 
 // Following is a list of preprocessor variables that may be set:
 // _G_AUTO_CREATE_DEV : Auto-copy/create classes on device
