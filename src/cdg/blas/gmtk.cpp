@@ -2036,6 +2036,10 @@ void curl(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &u, const GINT idir,
   // Handle 2d-2c regular types:
   else if ( GDIM == 2  && u.size() == 2 && grid.gtype() == GE_REGULAR ) {
     switch (idir) {
+      case 1:
+      case 2:
+        curlc = 0.0;
+        break;
       case 3:
         grid.deriv(*u[1], 1, *tmp[0], curlc);
         grid.deriv(*u[0], 2, *tmp[0], *tmp[1]);
@@ -2929,6 +2933,7 @@ GFTYPE enstrophy(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<GT
   assert(tmp.size() >= 4 && "Insufficient temp space");
 
   
+  GINT                        ibeg, iend;
   GDOUBLE                     enst, local;
   GC_COMM                     comm = grid.get_comm();
   GTVector<GFTYPE>           *cc;
@@ -2939,8 +2944,15 @@ GFTYPE enstrophy(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<GT
   cc      = tmp[2];
 
  *tmp[3] = 0.0;
-  for ( GINT l=1; l<u.size(); l++ ) {
-    GMTK::curl(grid, u, l, utmp, *cc);
+  if ( u.size() == 3 ) {
+    for ( GINT l=0; l<u.size(); l++ ) {
+      GMTK::curl(grid, u, l+1, utmp, *cc);
+      cc->rpow(2);
+     *tmp[3] += *cc;
+    }
+  }
+  else if ( u.size() == 2 ) {
+    GMTK::curl(grid, u, 3, utmp, *cc);
     cc->rpow(2);
    *tmp[3] += *cc;
   }
@@ -2996,10 +3008,12 @@ GFTYPE helicity(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<GTV
   cc      = tmp[2];
 
  *tmp[3] = 0.0;
-  for ( GINT l=1; l<u.size(); l++ ) {
-    GMTK::curl(grid, u, l, utmp, *cc);
-    cc->pointProd(*u[l]);
-   *tmp[3] += *cc;
+  if ( u.size() == 3 ) {
+    for ( GINT l=0; l<3; l++ ) {
+      GMTK::curl(grid, u, l+1, utmp, *cc);
+      if ( u.size() > l ) cc->pointProd(*u[l]);
+     *tmp[3] += *cc;
+    }
   }
 
   if ( ismax ) {
@@ -3056,18 +3070,27 @@ GFTYPE relhelicity(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<
  *tmp[4] = 0.0;
 
   // Compute u. curl u:
-  for ( GINT l=0; l<u.size(); l++ ) {
-    GMTK::curl(grid, u, l, utmp, *cc);
-    cc->pointProd(*u[l]);
-   *tmp[3] += *cc;
+  if ( u.size() == 3 ) {
+    for ( GINT l=0; l<3; l++ ) {
+      GMTK::curl(grid, u, l+1, utmp, *cc);
+      cc->pointProd(*u[l]);
+     *tmp[3] += *cc;
+    }
   }
   
   // Compute |curl u|:
-  for ( GINT l=0; l<u.size(); l++ ) {
-    GMTK::curl(grid, u, l, utmp, *cc);
-    cc->rpow(2);
-    *tmp[4] += *cc;
+  if ( u.size() == 3 ) {
+    for ( GINT l=0; l<3; l++ ) {
+      GMTK::curl(grid, u, l+1, utmp, *cc);
+      cc->rpow(2);
+     *tmp[4] += *cc;
+    }
   }
+  else if ( u.size() == 2 ) {
+    GMTK::curl(grid, u, 3, utmp, *cc);
+    cc->rpow(2);
+   *tmp[4] += *cc;
+  } 
   tmp[4]->rpow(0.5);
 
 
