@@ -11,6 +11,7 @@
 #include <cmath>
 #include <limits>
 #include <typeinfo>
+#include "gtypes.h"
 #include "gelem_base.hpp"
 #include "ggrid.hpp"
 #include "gmass.hpp"
