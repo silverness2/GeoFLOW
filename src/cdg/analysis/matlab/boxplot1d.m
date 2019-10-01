@@ -64,11 +64,11 @@ for itask = 0:ntasks-1
     xx = x{1}(icurr:icurr+lelem-1);
 %   yy = x{2}(icurr:icurr+lelem-1);
     uu = u   (icurr:icurr+lelem-1);
-    ib = jindex*NN(1) + 1 
-    ie = ib + NN(1) 
+    ib = jindex*NN(1) + 1; 
+    ie = ib + NN(1); 
      
-    ibn = (n-1)*NN(1) + 1 
-    ien = ibn + NN(1) 
+    ibn = (n-1)*NN(1) + 1; 
+    ien = ibn + NN(1); 
     xn(ibn:ien) = xx(ib:ie);
     un(ibn:ien) = uu(ib:ie);
 
