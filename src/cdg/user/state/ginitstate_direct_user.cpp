@@ -89,8 +89,10 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
   for ( i=0, brot=TRUE; i<GDIM; i++ ) brot = brot && K[i] != 0.0 ;
   for ( i=0, idir=0; i<GDIM; i++ ) if ( K[i] > 0 ) {idir=i; break;}
 
-  if ( t == 0.0 ) t = K2 * t0;
+  if ( time == 0.0 ) time = K2 * t0;
   Re = A/(2.0*nu); // set Re from nu
+
+  cout << "impl_boxnwaveburgers: nu=" << nu << " Re=" << Re << " time=" << time << endl;
 
 
   for ( j=0; j<nxy; j++ ) {
@@ -109,9 +111,9 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
 
     // u(x,t) = (x/t) [ 1 + sqrt(t/t0) (e^Re - 1)^-1 exp(x^2/(4 nu t)) ]^-1
     tdenom = 1.0/(4.0*nu*time);
-    tfact  = bplanar ? sqrt(t/t0): time/t0;
+    tfact  = bplanar ? sqrt(time/t0): time/t0;
     efact  = tfact * exp(r2*tdenom) / ( exp(Re) - 1.0 );
-    xfact  = 1.0 /( t * (  1.0 + efact ) );
+    xfact  = 1.0 /( time * (  1.0 + efact ) );
     for ( i=0; i<GDIM; i++ ) (*u[i])[j] = xx[i]*xfact;
     // dU1max = 1.0 / ( time * (sqrt(time/A) + 1.0) );
     // aArea  = 4.0*nu*log( 1.0 + sqrt(A/time) );
