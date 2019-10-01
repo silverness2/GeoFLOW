@@ -128,7 +128,7 @@ void GGlobalDiag_basic<EquationType>::do_kinetic_L2(const Time t, const State &u
   
   GBOOL   isreduced= FALSE;
   GBOOL   ismax    = FALSE;
-  GINT    ndim = grid_->gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+  GINT    nd, ndim = grid_->gtype() == GE_2DEMBEDDED ? 3 : GDIM;
   GFTYPE absu, absw, ener, enst, hel, fv, rhel;
   GTVector<GFTYPE> lmax(5), gmax(5);
 
@@ -147,7 +147,8 @@ void GGlobalDiag_basic<EquationType>::do_kinetic_L2(const Time t, const State &u
   // Enstrophy = <omega^2>/2
   lmax[1] = 0.0;
   if ( ku_.size() == 1 || traits_.treat_as_1d ) {
-    for ( GINT j=0; j<traits_.treat_as_1d?1:ndim; j++ ) {
+    nd = traits_.treat_as_1d ? 1 : ndim;
+    for ( GINT j=0; j<nd; j++ ) {
       GMTK::grad<GFTYPE>(*grid_, *ku_[0], j+1, utmp, *utmp[2]);
       utmp[2]->rpow(2);
       lmax[1] += grid_->integrate(*utmp[2],*utmp[0], isreduced); 
@@ -215,8 +216,8 @@ void GGlobalDiag_basic<EquationType>::do_kinetic_max(const Time t, const State &
 
   GBOOL   isreduced= FALSE;
   GBOOL   ismax    = TRUE;
-  GINT   ndim = grid_->gtype() == GE_2DEMBEDDED ? 3 : GDIM;
-  GFTYPE absu, absw, ener, enst, hel, fv, rhel;
+  GINT    nd, ndim = grid_->gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+  GFTYPE  absu, absw, ener, enst, hel, fv, rhel;
   GTVector<GFTYPE> lmax(5), gmax(5);
 
   // Make things a little easier:
@@ -232,12 +233,11 @@ void GGlobalDiag_basic<EquationType>::do_kinetic_max(const Time t, const State &
   // Enstrophy = <omega^2>/2
   lmax[1] = 0.0;
   if ( ku_.size() == 1 || traits_.treat_as_1d ) {
-    for ( GINT j=0; j<traits_.treat_as_1d?1:ndim; j++ ) {
+    nd = traits_.treat_as_1d ? 1 : ndim;
+    for ( GINT j=0; j<nd; j++ ) {
       GMTK::grad<GFTYPE>(*grid_, *ku_[0], j+1, utmp, *utmp[2]);
-      utmp[2]->rpow(2);
-      lmax[1] += grid_->integrate(*utmp[2],*utmp[0], isreduced); 
+      lmax[1] = MAX(lmax[1],utmp[2]->amax()); 
     }
-    lmax[1] *= 0.5*grid_->ivolume();
   }
   else {
     lmax[1] = GMTK::enstrophy(*grid_, ku_, utmp, isreduced, ismax);

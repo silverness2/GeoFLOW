@@ -232,6 +232,14 @@ GBOOL GInitStateFactory<EquationType>::doinitv(const PropertyTree &ptree, GStrin
       bret = ginitv::impl_abc_box (ptree, sconfig, grid, time, utmp, ub, u);
     }
   } 
+  else if ( "simplesum" == sinit ) { // simple-wave sum init
+    if      ( icos != NULLPTR ) {
+      bret = ginitv::impl_simsum_icos(ptree, sconfig, grid, time, utmp, ub, u);
+    }
+    else  {
+      bret = ginitv::impl_simsum_box (ptree, sconfig, grid, time, utmp, ub, u);
+    }
+  } 
   else if ( "random" == sinit ) {
     bret = ginitv::impl_rand   (ptree, sconfig, grid, time, utmp, ub, u);
   } 
