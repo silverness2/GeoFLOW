@@ -133,7 +133,7 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
   if ( dolog ) {
     #pragma omp parallel for  private(ibin,test)
     for ( j=0; j<nkeep_; j++ ) {
-      test = log10(fabs(u(ikeep_[j]))+tiny);
+      test = log10(fabs(u[ikeep_[j]])+tiny);
       ibin = static_cast<GSIZET> ( ( test - fmin )/del+1 );
       ibin = MIN(MAX(ibin,1),nbins_);
       #pragma omp atomic
@@ -143,7 +143,7 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
   else {
     #pragma omp parallel for  private(ibin,test)
     for ( j=0; j<nkeep_; j++ ) {
-      test = fabs(u(ikeep_[j]));
+      test = fabs(u[ikeep_[j]]);
       ibin = static_cast<GSIZET> ( ( test - fmin )/del+1 );
       ibin = MIN(MAX(ibin,1),nbins_);
       #pragma omp atomic
@@ -156,7 +156,7 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
   #pragma omp parallel for  default(shared) reduction(+:fbin)
   for ( j=0; j<nbins_; j++ ) {
     #pragma omp atomic
-    fbin += lpdf_(ibin);
+    fbin += lpdf_[j];
   }
   assert( fbin == nkeep_ && "Inconsistent binning");
 
