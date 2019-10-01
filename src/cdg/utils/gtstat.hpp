@@ -14,6 +14,7 @@
 #include <limits>
 #include <iostream>
 #include <vector>
+#include <cassert>
 #include "gtypes.h"
 #include "gtvector.hpp"
 #include "gtmatrix.hpp"
@@ -23,27 +24,32 @@
 
 template <class T> class GTStat
 {
-  assert(std::is_floating_point<T>::value && "Requires floating point template parameter");
+  static_assert(std::is_floating_point<T>::value, "Requires floating point template parameter");
 
   public:
 
            GTStat<T>() = delete;
            GTStat<T>(GSIZET nbins, GC_COMM icomm=GC_COMM_WORLD);
+           GTStat<T>(const GTStat<T> &obj);
           ~GTStat<T>() = default;
     
-    void   set_nbins(GSIZE nbins)
-             {nbins_ = nbin;)             // Set no. bins
-    void   get_nbins(GSIZE nbin)
-             {return nbins_ );            // Get no. bins
-    void   dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GDOOL dolog, GTVector<T> &pdf);
-    void   dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GDOOL dolog, const GString &fname); 
+    void   set_nbins(GSIZET nbins)
+             {nbins_ = nbins; 
+              lpdf_.resize(nbins);}        // Set no. bins
+    GSIZET &get_nbins() const
+             {return nbins_; }             // Get no. bins
+    void   dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dolog, GTVector<T> &pdf);
+    void   dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dolog, const GString &fname); 
     
 
   private:
 
     GINT             myrank_;   // task's rank
+    GC_COMM          comm_;     // GC_COMM handle
     GSIZET           nbins_;    // no. bins
     GSIZET           nkeep_;    // no. stoch var indices kept
+    T                gavg_;     // avg of PDF
+    T                sig_;      // std deviation of PDF
     GTVector<GSIZET> ikeep_;    // indirection indices to valid values
     GTVector     <T> lpdf_ ;    // local pdf
     GTVector     <T> gpdf_ ;    // globally-reduced pdf
