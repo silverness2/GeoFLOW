@@ -17,6 +17,12 @@
 #include "gtmatrix.hpp"
 #include "gtstat.hpp"
 #include "gio.h"
+#include "tbox/mpixx.hpp"
+#include "tbox/global_manager.hpp"
+#include "tbox/input_manager.hpp"
+
+
+using namespace std;
 
 GC_COMM      comm_ ;      // communicator
 
@@ -24,7 +30,7 @@ GC_COMM      comm_ ;      // communicator
 int main(int argc, char **argv)
 {
     GBOOL   dolog=FALSE, bfixeddr=FALSE, bret;
-    GINT    errcode=0; 
+    GINT    errcode=0, iopt; 
     GSIZET  nbins=500;
     GFTYPE  fmin=0.0, fmax=0.0;
     GString finput, foutput, spref="pdf1d";
@@ -91,7 +97,7 @@ int main(int argc, char **argv)
 
     // Process each file specified:
     for ( ; optind < argc; optind++ ) {
-      finput  = arv[optind];
+      finput  = argv[optind];
       foutput = spref + "_" + finput;
 
       // read in data
