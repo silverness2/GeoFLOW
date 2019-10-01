@@ -92,6 +92,8 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
   if ( time <= 10.0*std::numeric_limits<GFTYPE>::epsilon() ) time = K2 * t0;
   Re = A/(2.0*nu); // set Re from nu
 
+  cout << "impl_boxnwaveburgers: nu=" << nu << " Re=" << Re << " time=" << time << endl;
+
 
   for ( j=0; j<nxy; j++ ) {
     for ( i=0; i<GDIM; i++ ) {
