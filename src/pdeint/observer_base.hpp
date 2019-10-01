@@ -43,6 +43,7 @@ public:
          * Data structure to hold user selected parameters
          */
         struct Traits {
+                bool      treat_as_1d    = false;     // treat obs in 1d sense
                 int       imisc          = 0;         // obs output type
                 int       itag1          = 0;         // integer tag
                 int       itag2          = 0;         // integer tag

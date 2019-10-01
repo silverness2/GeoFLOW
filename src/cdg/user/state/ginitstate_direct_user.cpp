@@ -36,7 +36,7 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
   GBOOL            bplanar=TRUE; // planar or circularized
   GBOOL            brot   =FALSE;
   GSIZET           i, j, idir, nxy;
-  GFTYPE           A, K2, nu, Re, r2, t, t0, tdenom;
+  GFTYPE           A, K2, nu, Re, r2, t0, tdenom;
   GFTYPE           efact, sum, tfact, xfact;
   GTVector<GFTYPE> K(GDIM), xx(GDIM), si(GDIM), sig(GDIM);
   GTPoint<GFTYPE>  r0(3), P0(3), gL(3);
@@ -89,7 +89,7 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
   for ( i=0, brot=TRUE; i<GDIM; i++ ) brot = brot && K[i] != 0.0 ;
   for ( i=0, idir=0; i<GDIM; i++ ) if ( K[i] > 0 ) {idir=i; break;}
 
-  if ( time == 0.0 ) time = K2 * t0;
+  if ( time <= 10.0*std::numeric_limits<GFTYPE>::epsilon() ) time = K2 * t0;
   Re = A/(2.0*nu); // set Re from nu
 
   cout << "impl_boxnwaveburgers: nu=" << nu << " Re=" << Re << " time=" << time << endl;
@@ -115,9 +115,11 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
     efact  = tfact * exp(r2*tdenom) / ( exp(Re) - 1.0 );
     xfact  = 1.0 /( time * (  1.0 + efact ) );
     for ( i=0; i<GDIM; i++ ) (*u[i])[j] = xx[i]*xfact;
+//cout << "impl_boxnwaveburgers: ux[" << j << "]=" << (*u[0])[j] << endl;
     // dU1max = 1.0 / ( time * (sqrt(time/A) + 1.0) );
     // aArea  = 4.0*nu*log( 1.0 + sqrt(A/time) );
   }
+
 
   return TRUE;
 

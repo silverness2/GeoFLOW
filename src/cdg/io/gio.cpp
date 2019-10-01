@@ -70,6 +70,7 @@ void gio_write_state(GIOTraits &traits, GGrid &grid,
     for ( auto j=0; j<iu.size(); j++ ) {
       sprintf(cfname_, format.str().c_str(), traits.dir.c_str(), 
               svars[j].c_str(), traits.index, myrank);
+      assert(iu[j] >= 0 && iu[j] < u.size() && "Invalid state component index");
       fname_.assign(cfname_);
       gio_write(traits, fname_, *u[iu[j]]);
     }

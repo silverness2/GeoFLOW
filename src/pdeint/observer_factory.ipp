@@ -33,7 +33,8 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, EqnBasePtr& equation
         std::vector<std::string> defst_names = {"u1","u2","u3","u4","u5","u6","u7","u8","u9"};
         std::vector<std::string> defgr_names = {"xgrid","ygrid","zgrid"};;
         std::vector<int> def_ids;
-        traits.state_index   = ptree.getArray<int>        ("state_index",def_ids);    // state ids to 'observe' [0, 1, 2...]
+        traits.treat_as_1d   = ptree.getValue<bool>       ("treat_as_1d",false);        // treat-as-1d flag
+        traits.state_index   = ptree.getArray<int>        ("state_index",def_ids);      // state ids to 'observe' [0, 1, 2...]
         traits.state_names   = ptree.getArray<std::string>("state_names",defst_names);  // state names 
         traits.grid_names    = ptree.getArray<std::string>("grid_names",defgr_names);   // grid comp names 
         traits.cycle_interval= ptree.getValue<size_t>     ("cycle_interval", 10);       // cadence for cycle type

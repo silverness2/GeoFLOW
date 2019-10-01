@@ -146,8 +146,8 @@ void GGlobalDiag_basic<EquationType>::do_kinetic_L2(const Time t, const State &u
 
   // Enstrophy = <omega^2>/2
   lmax[1] = 0.0;
-  if ( ku_.size() == 1 ) {
-    for ( GINT j=0; j<ndim; j++ ) {
+  if ( ku_.size() == 1 || traits_.treat_as_1d ) {
+    for ( GINT j=0; j<traits_.treat_as_1d?1:ndim; j++ ) {
       GMTK::grad<GFTYPE>(*grid_, *ku_[0], j+1, utmp, *utmp[2]);
       utmp[2]->rpow(2);
       lmax[1] += grid_->integrate(*utmp[2],*utmp[0], isreduced); 
@@ -231,8 +231,8 @@ void GGlobalDiag_basic<EquationType>::do_kinetic_max(const Time t, const State &
  
   // Enstrophy = <omega^2>/2
   lmax[1] = 0.0;
-  if ( ku_.size() == 1 ) {
-    for ( GINT j=0; j<ndim; j++ ) {
+  if ( ku_.size() == 1 || traits_.treat_as_1d ) {
+    for ( GINT j=0; j<traits_.treat_as_1d?1:ndim; j++ ) {
       GMTK::grad<GFTYPE>(*grid_, *ku_[0], j+1, utmp, *utmp[2]);
       utmp[2]->rpow(2);
       lmax[1] += grid_->integrate(*utmp[2],*utmp[0], isreduced); 
