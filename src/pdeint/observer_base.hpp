@@ -48,7 +48,6 @@ public:
                 int       itag1          = 0;         // integer tag
                 int       itag2          = 0;         // integer tag
                 int       itag3          = 0;         // integer tag
-                int       ilevel         = 0;         // output level (volume of data)
                 ObsType   itype          = OBS_CYCLE; // obs output type
                 std::vector<int>     
                           state_index;                // which state members to observe
@@ -56,6 +55,8 @@ public:
                           state_names;                // file/ref names for each state member
                 std::vector<std::string>
                           grid_names;                 // file/ref names for each grid comp
+                std::vector<std::string>
+                          derived_types(3);           // derived types: [type, function, output name]
                 size_t    start_ocycle   = 0;         // starting output cycle 
 //              size_t    start_cycle    = 0;         // starting evol cycle 
                 size_t    cycle_interval = 10;        // cycle interval for observation
