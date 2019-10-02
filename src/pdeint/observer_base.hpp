@@ -48,6 +48,7 @@ public:
                 int       itag1          = 0;         // integer tag
                 int       itag2          = 0;         // integer tag
                 int       itag3          = 0;         // integer tag
+                int       ilevel         = 0;         // output level (volume of data)
                 ObsType   itype          = OBS_CYCLE; // obs output type
                 std::vector<int>     
                           state_index;                // which state members to observe
