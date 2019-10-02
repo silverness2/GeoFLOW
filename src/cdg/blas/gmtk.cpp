@@ -108,6 +108,9 @@ void curl(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &u, const GINT idir,
         break;
     }
   }
+  else {
+    assert(FALSE && "Curl cannot be computed");
+  }
 
 
   return;
