@@ -16,12 +16,12 @@
 template<typename EquationType>
 GPosixIOObserver<EquationType>::GPosixIOObserver(const EqnBasePtr &equation, Grid &grid,  typename ObserverBase<EquationType>::Traits &traits):
 ObserverBase<EquationType>(equation, grid, traits),
-bprgrid_        (TRUE),
+bprgrid_         (TRUE),
 bInit_          (FALSE),
-cycle_          (0),
-ocycle_         (0),
-cycle_last_     (0),
-time_last_      (0.0)
+cycle_              (0),
+ocycle_             (0),
+cycle_last_         (0),
+time_last_        (0.0)
 { 
   this->traits_ = traits;
   this->grid_   = &grid;
