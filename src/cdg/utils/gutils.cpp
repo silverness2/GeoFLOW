@@ -37,7 +37,7 @@ GBdyType str2bdytype(const GString &stype)
 // ARGS   : stype: string type
 // RETURNS: GStateCompType
 //**********************************************************************************
-GStateCompType str2bdytype(const GString &stype)
+GStateCompType str2comptype(const GString &stype)
 {
   GString s0;
   for ( auto j=0; j<GBDY_NONE; j++ ) {
