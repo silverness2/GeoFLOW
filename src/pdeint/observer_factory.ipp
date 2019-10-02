@@ -24,6 +24,9 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, EqnBasePtr& equation
         // Set traits from prop tree:
         typename ObserverBase<ET>::Traits traits;
 
+        // Set default derived types:
+        std::vector<std::vector<std::string>> defq;
+
         // Get whether 'observation' cadence should be by cycle or time:
         std::string stype = ptree.getValue<std::string>("cadence_type","none");
         if      ( "cycle" == stype )  traits.itype = ObserverBase<ET>::OBS_CYCLE;
@@ -45,6 +48,9 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, EqnBasePtr& equation
         traits.start_ocycle  = ptree.getValue<size_t>     ("start_ocycle",0);           // starting output cycle 
 //      traits.start_cycle   = ptree.getValue<size_t>     ("start_cycle",0);            // start evol cycle
         traits.start_time    = ptree.getValue<double>     ("start_time",0.0);           // start evol time
+        traits.derived_quantities
+                             = ptree.getArray<std::vector<std::vector<std::gstring>>  
+                                   ("derived_quantities",defq);                         // list of derived quantities to output
      
 	// Create the observer and cast to base type
 	ObsBasePtr base_ptr;

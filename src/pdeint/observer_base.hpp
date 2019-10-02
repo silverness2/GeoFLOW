@@ -55,8 +55,8 @@ public:
                           state_names;                // file/ref names for each state member
                 std::vector<std::string>
                           grid_names;                 // file/ref names for each grid comp
-                std::vector<std::string>
-                          derived_types;              // derived types: [type, function, output name]
+                std::vector<std::vector<std::string>>
+                          derived_quantities;         // derived types: [ [type, function, output name],..]
                 size_t    start_ocycle   = 0;         // starting output cycle 
 //              size_t    start_cycle    = 0;         // starting evol cycle 
                 size_t    cycle_interval = 10;        // cycle interval for observation
