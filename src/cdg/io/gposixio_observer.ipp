@@ -72,6 +72,10 @@ void GPosixIOObserver<EquationType>::observe_impl(const Time &t, const State &u,
     traits.dir    = sodir_;
     gio_write_state(traits, *(this->grid_), u, state_index_, state_names_,  comm);
     gio_write_grid (traits, *(this->grid_), grid_names_,  comm);
+
+    // Cycle through derived quantities, and write:
+    print_derived(t, u, traits, comm);
+
     bprgrid_      = FALSE;
     cycle_last_   = cycle_;
     time_last_    = t;
@@ -91,7 +95,7 @@ void GPosixIOObserver<EquationType>::observe_impl(const Time &t, const State &u,
 // RETURNS    : none.
 //**********************************************************************************
 template<typename EquationType>
-void GPosixIOObserver<EquationType>::init(const Time t, const State &u)
+void GPosixIOObserver<EquationType>::init(const Time &t, const State &u)
 {
 
    if ( bInit_ ) return;
@@ -157,4 +161,55 @@ void GPosixIOObserver<EquationType>::init(const Time t, const State &u)
   bInit_ = TRUE;
 
 } // end of method init
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD     : print_derived 
+// DESCRIPTION: Write derived quantities
+// ARGUMENTS  : t     : state time
+//              u     : state variable used to compute derived quantities
+//              traits: GIOTraits structure  for printing
+//              comm  : communicator
+// RETURNS    : none.
+//**********************************************************************************
+template<typename EquationType>
+void GPosixIOObserver<EquationType>::print_derived(const Time &t, const State &u, GIOTraits &traits, const GC_COMM &comm)
+{
+
+  GINT               ntmp;
+  GString            sop;   // math operation
+  GTVector<GString>  sdqnames;
+  GTVector<GINT>     iuin(3), iuout(3);
+  State              tmp(3), uu(3), uout(3);
+  char               stmp[1024];
+
+    // Cycle through derived quantities, and write:
+    for ( auto j=0; j<this->traits_.derived_quantities.size(); j++ ) {
+      iuin    .resize(this->traits_.derived_quantities[j].icomponents.size());
+      sdqnames.resize(this->traits_.derived_quantities[j].snames    .size());
+      iuin     = this->traits_.derived_quantities[j].icomponents;
+      sdqnames = this->traits_.derived_quantities[j].snames;
+      sop      = this->traits_.derived_quantities[j].smath_op;
+      uu.resize(iuin.size());
+      ntmp     = this->utmp_->size() - uout.size();
+      for ( auto i=0; i<uu  .size(); i++ ) uu  [i] = u[iuin[i]];
+      for ( auto i=0; i<uout.size(); i++ ) uout[i] = (*(this->utmp_))[i];
+      for ( auto i=0; i<uout.size(); i++ ) uout[i] = (*(this->utmp_))[i];
+      for ( auto i=0; i<ntmp       ; i++ ) tmp [i] = (*(this->utmp_))[i+3];
+   
+      GMTK::domathop(*(this->grid_), uu, sop, tmp, uout, iuout);
+      if ( sdqnames.size() < iuout.size() ) { // set default names
+        sdqnames.resize(iuout.size());
+        for ( auto i=0; i<iuout.size(); i++ ) {
+          sprintf(stmp, "derived%d_c%d", j+1, i+1);
+          sdqnames[j] = stmp; 
+        }
+      }
+
+      gio_write_state(traits, *(this->grid_), uout, iuout, sdqnames,  comm);
+    }
+
+
+} // end of method print_derived
 

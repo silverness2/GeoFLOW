@@ -40,6 +40,16 @@ public:
 	using Size        = typename Equation::Size;
 
         /**
+         * Data structure to describe quantities derived from state data
+         */
+        struct dqTraits {
+                std::vector<int>    icomponents;      // which state components to use     
+                std::vector<std::string>   
+                                    snames;           // names for computed components
+                std::string         smath_op;         // which math op to use to compute
+        };
+
+        /**
          * Data structure to hold user selected parameters
          */
         struct Traits {
@@ -55,7 +65,7 @@ public:
                           state_names;                // file/ref names for each state member
                 std::vector<std::string>
                           grid_names;                 // file/ref names for each grid comp
-                std::vector<std::vector<std::string>>
+                std::vector<dqTraits>
                           derived_quantities;         // derived types: [ [type, function, output name],..]
                 size_t    start_ocycle   = 0;         // starting output cycle 
 //              size_t    start_cycle    = 0;         // starting evol cycle 

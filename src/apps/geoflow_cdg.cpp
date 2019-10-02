@@ -310,7 +310,7 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
         deltat      = obsptree.getValue<GDOUBLE>("time_interval",0.01);
         deltac      = obsptree.getValue<GDOUBLE>("cycle_interval",1);
         // Set current time and output cycle so that observer can initialize itself
-        // These should be hidden from the config file:
+        // These could/should be hidden from the config file:
         if ( "posixio_observer" == obslist[j]  ) ofact = 1.0;
         obsptree.setValue <GSIZET>("start_ocycle",MAX(0.0,rest_ocycle*ofact));
         obsptree.setValue <GFTYPE>("start_time"  ,time);
@@ -318,7 +318,7 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
         obsptree.setValue <GSIZET>("cycle_interval",MAX(1.0,deltac/ofact));
         obsptree.setValue<GString>("cadence_type",ctype);
 
-        pObservers->push_back(ObserverFactory<MyTypes>::build(obsptree, pEqn, *grid_));
+        pObservers->push_back(ObserverFactory<MyTypes>::build(ptree, obslist[j], pEqn, *grid_));
       }
     }
 
