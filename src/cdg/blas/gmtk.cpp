@@ -2008,11 +2008,12 @@ void curl(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &u, const GINT idir,
 
   assert(tmp.size() >= 2 && "Insufficient temp space");
 
-  // Handle 2.5-d 2d-3c case:
   // Handle 1c cases in 2d or 3d:
   if  ( u.size() < 2 ) {
      curlc = 0.0; 
   }
+
+  // Handle 2.5-d or 2d-3c case:
   else if ( GDIM == 2 && u.size() > GDIM && grid.gtype() != GE_2DEMBEDDED ) {
     switch (idir) {
       case 1:
