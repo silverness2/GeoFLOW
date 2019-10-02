@@ -83,7 +83,7 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
                 traits.itag3  = obstree.getValue <GINT>("filename_size",2048);  
 
                 // Fill derived quantities strutures, if any:
-                dqnames       = ptree.getArray<std::string> ("derived_quantities",defq);  // list of derived quantities to output
+                dqnames       = obstree.getArray<std::string> ("derived_quantities",defq);  // list of derived quantities to output
                 traits.derived_quantities.resize(dqnames.size());
                 for ( auto j=0; j<dqnames.size(); j++ ) {
                   dqtree = ptree.getPropertyTree(dqnames[j]); // get prop tree for named quantity

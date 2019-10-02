@@ -191,12 +191,17 @@ void GPosixIOObserver<EquationType>::print_derived(const Time &t, const State &u
       iuin     = this->traits_.derived_quantities[j].icomponents;
       sdqnames = this->traits_.derived_quantities[j].snames;
       sop      = this->traits_.derived_quantities[j].smath_op;
+
+      assert( iuin.size() > 0 && "Derived quantities require state component(s)");
+      assert( iuin.min() >= 0 && iuin.max()< u.size()  && "Invalid component indices");
+      if ( "" == sop ) continue; // nothing to do
+
       uu.resize(iuin.size());
       ntmp     = this->utmp_->size() - uout.size();
       for ( auto i=0; i<uu  .size(); i++ ) uu  [i] = u[iuin[i]];
       for ( auto i=0; i<uout.size(); i++ ) uout[i] = (*(this->utmp_))[i];
       for ( auto i=0; i<uout.size(); i++ ) uout[i] = (*(this->utmp_))[i];
-      for ( auto i=0; i<ntmp       ; i++ ) tmp [i] = (*(this->utmp_))[i+3];
+      for ( auto i=0; i<3          ; i++ ) tmp [i] = (*(this->utmp_))[i+3];
    
       GMTK::domathop(*(this->grid_), uu, sop, tmp, uout, iuout);
       if ( sdqnames.size() < iuout.size() ) { // set default names
