@@ -40,7 +40,10 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
         std::string stype = obstree.getValue<std::string>("cadence_type","none");
         if      ( "cycle" == stype )  traits.itype = ObserverBase<ET>::OBS_CYCLE;
         else if ( "time"  == stype )  traits.itype = ObserverBase<ET>::OBS_TIME;
-        else EH_ERROR("Invalid observer type specified");
+        else if ( "none" != stype ) {
+          cout << "ObserverFactory<ET>::build: stype=" << stype << endl;
+          EH_ERROR("Invalid observer type specified");
+        }
 
         std::vector<std::string> defst_names = {"u1","u2","u3","u4","u5","u6","u7","u8","u9"};
         std::vector<std::string> defgr_names = {"xgrid","ygrid","zgrid"};;
