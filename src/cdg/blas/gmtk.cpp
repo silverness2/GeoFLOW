@@ -3222,11 +3222,12 @@ GFTYPE energyinj(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &u,  const GTVec
 //          tmp     : tmp vector of length at least 1, each
 //                    of same length as uin
 //          uout    : output array
-//                    instead of computing mean
+//          iuout   : which indices of uout contain valid output data; 
+//                    sized to reflect valid number of components
 // RETURNS: none
 //**********************************************************************************
 template<>
-void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GString sop, GTVector<GTVector<GFTYPE>*> &utmp, GTVector<GTVector<GFTYPE>*> &uout)
+void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GString sop, GTVector<GTVector<GFTYPE>*> &utmp, GTVector<GTVector<GFTYPE>*> &uout, GTVector<GINT> &iuout)
 {
 
   GINT                        nxy;
@@ -3239,6 +3240,7 @@ void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GStrin
     assert(uin  .size() >= nxy && "Insufficient no. input components");
     assert(uout .size() >= nxy && "Insufficient no. output components");
     GMTK::grad(grid, *uin[0], 1, utmp, *uout[0]);
+    iuout.resizem(1); iuout[0] = 0;
     for ( auto j=1; j<nxy; j++ ) {
       GMTK::grad(grid, *uin[j], j+1, utmp, *utmp[utmp.size()-1]);
       *uout[0] += *utmp[utmp.size()-1];
@@ -3250,8 +3252,10 @@ void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GStrin
     assert(utmp .size() >= 1   && "Insufficient temp space");
     assert(uin  .size() >= 1   && "Insufficient no. input components");
     assert(uout .size() >= nxy && "Insufficient no. output components");
+    iuout.resizem(nxy); 
     for ( auto j=0; j<nxy; j++ ) {
       GMTK::grad(grid, *uin[0], j+1, utmp, *uout[j]);
+      iuout[j] = j; 
     }
   }
   else if ( "curl" == sop ) { // operates on a vector field...
@@ -3260,8 +3264,10 @@ void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GStrin
     assert(utmp .size() >= 2   && "Insufficient temp space");
     assert(uin  .size() >= nxy && "Insufficient no. input components");
     assert(uout .size() >= nxy && "Insufficient no. output components");
+    iuout.resizem(nxy); 
     for ( auto j=0; j<nxy; j++ ) {
       GMTK::curl(grid, uin, j+1, utmp, *uout[j]);
+      iuout[j] = j; 
     }
   }
   else {
