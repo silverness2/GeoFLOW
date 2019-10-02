@@ -98,7 +98,7 @@ int main(int argc, char **argv)
     // Process each file specified:
     for ( ; optind < argc; optind++ ) {
       finput  = argv[optind];
-      foutput = spref + "_" + finput;
+      foutput = spref + "_" + finput + ".txt";
 
       // read in data
       gio_read(giotraits, finput, u);
