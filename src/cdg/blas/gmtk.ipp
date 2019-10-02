@@ -305,4 +305,5 @@ void normalizeL2(GGrid &grid, GTVector<GTVector<T>*> &u, GTVector<GTVector<T>*> 
 } // end of method normalizeL2
 
 
+
 } // end, namespace GMTK

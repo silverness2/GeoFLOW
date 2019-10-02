@@ -24,6 +24,123 @@ using namespace std;
 namespace GMTK 
 {
 
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : curl 
+// DESC   : Compute curl component, idir, of input vector field
+//          
+// ARGS   : grid : grid
+//          u    : input vector field. Must have >= GDIM components.
+//          idir : curl component to compute. Must be appropriate for 
+//                 problem dimension.
+//          tmp  : tmp vector; must be of at least length 2.
+//          curlc: result
+// RETURNS: none.
+//**********************************************************************************
+template<>
+void curl(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &u, const GINT idir, 
+          GTVector<GTVector<GFTYPE>*> &tmp, GTVector<GFTYPE> &curlc)
+{
+
+  assert(tmp.size() >= 2 && "Insufficient temp space");
+
+  // Handle 1c cases in 2d or 3d:
+  if  ( u.size() < 2 ) {
+     curlc = 0.0; 
+  }
+
+  // Handle 2.5-d or 2d-3c case:
+  else if ( GDIM == 2 && u.size() > GDIM && grid.gtype() != GE_2DEMBEDDED ) {
+    switch (idir) {
+      case 1:
+        grid.deriv(*u[2], 2, *tmp[0], curlc);
+        curlc *= -1.0;
+        break;
+      case 2:
+        grid.deriv(*u[2], 1, *tmp[0], curlc);
+        break;
+      case 3:
+        grid.deriv(*u[1], 1, *tmp[0], curlc);
+        grid.deriv(*u[0], 2, *tmp[0], *tmp[1]);
+        curlc -= *tmp[1];
+        break;
+      default:
+        assert( FALSE && "Invalid component specified");
+        break;
+    }
+  }
+
+  // Handle 2d-2c regular types:
+  else if ( GDIM == 2  && u.size() == 2 && grid.gtype() == GE_REGULAR ) {
+    switch (idir) {
+      case 1:
+      case 2:
+        curlc = 0.0;
+        break;
+      case 3:
+        grid.deriv(*u[1], 1, *tmp[0], curlc);
+        grid.deriv(*u[0], 2, *tmp[0], *tmp[1]);
+        curlc -= *tmp[1];
+        break;
+      default:
+        assert( FALSE && "Invalid component specified");
+        break;
+    }
+  }
+
+  // Handle 3d-3c or embedded cases:
+  else if ( GDIM == 3 || grid.gtype() == GE_2DEMBEDDED ) {
+    switch (idir) {
+      case 1:
+        grid.deriv(*u[1], 3, *tmp[0], curlc);
+        grid.deriv(*u[2], 2, *tmp[0], *tmp[1]);
+        curlc -= *tmp[1];
+        break;
+      case 2:
+        grid.deriv(*u[2], 1, *tmp[0], curlc);
+        grid.deriv(*u[0], 3, *tmp[0], *tmp[1]);
+        curlc -= *tmp[1];
+        break;
+      case 3:
+        grid.deriv(*u[1], 1, *tmp[0], curlc);
+        grid.deriv(*u[0], 2, *tmp[0], *tmp[1]);
+        curlc -= *tmp[1];
+        break;
+    }
+  }
+
+
+  return;
+
+} // end of method curl
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : grad
+// DESC   : Compute gradient component, idir, of input vector field.
+//          Note: Don't really need this, as it's just another way
+//                to refer to the Cartesian 'deriv' method in GGrid
+//          
+// ARGS   : grid : grid
+//          u    : input (scalar) field. 
+//          idir : gradient component to compute. Must be appropriate for 
+//                 problem dimension.
+//          tmp  : tmp vector; must be of at least length 1.
+//          gradc: result
+// RETURNS: none.
+//**********************************************************************************
+template<>
+void grad(GGrid &grid, GTVector<GFTYPE> &u, const GINT idir, 
+          GTVector<GTVector<GFTYPE>*> &tmp, GTVector<GFTYPE> &gradc)
+{
+  assert ( idir >0 && idir <=3 && "Invalid compoment specified");
+
+  grid.deriv(u, idir, *tmp[0], gradc);
+
+} // end of method grad
+
+
 
 //**********************************************************************************
 //**********************************************************************************
@@ -1988,120 +2105,6 @@ void matmat_prod<GQUAD>(GTMatrix<GQUAD> &C, const GTMatrix<GQUAD> &A, const GTMa
 } // end of operator * mat-mat, GQUAD
 
 
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : curl 
-// DESC   : Compute curl component, idir, of input vector field
-//          
-// ARGS   : grid : grid
-//          u    : input vector field. Must have >= GDIM components.
-//          idir : curl component to compute. Must be appropriate for 
-//                 problem dimension.
-//          tmp  : tmp vector; must be of at least length 2.
-//          curlc: result
-// RETURNS: none.
-//**********************************************************************************
-template<>
-void curl(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &u, const GINT idir, 
-          GTVector<GTVector<GFTYPE>*> &tmp, GTVector<GFTYPE> &curlc)
-{
-
-  assert(tmp.size() >= 2 && "Insufficient temp space");
-
-  // Handle 1c cases in 2d or 3d:
-  if  ( u.size() < 2 ) {
-     curlc = 0.0; 
-  }
-
-  // Handle 2.5-d or 2d-3c case:
-  else if ( GDIM == 2 && u.size() > GDIM && grid.gtype() != GE_2DEMBEDDED ) {
-    switch (idir) {
-      case 1:
-        grid.deriv(*u[2], 2, *tmp[0], curlc);
-        curlc *= -1.0;
-        break;
-      case 2:
-        grid.deriv(*u[2], 1, *tmp[0], curlc);
-        break;
-      case 3:
-        grid.deriv(*u[1], 1, *tmp[0], curlc);
-        grid.deriv(*u[0], 2, *tmp[0], *tmp[1]);
-        curlc -= *tmp[1];
-        break;
-      default:
-        assert( FALSE && "Invalid component specified");
-        break;
-    }
-  }
-
-  // Handle 2d-2c regular types:
-  else if ( GDIM == 2  && u.size() == 2 && grid.gtype() == GE_REGULAR ) {
-    switch (idir) {
-      case 1:
-      case 2:
-        curlc = 0.0;
-        break;
-      case 3:
-        grid.deriv(*u[1], 1, *tmp[0], curlc);
-        grid.deriv(*u[0], 2, *tmp[0], *tmp[1]);
-        curlc -= *tmp[1];
-        break;
-      default:
-        assert( FALSE && "Invalid component specified");
-        break;
-    }
-  }
-
-  // Handle 3d-3c or embedded cases:
-  else if ( GDIM == 3 || grid.gtype() == GE_2DEMBEDDED ) {
-    switch (idir) {
-      case 1:
-        grid.deriv(*u[1], 3, *tmp[0], curlc);
-        grid.deriv(*u[2], 2, *tmp[0], *tmp[1]);
-        curlc -= *tmp[1];
-        break;
-      case 2:
-        grid.deriv(*u[2], 1, *tmp[0], curlc);
-        grid.deriv(*u[0], 3, *tmp[0], *tmp[1]);
-        curlc -= *tmp[1];
-        break;
-      case 3:
-        grid.deriv(*u[1], 1, *tmp[0], curlc);
-        grid.deriv(*u[0], 2, *tmp[0], *tmp[1]);
-        curlc -= *tmp[1];
-        break;
-    }
-  }
-
-
-  return;
-
-} // end of method curl
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : grad
-// DESC   : Compute gradient component, idir, of input vector field
-//          
-// ARGS   : grid : grid
-//          u    : input (scalar) field. 
-//          idir : gradient component to compute. Must be appropriate for 
-//                 problem dimension.
-//          tmp  : tmp vector; must be of at least length 1.
-//          gradc: result
-// RETURNS: none.
-//**********************************************************************************
-template<>
-void grad(GGrid &grid, GTVector<GFTYPE> &u, const GINT idir, 
-          GTVector<GTVector<GFTYPE>*> &tmp, GTVector<GFTYPE> &gradc)
-{
-  assert ( idir >0 && idir <=3 && "Invalid compoment specified");
-
-  grid.deriv(u, idir, *tmp[0], gradc);
-
-} // end of method grad
-
 
 //**********************************************************************************
 //**********************************************************************************
@@ -3201,6 +3204,71 @@ GFTYPE energyinj(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &u,  const GTVec
 } // end of method energyinj
 
 
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : domathop
+// DESC   : 
+//             Carry out math (mainly differential) operation, based on 
+//             specified string description.
+//
+//             Return in appropriate component of output array
+//          
+// ARGS   : 
+//          grid    : grid object
+//          uin     : input state. May be vector or scalar, in an
+//                    order and number appropriate for specified operation
+//          sop     : string operation
+//          tmp     : tmp vector of length at least 1, each
+//                    of same length as uin
+//          uout    : output array
+//                    instead of computing mean
+// RETURNS: none
+//**********************************************************************************
+template<>
+void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GString sop, GTVector<GTVector<GFTYPE>*> &utmp, GTVector<GTVector<GFTYPE>*> &uout)
+{
+
+  GINT                        nxy;
+  GTVector<GTVector<GFTYPE>*> tmp(3);
+
+  if      ( "div"  == sop ) { // operates on a vector field...
+    // produces a scalar field:
+    nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+    assert(utmp .size() >= 1   && "Insufficient temp space");
+    assert(uin  .size() >= nxy && "Insufficient no. input components");
+    assert(uout .size() >= nxy && "Insufficient no. output components");
+    GMTK::grad(grid, *uin[0], 1, utmp, *uout[0]);
+    for ( auto j=1; j<nxy; j++ ) {
+      GMTK::grad(grid, *uin[j], j+1, utmp, *utmp[utmp.size()-1]);
+      *uout[0] += *utmp[utmp.size()-1];
+    }
+  }
+  else if ( "grad" == sop ) {  // operates on a scalar field...
+    // produces a vector field:
+    nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+    assert(utmp .size() >= 1   && "Insufficient temp space");
+    assert(uin  .size() >= 1   && "Insufficient no. input components");
+    assert(uout .size() >= nxy && "Insufficient no. output components");
+    for ( auto j=0; j<nxy; j++ ) {
+      GMTK::grad(grid, *uin[0], j+1, utmp, *uout[j]);
+    }
+  }
+  else if ( "curl" == sop ) { // operates on a vector field...
+    // produces a vector field:
+    nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+    assert(utmp .size() >= 2   && "Insufficient temp space");
+    assert(uin  .size() >= nxy && "Insufficient no. input components");
+    assert(uout .size() >= nxy && "Insufficient no. output components");
+    for ( auto j=0; j<nxy; j++ ) {
+      GMTK::curl(grid, uin, j+1, utmp, *uout[j]);
+    }
+  }
+  else {
+    assert(FALSE && "Invalid math operation");
+  }
+
+} // end of method domathop 
 
 
 } // end, namespace GMTK
