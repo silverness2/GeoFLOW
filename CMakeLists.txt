@@ -257,6 +257,9 @@ add_compile_options("-Werror")
 # Build Libraries & Applications
 add_subdirectory(src)
 
+# Build analysis tools
+add_subdirectory(analysis/src)
+
 # Build Executables
 #add_subdirectory(src/apps)
 
