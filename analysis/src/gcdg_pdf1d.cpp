@@ -72,7 +72,7 @@ int main(int argc, char **argv)
     GTStat<GFTYPE>              gstat(traits.nbins, comm_);
     GTVector<GFTYPE>            u; 
     std::stringstream           sformat;
-    GString                     serr, spref;
+    GString                     spref;
     char                        stask[16];
 
     // Currently we only know about GIO, so we assume
@@ -85,12 +85,12 @@ int main(int argc, char **argv)
     // Process each file specified:
     sformat << ".%0" << giotraits.wtask << "d.out";
     sprintf(stask, sformat.str().c_str(), myrank);
+    cout << argv[0] << ": processing " << preflist.size() << files << " ..." << endl;
     for ( auto i=0; i<preflist.size(); i++ ) {
       // Make sure input file names don't include directory:
       ipos    = preflist[i].find("/");
       if ( ipos != std::string::npos ) {
-        serr = "Discarding " + preflist[i];
-        EH_MESSAGE(serr);
+        cout << "    discarding: " << preflist[i] << endl;
         continue;
       }
       finput  = traits.idir + "/" + preflist[i] + stask;
@@ -119,6 +119,7 @@ GBOOL init(int &argc, char **argv, PropertyTree &ptree, MyTraits &traits, std::v
 {
     GINT iopt;
 
+#if 0
     // Read main prop tree; may ovewrite with
     // certain command line args:
     EH_MESSAGE("call load prop tree...");
@@ -138,6 +139,7 @@ GBOOL init(int &argc, char **argv, PropertyTree &ptree, MyTraits &traits, std::v
     traits.idir     = ptree.getValue<GString>("idir"    ,".");
     traits.odir     = ptree.getValue<GString>("odir"    ,".");
     traits.opref    = ptree.getValue<GString>("opref"   ,"pdf1d");
+#endif
     
     // Parse command line. ':' after char
     // option indicates that it takes an argument:
