@@ -161,7 +161,7 @@ GBOOL init(int &argc, char **argv, PropertyTree &ptree, MyTraits &traits, GTVect
     
     // Parse command line. ':' after char
     // option indicates that it takes an argument:
-    while ((iopt = getopt(argc, argv, "b:d:g:l:o:p:u:h")) != -1) {
+    while ((iopt = getopt(argc, argv, "b:d:gl:o:p:u:h")) != -1) {
       // NOTE: -i reserved for Input Manager
       switch (iopt) {
       case 'b': // handled by InputManager
@@ -171,7 +171,7 @@ GBOOL init(int &argc, char **argv, PropertyTree &ptree, MyTraits &traits, GTVect
           traits.idir = optarg;
           break;
       case 'g': // dolog?
-          traits.dolog = (GBOOL)atoi(optarg);
+          traits.dolog = TRUE;
           break;
       case 'l': // lower dynamic range
           traits.fmin     = atoi(optarg);
