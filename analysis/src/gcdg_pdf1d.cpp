@@ -22,6 +22,9 @@
 #include "tbox/global_manager.hpp"
 #include "tbox/input_manager.hpp"
 
+using namespace geoflow::tbox;
+using namespace std;
+
 struct MyTraits {
   GBOOL    dolog    ;
   GBOOL    bfixeddr ;
@@ -33,13 +36,11 @@ struct MyTraits {
   GFTYPE   fmax     ;
   GString  idir     ;
   GString  odir     ;
-  GString  config   ;
+  GString  opref    ;
 };
 
-GBOOL init(int &argc, char **argv, PropertTree &ptree, MyTraits &traits, std::vector<GString> &preflist);
+GBOOL init(int &argc, char **argv, PropertyTree &ptree, MyTraits &traits, std::vector<GString> &preflist);
 
-
-using namespace std;
 
 GC_COMM      comm_ ;      // communicator
 
@@ -48,7 +49,7 @@ int main(int argc, char **argv)
 {
     GBOOL                bret;
     GINT                 errcode=0, myrank; 
-    GString              finput, foutput, opref="pdf1d";
+    GString              conig, finput, foutput;
     MyTraits             traits;
     PropertyTree         ptree;
     std::vector<GString> preflist;
@@ -61,25 +62,17 @@ int main(int argc, char **argv)
     comm_ = world; // need this for solver(s) & grid
     myrank = GComm::WorldRank(comm_);
 
-    
-
-    // Read main prop tree; may ovewrite with
-    // certain command line args:
-    EH_MESSAGE("call load prop tree...");
-    InputManager::loadInputFile(traits.config);
-    ptree     = InputManager::getInputPropertyTree();   
-    EH_MESSAGE("prop tree loaded.");
-
     bret = init(argc, argv, ptree, traits, preflist);
 
     assert(bret && "Init failed or no files provided");
 
 
+    GSIZET                      ipos;
     GIOTraits                   giotraits;
     GTStat<GFTYPE>              gstat(traits.nbins, comm_);
     GTVector<GFTYPE>            u; 
     std::stringstream           sformat;
-    GString                     spref;
+    GString                     serr, spref;
     char                        stask[16];
 
     // Currently we only know about GIO, so we assume
@@ -93,12 +86,19 @@ int main(int argc, char **argv)
     sformat << ".%0" << giotraits.wtask << "d.out";
     sprintf(stask, sformat.str().c_str(), myrank);
     for ( auto i=0; i<preflist.size(); i++ ) {
+      // Make sure input file names don't include directory:
+      ipos    = preflist[i].find("/");
+      if ( ipos != std::string::npos ) {
+        serr = "Discarding " + preflist[i];
+        EH_MESSAGE(serr);
+        continue;
+      }
       finput  = traits.idir + "/" + preflist[i] + stask;
-      foutput = traits.odir + "/" + opref + "_" + finput + ".txt";
+      foutput = traits.odir + "/" + traits.opref + "_" + preflist[i] + ".txt";
 
       // read in data
       gio_read(giotraits, finput, u);
-      gstat.dopdf1d(u, bfixeddr, fmin, fmax, dolog, foutput); 
+      gstat.dopdf1d(u, traits.bfixeddr, traits.fmin, traits.fmax, traits.dolog, foutput); 
     }
 
 
@@ -115,14 +115,20 @@ int main(int argc, char **argv)
 
 //**********************************************************************************
 //**********************************************************************************
-GBOOL init(int &argc, char **argv, PropertTree &ptree, MyTraits &traits, std::vector<GString> &preflist)
+GBOOL init(int &argc, char **argv, PropertyTree &ptree, MyTraits &traits, std::vector<GString> &preflist)
 {
     GINT iopt;
+
+    // Read main prop tree; may ovewrite with
+    // certain command line args:
+    EH_MESSAGE("call load prop tree...");
+    InputManager::loadInputFile("gpdf1d.jsn");
+    ptree     = InputManager::getInputPropertyTree();   
+    EH_MESSAGE("prop tree loaded.");
 
     // Set traits from prop tree, then over write if necessary:
     traits.dolog    = ptree.getValue<GBOOL>  ("dolog"   ,FALSE);
     traits.bfixeddr = ptree.getValue<GBOOL>  ("bfixeddr",FALSE);
-    traits.wfile    = ptree.getValue<GINT>   ("wfile"   ,2048);
     traits.wfile    = ptree.getValue<GINT>   ("wfile"   ,2048);
     traits.wtask    = ptree.getValue<GINT>   ("wtask"   ,5);
     traits.wtime    = ptree.getValue<GINT>   ("wtime"   ,6);
@@ -131,24 +137,21 @@ GBOOL init(int &argc, char **argv, PropertTree &ptree, MyTraits &traits, std::ve
     traits.fmax     = ptree.getValue<GFTYPE> ("fmax"    ,100.0);
     traits.idir     = ptree.getValue<GString>("idir"    ,".");
     traits.odir     = ptree.getValue<GString>("odir"    ,".");
-    traits.config   = "gpdf1d.txt";
+    traits.opref    = ptree.getValue<GString>("opref"   ,"pdf1d");
     
-
     // Parse command line. ':' after char
     // option indicates that it takes an argument:
-    while ((iopt = getopt(argc, argv, "b:c:g:i:l:o:p:u:h")) != -1) {
+    while ((iopt = getopt(argc, argv, "b:d:g:l:o:p:u:h")) != -1) {
+      // NOTE: -i reserved for Input Manager
       switch (iopt) {
       case 'b': // handled by InputManager
           traits.nbins = atoi(optarg);
           break;
-      case 'c': // handled by InputManager
-          traits.config = optarg;
+      case 'd': // input dir
+          traits.idir = optarg;
           break;
       case 'g': // dolog?
           traits.dolog = (GBOOL)atoi(optarg);
-          break;
-      case 'i': // input dir
-          traits.idir = optarg;
           break;
       case 'l': // lower dynamic range
           traits.fmin     = atoi(optarg);
@@ -171,7 +174,7 @@ GBOOL init(int &argc, char **argv, PropertTree &ptree, MyTraits &traits, std::ve
       case '?':
       case 'h': // help
           std::cout << "usage: " << std::endl <<
-          argv[0] << " [-h] [-b #bins] [-c config_file_name] [-g dolog?] [-i input_dir] [-o output_dir] [-p file_prefix] [-l lower_dyn_range] [-u upper_dyn_range] file1pref file2pref ..." << std::endl;
+          argv[0] << " [-h] [-b #bins] [-d input_dir] [-g dolog?] [-i config_file_name] [-o output_dir] [-p output_file_prefix] [-l lower_dyn_range] [-u upper_dyn_range] file1pref file2pref ..." << std::endl;
           exit(1);
           break;
       default: // invalid option
