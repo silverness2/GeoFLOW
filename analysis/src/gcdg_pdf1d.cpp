@@ -85,7 +85,7 @@ int main(int argc, char **argv)
     // Process each file specified:
     sformat << ".%0" << giotraits.wtask << "d.out";
     sprintf(stask, sformat.str().c_str(), myrank);
-    cout << argv[0] << ": processing " << preflist.size() << files << " ..." << endl;
+    cout << argv[0] << ": processing " << preflist.size() << " files..." << endl;
     for ( auto i=0; i<preflist.size(); i++ ) {
       // Make sure input file names don't include directory:
       ipos    = preflist[i].find("/");
