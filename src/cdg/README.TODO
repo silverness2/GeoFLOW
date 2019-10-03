@@ -13,9 +13,10 @@ done:10.  Test I X I X D, I X D X I, etc operators; use only compute_refderivs, 
 done: 11.  Add restart capability.
 done: 12.  Add forcing.
 done: 13.  Generalize the application of initial conditions.
-14.  Remove iOpR2LIndices and associated quaitites from GGFX
-15.  Should we handle boundary updates in the same way as forcing, not via a callback, but in call to constructor (e.g., like the 'mixer' object in Integrator)?
-16. Command line args in main driver: push off to a method; set traits var once we decide what we can change via command line
-17. Templatize functions in gmtk.cpp. Generally, these aren't templated bec. the use GGrid object methods that themselves aren't templated.
-18. IMPORTANT: (a) code the do_face_normals virtual methods in GGridBox and GGridIcos. These find normals at all element face nodes, and are used to compute integral of fluxes at element faces used for conservative methods; (b) code the do_bdy_normals in GGridBox and GGridIcos classes. These compute the normals at canonical domain boundaries, and are required to specify, e.g., Neuman boundary conditions at those surfaces.
-19. Abstract the io: create new class for gio; add factory for different types. Move gioposix to general observer that uses new factory to decide which IO scheme to use.
+14.  Cube-sphere grid.
+15.  Remove iOpR2LIndices and associated quaitites from GGFX
+16.  Should we handle boundary updates in the same way as forcing, not via a callback, but in call to constructor (e.g., like the 'mixer' object in Integrator)?
+17. Command line args in main driver: push off to a method; set traits var once we decide what we can change via command line
+18. Templatize functions in gmtk.cpp. Generally, these aren't templated bec. the use GGrid object methods that themselves aren't templated.
+19. IMPORTANT: (a) code the do_face_normals virtual methods in GGridBox and GGridIcos. These find normals at all element face nodes, and are used to compute integral of fluxes at element faces used for conservative methods; (b) code the do_bdy_normals in GGridBox and GGridIcos classes. These compute the normals at canonical domain boundaries, and are required to specify, e.g., Neuman boundary conditions at those surfaces.
+20. Abstract the io: create new class for gio; add factory for different types. Move gioposix to general observer that uses new factory to decide which IO scheme to use.
