@@ -134,8 +134,8 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
     #pragma omp parallel for  private(ibin,test)
     for ( j=0; j<nkeep_; j++ ) {
       test = log10(fabs(u[ikeep_[j]])+tiny);
-      ibin = static_cast<GSIZET> ( ( test - fmin )/del+1 );
-      ibin = MIN(MAX(ibin,1),nbins_);
+      ibin = static_cast<GSIZET> ( ( test - fmin )/del );
+      ibin = MIN(MAX(ibin,0),nbins_-1);
       #pragma omp atomic
       lpdf_[ibin] += 1.0;
     }
@@ -143,7 +143,7 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
   else {
     #pragma omp parallel for  private(ibin,test)
     for ( j=0; j<nkeep_; j++ ) {
-      test = fabs(u[ikeep_[j]]);
+      test = u[ikeep_[j]];
       ibin = static_cast<GSIZET> ( ( test - fmin )/del );
       ibin = MIN(MAX(ibin,0),nbins_-1);
       #pragma omp atomic
@@ -212,7 +212,7 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
            << nkeep_ << std::endl;
 
      ios.open(fname,std::ios_base::trunc);
-     ios << header << std::endl;
+     ios << header.str() << std::endl;
      ios << std::scientific << std::setprecision(15);
      for ( j=0; j<nbins_-1; j++ ) {
        ios << gpdf_[j] << " ";
