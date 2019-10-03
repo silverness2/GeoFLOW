@@ -39,7 +39,7 @@ struct MyTraits {
   GString  opref    ;
 };
 
-GBOOL init(int &argc, char **argv, PropertyTree &ptree, MyTraits &traits, std::vector<GString> &preflist);
+GBOOL init(int &argc, char **argv, PropertyTree &ptree, MyTraits &traits, GTVector<GString> &preflist);
 
 
 GC_COMM      comm_ ;      // communicator
@@ -52,7 +52,7 @@ int main(int argc, char **argv)
     GString              conig, finput, foutput;
     MyTraits             traits;
     PropertyTree         ptree;
-    std::vector<GString> preflist;
+    GTVector<GString>    preflist;
 
     mpixx::environment env(argc,argv); // init GeoFLOW comm
     mpixx::communicator world;
@@ -85,20 +85,25 @@ int main(int argc, char **argv)
     // Process each file specified:
     sformat << ".%0" << giotraits.wtask << "d.out";
     sprintf(stask, sformat.str().c_str(), myrank);
-    cout << argv[0] << ": processing " << preflist.size() << " files..." << endl;
     for ( auto i=0; i<preflist.size(); i++ ) {
       // Make sure input file names don't include directory:
+#if 0
       ipos    = preflist[i].find("/");
       if ( ipos != std::string::npos ) {
         cout << "    discarding: " << preflist[i] << endl;
         continue;
       }
+#endif
       finput  = traits.idir + "/" + preflist[i] + stask;
       foutput = traits.odir + "/" + traits.opref + "_" + preflist[i] + ".txt";
+
+      cout << "main: prefix" << preflist[i] << ": processing " << finput << endl;
+
 
       // read in data
       gio_read(giotraits, finput, u);
       gstat.dopdf1d(u, traits.bfixeddr, traits.fmin, traits.fmax, traits.dolog, foutput); 
+      cout << "main: pdf written to: " << foutput << "." << endl;
     }
 
 
@@ -115,7 +120,7 @@ int main(int argc, char **argv)
 
 //**********************************************************************************
 //**********************************************************************************
-GBOOL init(int &argc, char **argv, PropertyTree &ptree, MyTraits &traits, std::vector<GString> &preflist)
+GBOOL init(int &argc, char **argv, PropertyTree &ptree, MyTraits &traits, GTVector<GString> &preflist)
 {
     GINT iopt;
 
@@ -139,6 +144,19 @@ GBOOL init(int &argc, char **argv, PropertyTree &ptree, MyTraits &traits, std::v
     traits.idir     = ptree.getValue<GString>("idir"    ,".");
     traits.odir     = ptree.getValue<GString>("odir"    ,".");
     traits.opref    = ptree.getValue<GString>("opref"   ,"pdf1d");
+#else
+    // Set traits from prop tree, then over write if necessary:
+    traits.dolog    = FALSE;
+    traits.bfixeddr = FALSE;
+    traits.wfile    = 2048;
+    traits.wtask    = 5;
+    traits.wtime    = 6;
+    traits.nbins    = 50;
+    traits.fmin     = 0;
+    traits.fmax     = 100.0;
+    traits.idir     = ".";
+    traits.odir     = ".";
+    traits.opref    = "pdf1d";
 #endif
     
     // Parse command line. ':' after char
