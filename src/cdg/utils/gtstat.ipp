@@ -196,6 +196,8 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
   dopdf1d(u, ifixdr, fmin, fmax, dolog, gpdf_);
   if ( myrank_ == 0 )  {
 
+    ofmin = fmin;
+    ofmax = fmax;
     if ( dolog ) {
       ofmin = pow(10.0, fmin);
       ofmax = pow(10.0, fmax);
@@ -212,8 +214,8 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
            << nkeep_ << std::endl;
 
      ios.open(fname,std::ios_base::trunc);
-     ios << header.str() << std::endl;
      ios << std::scientific << std::setprecision(15);
+     ios << header.str() << std::endl;
      for ( j=0; j<nbins_-1; j++ ) {
        ios << gpdf_[j] << " ";
      }
