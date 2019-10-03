@@ -17,9 +17,26 @@
 #include "gtmatrix.hpp"
 #include "gtstat.hpp"
 #include "gio.h"
+#include "tbox/property_tree.hpp"
 #include "tbox/mpixx.hpp"
 #include "tbox/global_manager.hpp"
 #include "tbox/input_manager.hpp"
+
+struct MyTraits {
+  GBOOL    dolog    ;
+  GBOOL    bfixeddr ;
+  GINT     wfile    ;
+  GINT     wtask    ;
+  GINT     wtime    ;
+  GSIZET   nbins    ;
+  GFTYPE   fmin     ;
+  GFTYPE   fmax     ;
+  GString  idir     ;
+  GString  odir     ;
+  GString  config   ;
+};
+
+GBOOL init(int &argc, char **argv, PropertTree &ptree, MyTraits &traits, std::vector<GString> &preflist);
 
 
 using namespace std;
@@ -29,11 +46,12 @@ GC_COMM      comm_ ;      // communicator
 
 int main(int argc, char **argv)
 {
-    GBOOL   dolog=FALSE, bfixeddr=FALSE, bret;
-    GINT    errcode=0, iopt; 
-    GSIZET  nbins=500;
-    GFTYPE  fmin=0.0, fmax=0.0;
-    GString finput, foutput, spref="pdf1d";
+    GBOOL                bret;
+    GINT                 errcode=0, myrank; 
+    GString              finput, foutput, opref="pdf1d";
+    MyTraits             traits;
+    PropertyTree         ptree;
+    std::vector<GString> preflist;
 
     mpixx::environment env(argc,argv); // init GeoFLOW comm
     mpixx::communicator world;
@@ -41,64 +59,42 @@ int main(int argc, char **argv)
     GlobalManager::startup();
 
     comm_ = world; // need this for solver(s) & grid
+    myrank = GComm::WorldRank(comm_);
 
+    
 
-    // Parse command line. ':' after char
-    // option indicates that it takes an argument.
-    while ((iopt = getopt(argc, argv, "b:g:l:p:u:h")) != -1) {
-      switch (iopt) {
-      case 'b': // handled by InputManager
-          nbins = atoi(optarg);
-          break;
-      case 'g': // dolog?
-          dolog = (GBOOL)atoi(optarg);
-          break;
-      case 'l': // lower dynamic range
-          fmin     = atoi(optarg);
-          bfixeddr = TRUE;
-          break;
-      case 'p': // set output file prefix
-          spref = optarg;
-          break;
-      case 'u': // upper dynamic range
-          fmax     = atoi(optarg);
-          bfixeddr = TRUE;
-          break;
-      case ':': // missing option argument
-          std::cout << argv[0] << ": option " << optopt << " requires an argument" << std::endl;
-          exit(1);
-          break;
-      case '?':
-      case 'h': // help
-          std::cout << "usage: " << std::endl <<
-          argv[0] << " [-h] [-b #bins] [-g dolog?] [-p file_prefix] [-l lower_dyn_range] [-u upper_dyn_range] file1 file2 ..." << std::endl;
-          exit(1);
-          break;
-      default: // invalid option
-          std::cout << argv[0] << ": option " << optopt << " invalid" << std::endl;
-          exit(1);
-          break;
-      }
-    }
+    // Read main prop tree; may ovewrite with
+    // certain command line args:
+    EH_MESSAGE("call load prop tree...");
+    InputManager::loadInputFile(traits.config);
+    ptree     = InputManager::getInputPropertyTree();   
+    EH_MESSAGE("prop tree loaded.");
 
-    assert(argc > optind && "No files specified");
+    bret = init(argc, argv, ptree, traits, preflist);
+
+    assert(bret && "Init failed or no files provided");
 
 
     GIOTraits                   giotraits;
-    GTStat<GFTYPE>              gstat(nbins, comm_);
+    GTStat<GFTYPE>              gstat(traits.nbins, comm_);
     GTVector<GFTYPE>            u; 
+    std::stringstream           sformat;
+    GString                     spref;
+    char                        stask[16];
 
     // Currently we only know about GIO, so we assume
     // this is what the data is written in:
-    giotraits.wfile  = 2048;
-    giotraits.wtask  = 5;
-    giotraits.wtime  = 6;
-    giotraits.dir    = ".";
+    giotraits.wfile  = traits.wfile;
+    giotraits.wtask  = traits.wtask;
+    giotraits.wtime  = traits.wtime;
+    giotraits.dir    = traits.odir;
 
     // Process each file specified:
-    for ( ; optind < argc; optind++ ) {
-      finput  = argv[optind];
-      foutput = spref + "_" + finput + ".txt";
+    sformat << ".%0" << giotraits.wtask << "d.out";
+    sprintf(stask, sformat.str().c_str(), myrank);
+    for ( auto i=0; i<preflist.size(); i++ ) {
+      finput  = traits.idir + "/" + preflist[i] + stask;
+      foutput = traits.odir + "/" + opref + "_" + finput + ".txt";
 
       // read in data
       gio_read(giotraits, finput, u);
@@ -114,3 +110,83 @@ int main(int argc, char **argv)
 
 
 } // end, main
+
+
+
+//**********************************************************************************
+//**********************************************************************************
+GBOOL init(int &argc, char **argv, PropertTree &ptree, MyTraits &traits, std::vector<GString> &preflist)
+{
+    GINT iopt;
+
+    // Set traits from prop tree, then over write if necessary:
+    traits.dolog    = ptree.getValue<GBOOL>  ("dolog"   ,FALSE);
+    traits.bfixeddr = ptree.getValue<GBOOL>  ("bfixeddr",FALSE);
+    traits.wfile    = ptree.getValue<GINT>   ("wfile"   ,2048);
+    traits.wfile    = ptree.getValue<GINT>   ("wfile"   ,2048);
+    traits.wtask    = ptree.getValue<GINT>   ("wtask"   ,5);
+    traits.wtime    = ptree.getValue<GINT>   ("wtime"   ,6);
+    traits.nbins    = ptree.getValue<GSIZET> ("nbins"   ,500);
+    traits.fmin     = ptree.getValue<GFTYPE> ("fmin"    ,0);
+    traits.fmax     = ptree.getValue<GFTYPE> ("fmax"    ,100.0);
+    traits.idir     = ptree.getValue<GString>("idir"    ,".");
+    traits.odir     = ptree.getValue<GString>("odir"    ,".");
+    traits.config   = "gpdf1d.txt";
+    
+
+    // Parse command line. ':' after char
+    // option indicates that it takes an argument:
+    while ((iopt = getopt(argc, argv, "b:c:g:i:l:o:p:u:h")) != -1) {
+      switch (iopt) {
+      case 'b': // handled by InputManager
+          traits.nbins = atoi(optarg);
+          break;
+      case 'c': // handled by InputManager
+          traits.config = optarg;
+          break;
+      case 'g': // dolog?
+          traits.dolog = (GBOOL)atoi(optarg);
+          break;
+      case 'i': // input dir
+          traits.idir = optarg;
+          break;
+      case 'l': // lower dynamic range
+          traits.fmin     = atoi(optarg);
+          traits.bfixeddr = TRUE;
+          break;
+      case 'o': // output dir
+          traits.odir = optarg;
+          break;
+      case 'p': // set output file prefix
+          traits.opref = optarg;
+          break;
+      case 'u': // upper dynamic range
+          traits.fmax     = atoi(optarg);
+          traits.bfixeddr = TRUE;
+          break;
+      case ':': // missing option argument
+          std::cout << argv[0] << ": option " << optopt << " requires an argument" << std::endl;
+          exit(1);
+          break;
+      case '?':
+      case 'h': // help
+          std::cout << "usage: " << std::endl <<
+          argv[0] << " [-h] [-b #bins] [-c config_file_name] [-g dolog?] [-i input_dir] [-o output_dir] [-p file_prefix] [-l lower_dyn_range] [-u upper_dyn_range] file1pref file2pref ..." << std::endl;
+          exit(1);
+          break;
+      default: // invalid option
+          std::cout << argv[0] << ": option " << optopt << " invalid" << std::endl;
+          exit(1);
+          break;
+      }
+    }
+
+    // Get file prefixes, if any:
+    for ( ; optind < argc; optind++ ) {
+      preflist.push_back(argv[optind]);
+    }
+
+    return preflist.size() > 0;
+
+} // end, doparse method
+
