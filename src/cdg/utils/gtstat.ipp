@@ -79,7 +79,7 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
   // Compute dynamic range, if not using specified range:
   if ( !ifixdr ) {
     fmin1 = u.min();
-    fmax1 = u.min();
+    fmax1 = u.max();
     GComm::Allreduce(&fmin1, &fmin, 1, T2GCDatatype<T>() , GC_OP_MIN, comm_);
     GComm::Allreduce(&fmax1, &fmax, 1, T2GCDatatype<T>() , GC_OP_MAX, comm_);
   }
@@ -144,8 +144,8 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
     #pragma omp parallel for  private(ibin,test)
     for ( j=0; j<nkeep_; j++ ) {
       test = fabs(u[ikeep_[j]]);
-      ibin = static_cast<GSIZET> ( ( test - fmin )/del+1 );
-      ibin = MIN(MAX(ibin,1),nbins_);
+      ibin = static_cast<GSIZET> ( ( test - fmin )/del );
+      ibin = MIN(MAX(ibin,0),nbins_-1);
       #pragma omp atomic
       lpdf_[ibin] += 1.0;
     }
