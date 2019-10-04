@@ -1,9 +1,10 @@
-function h = boxplot1d(svar, tindex, jindex)
+function [xg  ug h] = boxplot1d(svar, tindex, jindex)
 %
-% Does a line plot 2D GeoFLOW data in x-direction, at fixed specified y-index
+% Does a line plot 2D GeoFLOW Posix data in x-direction, 
+% at fixed specified y-index
 %
 %  Usage:
-%    h = boxplot1d('u1',10)
+%    [xg ug h] = boxplot1d('u1',10)
 %
 %  Input:
 %    s1var   : prefix for field file. Required
@@ -11,6 +12,8 @@ function h = boxplot1d(svar, tindex, jindex)
 %    jindex  : j-index. Default is 0.
 %
 %  Output:
+%    xg      : global x coord
+%    ug      : global field at each x
 %    h       : plot handle
 %
 if nargin < 2
@@ -30,7 +33,32 @@ if ntasks<= 0
   error('Grid data missing or incomplete');
 end
 
+% Find global size:
+tsize = zeros(ntasks,1); % total size per task
 for itask = 0:ntasks-1
+  fname = sprintf('%s.%06d.%05d.out', svar, tindex, itask);
+  [u dim nelems porder gtype icycle time] = rgeoflow(fname, 8, 'ieee-le', 1);
+  NN = double(porder + 1); 
+% lelem = prod(NN(1:dim));  % data length per element
+  tsize (itask+1) = NN(1)*nelems;
+end
+nglobal = sum(tsize); % global no. nodes
+
+
+% Allocate global data:
+xg = zeros(nglobal,1);
+ug = zeros(nglobal,1);
+
+igstart = 1;
+iegsave = 1;
+ntot    = 0;
+for itask = 0:ntasks-1
+
+  % Find start index in global data for this 
+  % task's data:
+  if itask > 0
+    igstart = sum(tsize(1:itask)) + 1;
+  end
 
   % Read node coords:
   for j=1:2
@@ -43,43 +71,52 @@ for itask = 0:ntasks-1
 
   fname = sprintf('%s.%06d.%05d.out', svar, tindex, itask);
   [u dim nelems porder gtype icycle time] = rgeoflow(fname, 8, 'ieee-le');
-  if ( itask == 0 )
-    figure;
-  end
 
  
   NN = double(porder + 1); 
-  lelem = prod(NN(1:dim))  % data length per element
+  lelem = prod(NN(1:dim));  % data length per element
 
   if jindex < 0 || jindex >= NN(2) 
     error('Invalid jindex');
   end
 
-  xn = zeros(NN(1)*nelems,1);
-  un = zeros(NN(1)*nelems,1);
-
   % Cycle over elems, and gather 1d data:
   icurr = 1;
   for n = 1:nelems
-    xx = x{1}(icurr:icurr+lelem-1);
-%   yy = x{2}(icurr:icurr+lelem-1);
-    uu = u   (icurr:icurr+lelem-1);
-    ib = jindex*NN(1) + 1; 
-    ie = ib + NN(1); 
+    xx  = x{1}(icurr:icurr+lelem-1);
+%   yy  = x{2}(icurr:icurr+lelem-1);
+    uu  = u   (icurr:icurr+lelem-1);
+    ib  = jindex*NN(1) + 1; % index local to elem 
+    ie  = ib + NN(1) - 1;   % index local to elem
      
-    ibn = (n-1)*NN(1) + 1; 
-    ien = ibn + NN(1); 
-    xn(ibn:ien) = xx(ib:ie);
-    un(ibn:ien) = uu(ib:ie);
+    ibg = igstart + (n-1)*NN(1)    ; % beg index in global array
+    ieg = ibg + NN(1) - 1;           % end index in global array
 
-    icurr = icurr + lelem ; 
+    if ieg > nglobal
+      error('...................inconsistent data');
+    end
+%   disp(sprintf('ibg=%d; ieg=%d',ibg,ieg))
+
+    xg(ibg:ieg) = xx(ib:ie);
+    ug(ibg:ieg) = uu(ib:ie);
+    iegsave = ieg;
+
+    icurr = icurr + lelem; 
     
+    ntot = ntot + NN(1);
   end % end, elem loop
-  
-  % Plot 1d profile:
-  [xn I] = sort(xn);
-   un    = un(I);
-  plot(xn, un, 'k-');
 
 end % end, task loop
+
+
+if ntot ~= size(xg)
+ntot
+size(xg)
+  error('total processed does not match');
+end
+
+% Plot 1d profile:
+[xg I] = sort(xg,1);
+ug    = ug(I);
+plot(xg, ug, 'k-');
 
