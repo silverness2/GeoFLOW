@@ -69,8 +69,8 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
   T      sumr, xnorm;
   T      tiny;
 
-  gpdf_.resizem(nbins_);
-  ikeep_.resizem(u.size());
+  gpdf_.resize(nbins_);
+  ikeep_.resize(u.size());
   lpdf_ = 0.0;
   pdf   = 0.0;
 
@@ -87,6 +87,11 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
   if ( dolog ) {
     fmin = log10(fabs(fmin)+tiny);
     fmax = log10(fabs(fmax)+tiny);
+    if ( fmin > fmax ) {
+      fmin1 = fmin;
+      fmin = fmax;
+      fmax = fmin1;
+    }
   }
 
   tmin = fmin;
@@ -96,13 +101,24 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
     tmax = pow(10.0, fmax);
   }
 
+
   // Find indirection indices that meet dyn. range criterion:
   lkeep = 0;
+  if ( dolog ) {
   #pragma omp for
-  for ( auto j=0; j<u.size(); j++ ) {
-    if ( u[j] >= tmin && u[j] <= tmax ) {
-      ikeep_[lkeep] = j;
-      lkeep++;
+    for ( auto j=0; j<u.size(); j++ ) {
+      if ( fabs(u[j]) >= tmin && fabs(u[j]) <= tmax ) {
+        ikeep_[lkeep++] = j;
+      }
+    }
+  }
+  else {
+  #pragma omp for
+    for ( auto j=0; j<u.size(); j++ ) {
+      if ( u[j] >= tmin && u[j] <= tmax ) {
+        ikeep_[lkeep] = j;
+        lkeep++;
+      }
     }
   }
   GComm::Allreduce(&lkeep, &nkeep_, 1, T2GCDatatype<GSIZET>() , GC_OP_SUM, comm_);
@@ -191,7 +207,7 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
   std::ofstream     ios;
   std::stringstream header;
 
-  gpdf_.resizem(nbins_);
+  gpdf_.resize(nbins_);
 
   dopdf1d(u, ifixdr, fmin, fmax, dolog, gpdf_);
   if ( myrank_ == 0 )  {
@@ -211,13 +227,13 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
            << sig_   << "; nbins="
            << nbins_ << "; blog ="
            << dolog  << "; nkeep="
-           << nkeep_ << std::endl;
+           << nkeep_ ;
 
      ios.open(fname,std::ios_base::trunc);
      ios << std::scientific << std::setprecision(15);
      ios << header.str() << std::endl;
      for ( j=0; j<nbins_-1; j++ ) {
-       ios << gpdf_[j] << " ";
+       ios << gpdf_[j] << " " << std::endl;
      }
      ios << gpdf_[nbins_-1] << std::endl;
     
