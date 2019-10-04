@@ -21,6 +21,8 @@
 #include "gcomm.hpp"
 
 
+using namespace std;
+
 
 template <class T> class GTStat
 {

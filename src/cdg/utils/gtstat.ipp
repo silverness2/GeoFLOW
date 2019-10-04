@@ -129,16 +129,17 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
   // Compute average:
   sumr = 0.0;
   #pragma omp parallel for default(shared) private(j) reduction(+:sumr)
-  for ( j=0; j<nkeep_; j++ ) {
+  for ( j=0; j<lkeep; j++ ) {
     sumr += u[ikeep_[j]];
   }
   GComm::Allreduce(&sumr, &gavg_, 1, T2GCDatatype<T>() , GC_OP_SUM, comm_);
   gavg_ *= xnorm;
 
+
   // Compute std deviation:
   sumr = 0.0;
   #pragma omp parallel for default(shared) private(j) reduction(+:sumr)
-  for ( j=0; j<nkeep_; j++ ) {
+  for ( j=0; j<lkeep; j++ ) {
     sumr += pow(u[ikeep_[j]]-gavg_,2);
   }
   GComm::Allreduce(&sumr, &sig_, 1, T2GCDatatype<T>() , GC_OP_SUM, comm_);
@@ -148,7 +149,7 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
   del = fabs(fmax - fmin) / nbins_;
   if ( dolog ) {
     #pragma omp parallel for  private(ibin,test)
-    for ( j=0; j<nkeep_; j++ ) {
+    for ( j=0; j<lkeep; j++ ) {
       test = log10(fabs(u[ikeep_[j]])+tiny);
       ibin = static_cast<GSIZET> ( ( test - fmin )/del );
       ibin = MIN(MAX(ibin,0),nbins_-1);
@@ -158,7 +159,7 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
   }
   else {
     #pragma omp parallel for  private(ibin,test)
-    for ( j=0; j<nkeep_; j++ ) {
+    for ( j=0; j<lkeep; j++ ) {
       test = u[ikeep_[j]];
       ibin = static_cast<GSIZET> ( ( test - fmin )/del );
       ibin = MIN(MAX(ibin,0),nbins_-1);
@@ -167,17 +168,19 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
     }
   }
   
+  // Compute global reduction between MPI tasks to find final (global) pdf:
+  GComm::Allreduce(lpdf_.data(), pdf.data(), nbins_, T2GCDatatype<T>() , GC_OP_SUM, comm_);
+
+
  // Do sanity check:
   fbin = 0.0;
   #pragma omp parallel for  default(shared) reduction(+:fbin)
   for ( j=0; j<nbins_; j++ ) {
     #pragma omp atomic
-    fbin += lpdf_[j];
+    fbin += pdf[j];
   }
   assert( fbin == nkeep_ && "Inconsistent binning");
 
-  // Compute global reduction between MPI tasks to find final (global) pdf:
-  GComm::Allreduce(lpdf_.data(), pdf.data(), nbins_, T2GCDatatype<T>() , GC_OP_SUM, comm_);
 
 
 } // end, dopdf1d (1)
