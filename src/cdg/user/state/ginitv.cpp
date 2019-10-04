@@ -215,9 +215,9 @@ GBOOL impl_simsum_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid, 
   GGridBox *tgrid = dynamic_cast<GGridBox*>(&grid);
   assert(tgrid != NULLPTR && "Box grid required");
 
-  GINT         kdn, kup, p, pdef;
+  GINT         kdn, kup, pdef;
   GSIZET       nn ;
-  GFTYPE       A, B, C, E0, pi2, x, y, z;
+  GFTYPE       A, B, C, E0, p, pi2, x, y, z;
   PropertyTree vtree ;
   GTVector<GTVector<GFTYPE>>
               *xnodes = &grid.xNodes();
@@ -231,7 +231,7 @@ GBOOL impl_simsum_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid, 
   vtree = ptree.getPropertyTree(sconfig);
   kdn   = vtree.getValue<GINT>("kdn");
   kup   = vtree.getValue<GINT>("kup");
-  p     = vtree.getValue<GINT>("kpower",pdef);
+  p     = vtree.getValue<GFTYPE>("kpower",pdef);
   E0    = vtree.getValue<GFTYPE>("E0", 1.0);
   nn    = (*xnodes)[0].size();
 
@@ -292,9 +292,9 @@ GBOOL impl_simsum_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
   GGridIcos *tgrid = dynamic_cast<GGridIcos*>(&grid);
   assert(tgrid != NULLPTR && "Icos grid required");
 
-  GINT         kdn, kup, p, pdef;
+  GINT         kdn, kup, pdef;
   GSIZET       nn ;
-  GFTYPE       A, B, C, E0, pi2, x, y, z;
+  GFTYPE       A, B, C, E0, p, pi2, x, y, z;
   PropertyTree vtree ;
   GTVector<GTVector<GFTYPE>>
               *xnodes = &grid.xNodes();
@@ -308,7 +308,7 @@ GBOOL impl_simsum_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
   vtree = ptree.getPropertyTree(sconfig);
   kdn   = vtree.getValue<GINT>("kdn");
   kup   = vtree.getValue<GINT>("kup");
-  p     = vtree.getValue<GINT>("kpower",pdef);
+  p     = vtree.getValue<GFTYPE>("kpower",pdef);
   E0    = vtree.getValue<GFTYPE>("E0", 1.0);
   nn    = (*xnodes)[0].size();
 
