@@ -6,8 +6,8 @@
 # List of final applications to build
 #
 set(apps_files  
-#       geoflow_stub.cpp
-        geoflow_cdg.cpp
+       geoflow_stub.cpp
+       geoflow_cdg.cpp
    )
 
 #		       	

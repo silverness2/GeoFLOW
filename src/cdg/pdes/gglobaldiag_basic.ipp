@@ -49,11 +49,11 @@ void GGlobalDiag_basic<EquationType>::observe_impl(const Time &t, const State &u
 
   mpixx::communicator comm;
 
-  if ( (traits_.itype == ObserverBase<EquationType>::OBS_CYCLE 
-        && (cycle_-cycle_last_+1) >= traits_.cycle_interval)
-    || (traits_.itype == ObserverBase<EquationType>::OBS_TIME  
-        &&  t-time_last_ >= traits_.time_interval
-    || cycle_ == 0 ) ) {
+  if ( ((traits_.itype == ObserverBase<EquationType>::OBS_CYCLE)
+        && ((cycle_-cycle_last_+1) >= traits_.cycle_interval))
+    || ((traits_.itype == ObserverBase<EquationType>::OBS_TIME)
+        &&  (t-time_last_ >= traits_.time_interval))
+    || (cycle_ == 0) ) {
 
     do_kinetic_L2 (t, u, uf, "gbalance.txt");
     do_kinetic_max(t, u, uf, "gmax.txt");

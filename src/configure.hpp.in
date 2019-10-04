@@ -24,6 +24,17 @@
 #cmakedefine USE_PAPI
 
 //
+// Code Configure/Compilation Records
+//
+#define GIT_LONG_HASH "${GIT_LONG_HASH}"
+#define GIT_SHORT_HASH "${GIT_SHORT_HASH}"
+#define GIT_COMMIT_TIME "${GIT_COMMIT_TIME}"
+#define CONFIGURE_TIME "${CONFIGURE_TIME}"
+#define COMPILE_DATE __DATE__
+#define COMPILE_TIME __TIME__
+#define PROJECT_VERSION "${PROJECT_VERSION}"
+
+//
 // Logic based on above values
 //
 #if defined(DO_DEBUG) && !defined(USE_OPENACC)

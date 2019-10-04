@@ -13,6 +13,7 @@ target_sources(tbox
 	PRIVATE
 		clock.cpp
 		command_line.cpp
+		display_header.cpp
 		error_handler.cpp
 		global_manager.cpp
 		input_manager.cpp

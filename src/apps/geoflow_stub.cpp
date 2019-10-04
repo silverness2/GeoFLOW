@@ -8,6 +8,7 @@
 #include "tbox/pio.hpp"
 #include "tbox/mpixx.hpp"
 #include "tbox/global_manager.hpp"
+#include "tbox/code_header.hpp"
 
 using namespace geoflow::tbox;
 
@@ -22,6 +23,9 @@ int main(int argc, char* argv[]) {
 
 	// Call startup call backs
 	GlobalManager::startup();
+
+	// Print Header for Code
+	display_header("GeoFLOW Stub");
 
 	// Entry Point to your application
 	// -->
