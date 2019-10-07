@@ -6,8 +6,9 @@
 # List of final applications to build
 #
 set(apps_files  
-        geoflow.cpp
-   )
+       geoflow_stub.cpp
+       geoflow_cdg.cpp
+	)
 
 #		       	
 # Include headers unique to main applications
@@ -37,7 +38,7 @@ set(apps_compiler_options
 set(apps_linked_libraries 
 	tbox 
 	cdg
-)	
+	)	
 				             
 #
 # Loop over each building & installing

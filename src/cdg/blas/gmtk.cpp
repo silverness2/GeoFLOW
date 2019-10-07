@@ -24,6 +24,126 @@ using namespace std;
 namespace GMTK 
 {
 
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : curl 
+// DESC   : Compute curl component, idir, of input vector field
+//          
+// ARGS   : grid : grid
+//          u    : input vector field. Must have >= GDIM components.
+//          idir : curl component to compute. Must be appropriate for 
+//                 problem dimension.
+//          tmp  : tmp vector; must be of at least length 2.
+//          curlc: result
+// RETURNS: none.
+//**********************************************************************************
+template<>
+void curl(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &u, const GINT idir, 
+          GTVector<GTVector<GFTYPE>*> &tmp, GTVector<GFTYPE> &curlc)
+{
+
+  assert(tmp.size() >= 2 && "Insufficient temp space");
+
+  // Handle 1c cases in 2d or 3d:
+  if  ( u.size() < 2 ) {
+     curlc = 0.0; 
+  }
+
+  // Handle 2.5-d or 2d-3c case:
+  else if ( GDIM == 2 && u.size() > GDIM && grid.gtype() != GE_2DEMBEDDED ) {
+    switch (idir) {
+      case 1:
+        grid.deriv(*u[2], 2, *tmp[0], curlc);
+        curlc *= -1.0;
+        break;
+      case 2:
+        grid.deriv(*u[2], 1, *tmp[0], curlc);
+        break;
+      case 3:
+        grid.deriv(*u[1], 1, *tmp[0], curlc);
+        grid.deriv(*u[0], 2, *tmp[0], *tmp[1]);
+        curlc -= *tmp[1];
+        break;
+      default:
+        assert( FALSE && "Invalid component specified");
+        break;
+    }
+  }
+
+  // Handle 2d-2c regular types:
+  else if ( GDIM == 2  && u.size() == 2 && grid.gtype() == GE_REGULAR ) {
+    switch (idir) {
+      case 1:
+      case 2:
+        curlc = 0.0;
+        break;
+      case 3:
+        grid.deriv(*u[1], 1, *tmp[0], curlc);
+        grid.deriv(*u[0], 2, *tmp[0], *tmp[1]);
+        curlc -= *tmp[1];
+        break;
+      default:
+        assert( FALSE && "Invalid component specified");
+        break;
+    }
+  }
+
+  // Handle 3d-3c or embedded cases:
+  else if ( GDIM == 3 || grid.gtype() == GE_2DEMBEDDED ) {
+    switch (idir) {
+      case 1:
+        grid.deriv(*u[1], 3, *tmp[0], curlc);
+        grid.deriv(*u[2], 2, *tmp[0], *tmp[1]);
+        curlc -= *tmp[1];
+        break;
+      case 2:
+        grid.deriv(*u[2], 1, *tmp[0], curlc);
+        grid.deriv(*u[0], 3, *tmp[0], *tmp[1]);
+        curlc -= *tmp[1];
+        break;
+      case 3:
+        grid.deriv(*u[1], 1, *tmp[0], curlc);
+        grid.deriv(*u[0], 2, *tmp[0], *tmp[1]);
+        curlc -= *tmp[1];
+        break;
+    }
+  }
+  else {
+    assert(FALSE && "Curl cannot be computed");
+  }
+
+
+  return;
+
+} // end of method curl
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : grad
+// DESC   : Compute gradient component, idir, of input vector field.
+//          Note: Don't really need this, as it's just another way
+//                to refer to the Cartesian 'deriv' method in GGrid
+//          
+// ARGS   : grid : grid
+//          u    : input (scalar) field. 
+//          idir : gradient component to compute. Must be appropriate for 
+//                 problem dimension.
+//          tmp  : tmp vector; must be of at least length 1.
+//          gradc: result
+// RETURNS: none.
+//**********************************************************************************
+template<>
+void grad(GGrid &grid, GTVector<GFTYPE> &u, const GINT idir, 
+          GTVector<GTVector<GFTYPE>*> &tmp, GTVector<GFTYPE> &gradc)
+{
+  assert ( idir >0 && idir <=3 && "Invalid compoment specified");
+
+  grid.deriv(u, idir, *tmp[0], gradc);
+
+} // end of method grad
+
+
 
 //**********************************************************************************
 //**********************************************************************************
@@ -1654,7 +1774,7 @@ void D3_X_Dg2_X_Dg1<GQUAD>(GTVector<GQUAD> &Dg1, GTVector<GQUAD> &Dg2, GTMatrix<
 //**********************************************************************************
 #pragma acc routine vector
 template<>
-void add<GFLOAT>(GTVector<GFLOAT> &vret, GTVector<GFLOAT> &va, GTVector<GFLOAT> &vb, GFLOAT a, GFLOAT b) 
+void add<GFLOAT>(GTVector<GFLOAT> &vret, const GTVector<GFLOAT> &va, const GTVector<GFLOAT> &vb, GFLOAT a, GFLOAT b) 
 {
   #if defined(_G_BOUNDS_CHK)
   if ( va.size() < vret.size() || vb.size() < vret.size() ) {
@@ -1670,7 +1790,8 @@ while(1){};
   }
   #else
   GSIZET nn = vret.getIndex().end() - vret.getIndex().beg() + 1;
-  fzaxpby(vret.data(), va.data(), &a, vb.data(), &b, &nn, &szVecCache_);
+  fzaxpby(vret.data(), const_cast<GFLOAT*>(va.data()), &a, 
+                       const_cast<GFLOAT*>(vb.data()), &b, &nn, &szVecCache_);
   #endif
 
 } // end, add 
@@ -1689,7 +1810,7 @@ while(1){};
 //**********************************************************************************
 #pragma acc routine vector
 template<>
-void add<GDOUBLE>(GTVector<GDOUBLE> &vret, GTVector<GDOUBLE> &va, GTVector<GDOUBLE> &vb, GDOUBLE a, GDOUBLE b) 
+void add<GDOUBLE>(GTVector<GDOUBLE> &vret, const GTVector<GDOUBLE> &va, const GTVector<GDOUBLE> &vb, GDOUBLE a, GDOUBLE b) 
 {
   #if defined(_G_BOUNDS_CHK)
   if ( va.size() < vret.size() || vb.size() < vret.size() ) {
@@ -1705,7 +1826,8 @@ while(1){};
   }
   #else
   GSIZET nn = vret.getIndex().end() - vret.getIndex().beg() + 1;
-  dzaxpby(vret.data(), va.data(), &a, vb.data(), &b, &nn, &szVecCache_);
+  dzaxpby(vret.data(), const_cast<GDOUBLE*>(va.data()), &a, 
+                       const_cast<GDOUBLE*>(vb.data()), &b, &nn, &szVecCache_);
   #endif
 
 } // end, add 
@@ -1724,7 +1846,7 @@ while(1){};
 //**********************************************************************************
 #pragma acc routine vector
 template<>
-void add<GQUAD>(GTVector<GQUAD> &vret, GTVector<GQUAD> &va, GTVector<GQUAD> &vb, GQUAD a, GQUAD b) 
+void add<GQUAD>(GTVector<GQUAD> &vret, const GTVector<GQUAD> &va, const GTVector<GQUAD> &vb, GQUAD a, GQUAD b) 
 {
   #if defined(_G_BOUNDS_CHK)
   if ( va.size() < vret.size() || vb.size() < vret.size() ) {
@@ -1740,7 +1862,8 @@ while(1){};
   }
   #else
   GSIZET nn = vret.getIndex().end() - vret.getIndex().beg() + 1;
-  qzaxpby(vret.data(), va.data(), &a, vb.data(), &b, &nn, &szVecCache_);
+  qzaxpby(vret.data(), const_cast<GQUAD*>(va.data()), &a, 
+                       const_cast<GQUAD*>(vb.data()), &b, &nn, &szVecCache_);
   #endif
 
 } // end, add 
@@ -1756,7 +1879,7 @@ while(1){};
 // RETURNS: none
 //**********************************************************************************
 template<>
-void matvec_prod<GFLOAT>(GTVector<GFLOAT> &vret, GTMatrix<GFLOAT> &A, GTVector<GFLOAT> &b) 
+void matvec_prod<GFLOAT>(GTVector<GFLOAT> &vret, const GTMatrix<GFLOAT> &A, const GTVector<GFLOAT> &b) 
 {
   #if defined(_G_BOUNDS_CHK)
   if ( b.size() < A.size(2) ) {
@@ -1775,7 +1898,9 @@ void matvec_prod<GFLOAT>(GTVector<GFLOAT> &vret, GTMatrix<GFLOAT> &A, GTVector<G
   #else
   GSIZET n1 = A.size(1);
   GSIZET n2 = A.size(2);
-  fmxv(vret.data(), A.data().data(), b.data(), &n1, &n2, &szMatCache_);
+  fmxv(vret.data(), const_cast<GFLOAT*>(A.data().data()), 
+                    const_cast<GFLOAT*>(b.data())       , 
+                    &n1, &n2, &szMatCache_);
   #endif
 
 
@@ -1791,7 +1916,7 @@ void matvec_prod<GFLOAT>(GTVector<GFLOAT> &vret, GTMatrix<GFLOAT> &A, GTVector<G
 // RETURNS: none
 //**********************************************************************************
 template<>
-void matvec_prod<GDOUBLE>(GTVector<GDOUBLE> &vret, GTMatrix<GDOUBLE> &A, GTVector<GDOUBLE> &b) 
+void matvec_prod<GDOUBLE>(GTVector<GDOUBLE> &vret, const GTMatrix<GDOUBLE> &A, const GTVector<GDOUBLE> &b) 
 {
   #if defined(_G_BOUNDS_CHK)
   if ( b.size() < A.size(2) ) {
@@ -1810,7 +1935,9 @@ void matvec_prod<GDOUBLE>(GTVector<GDOUBLE> &vret, GTMatrix<GDOUBLE> &A, GTVecto
   #else
   GSIZET n1 = A.size(1);
   GSIZET n2 = A.size(2);
-  dmxv(vret.data(), A.data().data(), b.data(), &n1, &n2, &szMatCache_);
+  dmxv(vret.data(), const_cast<GDOUBLE*>(A.data().data()), 
+                    const_cast<GDOUBLE*>(b.data())       , 
+                    &n1, &n2, &szMatCache_);
   #endif
 
 
@@ -1826,7 +1953,7 @@ void matvec_prod<GDOUBLE>(GTVector<GDOUBLE> &vret, GTMatrix<GDOUBLE> &A, GTVecto
 // RETURNS: none
 //**********************************************************************************
 template<>
-void matvec_prod<GQUAD>(GTVector<GQUAD> &vret, GTMatrix<GQUAD> &A, GTVector<GQUAD> &b) 
+void matvec_prod<GQUAD>(GTVector<GQUAD> &vret, const GTMatrix<GQUAD> &A, const GTVector<GQUAD> &b) 
 {
   #if defined(_G_BOUNDS_CHK)
   if ( b.size() < A.size(2) ) {
@@ -1845,7 +1972,9 @@ void matvec_prod<GQUAD>(GTVector<GQUAD> &vret, GTMatrix<GQUAD> &A, GTVector<GQUA
   #else
   GSIZET n1 = A.size(1);
   GSIZET n2 = A.size(2);
-  qmxv(vret.data(), A.data().data(), b.data(), &n1, &n2, &szMatCache_);
+  qmxv(vret.data(), const_cast<GQUAD*>(A.data().data()), 
+                    const_cast<GQUAD*>(b.data())       , 
+                    &n1, &n2, &szMatCache_);
   #endif
 
 
@@ -1862,7 +1991,7 @@ void matvec_prod<GQUAD>(GTVector<GQUAD> &vret, GTMatrix<GQUAD> &A, GTVector<GQUA
 // RETURNS: none
 //**********************************************************************************
 template<>
-void matmat_prod<GFLOAT>(GTMatrix<GFLOAT> &C, GTMatrix<GFLOAT> &A, GTMatrix<GFLOAT> &B) 
+void matmat_prod<GFLOAT>(GTMatrix<GFLOAT> &C, const GTMatrix<GFLOAT> &A, const GTMatrix<GFLOAT> &B) 
 {
   #if defined(_G_BOUNDS_CHK)
   if ( A.size(2) != B.size(1) ) {
@@ -1884,8 +2013,11 @@ void matmat_prod<GFLOAT>(GTMatrix<GFLOAT> &C, GTMatrix<GFLOAT> &A, GTMatrix<GFLO
   #else
   GSIZET a1=A.size(1), a2 = A.size(2);
   GSIZET b1=B.size(1), b2 = B.size(2);
-  fmxm(C.data().data(),A.data().data(),&a1,&a2,
-       B.data().data(),&b1, &b2, &szMatCache_);
+  fmxm(C.data().data(),
+       const_cast<GFLOAT*>(A.data().data()),
+       &a1,&a2,
+       const_cast<GFLOAT*>(B.data().data()),
+       &b1, &b2, &szMatCache_);
   #endif
   
 
@@ -1901,7 +2033,7 @@ void matmat_prod<GFLOAT>(GTMatrix<GFLOAT> &C, GTMatrix<GFLOAT> &A, GTMatrix<GFLO
 // RETURNS: none
 //**********************************************************************************
 template<>
-void matmat_prod<GDOUBLE>(GTMatrix<GDOUBLE> &C, GTMatrix<GDOUBLE> &A, GTMatrix<GDOUBLE> &B) 
+void matmat_prod<GDOUBLE>(GTMatrix<GDOUBLE> &C, const GTMatrix<GDOUBLE> &A, const GTMatrix<GDOUBLE> &B) 
 {
   #if defined(_G_BOUNDS_CHK)
   if ( A.size(2) != B.size(1) ) {
@@ -1923,8 +2055,11 @@ void matmat_prod<GDOUBLE>(GTMatrix<GDOUBLE> &C, GTMatrix<GDOUBLE> &A, GTMatrix<G
   #else
   GSIZET a1=A.size(1), a2 = A.size(2);
   GSIZET b1=B.size(1), b2 = B.size(2);
-  dmxm(C.data().data(),A.data().data(),&a1,&a2,
-       B.data().data(),&b1, &b2, &szMatCache_);
+  dmxm(C.data().data(),
+       const_cast<GDOUBLE*>(A.data().data()),
+       &a1,&a2,
+       const_cast<GDOUBLE*>(B.data().data()),
+       &b1, &b2, &szMatCache_);
   #endif
   
 
@@ -1940,7 +2075,7 @@ void matmat_prod<GDOUBLE>(GTMatrix<GDOUBLE> &C, GTMatrix<GDOUBLE> &A, GTMatrix<G
 // RETURNS: none
 //**********************************************************************************
 template<>
-void matmat_prod<GQUAD>(GTMatrix<GQUAD> &C, GTMatrix<GQUAD> &A, GTMatrix<GQUAD> &B) 
+void matmat_prod<GQUAD>(GTMatrix<GQUAD> &C, const GTMatrix<GQUAD> &A, const GTMatrix<GQUAD> &B) 
 {
   #if defined(_G_BOUNDS_CHK)
   if ( A.size(2) != B.size(1) ) {
@@ -1962,122 +2097,16 @@ void matmat_prod<GQUAD>(GTMatrix<GQUAD> &C, GTMatrix<GQUAD> &A, GTMatrix<GQUAD> 
   #else
   GSIZET a1=A.size(1), a2 = A.size(2);
   GSIZET b1=B.size(1), b2 = B.size(2);
-  qmxm(C.data().data(),A.data().data(),&a1,&a2,
-       B.data().data(),&b1, &b2, &szMatCache_);
+  qmxm(C.data().data(),
+       const_cast<GQUAD*>(A.data().data()),
+       &a1,&a2,
+       const_cast<GQUAD*>(B.data().data()),
+       &b1, &b2, &szMatCache_);
   #endif
   
 
 } // end of operator * mat-mat, GQUAD
 
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : curl 
-// DESC   : Compute curl component, idir, of input vector field
-//          
-// ARGS   : grid : grid
-//          u    : input vector field. Must have >= GDIM components.
-//          idir : curl component to compute. Must be appropriate for 
-//                 problem dimension.
-//          tmp  : tmp vector; must be of at least length 2.
-//          curlc: result
-// RETURNS: none.
-//**********************************************************************************
-template<>
-void curl(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &u, const GINT idir, 
-          GTVector<GTVector<GFTYPE>*> &tmp, GTVector<GFTYPE> &curlc)
-{
-
-  assert(tmp.size() >= 2 && "Insufficient temp space");
-
-  // Handle 2.5-d 2d-3c case:
-  // Handle 1c cases in 2d or 3d:
-  if  ( u.size() < 2 ) {
-     curlc = 0.0; 
-  }
-  else if ( GDIM == 2 && u.size() > GDIM && grid.gtype() != GE_2DEMBEDDED ) {
-    switch (idir) {
-      case 1:
-        grid.deriv(*u[2], 2, *tmp[0], curlc);
-        curlc *= -1.0;
-        break;
-      case 2:
-        grid.deriv(*u[2], 1, *tmp[0], curlc);
-        break;
-      case 3:
-        grid.deriv(*u[1], 1, *tmp[0], curlc);
-        grid.deriv(*u[0], 2, *tmp[0], *tmp[1]);
-        curlc -= *tmp[1];
-        break;
-      default:
-        assert( FALSE && "Invalid component specified");
-        break;
-    }
-  }
-
-  // Handle 2d-2c regular types:
-  else if ( GDIM == 2  && u.size() == 2 && grid.gtype() == GE_REGULAR ) {
-    switch (idir) {
-      case 3:
-        grid.deriv(*u[1], 1, *tmp[0], curlc);
-        grid.deriv(*u[0], 2, *tmp[0], *tmp[1]);
-        curlc -= *tmp[1];
-        break;
-      default:
-        assert( FALSE && "Invalid component specified");
-        break;
-    }
-  }
-
-  // Handle 3d-3c or embedded cases:
-  else if ( GDIM == 3 || grid.gtype() == GE_2DEMBEDDED ) {
-    switch (idir) {
-      case 1:
-        grid.deriv(*u[1], 3, *tmp[0], curlc);
-        grid.deriv(*u[2], 2, *tmp[0], *tmp[1]);
-        curlc -= *tmp[1];
-        break;
-      case 2:
-        grid.deriv(*u[2], 1, *tmp[0], curlc);
-        grid.deriv(*u[0], 3, *tmp[0], *tmp[1]);
-        curlc -= *tmp[1];
-        break;
-      case 3:
-        grid.deriv(*u[1], 1, *tmp[0], curlc);
-        grid.deriv(*u[0], 2, *tmp[0], *tmp[1]);
-        curlc -= *tmp[1];
-        break;
-    }
-  }
-
-
-  return;
-
-} // end of method curl
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : grad
-// DESC   : Compute gradient component, idir, of input vector field
-//          
-// ARGS   : grid : grid
-//          u    : input (scalar) field. 
-//          idir : gradient component to compute. Must be appropriate for 
-//                 problem dimension.
-//          tmp  : tmp vector; must be of at least length 1.
-//          gradc: result
-// RETURNS: none.
-//**********************************************************************************
-template<>
-void grad(GGrid &grid, GTVector<GFTYPE> &u, const GINT idir, 
-          GTVector<GTVector<GFTYPE>*> &tmp, GTVector<GFTYPE> &gradc)
-{
-  assert ( idir >0 && idir <=3 && "Invalid compoment specified");
-
-  grid.deriv(u, idir, *tmp[0], gradc);
-
-} // end of method grad
 
 
 //**********************************************************************************
@@ -2086,7 +2115,7 @@ void grad(GGrid &grid, GTVector<GFTYPE> &u, const GINT idir,
 // DESC   : Project/constrain input 3-vector to sphere:
 //          -  -     -                           -   -  -
 //          |vx|     |(r^2-x^2)   -xy     -xz    |   |vx|
-//        P |vy| =   |   -yx    (r^2-x^2) -yz    |   |vy|
+//        P |vy| =   |   -yx    (r^2-y^2) -yz    |   |vy|
 //          |vz|     |   -zx      -zy   (r^2-z^2)|   |vz|
 //          -  -     -                           -   -  -
 //
@@ -2196,7 +2225,7 @@ void compute_grefderiv(GGrid &grid, GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
   GSIZET               ibeg, iend; // beg, end indices for global array
   GBOOL                bembedded;
   GTVector<GSIZET>     N(GDIM);
-  GTMatrix<GFTYPE>     *Di;         // element-based 1d derivative operators
+  GTMatrix<GFTYPE>    *Di;         // element-based 1d derivative operators
   GElemList           *gelems = &grid.elems();
 
   bembedded = grid.gtype() == GE_2DEMBEDDED;
@@ -2846,7 +2875,8 @@ void vsphere2cart(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &vsph, GVectorT
 // METHOD : energy
 // DESC   : 
 //             Compute volume-integrated mean of energy from input 
-//             vector field
+//             vector field:
+//               energy = 0.5 * Int _u_^2 dV / Int dV
 //          
 // ARGS   : 
 //          grid    : grid object
@@ -2863,9 +2893,10 @@ GFTYPE energy(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<GTVec
   GDOUBLE                     ener, local;
   GC_COMM                     comm = grid.get_comm();
 
- *tmp[1] = *u[0]; tmp[1]->pow(2);
+  // Find _u_^2 = Sum_l u_l ^2
+ *tmp[1] = *u[0]; tmp[1]->rpow(2);
   for ( GINT l=1; l<u.size(); l++ ) {
-    *tmp[0] = *u[l]; tmp[0]->pow(2);
+    *tmp[0] = *u[l]; tmp[0]->rpow(2);
     *tmp[1] += *tmp[0];
   }
 
@@ -2909,6 +2940,7 @@ GFTYPE enstrophy(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<GT
   assert(tmp.size() >= 4 && "Insufficient temp space");
 
   
+  GINT                        ibeg, iend;
   GDOUBLE                     enst, local;
   GC_COMM                     comm = grid.get_comm();
   GTVector<GFTYPE>           *cc;
@@ -2919,9 +2951,16 @@ GFTYPE enstrophy(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<GT
   cc      = tmp[2];
 
  *tmp[3] = 0.0;
-  for ( GINT l=1; l<u.size(); l++ ) {
-    GMTK::curl(grid, u, l, utmp, *cc);
-    cc->pow(2);
+  if ( u.size() == 3 ) {
+    for ( GINT l=0; l<u.size(); l++ ) {
+      GMTK::curl(grid, u, l+1, utmp, *cc);
+      cc->rpow(2);
+     *tmp[3] += *cc;
+    }
+  }
+  else if ( u.size() == 2 ) {
+    GMTK::curl(grid, u, 3, utmp, *cc);
+    cc->rpow(2);
    *tmp[3] += *cc;
   }
 
@@ -2976,10 +3015,12 @@ GFTYPE helicity(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<GTV
   cc      = tmp[2];
 
  *tmp[3] = 0.0;
-  for ( GINT l=1; l<u.size(); l++ ) {
-    GMTK::curl(grid, u, l, utmp, *cc);
-    cc->pointProd(*u[l]);
-   *tmp[3] += *cc;
+  if ( u.size() == 3 ) {
+    for ( GINT l=0; l<3; l++ ) {
+      GMTK::curl(grid, u, l+1, utmp, *cc);
+      if ( u.size() > l ) cc->pointProd(*u[l]);
+     *tmp[3] += *cc;
+    }
   }
 
   if ( ismax ) {
@@ -3036,49 +3077,64 @@ GFTYPE relhelicity(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<
  *tmp[4] = 0.0;
 
   // Compute u. curl u:
-  for ( GINT l=0; l<u.size(); l++ ) {
-    GMTK::curl(grid, u, l, utmp, *cc);
-    cc->pointProd(*u[l]);
-   *tmp[3] += *cc;
+  if ( u.size() == 3 ) {
+    for ( GINT l=0; l<3; l++ ) {
+      GMTK::curl(grid, u, l+1, utmp, *cc);
+      cc->pointProd(*u[l]);
+     *tmp[3] += *cc;
+    }
   }
   
   // Compute |curl u|:
-  for ( GINT l=0; l<u.size(); l++ ) {
-    GMTK::curl(grid, u, l, utmp, *cc);
-    cc->pow(2);
-    *tmp[4] += *cc;
+  if ( u.size() == 3 ) {
+    for ( GINT l=0; l<3; l++ ) {
+      GMTK::curl(grid, u, l+1, utmp, *cc);
+      cc->rpow(2);
+     *tmp[4] += *cc;
+    }
   }
-  tmp[4]->pow(0.5);
+  else if ( u.size() == 2 ) {
+    GMTK::curl(grid, u, 3, utmp, *cc);
+    cc->rpow(2);
+   *tmp[4] += *cc;
+  } 
+  tmp[4]->rpow(0.5);
 
 
   // Compute |u|:
   *tmp[0] = 0.0;
   for ( GINT l=0; l<u.size(); l++ ) {
    *tmp[1] = *u[l];
-    tmp[1]->pow(2);
+    tmp[1]->rpow(2);
     *tmp[0] += *tmp[1];
   }
-  tmp[0]->pow(0.5);
+  tmp[0]->rpow(0.5);
 
 
   // Compute u. (curl u) /|u| |curl u| integrand:
   GFTYPE tiny = 100.0*numeric_limits<GFTYPE>::epsilon();
 
   tmp[0]->pointProd(*tmp[4]); // compute |u| |curl u|
-  for ( GINT k=0; k<utmp[0]->size(); k++ ) {
-   (*tmp[3])[k] = abs((*tmp[0])[k]) <= tiny ? 0.0 : (*tmp[3])[k]/(*tmp[0])[k];  
+  for ( GSIZET k=0; k<utmp[0]->size(); k++ ) {
+    // (*tmp[1])[k] = fabs((*tmp[0])[k]) <= tiny ? 0.0 : (*tmp[3])[k]/(*tmp[0])[k];  
+    if ( fabs((*tmp[0])[k]) <= tiny ) {
+      (*tmp[1])[k] = 0.0;
+    }
+    else {
+      (*tmp[1])[k] = (*tmp[3])[k]/(*tmp[0])[k];
+    }
   }
 
 
   if ( ismax ) {
-    rhel =  static_cast<GDOUBLE>(tmp[3]->amax());
+    rhel =  static_cast<GDOUBLE>(tmp[1]->amax());
     if ( isglobal ) {
       local = rhel;
       GComm::Allreduce(&local, &rhel, 1, T2GCDatatype<GDOUBLE>() , GC_OP_MAX, comm);
     }
   }
   else {
-    rhel  = static_cast<GDOUBLE>(grid.integrate(*tmp[3], *tmp[0], isglobal));
+    rhel  = static_cast<GDOUBLE>(grid.integrate(*tmp[1], *tmp[0], isglobal));
     rhel *= static_cast<GDOUBLE>(grid.ivolume());
   }
 
@@ -3151,6 +3207,123 @@ GFTYPE energyinj(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &u,  const GTVec
 } // end of method energyinj
 
 
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : domathop
+// DESC   : 
+//             Carry out math (mainly differential) operation, based on 
+//             specified string description.
+//
+//             Return in appropriate component of output array
+//          
+// ARGS   : 
+//          grid    : grid object
+//          uin     : input state. May be vector or scalar, in an
+//                    order and number appropriate for specified operation
+//          sop     : string operation
+//          tmp     : tmp vector of length at least 1, each
+//                    of same length as uin
+//          uout    : output array
+//          iuout   : which indices of uout contain valid output data; 
+//                    sized to reflect valid number of components
+// RETURNS: none
+//**********************************************************************************
+template<>
+void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GString sop, GTVector<GTVector<GFTYPE>*> &utmp, GTVector<GTVector<GFTYPE>*> &uout, GTVector<GINT> &iuout)
+{
+
+  GINT                        nxy;
+  GTVector<GTVector<GFTYPE>*> tmp(3);
+
+  if      ( "div"  == sop ) { // operates on a vector field...
+    // produces a scalar field:
+    nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+    assert(utmp .size() >= 1   && "Insufficient temp space");
+    assert(uin  .size() >= nxy && "Insufficient no. input components");
+    assert(uout .size() >= nxy && "Insufficient no. output components");
+    GMTK::grad(grid, *uin[0], 1, utmp, *uout[0]);
+    iuout.resize(1); iuout[0] = 0;
+    for ( auto j=1; j<nxy; j++ ) {
+      GMTK::grad(grid, *uin[j], j+1, utmp, *utmp[utmp.size()-1]);
+      *uout[0] += *utmp[utmp.size()-1];
+    }
+  }
+  else if ( "grad" == sop ) {  // operates on a scalar field...
+    // produces a vector field:
+    nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+    assert(utmp .size() >= 1   && "Insufficient temp space");
+    assert(uin  .size() >= 1   && "Insufficient no. input components");
+    assert(uout .size() >= nxy && "Insufficient no. output components");
+    iuout.resize(nxy); 
+    for ( auto j=0; j<nxy; j++ ) {
+      GMTK::grad(grid, *uin[0], j+1, utmp, *uout[j]);
+      iuout[j] = j; 
+    }
+  }
+  else if ( "gradmag" == sop ) {  // operates on a scalar field...
+    // produces a scalar field:
+    nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+    assert(utmp .size() >= 2   && "Insufficient temp space");
+    assert(uin  .size() >= 1   && "Insufficient no. input components");
+    assert(uout .size() >= 1   && "Insufficient no. output components");
+    iuout.resize(1); iuout[0] = 0; 
+    tmp[0] = utmp[0]; tmp[1] = utmp[1];
+    GMTK::grad(grid, *uin[0], 1, tmp, *uout[0]);
+    for ( auto j=0; j<nxy; j++ ) {
+      GMTK::grad(grid, *uin[0], j+1, tmp, *tmp[1]);
+      tmp[1]->rpow(2);
+      *uout[0] += *tmp[1];
+    }
+    uout[0]->rpow(0.5);
+  }
+  else if ( "curl" == sop ) { // operates on a vector field...
+    // produces a vector field:
+    nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+    assert(utmp .size() >= 2   && "Insufficient temp space");
+    assert(uin  .size() >= nxy && "Insufficient no. input components");
+    assert(uout .size() >= nxy && "Insufficient no. output components");
+    iuout.resize(nxy); 
+    for ( auto j=0; j<nxy; j++ ) {
+      GMTK::curl(grid, uin, j+1, utmp, *uout[j]);
+      iuout[j] = j; 
+    }
+  }
+  else if ( "curlmag" == sop ) { // operates on a vector field...
+    // produces a vector field:
+    nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+    assert(utmp .size() >= 3   && "Insufficient temp space");
+    assert(uin  .size() >= nxy && "Insufficient no. input components");
+    assert(uout .size() >= nxy && "Insufficient no. output components");
+    iuout.resize(1); iuout[0] = 0; 
+    tmp[0] = utmp[0]; tmp[1] = utmp[1]; tmp[2] = utmp[2];
+    GMTK::curl(grid, uin, 1, utmp, *uout[0]);
+    for ( auto j=0; j<nxy; j++ ) {
+      GMTK::curl(grid, uin, j+1, tmp, *tmp[2]);
+      tmp[2]->rpow(2);
+      *uout[0] += *tmp[2];
+    }
+    uout[0]->rpow(0.5);
+  }
+  else if ( "lapderivs" == sop ) { // operates on a scalar field
+    // produces a vector field of each termin Laplacnin:
+    nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+    assert(utmp .size() >  3   && "Insufficient temp space");
+    assert(uin  .size() >= 1   && "Insufficient no. input components");
+    assert(uout .size() >= nxy && "Insufficient no. output components");
+    tmp[0] = utmp[0]; tmp[1] = utmp[1]; tmp[2] = utmp[2];
+    iuout.resize(nxy); 
+    for ( auto j=0; j<nxy; j++ ) {
+      GMTK::grad(grid, *uin[0], j+1, tmp , *tmp[3]);
+      GMTK::grad(grid, *tmp[3], j+1, utmp, *uout[j]);
+      iuout[j] = j; 
+    }
+  }
+  else {
+    assert(FALSE && "Invalid math operation");
+  }
+
+} // end of method domathop 
 
 
 } // end, namespace GMTK

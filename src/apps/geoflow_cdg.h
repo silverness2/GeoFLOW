@@ -1,12 +1,13 @@
 //==================================================================================
-// Module       : geoglow.h
+// Module       : geoflow_cdg.h
 // Date         : 7/7/19 (DLR)
-// Description  : GeoFLOW main driver header
+// Description  : GeoFLOW main driver for CG and DG initial value,
+//                boundary value problems
 // Copyright    : Copyright 2019. Colorado State University. All rights reserved.
 // Derived From : 
 //==================================================================================
-#if !defined(GEOFLOW_MAIN_H)
-#define GEOFLOW_MAIN_H
+#if !defined(GEOFLOW_CDG_MAIN_H)
+#define GEOFLOW_CDG_MAIN_H
 
 #include "gexec.h"
 #include "gtypes.h"

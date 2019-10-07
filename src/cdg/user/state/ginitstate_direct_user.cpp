@@ -36,7 +36,7 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
   GBOOL            bplanar=TRUE; // planar or circularized
   GBOOL            brot   =FALSE;
   GSIZET           i, j, idir, nxy;
-  GFTYPE           A, K2, nu, Re, r2, t, t0, tdenom;
+  GFTYPE           A, K2, nu, Re, r2, t0, tdenom;
   GFTYPE           efact, sum, tfact, xfact;
   GTVector<GFTYPE> K(GDIM), xx(GDIM), si(GDIM), sig(GDIM);
   GTPoint<GFTYPE>  r0(3), P0(3), gL(3);
@@ -89,8 +89,10 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
   for ( i=0, brot=TRUE; i<GDIM; i++ ) brot = brot && K[i] != 0.0 ;
   for ( i=0, idir=0; i<GDIM; i++ ) if ( K[i] > 0 ) {idir=i; break;}
 
-  if ( t == 0.0 ) t = K2 * t0;
+  if ( time <= 10.0*std::numeric_limits<GFTYPE>::epsilon() ) time = K2 * t0;
   Re = A/(2.0*nu); // set Re from nu
+
+  cout << "impl_boxnwaveburgers: nu=" << nu << " Re=" << Re << " time=" << time << endl;
 
 
   for ( j=0; j<nxy; j++ ) {
@@ -109,13 +111,15 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
 
     // u(x,t) = (x/t) [ 1 + sqrt(t/t0) (e^Re - 1)^-1 exp(x^2/(4 nu t)) ]^-1
     tdenom = 1.0/(4.0*nu*time);
-    tfact  = bplanar ? sqrt(t/t0): time/t0;
+    tfact  = bplanar ? sqrt(time/t0): time/t0;
     efact  = tfact * exp(r2*tdenom) / ( exp(Re) - 1.0 );
-    xfact  = 1.0 /( t * (  1.0 + efact ) );
+    xfact  = 1.0 /( time * (  1.0 + efact ) );
     for ( i=0; i<GDIM; i++ ) (*u[i])[j] = xx[i]*xfact;
+//cout << "impl_boxnwaveburgers: ux[" << j << "]=" << (*u[0])[j] << endl;
     // dU1max = 1.0 / ( time * (sqrt(time/A) + 1.0) );
     // aArea  = 4.0*nu*log( 1.0 + sqrt(A/time) );
   }
+
 
   return TRUE;
 
@@ -143,7 +147,7 @@ GBOOL impl_boxdirgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
   GBOOL            bContin;
   GINT             j, n;
   GFTYPE           argxp;
-  GFTYPE           nxy, nu, sig0, u0;
+  GFTYPE           nxy, nu, sig0, E0;
   GTVector<GFTYPE> xx(GDIM), si(GDIM), sig(GDIM), ufact(GDIM);
   State            c(GDIM);
   GTPoint<GFTYPE>  r0(3), P0(3);
@@ -186,7 +190,7 @@ GBOOL impl_boxdirgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
   r0.x2 = heatptree.getValue<GFTYPE>("y0");
   r0.x3 = heatptree.getValue<GFTYPE>("z0");
   sig0  = heatptree.getValue<GFTYPE>("sigma");
-  u0    = heatptree.getValue<GFTYPE>("u0");
+  E0    = heatptree.getValue<GFTYPE>("E0");
 
   nu     = nuptree   .getValue<GFTYPE>("nu");
   snut   = nuptree   .getValue<GString>("nu_type","constant");
@@ -205,7 +209,7 @@ GBOOL impl_boxdirgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
   for ( GSIZET k=0; k<GDIM; k++ ) {
     sig  [k] = sqrt(sig0*sig0 + 4.0*time*nu); // constant viscosity only
     si   [k] = 1.0/(sig[k]*sig[k]);
-    ufact[k] = u0*pow(sig0/sig[k],GDIM);
+    ufact[k] = sqrt(2*E0)*pow(sig0/sig[k],GDIM);
   }
 
   // Ok, return to assumption of isotropic nu: 
@@ -244,7 +248,7 @@ GBOOL impl_boxpergauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
   GFTYPE           iargp, iargm ;
   GFTYPE           isum , irat , prod;
   GFTYPE           sumn , eps;
-  GFTYPE           nxy, nu, pint, sig0, u0;
+  GFTYPE           nxy, nu, pint, sig0, E0;
   GTVector<GFTYPE> f(GDIM), xx(GDIM), si(GDIM), sig(GDIM);
   GTPoint<GFTYPE>  r0(3), P0(3), gL(3);
   State            c(GDIM);
@@ -293,7 +297,7 @@ GBOOL impl_boxpergauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
   r0.x2 = heatptree.getValue<GFTYPE>("y0");
   r0.x3 = heatptree.getValue<GFTYPE>("z0");
   sig0  = heatptree.getValue<GFTYPE>("sigma");
-  u0    = heatptree.getValue<GFTYPE>("u0");
+  E0    = heatptree.getValue<GFTYPE>("E0");
 
   nu    = nuptree   .getValue<GFTYPE>("nu");
   snut  = nuptree   .getValue<GString>("nu_type","constant");
@@ -337,7 +341,7 @@ GBOOL impl_boxpergauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
       }
       prod *= isum;
     }
-    (*u[0])[n] = u0*pow(sig0,GDIM)/pow(sig[0],GDIM)*prod;
+    (*u[0])[n] = sqrt(2.0*E0)*pow(sig0,GDIM)/pow(sig[0],GDIM)*prod;
 
   } // end, loop over grid points
 
@@ -369,7 +373,7 @@ GBOOL impl_icosgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid, T
   GFTYPE           alpha, argxp;
   GFTYPE           lat, lon;
   GFTYPE           x, y, z, r, s;
-  GFTYPE           nu, rad, u0 ;
+  GFTYPE           nu, rad, E0, u0 ;
   GFTYPE           vtheta, vphi;
   GFTYPE           tiny = std::numeric_limits<GFTYPE>::epsilon();
   GTPoint<GFTYPE>           rt(3);
@@ -406,7 +410,7 @@ GBOOL impl_icosgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid, T
   sig0  = lumpptree.getArray<GFTYPE>("sigma"); // sig for each lump
   c0    = lumpptree.getArray<GFTYPE>("c0");  // initial concentrations for each lump
   rad   = icosptree.getValue<GFTYPE>("radius");
-  u0    = lumpptree.getValue<GFTYPE>("u0");
+  E0    = lumpptree.getValue<GFTYPE>("E0");
   alpha = lumpptree.getValue<GFTYPE>("alpha",0.0);
   nlumps= lumpptree.getValue<GINT>("nlumps",1);
 
@@ -427,6 +431,7 @@ GBOOL impl_icosgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid, T
   // u = Omega X r, where rotation rate vector, Omega
   // is computed by rotating u0 x (0, 0, 1) about x axis by
   // an amount alpha. These point to components of state u_:
+  u0 = sqrt(2.0*E0);
   if ( bpureadv ) {
     for ( k=0; k<nxy; k++ ) {
       x   = (*xnodes)[0][k]; y = (*xnodes)[1][k]; z = (*xnodes)[2][k];

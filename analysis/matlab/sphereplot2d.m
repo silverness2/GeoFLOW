@@ -32,9 +32,8 @@ if nargin < 3
 end 
 
 vartmp = varargin;
-vartmp
 bcolorbarlims = 0;
-n = length(varargin)
+n = length(varargin);
 j = 1;
 while j <= n
   if strcmpi(vartmp{j},'colorbarlims') == 1

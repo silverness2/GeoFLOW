@@ -17,6 +17,7 @@
 #include "gtvector.hpp"
 #include "ggrid.hpp"
 #include "gcomm.hpp"
+#include "gutils.hpp"
 
 using namespace geoflow;
 using namespace geoflow::tbox;

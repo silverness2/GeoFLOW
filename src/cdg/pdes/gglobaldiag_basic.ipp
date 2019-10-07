@@ -18,7 +18,7 @@ GGlobalDiag_basic<EquationType>::GGlobalDiag_basic(const EqnBasePtr &equation, G
 ObserverBase<EquationType>(equation, grid, traits),
 bInit_          (FALSE),
 cycle_          (0),
-ocycle_         (1),
+ocycle_         (0),
 cycle_last_     (0),
 time_last_      (0.0),
 grid_           (&grid)
@@ -49,10 +49,11 @@ void GGlobalDiag_basic<EquationType>::observe_impl(const Time &t, const State &u
 
   mpixx::communicator comm;
 
-  if ( (traits_.itype == ObserverBase<EquationType>::OBS_CYCLE 
-        && (cycle_-cycle_last_+1) >= traits_.cycle_interval)
-    || (traits_.itype == ObserverBase<EquationType>::OBS_TIME  
-        &&  t-time_last_ >= traits_.time_interval) ) {
+  if ( ((traits_.itype == ObserverBase<EquationType>::OBS_CYCLE)
+        && ((cycle_-cycle_last_+1) >= traits_.cycle_interval))
+    || ((traits_.itype == ObserverBase<EquationType>::OBS_TIME)
+        &&  (t-time_last_ >= traits_.time_interval))
+    || (cycle_ == 0) ) {
 
     do_kinetic_L2 (t, u, uf, "gbalance.txt");
     do_kinetic_max(t, u, uf, "gmax.txt");
@@ -97,24 +98,11 @@ void GGlobalDiag_basic<EquationType>::init(const Time t, const State &u)
    icomptype->contains(GSC_KINETIC, iwhere, nwhere);
    for ( GSIZET j=0; j<nwhere; j++ ) ikinetic_.push_back(iwhere[j]);
 
-   if ( iwhere != NULLPTR ) delete [] iwhere;
-
    ku_.resize(ikinetic_.size());
    
-
-   // Find State's kinetic components:
-   assert(this->eqn_ptr_ != NULL && "Equation implementation must be set");
-
-   GSIZET   *iwhere=NULLPTR;
-   GSIZET    nwhere=0;
-   CompDesc *icomptype = &(this->eqn_ptr_->comptype());
-   icomptype->contains(GSC_KINETIC, iwhere, nwhere);
-   for ( GSIZET j=0; j<nwhere; j++ ) ikinetic_.push_back(iwhere[j]);
-
-   if ( iwhere != NULLPTR ) delete [] iwhere;
-
-   ku_.resize(ikinetic_.size());
-   
+   if ( iwhere != NULLPTR ) {
+     delete [] iwhere;
+   }
 
    bInit_ = TRUE;
  
@@ -140,7 +128,7 @@ void GGlobalDiag_basic<EquationType>::do_kinetic_L2(const Time t, const State &u
   
   GBOOL   isreduced= FALSE;
   GBOOL   ismax    = FALSE;
-  GINT    ndim = grid_->gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+  GINT    nd, ndim = grid_->gtype() == GE_2DEMBEDDED ? 3 : GDIM;
   GFTYPE absu, absw, ener, enst, hel, fv, rhel;
   GTVector<GFTYPE> lmax(5), gmax(5);
 
@@ -158,10 +146,11 @@ void GGlobalDiag_basic<EquationType>::do_kinetic_L2(const Time t, const State &u
 
   // Enstrophy = <omega^2>/2
   lmax[1] = 0.0;
-  if ( ku_.size() == 1 ) {
-    for ( GINT j=0; j<ndim; j++ ) {
+  if ( ku_.size() == 1 || traits_.treat_as_1d ) {
+    nd = traits_.treat_as_1d ? 1 : ndim;
+    for ( GINT j=0; j<nd; j++ ) {
       GMTK::grad<GFTYPE>(*grid_, *ku_[0], j+1, utmp, *utmp[2]);
-      utmp[2]->pow(2);
+      utmp[2]->rpow(2);
       lmax[1] += grid_->integrate(*utmp[2],*utmp[0], isreduced); 
     }
     lmax[1] *= 0.5*grid_->ivolume();
@@ -227,8 +216,8 @@ void GGlobalDiag_basic<EquationType>::do_kinetic_max(const Time t, const State &
 
   GBOOL   isreduced= FALSE;
   GBOOL   ismax    = TRUE;
-  GINT   ndim = grid_->gtype() == GE_2DEMBEDDED ? 3 : GDIM;
-  GFTYPE absu, absw, ener, enst, hel, fv, rhel;
+  GINT    nd, ndim = grid_->gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+  GFTYPE  absu, absw, ener, enst, hel, fv, rhel;
   GTVector<GFTYPE> lmax(5), gmax(5);
 
   // Make things a little easier:
@@ -243,13 +232,12 @@ void GGlobalDiag_basic<EquationType>::do_kinetic_max(const Time t, const State &
  
   // Enstrophy = <omega^2>/2
   lmax[1] = 0.0;
-  if ( ku_.size() == 1 ) {
-    for ( GINT j=0; j<ndim; j++ ) {
+  if ( ku_.size() == 1 || traits_.treat_as_1d ) {
+    nd = traits_.treat_as_1d ? 1 : ndim;
+    for ( GINT j=0; j<nd; j++ ) {
       GMTK::grad<GFTYPE>(*grid_, *ku_[0], j+1, utmp, *utmp[2]);
-      utmp[2]->pow(2);
-      lmax[1] += grid_->integrate(*utmp[2],*utmp[0], isreduced); 
+      lmax[1] = MAX(lmax[1],utmp[2]->amax()); 
     }
-    lmax[1] *= 0.5*grid_->ivolume();
   }
   else {
     lmax[1] = GMTK::enstrophy(*grid_, ku_, utmp, isreduced, ismax);

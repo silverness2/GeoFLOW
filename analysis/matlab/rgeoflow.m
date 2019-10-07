@@ -1,4 +1,4 @@
-function [data dim nelems porder gtype icycle time ivers] = rgeoflow(filein, isz, sformat)
+function [data dim nelems porder gtype icycle time ivers] = rgeoflow(filein, isz, sformat, quiet)
 %
 % Reads binary GeoFLOW data, and stores in local variable data.
 %
@@ -11,6 +11,7 @@ function [data dim nelems porder gtype icycle time ivers] = rgeoflow(filein, isz
 %    sformat : data format of file: 'ieee-be' or 'ieee-le' for big-endian or little
 %              endian if isz=4, or 'ieee-be.l64', 'ieee-le.l64' if isz=8. Default
 %              is 'ieee-le'.
+%    quiet   : if > 0, don't print header. Default is 0.
 %
 %  Output:
 %    data    : field data 
@@ -25,17 +26,20 @@ function [data dim nelems porder gtype icycle time ivers] = rgeoflow(filein, isz
 if nargin < 1
   error('Input file name must be specified');
 end
-if nargin == 1
+if nargin < 2
   isz = 8;
   sformat = 'ieee-le';
-  swarn = sprintf('using isz=%d; sformat=%s', isz, sformat);
-  warning(swarn);
+  quiet = 0;
 end
-if nargin == 2
+if nargin < 3
   sformat = 'ieee-le';
-  swarn = sprintf('sformat=%s', sformat);
+  quiet = 0;
   warning(swarn);
 end
+if nargin < 4
+  quiet = 0;
+end
+
 if nargout < 1
   error('Must provide at least the data output argument');
 end
@@ -53,7 +57,7 @@ else
 end
 
 % Read header:
-[pdim pnelems pporder pgtype pcycle ptime pvers skip] = hgeoflow(filein, isz, sformat);
+[pdim pnelems pporder pgtype pcycle ptime pvers skip] = hgeoflow(filein, isz, sformat, quiet);
 
 lun =fopen(filein,'r',sformat);
 if  lun == -1

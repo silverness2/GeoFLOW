@@ -276,7 +276,7 @@ void saxpby(GTVector<T> &x, T a, GTVector<T> &y, T b)
 // METHOD : normalizeL2
 // DESC   :
 //             L2 Normalize input field, u --> c u,  s.t.
-//               Int (c u)^2  dV / Int dV = u0^2
+//               0.5 * Int (c u)^2  dV / Int dV = E0
 //
 // ARGS   :
 //          grid : grid object
@@ -285,22 +285,25 @@ void saxpby(GTVector<T> &x, T a, GTVector<T> &y, T b)
 //                 have the same length. Is normalized on exit.
 //          tmp  : tmp vector of length at least 2, each
 //                 of same length as x
-//          u0   : normalization value
+//          E0   : normalization value
 // RETURNS: none.
 //**********************************************************************************
 template<typename T>
-void normalizeL2(GGrid &grid, GTVector<GTVector<T>*> &u, GTVector<GTVector<T>*> &tmp, T u0)
+void normalizeL2(GGrid &grid, GTVector<GTVector<T>*> &u, GTVector<GTVector<T>*> &tmp, T E0)
 {
   GSIZET  n;
-  GDOUBLE xn, ener;
+  GDOUBLE xn, xint;
 
-  ener = static_cast<GDOUBLE>(GMTK::energy(grid, u, tmp, TRUE, FALSE));
-  xn   = u0 / sqrt(ener);
+  // xinit gives 0.5  Int _u_^2 dV / Int dV:
+  xint = static_cast<GDOUBLE>(GMTK::energy(grid, u, tmp, TRUE, FALSE));
+  xn   = sqrt(E0 / xint);
   for ( GINT l=0; l<u.size(); l++ ) {
     *u[l] *= xn;
   }
 
+
 } // end of method normalizeL2
+
 
 
 } // end, namespace GMTK

@@ -101,6 +101,11 @@ GTPoint<T>::GTPoint(const GTPoint<T> &e)
   x2 = e.x2;
   x3 = e.x3;
   x4 = e.x4;
+  px_.resize(gdim_);
+  if ( gdim_ > 0 ) px_[0] = &x1;
+  if ( gdim_ > 1 ) px_[1] = &x2;
+  if ( gdim_ > 2 ) px_[2] = &x3;
+  if ( gdim_ > 3 ) px_[3] = &x4;
 } // end, copy constructor method
 
 
@@ -162,10 +167,3 @@ void GTPoint<T>::resize(GINT dim)
   if ( gdim_ > 3 ) px_[3] = &x4;
 } // end of method resize
 
-#if 0
-template class GTPoint<GDOUBLE>;
-template class GTPoint <GFLOAT>;
-template class GTPoint   <GINT>;
-template class GTPoint  <GLONG>;
-template class GTPoint <GLLONG>;
-#endif

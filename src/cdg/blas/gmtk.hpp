@@ -9,6 +9,7 @@
 #if !defined(_GMTK_HPP)
 #define _GMTK_HPP
 
+#include <assert.h>
 #include "gtypes.h"
 #include "cff_blas.h"
 
@@ -18,6 +19,7 @@ template<typename T> class GTMatrix;
 
 extern GINT szMatCache_;
 extern GINT szVecCache_;
+
 
 namespace GMTK
 {
@@ -42,10 +44,10 @@ namespace GMTK
   void D3_X_I2_X_I1(GTMatrix<T> &D3T, GTVector<T> &u, GSIZET N1, GSIZET N2, GSIZET N3,
                     GTVector<T> &y);
   template<typename T>     
-  void matvec_prod(GTVector<T> &vret, GTMatrix<T> &A, GTVector<T> &b);
+  void matvec_prod(GTVector<T> &vret, const GTMatrix<T> &A, const GTVector<T> &b);
 
   template<typename T>     
-  void matmat_prod(GTMatrix<T> &C, GTMatrix<T> &A, GTMatrix<T> &B);
+  void matmat_prod(GTMatrix<T> &C, const GTMatrix<T> &A, const GTMatrix<T> &B);
 
   template<typename T>
   void cross_prod_k(GTVector<GTVector<T>*> &A, GINT *iind, GINT nind, 
@@ -76,7 +78,7 @@ namespace GMTK
   void saxpby(GTVector<T> &x, T a, GTVector<T> &y, T b); 
 
   template<typename T>  
-  void     add(GTVector<T> &vret, GTVector<T> &va, GTVector<T> &vb, T a, T b);
+  void     add(GTVector<T> &vret, const GTVector<T> &va, const GTVector<T> &vb, T a, T b);
 
   template<typename T>  
   void    Dg2_X_D1           (GTMatrix<T> &D1, GTVector<T> &Dg2, GTVector<T> &x, GTVector<T> &tmp, GTVector<T> &y);
@@ -132,6 +134,8 @@ namespace GMTK
   GDOUBLE relhelicity(GGrid &grid, const GTVector<GTVector<T>*> &u, GTVector<GTVector<T>*> &tmp, GBOOL isglobal, GBOOL ismax=FALSE);
   template<typename T>  
   GDOUBLE energyinj(GGrid &grid, const GTVector<GTVector<T>*> &u, const GTVector<GTVector<T>*> &uf, GTVector<GTVector<T>*> &tmp, GBOOL isglobal, GBOOL ismax=FALSE);
+  template<typename T>  
+  void domathop(GGrid &grid, const GTVector<GTVector<T>*> &uin, const GString sop, GTVector<GTVector<T>*> &utmp, GTVector<GTVector<T>*> &uout, GTVector<GINT> &iuout);
 
 };
 

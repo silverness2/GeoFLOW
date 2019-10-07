@@ -72,7 +72,8 @@ public:
 
 private:
 // Private methods:
-        void               init(const Time t, const State &u);
+        void               init(const Time &t, const State &u);
+        void               print_derived(const Time &t, const State &u, GIOTraits &traits, const GC_COMM &comm);
 // Private data:
         GBOOL              bprgrid_;    // print grid flag
         GBOOL              bInit_;      // is initialized?

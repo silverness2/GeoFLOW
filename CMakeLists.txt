@@ -101,6 +101,11 @@ if(CMAKE_VERBOSE_MAKEFILE)
 endif(CMAKE_VERBOSE_MAKEFILE)
 
 #---------------------------------------------------------------------
+# Detect Configuration for Record
+#---------------------------------------------------------------------
+include(RecordVars)
+
+#---------------------------------------------------------------------
 # Detect Library includes, flags, etc.
 #---------------------------------------------------------------------
 message("")
@@ -256,6 +261,9 @@ add_compile_options("-Werror")
 
 # Build Libraries & Applications
 add_subdirectory(src)
+
+# Build analysis tools
+add_subdirectory(analysis/src)
 
 # Build Executables
 #add_subdirectory(src/apps)

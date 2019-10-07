@@ -13,6 +13,7 @@ target_sources(tbox
 	PRIVATE
 		clock.cpp
 		command_line.cpp
+		display_header.cpp
 		error_handler.cpp
 		global_manager.cpp
 		input_manager.cpp
@@ -59,6 +60,7 @@ target_include_directories(tbox
 		"$<BUILD_INTERFACE:${MY_PROJECT_INCDIR}>"
 		"$<BUILD_INTERFACE:${MY_INSTALL_SRCDIR}>"
 		"${Boost_INCLUDE_DIRS}"
+		"$<$<BOOL:${OpenMP_FOUND}>:${OpenMP_CXX_INCLUDE_PATH}>"
 		"$<$<BOOL:${MPI_CXX_FOUND}>:${MPI_CXX_INCLUDE_PATH}>"
 )
 
@@ -68,6 +70,7 @@ target_include_directories(tbox
 target_link_libraries(tbox 
 	PRIVATE
 		"${Boost_LIBRARIES}"
+		"$<$<BOOL:${OpenMP_FOUND}>:${OpenMP_CXX_LIBRARIES}>"
 		"$<$<BOOL:${MPI_CXX_FOUND}>:${MPI_CXX_LIBRARIES}>"
 )
 

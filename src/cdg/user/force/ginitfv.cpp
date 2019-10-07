@@ -34,7 +34,7 @@ GBOOL impl_abc_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Tim
 
   GINT         kdn, kup, p, pdef; 
   GSIZET       nn ;
-  GFTYPE       A, B, C, f0, pi2, x, y, z;
+  GFTYPE       A, B, C, E0, pi2, x, y, z;
   PropertyTree vtree;
   GTVector<GTVector<GFTYPE>>
               *xnodes = &grid.xNodes();
@@ -54,7 +54,7 @@ GBOOL impl_abc_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Tim
 #if defined(_G_IS3D)
   C     = vtree.getValue<GFTYPE>("C", 1.1);
 #endif
-  f0    = vtree.getValue<GFTYPE>("f0", 1.0);
+  E0    = vtree.getValue<GFTYPE>("E0", 1.0);
   nn    = (*xnodes)[0].size();
 
 #if defined(_G_IS2D)
@@ -90,7 +90,7 @@ GBOOL impl_abc_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Tim
 
 #endif
 
-  GMTK::normalizeL2<GFTYPE>(grid, uf, utmp, f0);
+  GMTK::normalizeL2<GFTYPE>(grid, uf, utmp, E0);
 
   return TRUE;
 
@@ -120,7 +120,7 @@ GBOOL impl_abc_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Ti
 
   GINT         kdn, kup, p, pdef;
   GSIZET       nn ;
-  GFTYPE       A, B, C, f0, x, y, z;
+  GFTYPE       A, B, C, E0, x, y, z;
   GFTYPE       alat, along, r;
   PropertyTree vtree ;
   GTVector<GTVector<GFTYPE>*>
@@ -143,7 +143,7 @@ GBOOL impl_abc_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Ti
 #if defined(_G_IS3D)
   C     = vtree.getValue<GFTYPE>("C", 1.1);
 #endif
-  f0    = vtree.getValue<GFTYPE>("f0", 1.0);
+  E0    = vtree.getValue<GFTYPE>("E0", 1.0);
   nn    = (*xnodes)[0].size();
 
   usph[0] = utmp[0]; // ulat storage
@@ -187,7 +187,8 @@ GBOOL impl_abc_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Ti
 
 #endif
 
-  GMTK::normalizeL2<GFTYPE>(grid, uf, utmp, f0);
+  GMTK::constrain2sphere(grid, uf);
+  GMTK::normalizeL2<GFTYPE>(grid, uf, utmp, E0);
 
   return TRUE;
 

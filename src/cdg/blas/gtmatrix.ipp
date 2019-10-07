@@ -2573,7 +2573,7 @@ GTVector<T> GTMatrix<T>::matvec_impl_(const GTVector<T> &obj, std::true_type)
 {
   GTVector<T> vret(this->size(1));
 
-  GMTK::matvec_prod(*vret, *this, obj);
+  GMTK::matvec_prod(vret, *this, obj);
 
   #if defined(_G_AUTO_UPDATE_DEV)
       vret.updatedev();
@@ -2628,7 +2628,7 @@ GTMatrix<T>::matmat_impl_(const GTMatrix &obj, std::true_type)
 {
   GTMatrix mret(this->size(1),obj.size(2));
 
-  GMTK::matmat_prod(*mret, *this, obj);
+  GMTK::matmat_prod(mret, *this, obj);
 
   #if defined(_G_AUTO_UPDATE_DEV)
       vret->updatedev();

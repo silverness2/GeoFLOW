@@ -40,9 +40,20 @@ public:
 	using Size        = typename Equation::Size;
 
         /**
+         * Data structure to describe quantities derived from state data
+         */
+        struct dqTraits {
+                std::vector<int>    icomponents;      // which state components to use     
+                std::vector<std::string>   
+                                    snames;           // names for computed components
+                std::string         smath_op;         // which math op to use to compute
+        };
+
+        /**
          * Data structure to hold user selected parameters
          */
         struct Traits {
+                bool      treat_as_1d    = false;     // treat obs in 1d sense
                 int       imisc          = 0;         // obs output type
                 int       itag1          = 0;         // integer tag
                 int       itag2          = 0;         // integer tag
@@ -54,6 +65,8 @@ public:
                           state_names;                // file/ref names for each state member
                 std::vector<std::string>
                           grid_names;                 // file/ref names for each grid comp
+                std::vector<dqTraits>
+                          derived_quantities;         // derived types: [ [type, function, output name],..]
                 size_t    start_ocycle   = 0;         // starting output cycle 
 //              size_t    start_cycle    = 0;         // starting evol cycle 
                 size_t    cycle_interval = 10;        // cycle interval for observation

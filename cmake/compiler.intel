@@ -17,14 +17,14 @@ set(EXTRA_FLAGS "${INSTR_FLAGS}")
 # ========================== Compiler (Serial) ==========================
 #
 set(CMAKE_C_COMPILER            "icc")
-set(CMAKE_C_FLAGS               "-O2 -std=c++11 -diag-disable 161 ${EXTRA_FLAGS}")
-set(CMAKE_C_FLAGS_DEBUG         "-O0 -g -std=c++11 -diag-disable 161 ${EXTRA_FLAGS}")
-set(CMAKE_C_FLAGS_RELEASE       "-O2 -std=c++11 -diag-disable 161 ${EXTRA_FLAGS}")
+set(CMAKE_C_FLAGS               "-O2    -diag-disable 161 ${EXTRA_FLAGS}")
+set(CMAKE_C_FLAGS_DEBUG         "-O0 -g -diag-disable 161 ${EXTRA_FLAGS}")
+set(CMAKE_C_FLAGS_RELEASE       "-O2    -diag-disable 161 ${EXTRA_FLAGS}")
 
 set(CMAKE_CXX_COMPILER          "icpc")
-set(CMAKE_CXX_FLAGS             "-O2 -std=c++11 -diag-disable 161 ${EXTRA_FLAGS}")
+set(CMAKE_CXX_FLAGS             "-O2     -std=c++11 -diag-disable 161 ${EXTRA_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG       "-O0 -g -std=c++11 -diag-disable 161 ${EXTRA_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELEASE     "-O2 -std=c++11 -diag-disable 161 ${EXTRA_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELEASE     "-O2    -std=c++11 -diag-disable 161 ${EXTRA_FLAGS}")
 
 set(CMAKE_Fortran_COMPILER      "ifort")
 set(CMAKE_Fortran_FLAGS         "-O2 ${EXTRA_FLAGS}")
@@ -46,7 +46,7 @@ set(MPI_CXX_INCLUDE_PATH        "" )
 set(MPI_CXX_LINK_FLAGS          "" )
 set(MPI_CXX_LIBRARIES           "" )
 
-set(MPI_Fortran_COMPILER        "mpiif90" )
+set(MPI_Fortran_COMPILER        "mpiifort" )
 set(MPI_Fortran_COMPILE_FLAGS   "" )
 set(MPI_Fortran_INCLUDE_PATH    "" )
 set(MPI_Fortran_LINK_FLAGS      "" )

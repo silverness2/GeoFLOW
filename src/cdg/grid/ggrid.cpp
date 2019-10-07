@@ -11,6 +11,7 @@
 #include <cmath>
 #include <limits>
 #include <typeinfo>
+#include "gtypes.h"
 #include "gelem_base.hpp"
 #include "ggrid.hpp"
 #include "gmass.hpp"
@@ -53,6 +54,9 @@ ptree_                          (ptree)
 GGrid::~GGrid()
 {
   if ( mass_ != NULLPTR ) delete mass_;
+  for ( auto j=0; j<gelems_.size(); j++ ) {
+    if ( gelems_[j] != NULLPTR ) delete gelems_[j];
+  }
 } // end, destructor
 
 
@@ -359,17 +363,17 @@ void GGrid::grid_init()
   // Have elements been set yet?
   assert(gelems_.size() > 0 && "Elements not set");
 
-  globalize_coords    (); // set glob vec of node coords
-  init_local_face_info(); // find glob vec of face indices
-
   // Restrict grid to a single element type:
   assert(ntype_.multiplicity(0) == GE_MAX-1
         && "Only a single element type allowed on grid");
 
-
   if      ( itype_[GE_2DEMBEDDED].size() > 0 ) gtype_ = GE_2DEMBEDDED;
   else if ( itype_[GE_DEFORMED]  .size() > 0 ) gtype_ = GE_DEFORMED;
   else if ( itype_[GE_REGULAR]   .size() > 0 ) gtype_ = GE_REGULAR;
+
+  globalize_coords    (); // set glob vec of node coords
+  init_local_face_info(); // find glob vec of face indices
+
 
   GTimerStart("GGrid::grid_init: init_bc_info");
   // All element bdy/face data should have been set by now:
@@ -432,9 +436,6 @@ void GGrid::grid_init(GTMatrix<GINT> &p,
   // Have elements been set yet?
   assert(gelems_.size() > 0 && "Elements not set");
 
-  init_local_face_info(); // find glob vec of face indices
-  globalize_coords    (); // set glob vec of node coords
-
 
   // Restrict grid to a single element type:
   assert(ntype_.multiplicity(0) == GE_MAX-1
@@ -444,6 +445,9 @@ void GGrid::grid_init(GTMatrix<GINT> &p,
   if      ( itype_[GE_2DEMBEDDED].size() > 0 ) gtype_ = GE_2DEMBEDDED;
   else if ( itype_[GE_DEFORMED]  .size() > 0 ) gtype_ = GE_DEFORMED;
   else if ( itype_[GE_REGULAR]   .size() > 0 ) gtype_ = GE_REGULAR;
+
+  globalize_coords    (); // set glob vec of node coords
+  init_local_face_info(); // find glob vec of face indices
 
   GTimerStart("GGrid::grid_init: init_bc_info");
   // All element bdy/face data should have been set by now:
@@ -614,7 +618,6 @@ void GGrid::reg_geom_init()
      ibeg  = gelems_[e]->igbeg(); iend  = gelems_[e]->igend();
      ifbeg = gelems_[e]->ifbeg(); ifend = gelems_[e]->ifend();
      ibbeg = gelems_[e]->ibbeg(); ibend = gelems_[e]->ibend();
-cout << "reg_geom_init: ibbeg=" << ibbeg << " ibend=" << ibend << endl;
   
      xe    = &gelems_[e]->xNodes();
 
@@ -724,9 +727,6 @@ void GGrid::globalize_coords()
        xNodes_[j].range(ibeg, iend);
        xNodes_[j] = (*xe)[j];
      }
-
-     // Zero-out local xe; only global allowed now:
-     for ( GSIZET j=0; j<nxy; j++ ) (*xe)[j].clear();
 
    } // end, element loop
 
@@ -1076,7 +1076,7 @@ void GGrid::init_bc_info()
   igbdyt_.resize(nind);
   nind = 0;
   for ( auto j=0; j<igbdy_bydface_.size(); j++ ) {
-    for ( auto i=0; i<igbdy_bydface_.size(); i++ ) {
+    for ( auto i=0; i<igbdy_bydface_[j].size(); i++ ) {
       igbdy_ [nind  ] = igbdy_bydface_ [j][i];
       igbdyt_[nind++] = igbdyt_bydface_[j][i];
     }

@@ -223,6 +223,7 @@ GTVector<T>::~GTVector()
 {
   #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
   if ( data_  != NULLPTR  && bdatalocal_ ) delete [] data_;
+  data_ = NULLPTR;
 }
 
 
@@ -294,12 +295,11 @@ void GTVector<T>::resize(GSIZET nnew)
 
   if ( (iend-ibeg+1+ipad) > n_ ) {      // must reallocate; change capacity
     if ( this->data_ != NULLPTR ) { 
-      delete [] this->data_; 
+      delete [] this->data_;
       this->data_ = NULLPTR; 
     }
-    this->data_ = new T [ibeg+nnew+ipad];
-    assert(this->data_ != NULLPTR );
-    n_ = nnew;
+    this->n_ = iend-ibeg+1+ipad;
+    this->data_ = new T [this->n_];
   }
   gindex_(nnew, nnew, ibeg, iend, istride, ipad);
   gindex_keep_ = gindex_;
@@ -336,16 +336,16 @@ void GTVector<T>::resize(GIndex &gi)
   GLLONG istride = gi.stride();
   GLLONG ipad    = gi.pad();
 
-  if ( nnew != n_ ) {
+  if ( (iend-ibeg+1+ipad) > n_ ) {      // must reallocate; change capacity
     if ( this->data_ != NULLPTR ) { 
       delete [] this->data_; 
       this->data_ = NULLPTR; 
     }
-    this->data_ = new T [ibeg+nnew+ipad];
-    assert(this->data_ != NULLPTR );
-    n_ = nnew;
+    this->n_ = iend-ibeg+1+ipad;
+    this->data_ = new T [this->n_];
   }
   gindex_(nnew, nnew, ibeg, iend, istride, ipad);
+  gindex_keep_ = gindex_;
 
   #if defined(_G_AUTO_CREATE_DEV)
 //  #pragma acc enter data create( data_[0:n_-1] )
@@ -1128,10 +1128,12 @@ template<class T>
 T
 GTVector<T>::amax()
 {
+  assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
+
   T fm = std::numeric_limits<T>::min();
 
   for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    fm = MAX(fm,fabs(this->data_[j]));
+    fm = MAX(fm,std::fabs(this->data_[j]));
   }
 
   return fm;
@@ -1150,6 +1152,8 @@ template<class T>
 T
 GTVector<T>::minn(GSIZET n)
 {
+  assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
+
   T fm = std::numeric_limits<T>::max();
 
   for ( GLLONG j=this->gindex_.beg(); j<this->gindex_.beg()+n && j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
@@ -1172,6 +1176,8 @@ template<class T>
 GSIZET
 GTVector<T>::imin()
 {
+  assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
+
   GSIZET imin;
   T fm = std::numeric_limits<T>::max();
 
@@ -1220,6 +1226,8 @@ template<class T>
 T
 GTVector<T>::amin()
 {
+  assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
+
   T fm = std::numeric_limits<T>::max();
 
   for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
@@ -1383,24 +1391,25 @@ GTVector<T>::Eucnorm()
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : pow
+// METHOD : rpow
 // DESC   : Raise vector elems to power p, and modify array contents
 // ARGS   : p: power
 // RETURNS: none
 //**********************************************************************************
 template<class T>
 void
-GTVector<T>::pow(const GDOUBLE p)
+GTVector<T>::rpow(const GDOUBLE p)
 {
   assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
-  GDOUBLE tmp;
-  GLLONG j;
+
+  GLLONG  j;
+  GDOUBLE b;
   for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    tmp = std::pow(static_cast<GDOUBLE>(data_[j]),p);
-    data_[j] = static_cast<T>(tmp);
+    b        = static_cast<GDOUBLE>(data_[j]);
+    data_[j] = static_cast<T>(pow(b, p));
   }
 
-} // end, pow
+} // end, rpow
 
 
 //**********************************************************************************
@@ -1415,11 +1424,9 @@ void
 GTVector<T>::abs()
 {
   assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
-  GDOUBLE tmp;
-  GLLONG j;
-  for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    tmp = sqrt( std::pow(static_cast<GDOUBLE>(data_[j]),2) );
-    data_[j] = static_cast<T>(tmp);
+  for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+//  tmp = sqrt( std::pow<GDOUBLE>(static_cast<GDOUBLE>(data_[j]),2) );
+    data_[j] = std::fabs(data_[j]);
   }
 
 } // end, abs

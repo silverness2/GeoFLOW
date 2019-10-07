@@ -17,12 +17,6 @@
 #include "gtpoint.hpp"
 
 
-#if 0
-template class GTVector<GTPoint<GDOUBLE>>;
-template class GTVector<GTPoint <GFLOAT>>;
-template class GTVector<GTPoint   <GINT>>;
-#endif
-
 int main(int argc, char **argv)
 {
     // Initialize comm:

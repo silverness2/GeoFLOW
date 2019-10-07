@@ -1,4 +1,4 @@
-function [dim nelems porder gtype icycle time ivers skip] = hgeoflow(filein, isz, sformat)
+function [dim nelems porder gtype icycle time ivers skip] = hgeoflow(filein, isz, sformat, quiet)
 %
 % Reads header from binary GeoFLOW data file
 %
@@ -11,6 +11,7 @@ function [dim nelems porder gtype icycle time ivers skip] = hgeoflow(filein, isz
 %    sformat : data format of file: 'ieee-be' or 'ieee-le' for big-endian or little
 %              endian if isz=4, or 'ieee-be.l64', 'ieee-le.l64' if isz=8. Default
 %              is 'ieee-le'.
+%    quiet : if > 0, don't print header info. Default is 0.
 %
 %  Output:
 %    dim     : data dimension (2, 3)
@@ -25,12 +26,21 @@ function [dim nelems porder gtype icycle time ivers skip] = hgeoflow(filein, isz
 if nargin < 1
   error('Input file name must be specified');
 end
-if nargin == 1
+if nargin < 2
   isz = 8;
   sformat = 'ieee-le';
-  swarn = sprintf('using isz=%d; sformat=%s', isz, sformat);
+  quiet = 0;
+end
+if nargin < 3
+  sformat = 'ieee-le';
+  quiet = 0;
   warning(swarn);
 end
+if nargin < 4
+  quiet = 0;
+end
+swarn = sprintf('using isz=%d; sformat=%s', isz, sformat);
+
 if nargout > 8
   error('Too many output arguments provided');
 end
@@ -84,14 +94,16 @@ for j=1:pdim
   pformat = strcat(pformat,' %d');
 end
 
-disp(sprintf('header for file: %s', filein));
-disp(sprintf('  %s=%d', 'vers'      , pvers));
-disp(sprintf('  %s=%d', 'dim'       , pdim));
-disp(sprintf('  %s=%d', 'nelems'    , pnelems));
-disp(sprintf(pformat  , 'pporder'   , pporder));
-disp(sprintf('  %s=%d', 'grid_type' , pgtype));
-disp(sprintf('  %s=%d', 'time_cycle', pcycle));
-disp(sprintf('  %s=%f', 'time_stamp', ptime));
+if quiet == 0
+  disp(sprintf('header for file: %s', filein));
+  disp(sprintf('  %s=%d', 'vers'      , pvers));
+  disp(sprintf('  %s=%d', 'dim'       , pdim));
+  disp(sprintf('  %s=%d', 'nelems'    , pnelems));
+  disp(sprintf(pformat  , 'pporder'   , pporder));
+  disp(sprintf('  %s=%d', 'grid_type' , pgtype));
+  disp(sprintf('  %s=%d', 'time_cycle', pcycle));
+  disp(sprintf('  %s=%f', 'time_stamp', ptime));
+end
 
 fclose(lun);
 

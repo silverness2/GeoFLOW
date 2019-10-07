@@ -1,5 +1,5 @@
 //==================================================================================
-// Module       : geoflow.hpp
+// Module       : gutils.hpp
 // Date         : 1/31/19 (DLR)
 // Description  : GeoFLOW utilities namespace
 // Copyright    : Copyright 2019. Colorado State University. All rights reserved
@@ -15,7 +15,8 @@
 namespace geoflow
 {
 
-GBdyType str2bdytype(const GString &stype);
+GBdyType       str2bdytype (const GString &stype);
+GStateCompType str2comptype(const GString &stype);
 
 } // end, namespace
 

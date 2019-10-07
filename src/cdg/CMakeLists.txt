@@ -58,9 +58,10 @@ target_include_directories(cdg
 		"$<INSTALL_INTERFACE:${MY_INSTALL_INCDIR}>"
 		"$<BUILD_INTERFACE:${MY_PROJECT_INCDIR}>"
 		"$<BUILD_INTERFACE:${MY_INSTALL_SRCDIR}>"
+		"$<$<BOOL:${OpenMP_FOUND}>:${OpenMP_CXX_INCLUDE_PATH}>"
 		"$<$<BOOL:${MPI_CXX_FOUND}>:${MPI_CXX_INCLUDE_PATH}>"
-		"$<$<BOOL:${USE_PAPI}>:${PAPI_INCLUDE_DIRS}>"
-		"$<$<BOOL:${USE_GPTL}>:${GPTL_INCLUDE_DIRS}>"
+		"$<$<BOOL:${PAPI_FOUND}>:${PAPI_INCLUDE_DIRS}>"
+		"$<$<BOOL:${GPTL_FOUND}>:${GPTL_INCLUDE_DIRS}>"
 	)
 
 #
@@ -69,9 +70,10 @@ target_include_directories(cdg
 target_link_libraries(cdg 
 	PUBLIC
 		tbox
-		"$<$<BOOL:${USE_PAPI}>:${PAPI_LIBRARIES}>"
-		"$<$<BOOL:${USE_GPTL}>:${GPTL_LIBRARIES}>"
+		"$<$<BOOL:${OpenMP_FOUND}>:${OpenMP_CXX_LIBRARIES}>"
 		"$<$<BOOL:${MPI_CXX_FOUND}>:${MPI_CXX_LIBRARIES}>"
+		"$<$<BOOL:${PAPI_FOUND}>:${PAPI_LIBRARIES}>"
+		"$<$<BOOL:${GPTL_FOUND}>:${GPTL_LIBRARIES}>"	
 	)
 
 #
@@ -81,7 +83,7 @@ install(
 	DIRECTORY "${MY_PROJECT_INCDIR}/cdg"
 	DESTINATION "${MY_INSTALL_INCDIR}"  
 	FILES_MATCHING
-		PATTERN "*.hpp"
+		PATTERN "*.hpp *.h"
 )
 
 #

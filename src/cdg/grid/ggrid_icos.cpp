@@ -9,7 +9,7 @@
 #include <memory>
 #include <cmath>
 //#include "omp.h"  // Are we calling API functions ?
-#include "geoflow.hpp"
+#include "gutils.hpp"
 #include "gspecbdy_factory.hpp"
 #include "gelem_base.hpp"
 #include "ggrid_icos.hpp"

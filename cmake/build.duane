@@ -1,20 +1,20 @@
 #
 # ========================== Build Options ===========================
 #
-set   (GDIM "2")                           # Dimensionality
+set   (GDIM "2")                            # Dimensionality
 
 option(DO_TESTS       "DO_TESTS"      OFF)  # Build testing targets
-option(DO_GEOFLOW     "DO_GEOFLOW"    ON)   # Build GeoFLOW target
+option(DO_GEOFLOW     "DO_GEOFLOW"    ON )  # Build GeoFLOW target
 
-option(DO_DEBUG       "DO_DEBUG"      ON)   # Compile for DEBUG
-option(USE_OPENMP     "USE_OPENMP"    ON)   # Compile for OpenMP
+option(DO_DEBUG       "DO_DEBUG"      ON )  # Compile for DEBUG
+option(USE_OPENMP     "USE_OPENMP"    ON )  # Compile for OpenMP
 option(USE_OPENACC    "USE_OPENACC"   OFF)  # Compile for OpenACC
-option(USE_GBLAS      "USE_GBLAS"     ON)   # Use GBlas instead of C 
-option(USE_MPI        "USE_MPI"       ON)   # Build with MPI?
+option(USE_GBLAS      "USE_GBLAS"     ON )  # Use GBlas instead of C 
+option(USE_MPI        "USE_MPI"       ON )  # Build with MPI?
 option(USE_GPTL       "USE_GPTL"      OFF)  # Build with GPTL?
 option(USE_PAPI       "USE_PAPI"      OFF)  # Is GPTL built with PAPI support?
 option(DO_AUTO_PROF   "DO_AUTO_PROF"  OFF)  # Do auto-profing with GPTL?
-option(VERBOSE_CMAKE  "VERBOSE_CMAKE" ON)   # Verbose CMake Ouput
+option(VERBOSE_CMAKE  "VERBOSE_CMAKE" ON )  # Verbose CMake Ouput
 
 #
 # ============================== Build Type ============================

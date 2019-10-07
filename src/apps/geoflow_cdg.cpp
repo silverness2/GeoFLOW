@@ -1,11 +1,12 @@
 //==================================================================================
-// Module       : geoglow.cpp
+// Module       : geoflow_cdg.cpp
 // Date         : 7/7/19 (DLR)
-// Description  : GeoFLOW main driver
+// Description  : GeoFLOW main driver for CG and DG initial value,
+//                boundary value problems
 // Copyright    : Copyright 2019. Colorado State University. All rights reserved.
 // Derived From : 
 //==================================================================================
-#include "geoflow.h"
+#include "geoflow_cdg.h"
 
 int main(int argc, char **argv)
 {
@@ -183,7 +184,9 @@ int main(int argc, char **argv)
     EH_MESSAGE("geoflow: do shutdown...");
     GlobalManager::shutdown();
     GlobalManager::finalize();
+    GComm::TermComm();
     deallocate();
+
 
     return(0);
 
@@ -307,7 +310,7 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
         deltat      = obsptree.getValue<GDOUBLE>("time_interval",0.01);
         deltac      = obsptree.getValue<GDOUBLE>("cycle_interval",1);
         // Set current time and output cycle so that observer can initialize itself
-        // These should be hidden from the config file:
+        // These could/should be hidden from the config file:
         if ( "posixio_observer" == obslist[j]  ) ofact = 1.0;
         obsptree.setValue <GSIZET>("start_ocycle",MAX(0.0,rest_ocycle*ofact));
         obsptree.setValue <GFTYPE>("start_time"  ,time);
@@ -315,7 +318,7 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
         obsptree.setValue <GSIZET>("cycle_interval",MAX(1.0,deltac/ofact));
         obsptree.setValue<GString>("cadence_type",ctype);
 
-        pObservers->push_back(ObserverFactory<MyTypes>::build(obsptree, pEqn, *grid_));
+        pObservers->push_back(ObserverFactory<MyTypes>::build(ptree, obslist[j], pEqn, *grid_));
       }
     }
 
@@ -449,26 +452,24 @@ void allocate(const PropertyTree &ptree)
     for ( auto i=0; i<GDIM; i++ ) diforced.push_back(i);
     iforced   = eqn_ptree.getArray<GINT> ("forcing_comp", diforced);
     nladv     = 0;
-    nsolve_   = GDIM;
-    nstate_   = GDIM;
+    nsolve_   = sgrid == "grid_icos" ? 3 : GDIM;
+    nstate_   = nsolve_;
     if ( doheat || bpureadv ) {
       if ( bpureadv  ) {
         nladv     = sgrid == "grid_icos" ? 3 : GDIM;
       }
       nsolve_   = 1;
-      nstate_   = nladv + nsolve_;
     }
-    if ( "grid_icos" == sgrid ) {
-      nsolve_   = 3;
-      nstate_   = nladv + nsolve_;
-    }
-    else {
+    nstate_   = nladv + nsolve_;
+    
+    if ( "grid_icos" != sgrid ) {
       ibounded.resize(nsolve_);
       for ( auto i=0; i<nsolve_; i++ ) ibounded.push_back(i);
     }
     c_.resize(nladv);
     ntmp_     = 27;
-  }
+
+  } // end, pde_burgers test
   
   nforced = MIN(nsolve_,iforced.size());
 
@@ -504,6 +505,7 @@ void deallocate()
 {
 
   if ( grid_ != NULLPTR )                 delete grid_;
+  if ( ggfx_ != NULLPTR )                 delete ggfx_;
   for ( auto j=0; j<gbasis_.size(); j++ ) delete gbasis_[j];
   for ( auto j=0; j<utmp_  .size(); j++ ) delete utmp_  [j];
   for ( auto j=0; j<u_     .size(); j++ ) delete u_     [j];
@@ -742,7 +744,7 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
   bret = GInitStateFactory<MyTypes>::init(ptree, grid, peqn, tt, utmp, ub, ua);
   assert(bret && "state initialization failed");
   for ( GSIZET j=0; j<nsolve_; j++ ) { // local errors
-   *utmp [1] = *ua [j]; utmp [1]->pow(2);
+   *utmp [1] = *ua [j]; utmp [1]->rpow(2);
     nnorm[j] = grid.integrate(*utmp   [1],*utmp [0]) ; // L2 norm of analyt soln at t=0
     nnorm[j] = nnorm[j] > std::numeric_limits<GFTYPE>::epsilon() ? nnorm[j] : 1.0;
     cout << "main: nnorm[" << j << "]=" << nnorm[j] << endl;
@@ -780,12 +782,13 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
   for ( GINT j=0; j<nsolve_; j++ ) { //local errors
    *utmp [0] = *u[j] - *ua[j];
    *utmp [1]  = *utmp[0]; utmp [1]->abs();
-   *utmp [2]  = *utmp[0]; utmp [2]->pow(2);
+   *utmp [2]  = *utmp[0]; utmp [2]->rpow(2);
     lnorm[0]  = utmp [0]->infnorm (); // inf-norm
-    gnorm[1]  = grid.integrate(*utmp[1],*utmp[0])/sqrt(nnorm[j]) ; // L1-norm
-    gnorm[2]  = grid.integrate(*utmp[2],*utmp[0]) ; // L2-norm
+    gnorm[1]  = grid.integrate(*utmp[1],*utmp[0]); // L1-norm numerator
+    gnorm[2]  = grid.integrate(*utmp[2],*utmp[0]); // L2-norm numerator
     // Accumulate to find global errors for this field:
     GComm::Allreduce(lnorm.data()  , gnorm.data()  , 1, T2GCDatatype<GFTYPE>() , GC_OP_MAX, comm_);
+    gnorm[1] =  gnorm[1]/nnorm[j];
     gnorm[2] =  sqrt(gnorm[2]/nnorm[j]);
     // now find max errors of each type for each field:
     for ( GINT i=0; i<3; i++ ) maxerror[i] = MAX(maxerror[i],fabs(gnorm[i]));
@@ -794,8 +797,9 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
   // Compute some global quantities for output:
   dxmin = grid.minnodedist();
   lmin  = grid.minlength();
-  if ( myrank == 0 ) 
-  cout << "main: maxerror = " << maxerror << endl;
+  if ( myrank == 0 ) {
+    cout << "main: maxerror = " << maxerror << endl;
+  }
    
   GTVector<GSIZET> lsz(2), gsz(2);
   lsz[0] = grid.nelems();
@@ -831,7 +835,7 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
     ios.close();
   }
 
-  for ( GINT j=0; j<nstate_; j++ ) delete ua[j];
+  for ( GINT j=0; j<ua.size(); j++ ) delete ua[j];
 
 } // end method compare
 
