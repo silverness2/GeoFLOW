@@ -38,7 +38,7 @@ template <class T> class GTStat
     void   set_nbins(GSIZET nbins)
              {nbins_ = nbins; 
               lpdf_.resize(nbins);}        // Set no. bins
-    GSIZET &get_nbins() const
+    GSIZET get_nbins() const
              {return nbins_; }             // Get no. bins
     void   dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dolog, GTVector<T> &pdf);
     void   dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dolog, const GString &fname); 
