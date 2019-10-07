@@ -128,9 +128,16 @@ void GTStat<T>::dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dol
 
   // Compute average:
   sumr = 0.0;
-  #pragma omp parallel for default(shared) private(j) reduction(+:sumr)
-  for ( j=0; j<lkeep; j++ ) {
-    sumr += u[ikeep_[j]];
+  if ( dolog ) {
+    #pragma omp parallel for default(shared) private(j) reduction(+:sumr)
+    for ( j=0; j<lkeep; j++ ) {
+      sumr += fabs(u[ikeep_[j]]);
+    }
+  else {
+    #pragma omp parallel for default(shared) private(j) reduction(+:sumr)
+    for ( j=0; j<lkeep; j++ ) {
+      sumr += u[ikeep_[j]];
+    }
   }
   GComm::Allreduce(&sumr, &gavg_, 1, T2GCDatatype<T>() , GC_OP_SUM, comm_);
   gavg_ *= xnorm;
