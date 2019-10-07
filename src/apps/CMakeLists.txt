@@ -15,7 +15,11 @@ set(apps_files
 # Note:
 # - Only used if "main.cpp" has a "main.hpp" that needs including
 #
-set(apps_include_headers "")
+set(apps_include_headers 		
+	PUBLIC
+		"$<$<BOOL:${USE_PAPI}>:${PAPI_INCLUDE_DIRS}>"
+		"$<$<BOOL:${USE_GPTL}>:${GPTL_INCLUDE_DIRS}>"
+)
 
 #
 # Compiler options for each application
