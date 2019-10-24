@@ -24,7 +24,7 @@
 using namespace std;
 
 
-template <class T> class GTStat
+template <typename T> class GTStat
 {
   static_assert(std::is_floating_point<T>::value, "Requires floating point template parameter");
 
@@ -32,6 +32,7 @@ template <class T> class GTStat
 
            GTStat<T>() = delete;
            GTStat<T>(GSIZET nbins, GC_COMM icomm=GC_COMM_WORLD);
+           GTStat<T>(T width, GC_COMM icomm=GC_COMM_WORLD);
            GTStat<T>(const GTStat<T> &obj);
           ~GTStat<T>() = default;
     
@@ -40,21 +41,23 @@ template <class T> class GTStat
               lpdf_.resize(nbins);}        // Set no. bins
     GSIZET get_nbins() const
              {return nbins_; }             // Get no. bins
-    void   dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dolog, GTVector<T> &pdf);
-    void   dopdf1d(GTVector<T> u, GBOOL ifixdr, T &fmin, T &fmax, GBOOL dolog, const GString &fname); 
+    void   dopdf1d(GTVector<T> &u, GBOOL ifixmin, GBOOL ifixmax, T &fmin, T &fmax, GINT iside, GBOOL dolog, GTVector<T> &utmp, GTVector<T> &lpdf, GTVector<T> &pdf);
+    void   dopdf1d(GTVector<T> &u, GBOOL ifixmin, GBOOL ifixmax, T &fmin, T &fmax, GINT iside, GBOOL dolog, GTVector<T> &utmp, const GString &fname); 
     
 
   private:
 
-    GINT             myrank_;   // task's rank
-    GC_COMM          comm_;     // GC_COMM handle
-    GSIZET           nbins_;    // no. bins
-    GSIZET           nkeep_;    // no. stoch var indices kept
-    T                gavg_;     // avg of PDF
-    T                sig_;      // std deviation of PDF
-    GTVector<GSIZET> ikeep_;    // indirection indices to valid values
-    GTVector     <T> lpdf_ ;    // local pdf
-    GTVector     <T> gpdf_ ;    // globally-reduced pdf
+    GBOOL            bfixedwidth_; // fix bin width to determine no. bins
+    GINT             myrank_;      // task's rank
+    GC_COMM          comm_;        // GC_COMM handle
+    GSIZET           nbins_;       // no. bins
+    GSIZET           nkeep_;       // no. stoch var indices kept
+    T                gavg_;        // avg of PDF
+    T                sig_;         // std deviation of PDF
+    T                fixedwidth_;  // constant bin width 
+    GTVector<GSIZET> ikeep_;       // indirection indices to valid values
+    GTVector     <T> lpdf_ ;       // local pdf
+    GTVector     <T> gpdf_ ;       // globally-reduced pdf
 
 };
 

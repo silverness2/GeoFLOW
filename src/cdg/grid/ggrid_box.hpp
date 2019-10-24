@@ -54,9 +54,11 @@ public:
         void                unperiodize();                                   // un-periodize coords, if allow
          void               config_bdy(const PropertyTree &ptree,
                             GTVector<GTVector<GSIZET>>   &igbdy, 
-                            GTVector<GTVector<GBdyType>> &igbdyt);          // config bdy
+                            GTVector<GTVector<GBdyType>> &igbdyt);           // config bdy
+const    GTPoint<GFTYPE>   &getP0() {return P0_; }                           // get blob bdy point 
+const    GTPoint<GFTYPE>   &getP1() {return P1_; }                           // get blob bdy point 
 
-        void                print(const GString &filename);                  // print grid to file
+         void               print(const GString &filename);                  // print grid to file
 
 friend  std::ostream&       operator<<(std::ostream&, GGridBox &);           // Output stream operator
  

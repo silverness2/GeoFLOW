@@ -49,7 +49,7 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
         std::vector<std::string> defgr_names = {"xgrid","ygrid","zgrid"};;
         std::vector<int> def_ids;
         traits.treat_as_1d   = obstree.getValue<bool>       ("treat_as_1d",false);        // treat-as-1d flag
-        traits.state_index   = obstree.getArray<int>        ("state_index",def_ids);      // state ids to 'observe' [0, 1, 2...]
+        traits.state_index   = obstree.getArray<int>        ("state_index",defi);         // state ids to 'observe' [0, 1, 2...]
         traits.state_names   = obstree.getArray<std::string>("state_names",defst_names);  // state names 
         traits.grid_names    = obstree.getArray<std::string>("grid_names",defgr_names);   // grid comp names 
         traits.cycle_interval= obstree.getValue<size_t>     ("cycle_interval", 10);       // cadence for cycle type
@@ -87,7 +87,7 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
                 traits.derived_quantities.resize(dqnames.size());
                 for ( auto j=0; j<dqnames.size(); j++ ) {
                   dqtree = ptree.getPropertyTree(dqnames[j]); // get prop tree for named quantity
-                  traits.derived_quantities[j].icomponents = dqtree.getArray<int>("state_index",defi);
+                  traits.derived_quantities[j].icomponents = dqtree.getArray<int>("state_index");
                   traits.derived_quantities[j].snames      = dqtree.getArray<std::string>("names"  ,defq);
                   traits.derived_quantities[j].smath_op    = dqtree.getValue<std::string>("mathop" ,"");
                 }

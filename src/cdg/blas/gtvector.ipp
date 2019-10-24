@@ -681,10 +681,11 @@ void GTVector<T>::operator=(T a)
 // RETURNS: none.
 //************************************************************************************
 template<class T> 
-void  GTVector<T>::range(GSIZET ibeg, GSIZET iend) 
+void  GTVector<T>::range(GLONG ibeg, GLONG iend) 
 {
 //assert(iend < n_ && ibeg <= iend && "Invalid range specification");
-  if ( iend >= n_ || ibeg >= n_ ) {
+  if ( ibeg >= static_cast<GLONG>(n_) 
+   ||  iend >= static_cast<GLONG>(n_) ) {
     std::cout << "GTVector::range: invalid range specification: n_=" << n_ << " ibeg=" << ibeg << " iend=" << iend << std::endl;
     while (1);
   }
@@ -1045,6 +1046,28 @@ GTVector<T>::operator*=(const GTVector &b)
   #endif
 
 } // end, operator*= (1)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : isfinite
+// DESC   : Find if a nan or inf exists in vector
+// ARGS   : 
+// RETURNS: TRUE if ok (all members are finite);  else FALSE
+//**********************************************************************************
+template<class T>
+T
+GTVector<T>::isfinite()
+{
+  GBOOL bret = TRUE;
+
+  for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end() && j<=this->gindex_.end() && bret; j+=this->gindex_.stride() ) {
+    bret = std::isfinite(this->data_[j]);
+  }
+ 
+  return bret;
+
+} // end isfinite
 
 
 //**********************************************************************************
