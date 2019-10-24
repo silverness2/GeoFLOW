@@ -316,8 +316,6 @@ void GGridBox::do_elems2d()
     pelem->ifend() = fcurr+nfnodes-1; // end global face index
     pelem->ibbeg() = bcurr;           // beg global bdy index
     pelem->ibend() = bcurr+nbnodes-1; // end global bdy index
-cout << GComm::WorldRank() << " nelems=" << gelems_.size()  << " bcurr=" << bcurr  << " nbnodes=" << nbnodes << endl;
-
     icurr += nvnodes;
     fcurr += nfnodes;
     bcurr += nbnodes;
