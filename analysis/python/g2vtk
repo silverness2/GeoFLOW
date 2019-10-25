@@ -1,0 +1,580 @@
+#!/usr/bin/env python3
+#
+# > g2vtk --help
+#
+#
+
+import argparse
+import numpy as np
+import os
+import struct
+import xml.etree.ElementTree as ET
+
+
+
+def isInt(val):
+    try:
+        int(val)
+        return True
+    except ValueError:
+        return False
+
+
+def get_variable_info(dir_path):
+    """ 
+    Return a dict of variables data within a directory
+    
+    Returns:
+        vdict[<name>] = ([processors],[steps])
+    """
+    vdict = {}
+    for filename in os.listdir(dir_path):
+        sfile = filename.split('.')
+        if (len(sfile) == 4) and (sfile[3] == 'out') and isInt(sfile[1]) and isInt(sfile[2]):
+            name = sfile[0]
+            step = int(sfile[1])
+            proc = int(sfile[2])
+            if name not in vdict:
+                vdict[name] = ([],[])
+            vdict[name][0].append(proc)
+            vdict[name][1].append(step)
+    for key in vdict.keys():
+        vdict[key][0].sort()
+        vdict[key][1].sort()
+    return vdict
+
+def get_variable_procs(vdict):
+    """
+    Return list of all Processors we have variable files for
+    """
+    # Make a Set intersection of all Variable Processors
+    vkeys = sorted(vdict.keys())
+    pset = set(vdict[vkeys[0]][0])
+    for key in vkeys[1:]:
+        pset = pset & set(vdict[key][0])
+    return sorted(pset)   
+
+def get_variable_steps(vdict):
+    """
+    Return list of all Processors we have variable files for
+    """
+    # Make a Set intersection of all Variable Processors
+    vkeys = sorted(vdict.keys())
+    sset = set(vdict[vkeys[0]][1])
+    for key in vkeys[1:]:
+        sset = sset & set(vdict[key][1])
+    return sorted(sset)
+
+
+def report_variable_info(vdict):
+    print(' ')
+    print('========== Variables Detected within Directory ==========')
+    print('---------------------------------------------------------')
+    print('                    Processor                Step')
+    print('Name            min    max  total      min    max  total')
+    print('---------------------------------------------------------')
+    for key,val in vdict.items():
+        print('%-12s %6d %6d %6d   %6d %6d %6d'%
+              (key,val[0][0],val[0][-1],len(val[0]),val[1][0],val[1][-1],len(val[1])))
+        
+
+def get_coordinate_info(dir_path):
+    """ 
+    Return a dict of coordinates data within a directory
+    
+    Returns:
+        vdict[<name>] = [steps]
+    """
+    vdict = {}
+    for filename in os.listdir(dir_path):
+        sfile = filename.split('.')
+        if (len(sfile) == 3) and (sfile[2] == 'out') and isInt(sfile[1]):
+            name = sfile[0]
+            proc = int(sfile[1])
+            if name not in vdict:
+                vdict[name] = []
+            vdict[name].append(proc)
+    for key in vdict.keys():
+        vdict[key].sort()
+    return vdict
+
+
+def get_coordinate_procs(cdict):
+    """
+    Return list of all Processors we have coordinate files for
+    """
+    # Make a Set intersection of all Coordinate Processors
+    ckeys = sorted(cdict.keys())
+    cset = set(cdict[ckeys[0]])
+    for key in ckeys[1:]:
+        cset = cset & set(cdict[key])
+    return sorted(cset)   
+    
+
+def report_coordinate_info(vdict):
+    print(' ')
+    print('== Coordinates Detected within Directory ==')
+    print('-------------------------------------------')
+    print('                    Processor')
+    print('Name            min    max  total')
+    print('-------------------------------------------')
+    for key,val in vdict.items():
+        print('%-12s %6d %6d %6d'%
+              (key,val[0],val[-1],len(val)))
+
+
+
+def determine_data(steps,variables,cdict,vdict):
+    """
+    Determine which of the requested steps and variables
+    we can generate files for
+    
+    Returns:
+        data[step]['processors'] = List of processors data exists for
+        data[step]['variables']  = List of variables data exists for
+        
+    To be used at "step" generate files with "variables" on "processors"
+    """
+    data = {}
+    
+    # For each requested step to process
+    for s in steps:
+        
+        # Get a list of processors with Variables & Coordinates
+        pset = set(get_coordinate_procs(cdict))
+        for v in variables:
+            if s not in vdict[v][1]: # if step doesn't exists for variable
+                pset = set() # Empty set
+                break
+            pset = pset & set(vdict[v][0]) #intersect all procs
+        
+        data[s] = {}
+        data[s]['processors'] = sorted(pset)
+        data[s]['variables']  = sorted(variables)
+    
+    return data
+
+     
+def read_header(filename, isz=8):
+    """
+    Read all data from a file header
+    """
+
+    # Read file
+    with open(filename,'rb') as fid:
+        data = fid.read(80) # read 80 bytes
+
+    # Extract data from bytes
+    ftype = 'd'
+    if isz == 4:
+        ftype = 'f'
+    
+    results = {}
+    results['vers'], results['dim'], results['nelems'] = struct.unpack('@IIQ',data[:16])
+
+    sbyte = 4 + 4 + 8
+    ebyte = sbyte + 4*results['dim']
+    results['porder'] = list( struct.unpack('@'+'I'*results['dim'],data[sbyte:ebyte]) )
+
+    sbyte = ebyte
+    ebyte = sbyte + 4
+    results['gtype'] = struct.unpack('@I',data[sbyte:ebyte])[0]
+
+    sbyte = ebyte
+    ebyte = sbyte + 8
+    results['cycle'] = struct.unpack('@Q',data[sbyte:ebyte])[0]
+
+    fmt = '@' + ftype
+    sbyte = ebyte
+    ebyte = sbyte + struct.calcsize(fmt)
+    results['time'] = struct.unpack(fmt,data[sbyte:ebyte])[0]
+        
+    results['skip'] = ebyte
+
+    return results
+
+
+def read_file(filename, isz=8):
+    """
+    Read all data from a file (header + data)
+    """
+
+    # Read the header
+    results = read_header(filename, isz)
+
+    # Assign data type format
+    ftype = 'd'
+    if isz == 4:
+        ftype = 'f'
+    
+    # Calculate how many nodes to read   
+    sz = results['nelems']
+    for i in range(0,results['dim']):
+        sz = sz * (results['porder'][i]+1)
+        
+    data = open(filename,'rb').read()
+    fmt = '@' + ftype*sz
+    results['data'] = struct.unpack_from(fmt, data[results['skip']:]) 
+    
+    # Check for Nan's in File
+    nan_array = np.isnan(results['data'])
+    if any(nan_array):
+        nan_list = np.argwhere(nan_array)
+        print("ERROR: Found %d NaN's in file: %s"%(len(nan_list),filename))
+        print('Replacing...')
+        results['data'] = np.nan_to_num(results['data'])
+        
+    return results
+
+
+def get_coords(processor, directory=None, isz=8):
+    """
+    Read all coordinate data into memory
+    """    
+    xfile = 'xgrid.%05d.out'%(processor)
+    yfile = 'ygrid.%05d.out'%(processor)
+    zfile = 'zgrid.%05d.out'%(processor)
+    if directory:
+        xfile = os.path.join(directory, xfile)
+        yfile = os.path.join(directory, yfile)
+        zfile = os.path.join(directory, zfile)
+    xdata = read_file(xfile,isz)
+    ydata = read_file(yfile,isz)
+    zdata = read_file(zfile,isz)
+    return xdata,ydata,zdata
+
+
+class Point:    
+    """
+    Simple data structure which all storage of points within a Dict
+    """    
+    def __init__(self, X=0.0, Y=0.0, Z=0.0):
+        self.loc_ = np.array([X,Y,Z])
+
+    def __eq__(self,other):
+        return np.array_equal(self.loc_,other.loc_)
+
+    def __ne__(self,other):
+        return not(self == other)
+
+    def __hash__(self):
+        return hash(self.loc_.tostring())
+
+
+               
+
+
+
+class Mesh:
+    """
+    Mesh to hold Points + Connectivity and Performing file Writting
+    """
+    def __init__(self):
+        self.verts_ = []  # x,y,z locations [<vertex #>][<direction>]
+        self.elems_ = []  # vertex id's [<element>][<dim 2>][<dim 1>][<dim 0>]
+        self.data_  = {}  # Data stored at vertex ['name'][<vertex #>]
+        self.map_   = []  # Map from file to verts_ [<file vertex #>]
+        self.sub_elems_ = [] # Same as elems_ but for sub elements
+        self.processor_ = -1 # Store the processor we read from
+
+
+    def read_coordinates(self, processor, parameters):
+        self.processor_ = processor
+        x,y,z = get_coords(processor, parameters.input_directory, parameters.isz)
+
+        # Build single list of points and map structure
+        point_dict  = {}
+        self.map_   = np.zeros(len(x['data']), dtype=int)
+        for i, it in enumerate(zip(x['data'],y['data'],z['data'])):
+            point = Point(it[0],it[1],it[2])
+            if point not in point_dict:
+                self.verts_.append(point.loc_)
+                uid = len(point_dict)
+                point_dict[point] = uid
+            else:
+                uid = point_dict[point]
+            self.map_[i] = uid
+
+        # Build Element connectivity 
+        new_shape = [x['nelems']]
+        for p in reversed(x['porder']):
+            new_shape.append(p + 1)
+        self.elems_ = np.zeros(new_shape, dtype=int)
+        i = 0
+        for eid in range(0, new_shape[0]):
+            for rid in range(0, new_shape[1]):
+                for qid in range(0, new_shape[2]):
+                    self.elems_[eid][rid][qid] = self.map_[i]
+                    i = i + 1
+                    
+        # Build plotting sub-elements from Master Elements
+        self.build_subelements()
+
+           
+    def read_variable(self, step, processor, variable, parameters):
+        
+        # Build File Name & read
+        fname = '%s.%06d.%05d.out'%(variable,step,processor)
+        fname = os.path.join(parameters.input_directory,fname)
+        v = read_file(fname,parameters.isz)
+        
+        if len(v['data']) != len(self.map_):
+            print('*** Mismatched Error:')
+            print('      Step = %d'%(step))
+            print('      Proc = %d'%(processor))
+            print('      Var  = %s'%(variable))
+        
+        # Insert variable values into self.data_
+        var_list = np.zeros(len(self.verts_), dtype=float)
+        for i, val in enumerate(v['data']):
+            var_list[self.map_[i]] = val
+        self.data_[variable] = var_list     
+
+
+    def build_subelements(self):
+        shape = np.shape(self.elems_)
+        if len(shape) == 3:
+            for eid in range(0, shape[0]):
+                for rid in range(0, shape[1]-1):
+                    for qid in range(0, shape[2]-1):
+                        verts = [ self.elems_[eid][rid][qid], 
+                                  self.elems_[eid][rid][qid+1],
+                                  self.elems_[eid][rid+1][qid],
+                                  self.elems_[eid][rid+1][qid+1] ]
+                        self.sub_elems_.append(verts)
+        if len(shape) == 4:
+            for eid in range(0, shape[0]):
+                for sid in range(0, shape[1]-1):
+                    for rid in range(0, shape[2]-1):
+                        for qid in range(0, shape[2]-1):
+                            verts = [ self.elems_[eid][sid][rid][qid], 
+                                      self.elems_[eid][sid][rid][qid+1],
+                                      self.elems_[eid][sid][rid+1][qid],
+                                      self.elems_[eid][sid][rid+1][qid+1],
+                                      self.elems_[eid][sid+1][rid][qid], 
+                                      self.elems_[eid][sid+1][rid][qid+1],
+                                      self.elems_[eid][sid+1][rid+1][qid],
+                                      self.elems_[eid][sid+1][rid+1][qid+1] ]
+                            self.sub_elems_.append(verts)
+        
+        
+    def to_vtk(self, filename):
+        """
+        Writes old format (Plain Text + Serial) VTK files 
+        """
+        with open(filename, 'w') as fout:
+            fout.write('# vtk DataFile Version 2.0\n')
+            fout.write('Really Cool Data from GeoFLOW\n')
+            fout.write('ASCII\n')
+            fout.write('DATASET UNSTRUCTURED_GRID\n')
+            
+            nverts = len(self.verts_)
+            fout.write('POINTS %d float\n'%(nverts))
+            for pt in self.verts_:
+                fout.write('%16.7e %16.7e %16.7e\n'%(pt[0],pt[1],pt[2]))
+         
+            nelems = len(self.sub_elems_)
+            nverts = len(self.sub_elems_[0])
+            ndata  = nelems * (1 + nverts) #Assumes all same dim
+            
+            fout.write('\n')
+            fout.write('CELLS %d %d\n'%(nelems,ndata))
+            
+            if nverts == 4:
+                for el in self.sub_elems_:
+                    fout.write('%d %d %d %d %d\n'%(4,el[0],el[1],el[3],el[2]))
+            if nverts == 8:
+                for el in self.sub_elems_:
+                    fout.write('%d %d %d %d %d %d %d %d %d\n'%
+                               (8,el[0],el[1],el[3],el[2],el[4],
+                                el[5],el[7],el[6]))
+
+            ctype = 9
+            if nverts == 8:
+                ctype = 12
+            fout.write('\n')
+            fout.write('CELL_TYPES %d\n'%(nelems))
+            for i in range(0,nelems):
+                fout.write('%d\n'%(ctype))
+            
+
+    def to_vtk_xml(self, filename):
+        """
+        Writes new format (XML + Parallel) VTK files 
+        """
+        data = ET.Element('VTKFile')
+        data.set('type', 'UnstructuredGrid')
+        #data.set('byte_order', 'LittleEndian')
+        ugrid = ET.SubElement(data, 'UnstructuredGrid')
+        
+        nverts = len(self.verts_)
+        nelems = len(self.sub_elems_)
+        piece = ET.SubElement(ugrid, 'Piece')
+        piece.set('NumberOfPoints', str(nverts))
+        piece.set('NumberOfCells', str(nelems))
+        
+        points = ET.SubElement(piece, 'Points')
+        darray = ET.SubElement(points, 'DataArray')
+        darray.set('Name', 'Vertex Coordinates')
+        darray.set('NumberOfComponents', '3')
+        darray.set('type', 'Float32')
+        darray.set('format','ascii')
+        darray.text = ' '.join(['%.7e %.7e %.7e'%tuple(row) for row in self.verts_])
+        
+        cells = ET.SubElement(piece, 'Cells')
+        
+        connect = ET.SubElement(cells, 'DataArray')
+        connect.set('Name', 'connectivity')
+        connect.set('type', 'UInt64')
+        connect.set('format','ascii')
+        txt = ''
+        for el in self.sub_elems_:
+            txt = txt + '%d %d %d %d '%(el[0],el[1],el[3],el[2])
+        connect.text = txt
+        
+        offsets = ET.SubElement(cells, 'DataArray')
+        offsets.set('Name', 'offsets')
+        offsets.set('type', 'UInt64')
+        offsets.set('format','ascii')
+        offsets.text = ' '.join(['%d'%(4*(i+1)) for i in range(0,nelems)])
+        
+        etypes = ET.SubElement(cells, 'DataArray')
+        etypes.set('Name', 'types')
+        etypes.set('type', 'UInt64')
+        etypes.set('format','ascii')
+        etypes.text = ' '.join(['%d'%(9) for row in self.sub_elems_])
+        
+        pdata = ET.SubElement(piece, 'PointData')
+        pdata.set("Scalars",'Solution Variables')
+        for vname, vdata in self.data_.items():
+            darray = ET.SubElement(pdata, 'DataArray')
+            darray.set('Name', vname)
+            darray.set('NumberOfComponents', '1')
+            darray.set('type', 'Float32')
+            darray.set('format','ascii')
+            darray.text = ' '.join(['%.7e'%(v) for v in np.nditer(vdata)])
+            
+        darray = ET.SubElement(pdata, 'DataArray')
+        darray.set('Name', 'rank')
+        darray.set('NumberOfComponents', '1')
+        darray.set('type', 'UInt32')
+        darray.set('format','ascii')
+        darray.text = ' '.join(['%d'%(self.processor_) for i in range(0,len(self.verts_))])
+        
+        mydata = ET.tostring(data, encoding='unicode')
+        myfile = open(filename, "w")
+        myfile.write(mydata)
+
+
+    def to_pvtk(self, filename, mesh_names):
+        """
+        Writes Parallel master file for a series of vtk_xml files
+        """
+        data = ET.Element('VTKFile')
+        data.set('type', 'PUnstructuredGrid')
+        ugrid = ET.SubElement(data, 'PUnstructuredGrid')
+        ugrid.set('GhostLevel','0')
+        
+        points = ET.SubElement(ugrid, 'PPoints')
+        darray = ET.SubElement(points, 'DataArray')
+        darray.set('Name', 'Vertex Coordinates')
+        darray.set('NumberOfComponents', '3')
+        darray.set('type', 'Float32')
+        darray.set('format','ascii')
+        
+        pdata = ET.SubElement(ugrid, 'PPointData')
+        pdata.set("Scalars",'Solution Variables')
+        for vname, vdata in self.data_.items():
+            darray = ET.SubElement(pdata, 'DataArray')
+            darray.set('Name', vname)
+            darray.set('NumberOfComponents', '1')
+            darray.set('type', 'Float32')
+            darray.set('format','ascii')
+            
+        darray = ET.SubElement(pdata, 'DataArray')
+        darray.set('Name', 'rank')
+        darray.set('NumberOfComponents', '1')
+        darray.set('type', 'UInt32')
+        darray.set('format','ascii')
+        
+        for f in mesh_names:
+            piece = ET.SubElement(ugrid, 'Piece')
+            piece.set('Source', f)
+            
+        mydata = ET.tostring(data, encoding='unicode')
+        myfile = open(filename, "w")
+        myfile.write(mydata)
+        
+
+class Parameters:
+    """
+    Simple class to pass parameters through calls
+    """
+    input_directory  = '.'
+    output_directory = '.'
+    isz = 8
+    
+    
+if __name__ == '__main__':
+    """
+    Main program which runs when called
+    """
+
+    parser = argparse.ArgumentParser(description='Convert GeoFLOW output to VTK Input')
+
+    parser.add_argument('-i', default='.', type=str, help="The directory to read files from")
+    parser.add_argument('-o', default='.', type=str, help="The directory to write files to")
+    
+    parser.add_argument("-v", default=None, nargs='+', type=str, help="List of variables to include")
+    parser.add_argument("-s", default=None, nargs='+', type=int, help="List of steps to process")
+
+    args = parser.parse_args()
+    
+    # Get default parameters to pass around
+    params = Parameters()
+    params.input_directory  = args.i
+    params.output_directory = args.o
+    step_list = args.s
+    var_list  = args.v
+    
+    # Read all potential Coordinates and Variables
+    coord_dict    = get_coordinate_info(params.input_directory)
+    variable_dict = get_variable_info(params.input_directory)
+
+    # If no Steps requested then attempt all
+    if step_list == None:
+        step_list = get_variable_steps(variable_dict)
+
+    # If no Variables requested then attempt all
+    if var_list == None:
+        var_list = sorted(variable_dict.keys())
+    
+    # - step_list = List of steps to process
+    # - var_list  = List of variables to process at each step 
+       
+    # Get final dictionary of files to process
+    fdict = determine_data(step_list,var_list,coord_dict,variable_dict)
+    
+    #fdict[step#]['processors'] = List of processors with files
+    #fdict[step#]['variables']  = List of variables with files  
+
+    # Generate Parallel VTK Files for each step
+    mesh_names = []
+    for step, val in fdict.items():
+        for proc in val['processors']:
+            if proc%10 == 0:
+                print('Processing step %d for rank %5d - %5d'%(step,proc,proc+9))
+            mesh = Mesh()
+            mesh.read_coordinates(proc,params)
+            for var in val['variables']:
+                mesh.read_variable(step,proc,var,params)
+            fname = 'mesh.%06d.%05d.vtu'%(step,proc)
+            fname = os.path.join(params.output_directory,fname)
+            mesh.to_vtk_xml(fname)
+            mesh_names.append(fname)
+        fname = 'mesh.%06d.pvtu'%(step)  
+        fname = os.path.join(params.output_directory,fname)
+        mesh.to_pvtk(fname,mesh_names)
+        print('\n**** Parallel VTK Master File = %s'%(fname))
+    
+    
