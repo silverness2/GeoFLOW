@@ -684,8 +684,9 @@ template<class T>
 void  GTVector<T>::range(GLONG ibeg, GLONG iend) 
 {
 //assert(iend < n_ && ibeg <= iend && "Invalid range specification");
-  if ( ibeg >= static_cast<GLONG>(n_) 
-   ||  iend >= static_cast<GLONG>(n_) ) {
+  if (  ibeg <= iend
+   &&  (ibeg >= static_cast<GLONG>(n_) 
+   ||   iend >= static_cast<GLONG>(n_)) ) {
     std::cout << "GTVector::range: invalid range specification: n_=" << n_ << " ibeg=" << ibeg << " iend=" << iend << std::endl;
     while (1);
   }
