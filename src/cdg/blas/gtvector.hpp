@@ -83,7 +83,7 @@ template <class T> class GTVector
     void updatehost();
     void updatedev();
 
-    T& operator[](const GSIZET i) {
+    inline T& operator[](const GSIZET i) {
     #if defined(_G_BOUNDS_CHK)
       const char serr[] = "GTVector<T>::operator[]: ";
       if ( i+gindex_.beg() > gindex_.end() ) {
@@ -94,7 +94,7 @@ template <class T> class GTVector
       return data_[i+gindex_.beg()];
     };
 
-    const T& operator[](const GSIZET i) const {
+    inline const T& operator[](const GSIZET i) const {
     #if defined(_G_BOUNDS_CHK)
       const char serr[] = "GTVector<T>::operator[] const: ";
       if ( i+gindex_.beg() > gindex_.end() ) {
