@@ -1,6 +1,6 @@
-function [nl, Lmin, Lelem] = nicos(radius, res_or_ne, rnForm, p, q)
+function [nl, dx, Lelem] = nicos(radius, res_or_ne, rnForm, p, q)
 %
-% function [nl, Lmin, Lelem]  = nicos(radius, res_or_ne, rnForm, p, q)
+% function [nl, dx, Lelem]  = nicos(radius, res_or_ne, rnForm, p, q)
 %
 % Computes the number of 'Lagrange' divisions, nl, required
 % for a given number of elements on an icos grid, and assorted other
@@ -10,7 +10,7 @@ function [nl, Lmin, Lelem] = nicos(radius, res_or_ne, rnForm, p, q)
 %   (3) Ne = 6(Np-2): # quad elems given by 3 X the number of triangles
 %
 %  Usage:
-%      [nl, Lmin, Lelem] = nicos(6738, 1.0, 'res');
+%      [nl, dx, Lelem] = nicos(6738, 1.0, 'res');
 %
 %  Inputs:
 %
@@ -26,7 +26,7 @@ function [nl, Lmin, Lelem] = nicos(radius, res_or_ne, rnForm, p, q)
 %  Outputs:
 %
 %  nl       : number 'Lagrangian' sub-divisions required 
-%  Lmin     : minimum length relative to radius resolvable
+%  dx     : minimum length relative to radius resolvable
 %  Lelem    : average element length
 
   if nargin < 1
@@ -38,10 +38,7 @@ function [nl, Lmin, Lelem] = nicos(radius, res_or_ne, rnForm, p, q)
   end
 
   if nargin < 2
-    res_or_ne = 0.01;
-    rnForm    = 'res';
-    p         = 1.0;
-    q         = 2.0;
+    error('Insufficient number of arguments: need at least radius and resolution');
   end
 
   if nargin < 3
@@ -80,15 +77,15 @@ function [nl, Lmin, Lelem] = nicos(radius, res_or_ne, rnForm, p, q)
 
   Area  = 4*pi*radius^2;  % global surf area
   if strcmp(lower(stag),'res') == 1   %  resolution specified
-    Lmin  = res_or_ne;      % min len or res
-    Lelem = p^q * Lmin;     % element length
+    dx    = res_or_ne;      % min len or res
+    Lelem = p^q * dx;       % element length
     Ne    = Area / Lelem^2; % # elements required to cover surf evenly
     Np    = Ne/6 + 2;       % # triangle points from (3)
   elseif strcmp(lower(stag),'nelems') == 1 % nelems specified
     Ne    = res_or_ne;      % num elems
     Ae    = Area / Ne;      % avg area per elem
     Lelem = sqrt(Ae);       % avg elem length
-    Lmin  = Lelem/(p^q);    % min len or res 
+    dx    = Lelem/(p^q);    % min len or res 
     Np    = Ne/6 + 2;       % # triangle points from (3)
   end
 
