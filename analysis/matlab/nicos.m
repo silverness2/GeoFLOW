@@ -3,7 +3,11 @@ function [nl, Lmin, Lelem] = nicos(radius, res_or_ne, rnForm, p, q)
 % function [nl, Lmin, Lelem]  = nicos(radius, res_or_ne, rnForm, p, q)
 %
 % Computes the number of 'Lagrange' divisions, nl, required
-% for a given number of elements on an icos grid.
+% for a given number of elements on an icos grid, and assorted other
+% information. These are computed from:
+%   (1) Np = 10 nl^2 + 20 nl + 12:  #of triangle points given # Lagrange points, nl
+%   (2) Nt = 2*(Np-2): is the # triangles on grid
+%   (3) Ne = 6(Np-2): # quad elems given by 3 X the number of triangles
 %
 %  Usage:
 %      [nl, Lmin, Lelem] = nicos(6738, 1.0, 'res');
@@ -21,7 +25,7 @@ function [nl, Lmin, Lelem] = nicos(radius, res_or_ne, rnForm, p, q)
 
 %  Outputs:
 %
-%  nl       : number 'Lagrangian' division required
+%  nl       : number 'Lagrangian' sub-divisions required 
 %  Lmin     : minimum length relative to radius resolvable
 %  Lelem    : average element length
 
