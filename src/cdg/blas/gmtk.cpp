@@ -3270,6 +3270,7 @@ void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GStrin
     iuout.resize(1); iuout[0] = 0; 
     tmp[0] = utmp[0]; tmp[1] = utmp[1];
     GMTK::grad(grid, *uin[0], 1, tmp, *uout[0]);
+    uout[0]->rpow(2);
     for ( auto j=0; j<nxy; j++ ) {
       GMTK::grad(grid, *uin[0], j+1, tmp, *tmp[1]);
       tmp[1]->rpow(2);
@@ -3298,6 +3299,7 @@ void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GStrin
     iuout.resize(1); iuout[0] = 0; 
     tmp[0] = utmp[0]; tmp[1] = utmp[1]; tmp[2] = utmp[2];
     GMTK::curl(grid, uin, 1, utmp, *uout[0]);
+    uout[0]->rpow(2);
     for ( auto j=0; j<nxy; j++ ) {
       GMTK::curl(grid, uin, j+1, tmp, *tmp[2]);
       tmp[2]->rpow(2);
