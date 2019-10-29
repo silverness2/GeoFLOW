@@ -198,9 +198,9 @@ GBOOL impl_abc_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Ti
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : impl_simsum_box
+// METHOD : impl_simpsum1d_box
 // DESC   : Inititialize velocity with simple sum of waves in x-dir only,
-//          scaled by k^p. For box grids, 2d and 3d.
+//          scaled by k^p. For box grids, 2d mimicking 1d
 // ARGS   : ptree  : main property tree
 //          sconfig: ptree block name containing variable config
 //          grid   : grid object
@@ -210,7 +210,7 @@ GBOOL impl_abc_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Ti
 //          u      : velocity-state to be initialized.
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL impl_simsum_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
+GBOOL impl_simpsum1d_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
 {
 
   GGridBox *tgrid = dynamic_cast<GGridBox*>(&grid);
@@ -219,7 +219,7 @@ GBOOL impl_simsum_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid, 
   GINT         kdn, kup, pdef;
   GSIZET       nn ;
   GFTYPE       E0, kn, L, p, x, y, z;
-  GFTYPE       mult1, mult2, phase1, phase2;
+  GFTYPE       phase1, phase2;
   GTPoint<GFTYPE>
                G0, G1;
   PropertyTree vtree ;
@@ -257,27 +257,128 @@ GBOOL impl_simsum_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid, 
   *u[1] = 0.0;
   for ( GINT k=kdn; k<=kup; k++ ) {
     kn = 2.0*PI*static_cast<GFTYPE>(k)/L;
-//  mult1  = (*distribution)(generator);
-//  mult2  = (*distribution)(generator);
     phase1 = (*distribution)(generator);
     phase2 = (*distribution)(generator);
     for ( GSIZET j=0; j<nn; j++ ) {
       x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
-//    (*u[0])[j] +=  (wmult1*cos(kn*x) + mult2*sin(kn*x)) / pow(kn,p);
       (*u[0])[j] +=  (cos(kn*x+phase1) + sin(kn*x+phase2)) / pow(kn,p);
     }
   }
   
 #elif defined(_G_IS3D)
+  assert(FALSE && "method intended for 2d mimicking 1d only");
+#endif
 
+  GMTK::normalizeL2(grid, u, utmp, E0);
+
+  delete distribution;
+
+  return TRUE;
+
+} // end, method impl_simpsum1d_box
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : impl_simpsum_box
+// DESC   : Inititialize velocity with simple sum of waves,
+//          scaled by k^p. For box grids, 2d and 3d.
+// ARGS   : ptree  : main property tree
+//          sconfig: ptree block name containing variable config
+//          grid   : grid object
+//          time   : initialization time
+//          utmp   : tmp arrays
+//          ub     : boundary state (also initialized here)
+//          u      : velocity-state to be initialized.
+// RETURNS: TRUE on success; else FALSE 
+//**********************************************************************************
+GBOOL impl_simpsum_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
+{
+
+  GGridBox *tgrid = dynamic_cast<GGridBox*>(&grid);
+  assert(tgrid != NULLPTR && "Box grid required");
+
+  GINT         kdn, kup, pdef;
+  GSIZET       nn ;
+  GFTYPE       E0, kn, knx, kny, knz, L[3], p, x, y, z;
+  GFTYPE       phase1, phase2, phase3;
+  GTPoint<GFTYPE>
+               G0, G1;
+  PropertyTree vtree ;
+  GTVector<GTVector<GFTYPE>>
+              *xnodes = &grid.xNodes();
+  std::default_random_engine generator;
+  std::normal_distribution<GFTYPE> *distribution;
+
+#if defined(_G_IS3D)
+  pdef = 2;
+#else
+  pdef = 3;
+#endif
+
+  G0 = tgrid->getP0();
+  G1 = tgrid->getP1();
+
+  vtree  = ptree.getPropertyTree(sconfig);
+  kdn    = vtree.getValue<GINT>("kdn");
+  kup    = vtree.getValue<GINT>("kup");
+  p      = vtree.getValue<GFTYPE>("kpower",pdef);
+  E0     = vtree.getValue<GFTYPE>("E0", 1.0);
+  nn     = (*xnodes)[0].size();
+
+//distribution = new normal_distribution<GFTYPE>(0,sqrt(2.0*E0));
+  distribution = new normal_distribution<GFTYPE>(0,2.0*PI);
+
+#if defined(_G_IS2D)
+  // Stream fcn is 
+  //   psi = Sum_i { -cos(2pi*ki*x) ) / ki^p }
+  // Compute vel components s.t. ux = d psi / dy, uy = -d psi / dx
+
+  L[0] = G1.x1 - G0.x1;
+  L[1] = G1.x2 - G0.x2;
+  *u[0] = 0.0;
+  *u[1] = 0.0;
+  for ( GINT m=0; m<2; m++ ) {
+    for ( GINT ky=kdn; ky<=kup; ky++ ) {
+      kny = 2.0*PI*static_cast<GFTYPE>(ky)/L[1];
+      phase2 = (*distribution)(generator);
+      for ( GINT kx=kdn; kx<=kup; kx++ ) {
+        knx = 2.0*PI*static_cast<GFTYPE>(kx)/L[0];
+        kn  = sqrt(knx*knx + kny*kny);
+        phase1 = (*distribution)(generator);
+        for ( GSIZET j=0; j<nn; j++ ) {
+          x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
+          (*u[m])[j] +=  (cos(knx*x+phase1) + sin(kny*y+phase2)) / pow(kn,p);
+        }
+      }
+    }
+  }
+  
+#elif defined(_G_IS3D)
+
+  L[0] = G1.x1 - G0.x1;
+  L[1] = G1.x2 - G0.x2;
+  L[2] = G1.x3 - G0.x3;
   *u[0] = 0.0;
   *u[1] = 0.0;
   *u[2] = 0.0;
-  for ( GSIZET j=0; j<nn; j++ ) {
-    x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-    for ( GINT k=kdn; k<kup; k++ ) {
-      pi2         = 2.0*PI*k;
-      (*u[0])[j] +=  pi2 * cos(pi2*x) / pow(k,p);
+  for ( GINT m=0; m<3; m++ ) {
+    for ( GINT kz=kdn; kz<=kup; kz++ ) {
+      knz = 2.0*PI*static_cast<GFTYPE>(zy)/L[2];
+      phase3 = (*distribution)(generator);
+      for ( GINT ky=kdn; ky<=kup; ky++ ) {
+        kny = 2.0*PI*static_cast<GFTYPE>(ky)/L[1];
+        phase2 = (*distribution)(generator);
+        for ( GINT kx=kdn; kx<=kup; kx++ ) {
+          knx = 2.0*PI*static_cast<GFTYPE>(kx)/L[0];
+          kn  = sqrt(knx*knx + kny*kny + knz*knz);
+          phase1 = (*distribution)(generator);
+          for ( GSIZET j=0; j<nn; j++ ) {
+            x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (xnodes)[2][j];
+            (*u[m])[j] +=  ( cos(knx*x+phase1) + sin(kny*y+phase2) + cos(iz*z+phase3) ) / pow(kn,p);
+          }
+        }
+      }
     }
   }
 
@@ -289,12 +390,12 @@ GBOOL impl_simsum_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid, 
 
   return TRUE;
 
-} // end, method impl_simsum_box
+} // end, method impl_simpsum_box
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : impl_simsum_icos
+// METHOD : impl_simpsum_icos
 // DESC   : Inititialize velocity with simple sum of waves in lat-long
 //          scaled by k^p. For icos grids, 2d and 3d.
 // ARGS   : ptree  : main property tree
@@ -306,7 +407,7 @@ GBOOL impl_simsum_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid, 
 //          u      : velocity-state to be initialized.
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL impl_simsum_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
+GBOOL impl_simpsum_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
 {
 
   GGridIcos *tgrid = dynamic_cast<GGridIcos*>(&grid);
@@ -314,9 +415,9 @@ GBOOL impl_simsum_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
 
   GINT         kdn, kup, pdef;
   GSIZET       nn ;
-  GFTYPE       E0, kn, p, r, x, y, z;
+  GFTYPE       E0, kn, knx, kny, p, r, x, y, z;
   GFTYPE       lat, lon;
-  GFTYPE       mult1, mult2, phase1, phase2;
+  GFTYPE       phase1, phase2;
   PropertyTree vtree ;
   GTVector<GTVector<GFTYPE>>
               *xnodes = &grid.xNodes();
@@ -345,21 +446,22 @@ GBOOL impl_simsum_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
   *u[1] = 0.0;
   *u[2] = 0.0;
   for ( GINT m=0; m<u.size(); m++ ) {
-    for ( GINT k=kdn; k<=kup; k++ ) {
-      kn = static_cast<GFTYPE>(k);
-//  mult1  = (*distribution)(generator);
-//  mult2  = (*distribution)(generator);
-      phase1 = (*distribution)(generator);
+    for ( GINT ky=kdn; ky<=kup; ky++ ) {
+      kny = static_cast<GFTYPE>(ky);
       phase2 = (*distribution)(generator);
-      for ( GSIZET j=0; j<nn; j++ ) {
-        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j]; 
-        r = sqrt(x*x + y*y + z*z);
-        lat = asin(z/r); lon = atan2(y,x);
-//      (*u[m])[j] +=  (wmult1*cos(kn*x) + mult2*sin(kn*x)) / pow(kn,p);
-        (*u[m])[j] +=  (cos(kn*lat+phase1) + sin(kn*lon+phase2)) / pow(kn,p);
-      }
-    }
-  } // end velocity compponent, m 
+      for ( GINT kx=kdn; kx<=kup; kx++ ) {
+        knx = static_cast<GFTYPE>(kx);
+        kn  = sqrt(knx*knx + kny*kny);
+        phase1 = (*distribution)(generator);
+        for ( GSIZET j=0; j<nn; j++ ) {
+          x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j]; 
+          r = sqrt(x*x + y*y + z*z);
+          lat = asin(z/r); lon = atan2(y,x);
+          (*u[m])[j] +=  (cos(kn*lat+phase1) + sin(kn*lon+phase2)) / pow(kn,p);
+        } // end, j-loop
+      } // end, kx loop
+    } // end, ky loop
+  } // end velocity component, m 
   
 
   GMTK::constrain2sphere(grid, u);
@@ -369,7 +471,8 @@ GBOOL impl_simsum_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
 
   return TRUE;
 
-} // end, method impl_simsum_icos
+} // end, method impl_simpsum_icos
+
 
 
 //**********************************************************************************
