@@ -122,7 +122,7 @@ GBOOL impl_abc_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Ti
 
   GINT         kdn, kup, p, pdef;
   GSIZET       nn ;
-  GFTYPE       A, B, C, E0, x, y, z;
+  GFTYPE       A, B, C, E0, pi2, x, y, z;
   GFTYPE       alat, along, r;
   PropertyTree vtree ;
   GTVector<GTVector<GFTYPE>*> 
@@ -163,11 +163,15 @@ GBOOL impl_abc_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Ti
     r = sqrt(x*x + y*y+z*z);
     alat = asin(z/r); along = atan2(y,x); 
     for ( GINT k=kdn; k<=kup; k++ ) {
-      (*usph[1])[j] +=  B*k*cos(k*along) / pow(k,p); // lat
-      (*usph[0])[j] += -A*k*sin(k*alat) / pow(k,p);  // long
+//    (*usph[1])[j] +=  B*k*cos(k*along) / pow(k,p); // lat
+//    (*usph[0])[j] += -A*k*sin(k*alat) / pow(k,p);  // long
+      pi2         = 2.0*PI*k;
+      (*u[0])[j] +=  ( B*cos(pi2*y) + C*sin(pi2*z) ) / pow(k,p);
+      (*u[1])[j] +=  ( A*sin(pi2*x) + C*cos(pi2*z) ) / pow(k,p);
+      (*u[2])[j] +=  ( A*cos(pi2*x) + B*sin(pi2*y) ) / pow(k,p);
     }
   }
-  GMTK::vsphere2cart(grid, usph, GVECTYPE_PHYS, u);
+//GMTK::vsphere2cart(grid, usph, GVECTYPE_PHYS, u);
   
 #elif defined(_G_IS3D)
 
@@ -415,12 +419,14 @@ GBOOL impl_simpsum_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid
 
   GINT         kdn, kup, pdef;
   GSIZET       nn ;
-  GFTYPE       E0, kn, knx, kny, p, r, x, y, z;
+  GFTYPE       E0, kn, p, r, x, y, z;
   GFTYPE       lat, lon;
   GFTYPE       phase1, phase2;
   PropertyTree vtree ;
   GTVector<GTVector<GFTYPE>>
               *xnodes = &grid.xNodes();
+  GTVector<GTVector<GFTYPE>*> 
+               usph(GDIM);
   std::default_random_engine generator;
   std::normal_distribution<GFTYPE> *distribution;
 
@@ -438,31 +444,29 @@ GBOOL impl_simpsum_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid
   E0     = vtree.getValue<GFTYPE>("E0", 1.0);
   nn     = (*xnodes)[0].size();
 
-//distribution = new normal_distribution<GFTYPE>(0,sqrt(2.0*E0));
   distribution = new normal_distribution<GFTYPE>(0,2.0*PI);
 
+  usph[0] = utmp[0]; // ulat storage
+  usph[1] = utmp[1]; // ulong storage
 
-  *u[0] = 0.0;
-  *u[1] = 0.0;
-  *u[2] = 0.0;
-  for ( GINT m=0; m<u.size(); m++ ) {
-    for ( GINT ky=kdn; ky<=kup; ky++ ) {
-      kny = static_cast<GFTYPE>(ky);
+  *usph[0] = 0.0;
+  *usph[1] = 0.0;
+//*u[2] = 0.0;
+  for ( GINT m=0; m<usph.size(); m++ ) {
+    for ( GINT k=kdn; k<=kup; k++ ) {
+      kn = static_cast<GFTYPE>(k);
       phase2 = (*distribution)(generator);
-      for ( GINT kx=kdn; kx<=kup; kx++ ) {
-        knx = static_cast<GFTYPE>(kx);
-        kn  = sqrt(knx*knx + kny*kny);
-        phase1 = (*distribution)(generator);
-        for ( GSIZET j=0; j<nn; j++ ) {
-          x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j]; 
-          r = sqrt(x*x + y*y + z*z);
-          lat = asin(z/r); lon = atan2(y,x);
-          (*u[m])[j] +=  (cos(kn*lat+phase1) + sin(kn*lon+phase2)) / pow(kn,p);
-        } // end, j-loop
-      } // end, kx loop
-    } // end, ky loop
+      phase1 = (*distribution)(generator);
+      for ( GSIZET j=0; j<nn; j++ ) {
+        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j]; 
+        r = sqrt(x*x + y*y + z*z);
+        lat = asin(z/r); lon = atan2(y,x);
+        (*usph[m])[j] +=  (cos(kn*lat+phase1) + sin(kn*lon+phase2)) / pow(kn,p);
+      } // end, j-loop
+    } // end, k loop
   } // end velocity component, m 
   
+  GMTK::vsphere2cart(grid, usph, GVECTYPE_PHYS, u);
 
   GMTK::constrain2sphere(grid, u);
   GMTK::normalizeL2(grid, u, utmp, E0);
