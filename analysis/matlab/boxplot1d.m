@@ -119,6 +119,6 @@ end
 [xg I] = sort(xg,1);
 ug    = ug(I);
 figure
-plot(xg, ug, 'k-');
+h = plot(xg, ug, 'k-');
 title(sprintf('%s index=%d  t=%f', svar, tindex, time));
 
