@@ -126,6 +126,105 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
 } // end, impl_boxnwaveburgers
 
 
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : impl_icosnwaveburgers
+// DESC   : Initialize state for Burgers with N-wave on icos grids
+// ARGS   : ptree  : main prop tree
+//          sconfig: ptree block name containing variable config
+//          grid   : grid
+//          t      : time
+//          utmp   : tmp arrays
+//          ub     : bdy vectors (one for each state element)
+//          u      : current state
+// RETURNS: TRUE on success; else FALSE 
+//**********************************************************************************
+GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
+{
+  GString          serr = "impl_icosnwaveburgers: ";
+  GSIZET           i, j, idir, nxy;
+  GFTYPE           A, nu, Re, r, s, t0, tdenom;
+  GFTYPE           lat, lon;
+  GFTYPE           efact, sum, tfact, xfact;
+  GFTYPE           x, y, z;
+  GTVector<GFTYPE> xx(GDIM);
+  GTVector<GTPoint<GFTYPE>> r0(GDIM+1);
+  std::vector<GFTYPE> lat0, lon0;
+
+  PropertyTree nwaveptree = ptree   .getPropertyTree(sconfig);
+  PropertyTree gridptree  = ptree   .getPropertyTree("grid_icos");
+  PropertyTree nuptree    = ptree.getPropertyTree("dissipation_traits");
+
+  GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
+
+  assert(grid.gtype() == GE_2DEMBEDDED && "Invalid element types");
+  assert(u.size() >= GDIM+1 && "Insufficient number of state members");
+
+
+  nxy = (*xnodes)[0].size(); // same size for x, y, z
+
+  // From Whitham's book, in 1d:
+  // u(x,t) = (x/t) [ 1 + sqrt(t/t0) (e^Re - 1)^-1 exp(x^2/(4 nu t))i ]^-1
+  // were Re is 'Reynolds' number: Re = A / 2nu; can think of
+  // A ~ U L scaling. But we won't parameterize in terms of Re, 
+  // but rather, nu.
+  // Set some parameters:
+  r      = gridptree.getValue <GFTYPE>("radius");
+  lat0   = nwaveptree.getArray<GFTYPE>("latitude0"); 
+  lon0   = nwaveptree.getArray<GFTYPE>("longitude0"); 
+  A      = nwaveptree.getValue<GFTYPE>("Uparm",1.0);
+//Re     = nwaveptree.getValue<GFTYPE>("Re",6.0);
+  t0     = nwaveptree.getValue<GFTYPE>("t0",0.04);
+  nu     = nuptree   .getValue<GFTYPE>("nu",0.0833);
+
+
+  // If prop direction has more than one component != 0. Then
+  // front is rotated (but still planar):
+
+  if ( time <= 10.0*std::numeric_limits<GFTYPE>::epsilon() ) time = t0;
+  Re = A*r/nu; // set Re from nu, U, radius
+
+  cout << "impl_icosnwaveburgers: nu=" << nu << " Re=" << Re << " time=" << time << endl;
+
+  // Convert initial positions to radians:
+  for ( GINT ilump=0; ilump<lat0.size(); ilump++) {
+    lat0[ilump]    *= (2.0*PI/180.0);
+    lon0[ilump]    *= (2.0*PI/180.0);
+    r0  [ilump].x1  = r*cos(lat0[ilump])*cos(lon0[ilump]);
+    r0  [ilump].x2  = r*cos(lat0[ilump])*sin(lon0[ilump]);
+    r0  [ilump].x3  = r*sin(lat0[ilump]);
+  }
+
+  for ( i=0; i<GDIM; i++ ) *u[i] = 0.0;
+   
+  // Initialize each lump:
+  for ( GINT ilump=0; ilump<lat0.size(); ilump++) {
+    for ( j=0; j<nxy; j++ ) {
+       x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
+       lat = asin(z/r);
+       lon = atan2(y,x);
+      for ( i=0; i<GDIM+1; i++ ) { // find arclength from lump center
+        xx[i] = (*xnodes)[i][j] - r0[ilump][i];
+        s     = acos( sin(lat)*sin(lat0[ilump])
+              +         cos(lat)*cos(lat0[ilump])*cos(lon - lon0[ilump]) );
+      }
+  
+      tdenom = 1.0/(4.0*nu*time);
+      tfact  = time/t0;
+      efact  = tfact * exp(s*s*tdenom) / ( exp(Re) - 1.0 );
+      xfact  = 1.0 /( time * (  1.0 + efact ) );
+      for ( i=0; i<GDIM+1; i++ ) (*u[i])[j] += xx[i]*xfact;
+      // dU1max = 1.0 / ( time * (sqrt(time/A) + 1.0) );
+      // aArea  = 4.0*nu*log( 1.0 + sqrt(A/time) );
+    } // end, coord j-loop 
+  } // end, ilump-loop
+
+
+  return TRUE;
+
+} // end, impl_icosnwaveburgers
+
+
 
 //**********************************************************************************
 //**********************************************************************************

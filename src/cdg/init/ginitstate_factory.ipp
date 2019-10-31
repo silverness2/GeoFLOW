@@ -79,8 +79,11 @@ GBOOL GInitStateFactory<EquationType>::set_by_direct(const PropertyTree& ptree, 
   else if ( "initstate_boxpergauss"       == sinit ) {
     bret = ginitstate::impl_boxpergauss     (ptree, sinit, grid, time, utmp, ub, u);
   }
-  else if ( "initstate_nwave"             == sinit ) {
+  else if ( "initstate_boxnwave"          == sinit ) {
     bret = ginitstate::impl_boxnwaveburgers (ptree, sinit, grid, time, utmp, ub, u);
+  }
+  else if ( "initstate_icosnwave"          == sinit ) {
+    bret = ginitstate::impl_icosnwaveburgers (ptree, sinit, grid, time, utmp, ub, u);
   }
   else                                        {
     assert(FALSE && "Specified state initialization method unknown");
