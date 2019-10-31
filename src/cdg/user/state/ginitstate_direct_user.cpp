@@ -188,8 +188,8 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
 
   // Convert initial positions to radians:
   for ( GINT ilump=0; ilump<lat0.size(); ilump++) {
-    lat0[ilump]    *= (2.0*PI/180.0);
-    lon0[ilump]    *= (2.0*PI/180.0);
+    lat0[ilump]    *= (PI/180.0);
+    lon0[ilump]    *= (PI/180.0);
     r0  [ilump].x1  = r*cos(lat0[ilump])*cos(lon0[ilump]);
     r0  [ilump].x2  = r*cos(lat0[ilump])*sin(lon0[ilump]);
     r0  [ilump].x3  = r*sin(lat0[ilump]);
@@ -218,6 +218,9 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
       // aArea  = 4.0*nu*log( 1.0 + sqrt(A/time) );
     } // end, coord j-loop 
   } // end, ilump-loop
+
+//GMTK::vsphere2cart(grid, usph, GVECTYPE_PHYS, u);
+  GMTK::constrain2sphere(grid, u);
 
 
   return TRUE;
