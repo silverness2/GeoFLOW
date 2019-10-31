@@ -265,7 +265,8 @@ GBOOL impl_simpsum1d_box(const PropertyTree &ptree, GString &sconfig, GGrid &gri
     phase2 = (*distribution)(generator);
     for ( GSIZET j=0; j<nn; j++ ) {
       x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
-      (*u[0])[j] +=  (cos(kn*x+phase1) + sin(kn*x+phase2)) / pow(kn,p);
+//    (*u[0])[j] +=  (cos(kn*x+phase1) + sin(kn*x+phase2)) / pow(kn,p);
+      (*u[0])[j] +=  ( sin(kn*x+phase1) + 4.0*sin((kn+0.5)*x+phase1) ) / pow(kn,p);
     }
   }
   
@@ -342,18 +343,17 @@ GBOOL impl_simpsum_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
   L[1] = G1.x2 - G0.x2;
   *u[0] = 0.0;
   *u[1] = 0.0;
-  for ( GINT m=0; m<2; m++ ) {
-    for ( GINT ky=kdn; ky<=kup; ky++ ) {
-      kny = 2.0*PI*static_cast<GFTYPE>(ky)/L[1];
-      phase2 = (*distribution)(generator);
-      for ( GINT kx=kdn; kx<=kup; kx++ ) {
-        knx = 2.0*PI*static_cast<GFTYPE>(kx)/L[0];
-        kn  = sqrt(knx*knx + kny*kny);
-        phase1 = (*distribution)(generator);
-        for ( GSIZET j=0; j<nn; j++ ) {
-          x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
-          (*u[m])[j] +=  (cos(knx*x+phase1) + sin(kny*y+phase2)) / pow(kn,p);
-        }
+  for ( GINT ky=kdn; ky<=kup; ky++ ) {
+    kny = 2.0*PI*static_cast<GFTYPE>(ky)/L[1];
+    phase2 = (*distribution)(generator);
+    for ( GINT kx=kdn; kx<=kup; kx++ ) {
+      knx = 2.0*PI*static_cast<GFTYPE>(kx)/L[0];
+      kn  = sqrt(knx*knx + kny*kny);
+      phase1 = (*distribution)(generator);
+      for ( GSIZET j=0; j<nn; j++ ) {
+        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
+        (*u[0])[j] +=  ( sin(knx*x+phase1) + 4.0*sin((kn+0.5)*x+phase1) ) / pow(kn,p);
+        (*u[1])[j] +=  ( sin(kny*y+phase2) + 4.0*sin((kn+0.5)*y+phase2) ) / pow(kn,p);
       }
     }
   }
@@ -379,7 +379,7 @@ GBOOL impl_simpsum_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
           phase1 = (*distribution)(generator);
           for ( GSIZET j=0; j<nn; j++ ) {
             x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (xnodes)[2][j];
-            (*u[m])[j] +=  ( cos(knx*x+phase1) + sin(kny*y+phase2) + cos(iz*z+phase3) ) / pow(kn,p);
+            (*u[m])[j] +=  ( sin(knx*x+phase1) + 4.0*sin((kny+0.5)*y+phase2) + 2.0* sin((knz+0.25)*z+phase3) ) / pow(kn,p);
           }
         }
       }
@@ -432,6 +432,7 @@ GBOOL impl_simpsum_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid
 
 #if defined(_G_IS3D)
   pdef = 2;
+  assert(FALSE && "Method not yet ready for 3d");
 #else
   pdef = 3;
 #endif
@@ -452,19 +453,18 @@ GBOOL impl_simpsum_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid
   *usph[0] = 0.0;
   *usph[1] = 0.0;
 //*u[2] = 0.0;
-  for ( GINT m=0; m<usph.size(); m++ ) {
-    for ( GINT k=kdn; k<=kup; k++ ) {
-      kn = static_cast<GFTYPE>(k);
-      phase2 = (*distribution)(generator);
-      phase1 = (*distribution)(generator);
-      for ( GSIZET j=0; j<nn; j++ ) {
-        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j]; 
-        r = sqrt(x*x + y*y + z*z);
-        lat = asin(z/r); lon = atan2(y,x);
-        (*usph[m])[j] +=  (cos(kn*lat+phase1) + sin(kn*lon+phase2)) / pow(kn,p);
-      } // end, j-loop
-    } // end, k loop
-  } // end velocity component, m 
+  for ( GINT k=kdn; k<=kup; k++ ) {
+    kn = static_cast<GFTYPE>(k);
+    phase2 = (*distribution)(generator);
+    phase1 = (*distribution)(generator);
+    for ( GSIZET j=0; j<nn; j++ ) {
+      x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j]; 
+      r = sqrt(x*x + y*y + z*z);
+      lat = asin(z/r); lon = atan2(y,x);
+      (*usph[0])[j] +=  (sin(kn*lat+phase1) + 4.0*sin((kn+0.5)*lat+phase1)) / pow(kn,p);
+      (*usph[1])[j] +=  (sin(kn*lon+phase2) + 4.0*sin((kn+0.5)*lon+phase2)) / pow(kn,p);
+    } // end, j-loop
+  } // end, k loop
   
   GMTK::vsphere2cart(grid, usph, GVECTYPE_PHYS, u);
 
