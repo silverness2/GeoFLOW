@@ -3271,7 +3271,7 @@ void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GStrin
     tmp[0] = utmp[0]; tmp[1] = utmp[1];
     GMTK::grad(grid, *uin[0], 1, tmp, *uout[0]);
     uout[0]->rpow(2);
-    for ( auto j=0; j<nxy; j++ ) {
+    for ( auto j=1; j<nxy; j++ ) {
       GMTK::grad(grid, *uin[0], j+1, tmp, *tmp[1]);
       tmp[1]->rpow(2);
       *uout[0] += *tmp[1];
@@ -3291,18 +3291,33 @@ void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GStrin
     }
   }
   else if ( "curlmag" == sop ) { // operates on a vector field...
-    // produces a vector field:
+    // produces a scalar field:
     nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
     assert(utmp .size() >= 3   && "Insufficient temp space");
     assert(uin  .size() >= nxy && "Insufficient no. input components");
-    assert(uout .size() >= nxy && "Insufficient no. output components");
+    assert(uout .size() >= 1   && "Insufficient no. output components");
     iuout.resize(1); iuout[0] = 0; 
     tmp[0] = utmp[0]; tmp[1] = utmp[1]; tmp[2] = utmp[2];
     GMTK::curl(grid, uin, 1, utmp, *uout[0]);
     uout[0]->rpow(2);
-    for ( auto j=0; j<nxy; j++ ) {
+    for ( auto j=1; j<nxy; j++ ) {
       GMTK::curl(grid, uin, j+1, tmp, *tmp[2]);
       tmp[2]->rpow(2);
+      *uout[0] += *tmp[2];
+    }
+    uout[0]->rpow(0.5);
+  }
+  else if ( "vmag" == sop ) { // operates on a vector field...
+    // produces a scalar field:
+    nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+    assert(utmp .size() >= 1   && "Insufficient temp space");
+    assert(uin  .size() >= nxy && "Insufficient no. input components");
+    assert(uout .size() >= 1   && "Insufficient no. output components");
+    iuout.resize(1); iuout[0] = 0; 
+    tmp[0] = utmp[0]; tmp[1] = utmp[1]; tmp[2] = utmp[2];
+    *uout[0] = *u[0]; uout[0]->rpow(2);
+    for ( auto j=1; j<nxy; j++ ) {
+      *tmp[0] = *u[j] tmp[0]->rpow(2);
       *uout[0] += *tmp[2];
     }
     uout[0]->rpow(0.5);
