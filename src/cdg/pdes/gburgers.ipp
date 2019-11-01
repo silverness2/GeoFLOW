@@ -257,7 +257,6 @@ void GBurgers<TypePack>::dudt_impl(const Time &t, const State &u, const State &u
       if ( bforced_ && uf[k] != NULLPTR ) *dudt[k] += *uf[k];
     }
   }
-  GMTK::constrain2sphere(*grid_, dudt);
   
 } // end of method dudt_impl
 
@@ -288,6 +287,7 @@ void GBurgers<TypePack>::step_impl(const Time &t, State &uin, State &uf, State &
   if ( bsteptop_ ) {
     steptop_callback_(t, uin, dt);
   }
+
 
   // Set evolved state vars from input state.
   // These are not deep copies:
@@ -393,6 +393,8 @@ void GBurgers<TypePack>::step_exrk(const Time &t, State &uin, State &uf, State &
 
   // GExRK stepper steps entire state over one dt:
   gexrk_->step(t, uin, uf, ub, dt, urktmp_, uout);
+
+  GMTK::constrain2sphere(*grid_, uout);
 
 } // end of method step_exrk
 
