@@ -180,9 +180,10 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
   lon0   = nwaveptree.getArray<GFTYPE>("longitude0"); 
   A      = nwaveptree.getValue<GFTYPE>("Uparam",1.0);
 //Re     = nwaveptree.getValue<GFTYPE>("Re",6.0);
-  t0     = nwaveptree.getArray<GFTYPE>("t0");
+  st0    = nwaveptree.getArray<GFTYPE>("t0");
   nu     = nuptree   .getValue<GFTYPE>("nu",0.0833);
 
+  t0.resize(st0.size());
   t0     = st0;
   assert(lat0.size() == lon0.size() 
       && lat0.size() == t0.size()
