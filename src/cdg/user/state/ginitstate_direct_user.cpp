@@ -145,14 +145,14 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
   GString          serr = "impl_icosnwaveburgers: ";
   GBOOL            bret;
   GSIZET           i, j, idir, nxy;
-  GFTYPE           A, nu, Re, r, s, t0, tdenom;
+  GFTYPE           A, nu, Re, r, s, tdenom;
   GFTYPE           lat, lon;
   GFTYPE           efact, sum, tfact, xfact;
   GFTYPE           x, y, z;
-  GTVector<GFTYPE>            xx(GDIM);
+  GTVector<GFTYPE>            t0, xx(GDIM);
   GTVector<GTVector<GFTYPE>*> usph(GDIM);
   GTVector<GTPoint<GFTYPE>>   r0(GDIM+1);
-  std::vector<GFTYPE>         lat0, lon0;
+  std::vector<GFTYPE>         lat0, lon0, st0;
 
   PropertyTree nwaveptree = ptree   .getPropertyTree(sconfig);
   PropertyTree gridptree  = ptree   .getPropertyTree("grid_icos");
@@ -180,16 +180,18 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
   lon0   = nwaveptree.getArray<GFTYPE>("longitude0"); 
   A      = nwaveptree.getValue<GFTYPE>("Uparam",1.0);
 //Re     = nwaveptree.getValue<GFTYPE>("Re",6.0);
-  t0     = nwaveptree.getValue<GFTYPE>("t0",0.04);
+  t0     = nwaveptree.getArray<GFTYPE>("t0");
   nu     = nuptree   .getValue<GFTYPE>("nu",0.0833);
 
-
-  assert(lat0.size() == lon0.size() && "lat0 and lon0 must be the same size");
+  t0     = st0;
+  assert(lat0.size() == lon0.size() 
+      && lat0.size() == t0.size()
+      && "lat0, lon0, and t0 must be the same size");
 
   // If prop direction has more than one component != 0. Then
   // front is rotated (but still planar):
 
-  if ( time <= 10.0*std::numeric_limits<GFTYPE>::epsilon() ) time = t0;
+  if ( time <= 10.0*std::numeric_limits<GFTYPE>::epsilon() ) time = t0.min();
   Re = A*r/nu; // set Re from nu, U, radius
 
   cout << "impl_icosnwaveburgers: nu=" << nu << " Re=" << Re << " time=" << time << endl;
@@ -222,7 +224,7 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
             +       cos(lat)*cos(lat0[ilump])*cos(lon - lon0[ilump]) );
   
       tdenom = 1.0/(4.0*nu*time);
-      tfact  = time/t0;
+      tfact  = time/t0[ilump];
       efact  = tfact * exp(s*s*tdenom) / ( exp(Re) - 1.0 );
       xfact  = 1.0 /( time * (  1.0 + efact ) );
       for ( i=0; i<GDIM+1; i++ ) (*u[i])[j] += xx[i]*xfact;
