@@ -211,7 +211,7 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
        lat = asin(z/r);
        lon = atan2(y,x);
-      for ( i=0; i<GDIM; i++ ) { // find arclength from lump center
+      for ( i=0; i<GDIM+1; i++ ) { // find arclength from lump center
         xx[i] = (*xnodes)[i][j] - r0[ilump][i];
       }
 /*
@@ -225,7 +225,7 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
       tfact  = time/t0;
       efact  = tfact * exp(s*s*tdenom) / ( exp(Re) - 1.0 );
       xfact  = 1.0 /( time * (  1.0 + efact ) );
-      for ( i=0; i<GDIM; i++ ) (*u[i])[j] += xx[i]*xfact;
+      for ( i=0; i<GDIM+1; i++ ) (*u[i])[j] += xx[i]*xfact;
       // dU1max = 1.0 / ( time * (sqrt(time/A) + 1.0) );
       // aArea  = 4.0*nu*log( 1.0 + sqrt(A/time) );
     } // end, coord j-loop 
