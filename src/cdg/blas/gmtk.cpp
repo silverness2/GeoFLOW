@@ -3315,9 +3315,9 @@ void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GStrin
     assert(uout .size() >= 1   && "Insufficient no. output components");
     iuout.resize(1); iuout[0] = 0; 
     tmp[0] = utmp[0]; tmp[1] = utmp[1]; tmp[2] = utmp[2];
-    *uout[0] = *u[0]; uout[0]->rpow(2);
+    *uout[0] = *uin[0]; uout[0]->rpow(2);
     for ( auto j=1; j<nxy; j++ ) {
-      *tmp[0] = *u[j] tmp[0]->rpow(2);
+      *tmp[0] = *uin[j]; tmp[0]->rpow(2);
       *uout[0] += *tmp[2];
     }
     uout[0]->rpow(0.5);
