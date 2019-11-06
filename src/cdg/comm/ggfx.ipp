@@ -230,20 +230,26 @@ GBOOL GGFX<T>::initSort(GNIDBuffer  &glob_index)
   // should then create a local index array that finds each of these
   // mult > 1 nodes in the original glob_index array.
   GNIDMatrix mySharedData; // recv buffer for sorted work data
+#if defined(GGFX_TRACE_OUTPUT)
+  GPP(comm_,serr << "Calling doCommonNodeSort...");
+#endif
   bret = doCommonNodeSort(glob_index, irWork, iRecvWorkTaskID, iSendWorkTaskID, mySharedData);
   // NOTE: iSendWorkTaskID on exit should contain the list of tasks that sorted work
   //       data is received from. These should be the same task ids that were used
   //       in sending this local task's data to the work tasks it identified
   if ( !bret ) {  
-    GPP(comm_,serr << "doCommonNodeSort failed ");
+    cout << serr << ": rank: " << GComm::WorldRank(comm_) << ": doCommonNodeSort failed" << endl;
     exit(1);
   } 
 
   // Finally, find list of local indices and for send/receive (SR) operations, and
   // for purely local operations:
+#if defined(GGFX_TRACE_OUTPUT)
+  GPP(comm_,serr << "Calling extractOpData...");
+#endif
   bret = extractOpData(glob_index, mySharedData);
   if ( !bret ) {  
-    GPP(comm_,serr << "extractOpData failed ");
+    cout << serr << ": rank: " << GComm::WorldRank(comm_) << ": extractOpData failed" << endl;
     exit(1);
   } 
 
@@ -680,6 +686,8 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
 
   if ( !bBinSorted_ ) return FALSE;
 
+  GSIZET     lsz[2];
+  GSIZET     gsz[2];
   GSIZET     ipos, iwhich, rd, nd, nrow, nt, nvals=0;
   GSIZET     mult, *vvals=0, *ivals=0;
   GNODEID    nid;
@@ -687,7 +695,9 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   GSZBuffer  icol ;// holds distinct val col indices
   GSZBuffer  irowr;// holds distinct val row indices
   GNIDBuffer mval; // holds distinct vals in rows of matrix
+  GNIDMatrix sendShNodeWrk;
   GNIDBuffer nworktmp;
+
 
   // For each task in iRecvWorkTaskID from which we received work data 
   // get list of its shared nodes, and which tasks they sit on. These are
@@ -728,11 +738,12 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
     nrow = MAX(nrow,ipos); // Max no. rows in shared node matrix
   }
 
-  GSIZET lsz[2] = {nrow, iSendWorkTaskID.size()};
-  GSIZET gsz[2];
+  lsz[0] = nrow;
+  lsz[1] = iSendWorkTaskID.size();
+  GComm::Synch(comm_);
   GComm::Allreduce(lsz, &gsz, 2, T2GCDatatype<GSIZET>() , GC_OP_MAX, comm_);
   
-  GNIDMatrix sendShNodeWrk(gsz[0],1);
+  sendShNodeWrk.resize(gsz[0],1);
 
   // mySharedData column length must be at least 
   // the number of tasks work data was sent to:
@@ -742,6 +753,9 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   mySharedData.resize(gsz[0],gsz[1]);
 
 
+#if defined(GGFX_TRACE_OUTPUT)
+    GPP(comm_,serr << "Fill send buffer...");
+#endif
   // Last, fill send buffer with sorted work data:
   ipos = 0;
   sendShNodeWrk.set(-1);
@@ -775,12 +789,18 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   mySharedData.set(-1);
   GCommDatatype dtype = T2GCDatatype<GNODEID>();
 
+#if defined(GGFX_TRACE_OUTPUT)
+    GPP(comm_,serr << "Fill send send back sorted data...");
+#endif
   // NOTE: Here, when sending back sorted data, we send back to 
   //       the tasks we received work data from, and we receive 
   //       the tasks that we sent work data to:
   // Set indirection buffers for send & receive (don't include this rank):
   GIBuffer nttmp(MAX(iSendWorkTaskID.size(),iRecvWorkTaskID.size()));
 
+#if defined(GGFX_TRACE_OUTPUT)
+    GPP(comm_,serr << "Find tasks for send back to...");
+#endif
   // Find tasks to send back to (not including rank_):
   for ( j=0, ns=0; j<iRecvWorkTaskID.size(); j++ ) {
      itask = iRecvWorkTaskID[j];
@@ -794,6 +814,9 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
 
   isbuff.set(0); // point to first col only in sendShNodeWrk
 
+#if defined(GGFX_TRACE_OUTPUT)
+    GPP(comm_,serr << "Find tasks for receive from...");
+#endif
   // Find tasks to recv from (not including rank_):
   for ( j=0, nr=0; j<iSendWorkTaskID.size(); j++ ) {
      itask = iSendWorkTaskID[j];
@@ -806,6 +829,9 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   GIBuffer itrecv(nttmp.data(),nr);
 
 
+#if defined(GGFX_TRACE_OUTPUT)
+    GPP(comm_,serr << "Find indirection array for recv buffers...");
+#endif
   // Find indirection array for recv buffers:
   for ( j=0, nr=0; j<(nl=iSendWorkTaskID.size()); j++ ) {
      if ( iSendWorkTaskID[j] != rank_ ) {
@@ -828,6 +854,9 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   GPP(comm_, serr << "....................doing ASendRecv");
 #endif
 
+#if defined(GGFX_TRACE_OUTPUT)
+    GPP(comm_,serr << "Fill send send back sorted data...");
+#endif
   // Send this work task's data back to tasks that we recvd data from,
   // and gather all works tasks' data in MySharedData:
   bret = GComm::ASendRecv(
@@ -848,6 +877,9 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   if ( vvals != NULLPTR ) delete [] vvals;
   if ( ivals != NULLPTR ) delete [] ivals;
  
+#if defined(GGFX_TRACE_OUTPUT)
+    GPP(comm_,serr << "done.");
+#endif
 
   return TRUE;
 
@@ -1165,10 +1197,6 @@ GBOOL GGFX<T>::doOp(GTVector<T> &u, GGFX_OP op)
   GPP(comm_,serr << "Doing dataExchange...");
 #endif
 
-#if defined(GGFX_TRACE_OUTPUT)
-  GPP(comm_,serr << "Doing dataExchange");
-#endif
-
   GTimerStart("ggfx_doop_exch");
 
   // Perform a exchange of field data:
@@ -1182,7 +1210,7 @@ GBOOL GGFX<T>::doOp(GTVector<T> &u, GGFX_OP op)
   }
 #if defined(GGFX_TRACE_OUTPUT)
   GPP(comm_,serr << "dataExchange done.");
-  GPP(comm_,serr << " recvBuff=" << recvBuff_);
+//GPP(comm_,serr << " recvBuff=" << recvBuff_);
 #endif
   bret = localGS(u, iOpL2RIndices_, nOpL2RIndices_, op, &recvBuff_);
   if ( !bret ) {
@@ -1248,7 +1276,6 @@ template<typename T> GBOOL GGFX<T>::doOp(GTVector<T> &u, GTVector<GSIZET> &iind,
 
   // If no other tasks, return:
   if ( nprocs_ == 1 ) bret = TRUE;
-
 
 #if defined(GGFX_TRACE_OUTPUT)
   std::cout << serr << "Doing dataExchange..." << std::endl;
@@ -1319,7 +1346,7 @@ template<typename T> GBOOL GGFX<T>::doOp(GTVector<T> &u, GTVector<GSIZET> &iind,
 // RETURNS: TRUE on success; else FALSE
 //************************************************************************************
 template<typename T> 
-GBOOL GGFX<T>::localGS(GTVector<T> &qu, GSZMatrix &ilocal, GSZBuffer &nlocal, GGFX_OP op, GTMatrix<T> *qop)
+GBOOL GGFX<T>::localGS(GTVector<T> &qu, GLLMatrix &ilocal, GSZBuffer &nlocal, GGFX_OP op, GTMatrix<T> *qop)
 {
 
   assert( std::is_arithmetic<T>::value && "Illegal template type");
@@ -1474,7 +1501,7 @@ GBOOL GGFX<T>::localGS(GTVector<T> &qu, GSZMatrix &ilocal, GSZBuffer &nlocal, GG
 //************************************************************************************
 template<typename T> 
 GBOOL GGFX<T>::localGS(GTVector<T> &qu, GTVector<GSIZET> &iind, 
-                    GSZMatrix &ilocal, GSZBuffer &nlocal,  GGFX_OP op, GTMatrix<T> *qop)
+                    GLLMatrix &ilocal, GSZBuffer &nlocal,  GGFX_OP op, GTMatrix<T> *qop)
 {
 
   assert( std::is_arithmetic<T>::value && "Illegal template type");
@@ -1713,9 +1740,11 @@ void GGFX<T>::initMult()
 
   mult = 1.0;
 
+#if defined(GGFX_TRACE_OUTPUT)
+ GPP(comm_,serr << " doing doOp...");
+#endif
   // Do DSS sum to find multiplicity:
   doOp(mult, GGFX_OP_SUM);
-
 
   // Compute 1/mult:
 #if defined(GGFX_TRACE_OUTPUT)
@@ -1729,6 +1758,10 @@ void GGFX<T>::initMult()
 #if defined(GGFX_TRACE_OUTPUT)
   GPP(comm_,"GGFX<T>::initMult: mult=" << mult);
   GPP(comm_,"GGFX<T>::initMult: imult=" << imult_);
+#endif
+
+#if defined(GGFX_TRACE_OUTPUT)
+    GPP(comm_,serr << " done.");
 #endif
 
 } // end of method initMult
