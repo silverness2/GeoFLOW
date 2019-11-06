@@ -163,7 +163,7 @@ void GMorton_KeyGen<TK,TF>::setIntegralLen(GTPoint<TF> &inP0, GTPoint<TF> &indX)
 //              be the X,Y values of a point, where x0, ... x7 represent the bits 
 //              0-7 of an 8-bit float, and the same for Y.
 //              Then GMORTON_INTERLEAVE means that the computed key will be
-//                  KEY = y7x7 y6x6 ... x2x2 y1x1 y0x0
+//                  KEY = y7x7 y6x6 ... y2x2 y1x1 y0x0
 //              while for GMORTON_STACKED the key is s.t.:
 //                  KEY = y7y6y5...y2y1y0x7x6...x2x1x0.
 //              with an obvious extension to 3D
@@ -190,8 +190,8 @@ void GMorton_KeyGen<TK,TF>::key(TK id[], GTPoint<TF> point[], GINT  n)
 
   idsz = sizeof(TK);
 
-  nbits = BITSPERBYTE * idsz / gdim - 1;   // no bits per coord. direction
-  nbpc  = BITSPERBYTE * sizeof(ix[0]) - 1; // no. bits per integral coordinate
+  nbits = BITSPERBYTE * idsz / gdim; // - 1;   // no bits per coord. direction
+  nbpc  = BITSPERBYTE * sizeof(ix[0]); // - 1; // no. bits per integral coordinate
   tbits = gdim * nbits;                    // total no. bits for Morton integers
 
 
