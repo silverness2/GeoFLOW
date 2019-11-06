@@ -440,6 +440,7 @@ void GGridIcos::do_elems2d(GINT irank)
   // only for this task:
   gdd_->doDD(ftcentroids_, irank, iind);
 
+
   GTVector<GSIZET> isort;
 
 
