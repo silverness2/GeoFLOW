@@ -1,21 +1,21 @@
 { 
   "pde_name"             : "pde_burgers",
-  "exp_order"            : [16, 1, 1],
+  "exp_order"            : [8, 8, 1],
   "exp_order_type"       : "constant",
   "grid_type"            : "grid_icos",
-  "initstate_block"      : "mystateinit",
+  "initstate_block"      : "initstate_boxnwave",
   "initforce_block"      : "",
   "use_forcing"          : false,
-  "initstate_type"       : "component",
+  "initstate_type"       : "direct",
   "initforce_type"       : "",
   "restart_index"        : 0,
   "benchmark"            : false,
   "do_comparison"        : false,
   "observer_list"        : ["posixio_observer", "global_diag_basic"],
-  "initv1d": {
+  "initvss": {
     "name"     : "simplesum",
     "kdn"      : 2,
-    "kup"      : 40,
+    "kup"      : 60,
     "kpower"   : 0.025,
     "E0"       : 1.0
   },
@@ -30,7 +30,7 @@
     "E0"    : 1.0
   },
   "mystateinit": {
-    "initv"   : "initv1d",
+    "initv"   : "initvss",
     "initps"  : "zero",
     "initc"   : "zero"
   },
@@ -66,15 +66,22 @@
     "u0"     : 1.0,
     "adv_vel": [1.0, 0.0, 0.0]
   },
-  "initstate_nwave": {
-    "x0"    : 0.5,
-    "y0"    : 0.5,
-    "z0"    : 0.5,
-    "ULparm": 1.0,
-    "Re"    : 6.0,
-    "t0"    : 0.01,
-    "planar": true,
-    "prop_dir": [1.0, 0.0, 0.0]
+  "initstate_boxnwave": {
+    "x0"        : [0.3 , 0.5],
+    "y0"        : [0.3 , 0.5],
+    "z0"        : [0.3 , 0.5],
+    "ULparm"    : [1.0 , 1.0],
+    "t0"        : [0.01, 0.04],
+    "planar"    : [true, false],
+    "prop_dir_x": [1.0 , 0.0],
+    "prop_dir_y": [1.0 , 0.0],
+    "prop_dir_z": [1.0 , 0.0]
+  },
+  "initstate_icosnwave": {
+    "latitude0"  : [10,  40 ],
+    "longitude0" : [280, 330],
+    "Uparam"     : 1.0,
+    "t0"         : [0.02, 0.04]
   },
   "pde_burgers": {
     "doheat"      : false,
@@ -98,7 +105,7 @@
   },
   "grid_icos": {
     "grid_name" : "grid_icos",
-    "ilevel"    : 17,
+    "ilevel"    : 9,
     "radius"    : 1.0
   },
   "grid_sphere" : {
@@ -129,7 +136,7 @@
     "grid_name" : "grid_box",
     "xyz0"      : [0.0, 0.0, 0.0],
     "delxyz"    : [1.0, 1.0, 1.0],
-    "num_elems" : [4096, 1, 1],
+    "num_elems" : [32, 32, 1],
     "bdy_x_0"   : "fully_periodic",
     "bdy_x_1"   : "fully_periodic",
     "bdy_y_0"   : "fully_periodic",
@@ -147,10 +154,6 @@
     "variable_dt"      : false,
     "courant"          : 0.04 
   },
-  "dissipation_traits": {
-    "nu"      : 1.0e-4,
-    "nu_type" : "constant"
-  },
   "curlv": {
     "state_index" : [0, 1, 2],
     "names"       : ["omegax", "omegay", "omegaz"],
@@ -160,6 +163,11 @@
     "state_index" : [0, 1, 2],
     "names"       : ["omega"],
     "mathop"      : "curlmag"
+  },
+  "vmag": {
+    "state_index" : [0, 1, 2],
+    "names"       : ["vmag"],
+    "mathop"      : "vmag"
   },
   "gradv": {
     "state_index" : [0],
@@ -176,12 +184,12 @@
     "indirectory"        : "outs",
     "outdirectory"       : "outs",
     "cadence_type"       : "cycle",
-    "cycle_interval"     : 400,
+    "cycle_interval"     : 200,
     "time_interval"      : 0.01,
     "state_index"        : [0, 1, 2],
     "state_names"        : ["u1", "u2", "u3"],
     "grid_names"         : ["xgrid", "ygrid", "zgrid"],
-    "derived_quantities" : ["curlv"],
+    "derived_quantities" : ["vmag", "curlvmag"],
     "time_field_width"   : 6,
     "task_field_width"   : 5,
     "filename_size"      : 2048
@@ -190,14 +198,18 @@
     "observer_name"      : "global_diag_basic",
     "indirectory"        : ".",
     "outdirectory"       : ".",
-    "interval_freq_fact" : 40.0,
-    "treat_as_1d"        : true
+    "interval_freq_fact" : 10.0,
+    "treat_as_1d"        : false
+  },
+  "dissipation_traits": {
+    "nu"      : 1.0e-1,
+    "nu_type" : "constant"
   },
   "time_integration": {
-    "integ_type" : "time",
-    "time_end"   : 0.0101,
-    "cycle_end"  : 20,
-    "dt"         : 1.0e-9
+    "integ_type" : "cycle",
+    "time_end"   : 1.1101,
+    "cycle_end"  : 10,
+    "dt"         : 1.0e-6
   }
 
 }
