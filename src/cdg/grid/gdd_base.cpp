@@ -8,6 +8,7 @@
 // Copyright    : Copyright 2018. Colorado State University. All rights reserved
 // Derived From : none.
 //==================================================================================
+#include "gcomm.hpp"
 #include "gdd_base.hpp"
 
 //**********************************************************************************
@@ -58,7 +59,8 @@ GDD_base::~GDD_base()
 // DESC   : Do simple distribution among tasks by dividing element
 //          representations among tasks as evenly as possible.
 //          
-// ARGS   : x    : coords (e.g. centroids) representing position of each element
+// ARGS   : x    : coords (e.g. centroids) representing position of 
+//                 each element. All tasks see the same array, so it's 'global'
 //          irank: MPI task whose elements are requested
 //          iret : indirection indices into x that give the elements to 
 //                 be 'ownded' by task irank. Size will be set here.
@@ -69,13 +71,24 @@ GSIZET GDD_base::doDD(const GTVector<GTVector<GFTYPE>>&x, GINT irank, GTVector<G
   GString serr = "GDD_base::doDD (1): ";
   assert(irank >=0 && irank < nprocs_ && "Invalid rank");
 
-  GINT nxp  = x[0].size() / nprocs_;
-  GINT nrem = x[0].size() % nprocs_;
+  GSIZET nxp  = x[0].size() / nprocs_;
+  GSIZET nrem = x[0].size() % nprocs_;
+  GSIZET ibeg, iend;
 
-  iret.resize(irank==nprocs_-1 ? nxp+nrem : nxp);
+  // Divide any remainder among tasks:
 
-  // Place any remainder in final task:
-  for ( GSIZET j=0; j<iret.size(); j++ ) iret[j] = irank*nxp + j;
+  if ( irank < nrem ) {
+    ibeg = irank * (nxp + 1);
+    iend = ibeg + nxp;
+    iret.resize(nxp+1);
+  }
+  else {
+    ibeg = nrem * (nxp + 1) + (irank - nrem) * nxp;
+    iend = ibeg + nxp - 1;
+    iret.resize(nxp);
+  }
+  assert((iend-ibeg+1) == iret.size() && "Incompatible number of elements");
+  for ( GSIZET j=0; j<iret.size(); j++ ) iret[j] = ibeg + j;
   
   return iret.size();
   
@@ -99,13 +112,25 @@ GSIZET GDD_base::doDD(const GTVector<GTPoint<GFTYPE>> &x, GINT irank, GTVector<G
   GString serr = "GDD_base::doDD (2): ";
   assert(irank >=0 && irank < nprocs_ && "Invalid rank");
 
-  GINT nxp  = x.size() / nprocs_;
-  GINT nrem = x.size() % nprocs_;
+  GSIZET nxp  = x.size() / nprocs_;
+  GSIZET nrem = x.size() % nprocs_;
+  GSIZET ibeg, iend;
 
-  iret.resize(irank==nprocs_-1 ? nxp+nrem : nxp);
 
-  // Place any remainder in final task:
-  for ( GSIZET j=0; j<iret.size(); j++ ) iret[j] = irank*nxp + j;
+  // Divide any remainder among tasks:
+  
+  if ( irank < nrem ) {
+    ibeg = irank * (nxp + 1);
+    iend = ibeg + nxp;
+    iret.resize(nxp+1);
+  }
+  else {
+    ibeg = nrem * (nxp + 1) + (irank - nrem) * nxp;
+    iend = ibeg + nxp - 1;
+    iret.resize(nxp);
+  }
+  assert((iend-ibeg+1) == iret.size() && "Incompatible number of elements");
+  for ( GSIZET j=0; j<iret.size(); j++ ) iret[j] = ibeg + j;
   
   return iret.size();
   

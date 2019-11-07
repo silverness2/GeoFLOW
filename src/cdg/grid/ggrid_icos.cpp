@@ -285,12 +285,13 @@ void GGridIcos::lagrefine()
 
   // Compute centroids of all triangles:
   ftcentroids_.clear();
+  ftcentroids_.resize(tmesh_.size());
   GFTYPE fact = 1.0/3.0;
   for ( j=0; j<tmesh_.size(); j++ ) { // for each triangle
     a =  tmesh_[j].v1 + tmesh_[j].v2;
     a += tmesh_[j].v3;
     a *= fact;
-    ftcentroids_.push_back(a);
+    ftcentroids_[j] = a;
   }
 
 } // end of method lagrefine
@@ -439,6 +440,7 @@ void GGridIcos::do_elems2d(GINT irank)
   // Get indirection indices to create elements
   // only for this task:
   gdd_->doDD(ftcentroids_, irank, iind);
+
 
   GTVector<GSIZET> isort;
 

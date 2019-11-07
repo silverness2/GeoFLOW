@@ -79,8 +79,11 @@ GBOOL GInitStateFactory<EquationType>::set_by_direct(const PropertyTree& ptree, 
   else if ( "initstate_boxpergauss"       == sinit ) {
     bret = ginitstate::impl_boxpergauss     (ptree, sinit, grid, time, utmp, ub, u);
   }
-  else if ( "initstate_nwave"             == sinit ) {
+  else if ( "initstate_boxnwave"          == sinit ) {
     bret = ginitstate::impl_boxnwaveburgers (ptree, sinit, grid, time, utmp, ub, u);
+  }
+  else if ( "initstate_icosnwave"          == sinit ) {
+    bret = ginitstate::impl_icosnwaveburgers (ptree, sinit, grid, time, utmp, ub, u);
   }
   else                                        {
     assert(FALSE && "Specified state initialization method unknown");
@@ -232,12 +235,16 @@ GBOOL GInitStateFactory<EquationType>::doinitv(const PropertyTree &ptree, GStrin
       bret = ginitv::impl_abc_box (ptree, sconfig, grid, time, utmp, ub, u);
     }
   } 
+  else if ( "simplesum1d" == sinit ) { // simple-wave sum init for 1d approx
+      assert( icos == NULLPTR && "simplesum1d allowed only for box grid");
+      bret = ginitv::impl_simpsum1d_box(ptree, sconfig, grid, time, utmp, ub, u);
+  }
   else if ( "simplesum" == sinit ) { // simple-wave sum init
     if      ( icos != NULLPTR ) {
-      bret = ginitv::impl_simsum_icos(ptree, sconfig, grid, time, utmp, ub, u);
+      bret = ginitv::impl_simpsum_icos(ptree, sconfig, grid, time, utmp, ub, u);
     }
     else  {
-      bret = ginitv::impl_simsum_box (ptree, sconfig, grid, time, utmp, ub, u);
+      bret = ginitv::impl_simpsum_box (ptree, sconfig, grid, time, utmp, ub, u);
     }
   } 
   else if ( "random" == sinit ) {

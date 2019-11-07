@@ -134,9 +134,12 @@ int main(int argc, char **argv)
     pIntegrator_ = IntegratorFactory<MyTypes>::build(ptree_, pEqn_, pMixer, pObservers, *grid_);
     pIntegrator_->get_traits().cycle = icycle;
 
+GPP(comm_,serr << "nelems_local=" << grid_->nelems());
+
     //***************************************************
     // Initialize state:
     //***************************************************
+    GComm::Synch();
     EH_MESSAGE("geoflow: Initializing state...");
     if ( itindex == 0 ) { // start new run
       icycle = 0; t = 0.0; 
@@ -152,6 +155,7 @@ int main(int argc, char **argv)
     // Do time integration (output included
     // via observer(s)):
     //***************************************************
+    GComm::Synch();
     EH_MESSAGE("geoflow: do time stepping...");
     GTimerReset();
     GTimerStart("time_loop");
@@ -671,14 +675,16 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
   }
 
   delta  = grid.minnodedist();
-  dX     = 0.1*delta;
+  dX     = 0.05*delta;
   xnodes = &grid.xNodes();
   glob_indices.resize(grid.ndof());
 
   // Integralize *all* internal nodes
   // using Morton indices:
+//gmorton.setDoLog(TRUE);
+  gmorton.setType(GMORTON_STACKED);
+//gmorton.setType(GMORTON_INTERLEAVE);
   gmorton.setIntegralLen(P0,dX);
-
   gmorton.key(glob_indices, *xnodes);
 
   // Initialize gather/scatter operator:

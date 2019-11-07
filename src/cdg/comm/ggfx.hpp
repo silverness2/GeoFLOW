@@ -61,8 +61,8 @@ private:
  
 
                      // doOp-specific methods:
-                     GBOOL localGS(GTVector<T> &u, GSZMatrix  &ilocal, GSZBuffer &nlocal, GGFX_OP op, GTMatrix<T> *qop=NULLPTR);
-                     GBOOL localGS(GTVector<T> &u, GTVector<GSIZET> &iind, GSZMatrix  &ilocal, GSZBuffer &nlocal, GGFX_OP op, GTMatrix<T> *qop=NULLPTR);
+                     GBOOL localGS(GTVector<T> &u, GLLMatrix  &ilocal, GSZBuffer &nlocal, GGFX_OP op, GTMatrix<T> *qop=NULLPTR);
+                     GBOOL localGS(GTVector<T> &u, GTVector<GSIZET> &iind, GLLMatrix  &ilocal, GSZBuffer &nlocal, GGFX_OP op, GTMatrix<T> *qop=NULLPTR);
                      GBOOL dataExchange(GTVector<T> &u );
                      GBOOL dataExchange(GTVector<T> &u, GTVector<GSIZET> &iind );
 
@@ -81,13 +81,13 @@ GNODEID            maxNodeVal_   ;  // Node value dynamical range
 GNODEID            maxNodes_     ;  // total number of nodes distributed among all procs
 GNIDMatrix         gBinBdy_      ;  // global bin bdy ranges for each task [0,nporocs_-1]
 GIBuffer           iOpL2RTasks_  ;  // task ids to send op data to, and recv from
-GSZMatrix          iOpL2RIndices_;  // matrix with send/recv data for each off-task shared node
+GLLMatrix          iOpL2RIndices_;  // matrix with send/recv data for each off-task shared node
 GSZBuffer          nOpL2RIndices_;  // number shared nodes to snd/rcv for each task
 GIBuffer           iOpR2LTasks_  ;  // task ids in order of receive
 GTMatrix<GTVector<GSIZET>>
                    iOpR2LIndices_;  // matrix with send/recv data for each off-task shared node
 GTMatrix<GSIZET>   nOpR2LMult_   ;  // number shared nodes to snd/rcv for each task, and each shared node
-GSZMatrix          iOpL2LIndices_;  // matrix with local indices pointing to shared nodes
+GLLMatrix          iOpL2LIndices_;  // matrix with local indices pointing to shared nodes
 GSZBuffer          nOpL2LIndices_;  // number valid columns in each row of iOpLoIndices_
 GTMatrix<T>        sendBuff_     ;  // send buffer
 GTMatrix<T>        recvBuff_     ;  // recv buffer
