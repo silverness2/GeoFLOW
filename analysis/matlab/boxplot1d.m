@@ -62,7 +62,7 @@ for itask = 0:ntasks-1
 
   % Read node coords:
   for j=1:2
-    fname = sprintf('%s.%05d.out', scoord{j}, itask)
+    fname = sprintf('%s.%05d.out', scoord{j}, itask);
     [x{j} dim nelems porder gtype icycle time] = rgeoflow(fname, 8, 'ieee-le');
   end
   if ( dim ~= 2 )
@@ -89,7 +89,7 @@ for itask = 0:ntasks-1
     ib  = jindex*NN(1) + 1; % index local to elem 
     ie  = ib + NN(1) - 1;   % index local to elem
      
-    ibg = igstart + (n-1)*NN(1)    ; % beg index in global array
+    ibg = igstart + (n-1)*NN(1);     % beg index in global array
     ieg = ibg + NN(1) - 1;           % end index in global array
 
     if ieg > nglobal
