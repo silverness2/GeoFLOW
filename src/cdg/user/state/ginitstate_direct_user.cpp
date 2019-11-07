@@ -149,8 +149,7 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
   GFTYPE           lat, lon;
   GFTYPE           efact, sum, tfact, xfact;
   GFTYPE           x, y, z;
-  GTVector<GFTYPE>            t0, xx(GDIM);
-  GTVector<GTVector<GFTYPE>*> usph(GDIM);
+  GTVector<GFTYPE>            t0, xx(GDIM+1);
   GTVector<GTPoint<GFTYPE>>   r0(GDIM+1);
   std::vector<GFTYPE>         lat0, lon0, st0;
 
@@ -165,9 +164,6 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
 
 
   nxy = (*xnodes)[0].size(); // same size for x, y, z
-
-  usph[0] = utmp[0];
-  usph[1] = utmp[1];
 
   // From Whitham's book, in 1d:
   // u(x,t) = (x/t) [ 1 + sqrt(t/t0) (e^Re - 1)^-1 exp(x^2/(4 nu t))i ]^-1
@@ -206,7 +202,7 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
     r0  [ilump].x3  = r*sin(lat0[ilump]);
   }
 
-//for ( i=0; i<GDIM; i++ ) *usph[i] = 0.0;
+  for ( i=0; i<GDIM+1; i++ ) *u[i] = 0.0;
    
   // Initialize each lump:
   for ( GINT ilump=0; ilump<lat0.size(); ilump++) {
@@ -238,10 +234,11 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
   GMTK::constrain2sphere(grid, u);
 
   bret = TRUE;
-  for ( auto j=0; j<u.size(); j++ ) {
+  for ( j=0; j<GDIM+1; j++ ) {
      bret = bret && u[j]->isfinite();
   }
 
+  assert(bret && "Initial conditions not finite!");
 
 
   return bret;
