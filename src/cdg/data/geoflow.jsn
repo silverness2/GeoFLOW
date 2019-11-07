@@ -2,13 +2,13 @@
   "pde_name"             : "pde_burgers",
   "exp_order"            : [8, 8, 1],
   "exp_order_type"       : "constant",
-  "grid_type"            : "grid_icos",
+  "grid_type"            : "grid_box",
   "initstate_block"      : "initstate_boxnwave",
   "initforce_block"      : "",
   "use_forcing"          : false,
   "initstate_type"       : "direct",
   "initforce_type"       : "",
-  "restart_index"        : 0,
+  "restart_index"        : 22,
   "benchmark"            : false,
   "do_comparison"        : false,
   "observer_list"        : ["posixio_observer", "global_diag_basic"],
@@ -67,14 +67,14 @@
     "adv_vel": [1.0, 0.0, 0.0]
   },
   "initstate_boxnwave": {
-    "x0"        : [0.3 , 0.5],
-    "y0"        : [0.3 , 0.5],
-    "z0"        : [0.3 , 0.5],
-    "ULparm"    : [1.0 , 1.0],
-    "t0"        : [0.01, 0.04],
+    "x0"        : [0.3 , 0.6],
+    "y0"        : [0.3 , 0.6],
+    "z0"        : [0.3 , 0.6],
+    "ULparam"   : [1.0 , 1.0],
+    "t0"        : [0.005, 0.005],
     "planar"    : [true, false],
     "prop_dir_x": [1.0 , 0.0],
-    "prop_dir_y": [1.0 , 0.0],
+    "prop_dir_y": [2.0 , 0.0],
     "prop_dir_z": [1.0 , 0.0]
   },
   "initstate_icosnwave": {
@@ -160,12 +160,12 @@
     "mathop"      : "curl"
   },
   "curlvmag": {
-    "state_index" : [0, 1, 2],
+    "state_index" : [0, 1],
     "names"       : ["omega"],
     "mathop"      : "curlmag"
   },
   "vmag": {
-    "state_index" : [0, 1, 2],
+    "state_index" : [0, 1],
     "names"       : ["vmag"],
     "mathop"      : "vmag"
   },
@@ -186,7 +186,7 @@
     "cadence_type"       : "cycle",
     "cycle_interval"     : 200,
     "time_interval"      : 0.01,
-    "state_index"        : [0, 1, 2],
+    "state_index"        : [0, 1],
     "state_names"        : ["u1", "u2", "u3"],
     "grid_names"         : ["xgrid", "ygrid", "zgrid"],
     "derived_quantities" : ["vmag", "curlvmag"],
@@ -206,10 +206,10 @@
     "nu_type" : "constant"
   },
   "time_integration": {
-    "integ_type" : "cycle",
-    "time_end"   : 1.1101,
+    "integ_type" : "time",
+    "time_end"   : 0.020,
     "cycle_end"  : 10,
-    "dt"         : 1.0e-6
+    "dt"         : 2.0e-6
   }
 
 }
