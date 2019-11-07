@@ -229,11 +229,13 @@ NOTE: global ids are labeled starting from left on bottom-most
 
 
 term:
-    if ( gerrcode != 0 ) {
-      GPP(comm,serr << " Error: code=" << errcode);
-    }
-    else {
-      GPP(comm,serr << "     Success!");
+    if ( myrank == 0 ) {
+      if ( gerrcode != 0 ) {
+        cout << serr << "  Error: code=" << gerrcode << endl;
+      }
+      else {
+        cout << serr << "     Success!" << endl;
+      }
     }
 
     GComm::TermComm();
