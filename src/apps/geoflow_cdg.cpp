@@ -638,12 +638,14 @@ void update_boundary(const Time &t, State &u, State &ub)
 void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
 {
   GString                        serr = "init_ggfx: ";
-  GFTYPE                         delta;
+  GFTYPE                         delta[3], ldelta[3];
   GFTYPE                         rad;
   GMorton_KeyGen<GNODEID,GFTYPE> gmorton;
   GTPoint<GFTYPE>                dX, porigin, P0;
   GTVector<GNODEID>              glob_indices;
   GTVector<GTVector<GFTYPE>>    *xnodes;
+  State                          cart(3);
+  State                          xkey(3);
   GString                        sgrid;
   std::vector<GFTYPE>            pstd;
   PropertyTree                   gtree;
@@ -651,21 +653,35 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
   sgrid = ptree.getValue<GString>("grid_type");
   gtree = ptree.getPropertyTree(sgrid);
 
+  xnodes = &grid.xNodes();
   if ( sgrid == "grid_box" ) {
-    pstd = gtree.getArray<GFTYPE>("xyz0");
-    P0   = pstd;
+    pstd   = gtree.getArray<GFTYPE>("xyz0");
+    P0     = pstd;
+    for ( auto j=0; j<xnodes->size(); j++ ) xkey[j] = &(*xnodes)[j];
+    dX     = 0.05*grid.minnodedist();
   }
   if ( sgrid == "grid_icos" ) {
-    rad   = gtree.getValue<GFTYPE>("radius");
-    P0.x1 = -rad ;
-    P0.x2 = -rad ;
-    P0.x3 = -rad ;
+//  rad   = gtree.getValue<GFTYPE>("radius");
+    P0.x1 = 0.0 ;
+    P0.x2 = 2.0*PI;
+    for ( auto j=0; j<xnodes->size(); j++ ) cart[j] = &(*xnodes)[j];
+    for ( auto j=0; j<2; j++ ) xkey[j] = utmp_[j];
+    GMTK::cart2latlon(cart, xkey);
+    for ( auto j=0; j<2; j++ ) ldelta[j] = xkey[j]->amindiff();
+    GComm::Allreduce(ldelta, delta, 2, T2GCDatatype<GFTYPE>(), GC_OP_MIN, comm_);
+    dX[0]      = 0.25*delta[0]; dX[1] = 0.25*delta[1];
   }
   if ( sgrid == "grid_sphere" ) {
-    rad   = gtree.getValue<GFTYPE>("radiuso");
-    P0.x1 = -rad ;
-    P0.x2 = -rad ;
-    P0.x3 = -rad ;
+    rad   = gtree.getValue<GFTYPE>("radiusi");
+    P0.x1 = 0.0; // lat starting point
+    P0.x2 = 0.0; // long starting point
+    P0.x3 = rad; // radius starting point
+    for ( auto j=0; j<xnodes->size(); j++ ) cart[j] = &(*xnodes)[j];
+    for ( auto j=0; j<3; j++ ) xkey[j] = utmp_[j];
+    GMTK::cart2spherical(cart, xkey);
+    for ( auto j=0; j<3; j++ ) ldelta[j] = xkey[j]->amindiff();
+    GComm::Allreduce(ldelta, delta, 3, T2GCDatatype<GFTYPE>(), GC_OP_MIN, comm_);
+    for ( auto j=0; j<3; j++ ) dX[j] = 0.25*delta[j];
   }
 
   // First, periodize coords if required to, 
@@ -674,9 +690,6 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
     static_cast<GGridBox*>(&grid)->periodize();
   }
 
-  delta  = grid.minnodedist();
-  dX     = 0.05*delta;
-  xnodes = &grid.xNodes();
   glob_indices.resize(grid.ndof());
 
   // Integralize *all* internal nodes
@@ -685,7 +698,7 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
   gmorton.setType(GMORTON_STACKED);
 //gmorton.setType(GMORTON_INTERLEAVE);
   gmorton.setIntegralLen(P0,dX);
-  gmorton.key(glob_indices, *xnodes);
+  gmorton.key(glob_indices, xkey);
 
   // Initialize gather/scatter operator:
   GBOOL bret;
