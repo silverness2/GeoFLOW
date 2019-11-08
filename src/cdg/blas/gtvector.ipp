@@ -1168,13 +1168,13 @@ GTVector<T>::amax()
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : amaxdiff
-// DESC   : Find max of absolute sequential differences
+// DESC   : Find max of absolute sequential differences > 0
 // ARGS   : none.
 // RETURNS: T-type max
 //**********************************************************************************
 template<class T>
 T
-GTVector<T>::amaxdiff()
+GTVector<T>::amaxdiff(T tiny)
 {
   assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
 
@@ -1183,7 +1183,7 @@ GTVector<T>::amaxdiff()
 
   for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end()-1; j+=this->gindex_.stride() ) {
     diff = fabs(this->data_[j+1] - this->data_[j]);
-    fm = MAX(fm,diff);
+    if ( diff > tiny ) fm = MAX(fm,diff);
   }
 
   return fm;
@@ -1292,13 +1292,13 @@ GTVector<T>::amin()
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : amindiff
-// DESC   : Find min of absolute sequential differences
+// DESC   : Find min of absolute sequential differences > 0
 // ARGS   : none.
 // RETURNS: T-type min
 //**********************************************************************************
 template<class T>
 T
-GTVector<T>::amindiff()
+GTVector<T>::amindiff(T tiny)
 {
   assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
 
@@ -1307,7 +1307,7 @@ GTVector<T>::amindiff()
 
   for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end()-1; j+=this->gindex_.stride() ) {
     diff = fabs(this->data_[j+1] - this->data_[j]);
-    fm = MIN(fm,diff);
+    if ( diff > tiny ) fm = MIN(fm,diff);
   }
 
   return fm;
