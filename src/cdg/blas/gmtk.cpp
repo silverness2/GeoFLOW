@@ -2910,7 +2910,7 @@ void cart2latlon(const GTVector<GTVector<GFTYPE>*> &cart, GTVector<GTVector<GFTY
 // DESC   : Convert Cartesian position vectors to radius-lat-longcoords
 //
 // ARGS     cart    : x, y, z coords; only first 3 vectors are read
-//          rlatlon : corresponding vectors of radius/lat/log; only first 3 
+//          rlatlon : corresponding vectors of radius/lat/lon; only first 3 
 //                   vectors are written
 // RETURNS: none
 //**********************************************************************************
