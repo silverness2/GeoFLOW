@@ -50,6 +50,12 @@ public:
 			    	  min_(min_corner), max_(max_corner) {
 	}
 
+	void resize(const Coordinate& min_corner,
+			    const Coordinate& max_corner){
+		min_ = min_corner;
+		max_ = max_corner;
+	}
+
 	template<typename MortonIndex>
 	void generate(const Coordinate& coords, MortonIndex& index){
 		assert(min_.size() == max_.size());
