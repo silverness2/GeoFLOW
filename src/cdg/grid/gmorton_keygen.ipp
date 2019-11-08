@@ -138,11 +138,16 @@ void GMorton_KeyGen<TK,TF>::setIntegralLen(GTPoint<TF> &inP0, GTPoint<TF> &indX)
 
   delmax_ = std::numeric_limits<TF>::min();
 
+  P0_.resize(inP0.dim());
+  dX_.resize(inP0.dim());
   P0_ = inP0;
   dX_ = indX;
   for ( GSIZET i=0; i<P0_.dim(); i++ ) {
-    idX_   [i] = 1.0 / dX_[i];
+    if ( dX_[i] <= 0 ) {
+      cout << "GMorton_KeyGen<TK,TF>::setIntegralLen: dX=" << dX_ << endl;
+    }
     assert(dX_[i] > 0.0 && "Invalid integral length scale");
+    idX_   [i] = 1.0 / dX_[i];
     delmax_    = MAX(delmax_,dX_[i]);
     dmin       = MIN(dmin,indX[i]);
   }
