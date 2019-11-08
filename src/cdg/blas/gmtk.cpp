@@ -2763,7 +2763,7 @@ void vsphere2cart(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &vsph, GVectorT
     if ( vtype == GVECTYPE_PHYS ) { // vsph are physical components
       for ( GSIZET j=0; j<nxy; j++ ) {
         x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-        r     = x*x + y*y + z*z;
+        r     = sqrt(x*x + y*y + z*z);
         theta = asin(z/r);
         phi   = atan2(y,x);
         (*vcart[0])[j] = -(*vsph[0])[j]*  sin(theta)*cos(phi) 
@@ -2776,7 +2776,7 @@ void vsphere2cart(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &vsph, GVectorT
     else if ( vtype == GVECTYPE_COVAR ) { // vsph are covar. components
       for ( GSIZET j=0; j<nxy; j++ ) {
         x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-        r     = x*x + y*y + z*z;
+        r     = sqrt(x*x + y*y + z*z);
         theta = asin(z/r);
         phi   = atan2(y,x);
         vthcontra  = (*vsph[0])[j];
@@ -2794,7 +2794,7 @@ void vsphere2cart(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &vsph, GVectorT
     else if ( vtype == GVECTYPE_CONTRAVAR ) { // vsph are contravar. components
       for ( GSIZET j=0; j<nxy; j++ ) {
         x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-        r     = x*x + y*y + z*z;
+        r     = sqrt(x*x + y*y + z*z);
         theta = asin(z/r);
         phi   = atan2(y,x);
         vthcontra  = (*vsph[0])[j];
@@ -2812,7 +2812,7 @@ void vsphere2cart(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &vsph, GVectorT
     if      ( vtype == GVECTYPE_PHYS ) {
       for ( GSIZET j=0; j<nxy; j++ ) {
         x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-        r     = x*x + y*y + z*z;
+        r     = sqrt(x*x + y*y + z*z);
         theta = asin(z/r);
         phi   = atan2(y,x);
         gtt        = r; gpp = r*cos(theta);
@@ -2831,7 +2831,7 @@ void vsphere2cart(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &vsph, GVectorT
     else if ( vtype == GVECTYPE_COVAR ) {
       for ( GSIZET j=0; j<nxy; j++ ) {
         x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-        r     = x*x + y*y + z*z;
+        r     = sqrt(x*x + y*y + z*z);
         theta = asin(z/r);
         phi   = atan2(y,x);
         gtt        = r*r; gpp = pow(r*cos(theta),2);
@@ -2850,7 +2850,7 @@ void vsphere2cart(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &vsph, GVectorT
     else if ( vtype == GVECTYPE_CONTRAVAR ) {
       for ( GSIZET j=0; j<nxy; j++ ) {
         x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-        r     = x*x + y*y + z*z;
+        r     = sqrt(x*x + y*y + z*z);
         theta = asin(z/r);
         phi   = atan2(y,x);
         vthcontra  = (*vsph[0])[j];
@@ -2868,6 +2868,74 @@ void vsphere2cart(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &vsph, GVectorT
   }
 
 } // end of method vsphere2cart
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : cart2latlon 
+// DESC   : Convert Cartesian position vectors to lat long
+//
+// ARGS   : grid   : Grid. If not of the correct type, nothing is done
+//          cart   : x, y, z coords; only first 3 vectors are read
+//          latlon : corresponding vectors of lat/log; only first 2 vectors 
+//                   are written
+// RETURNS: none
+//**********************************************************************************
+template<>
+void cart2latlon(const GTVector<GTVector<GFTYPE>*> &cart, GTVector<GTVector<GFTYPE>*> &latlon)
+{
+
+  assert( cart.size() >= 3 && latlon.size() >= 2 && "Must have correct array sizes");
+
+
+  GSIZET           nxy = cart[0]->size();
+  GFTYPE           x, y, z;
+  GFTYPE           phi, r, theta;
+
+  for ( GSIZET j=0; j<nxy; j++ ) {
+    x = (*cart[0])[j]; y = (*cart[1])[j]; z = (*cart[2])[j];
+    r     = sqrt(x*x + y*y + z*z);
+    theta = asin(z/r);
+    phi   = atan2(y,x);
+    (*latlon[0])[j] = theta;
+    (*latlon[1])[j] = phi;
+  }
+
+} // end of method cart2latlon
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : cart2spherical
+// DESC   : Convert Cartesian position vectors to radius-lat-longcoords
+//
+// ARGS     cart    : x, y, z coords; only first 3 vectors are read
+//          rlatlon : corresponding vectors of radius/lat/log; only first 3 
+//                   vectors are written
+// RETURNS: none
+//**********************************************************************************
+template<>
+void cart2spherical(const GTVector<GTVector<GFTYPE>*> &cart, GTVector<GTVector<GFTYPE>*> &rlatlon)
+{
+
+  assert( cart.size() >= 3 && rlatlon.size() >= 3 && "Must have correct array sizes");
+
+
+  GSIZET           nxy = cart[0]->size();
+  GFTYPE           x, y, z;
+  GFTYPE           phi, r, theta;
+
+  for ( GSIZET j=0; j<nxy; j++ ) {
+    x = (*cart[0])[j]; y = (*cart[1])[j]; z = (*cart[2])[j];
+    r     = sqrt(x*x + y*y + z*z);
+    theta = asin(z/r);
+    phi   = atan2(y,x);
+    (*rlatlon[0])[j] = r;
+    (*rlatlon[1])[j] = theta;
+    (*rlatlon[2])[j] = phi;
+  }
+
+} // end of method cart2spherical
 
 
 //**********************************************************************************
