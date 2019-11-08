@@ -22,7 +22,7 @@ int main() {
 
 	{ // Array Test
 
-		// Create MortonIndexer
+		// Create MortonIndexer with limits
 		using Coordinate = std::array<double,3>;
 		Coordinate min_box = {-10.0, -10.0, -10.0};
 		Coordinate max_box = {+10.0, +10.0, +10.0};

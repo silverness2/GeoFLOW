@@ -10,6 +10,7 @@
 
 #include <bitset>
 #include <cassert>
+#include <limits>
 
 
 namespace geoflow {
@@ -48,17 +49,19 @@ public:
 	MortonIndexer(const Coordinate& min_corner,
 			      const Coordinate& max_corner) :
 			    	  min_(min_corner), max_(max_corner) {
+		assert(min_.size() == max_.size());
 	}
 
 	void resize(const Coordinate& min_corner,
 			    const Coordinate& max_corner){
+		assert(min_corner.size() == max_corner.size());
 		min_ = min_corner;
 		max_ = max_corner;
 	}
 
-	template<typename MortonIndex>
-	void generate(const Coordinate& coords, MortonIndex& index){
-		assert(min_.size() == max_.size());
+	template<typename MortonIndexType>
+	void generate(const Coordinate& coords, MortonIndexType& index){
+		assert(min_.size() == coords.size());
 
 		size_type  id;
 		value_type mid;
@@ -93,11 +96,12 @@ private:
 
 namespace std {
 
-/** MortonIndex less than comparison
+/** MortonIndex less than operator
  */
 template<std::size_t N>
 bool operator<(const std::bitset<N>& a, const std::bitset<N>& b){
-	for(std::size_t i = 0; i < a.size(); ++i){
+	const std::size_t sz = a.size();
+	for(std::size_t i = 0; i < sz; ++i){
 		if(a[i] != b[i]) return b[i];
 	}
 	return false;
