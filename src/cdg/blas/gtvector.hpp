@@ -142,6 +142,8 @@ template <class T> class GTVector
     #pragma acc routine vector
     T amax();
     #pragma acc routine vector
+    T amaxdiff();
+    #pragma acc routine vector
     T maxn(GSIZET n);
     #pragma acc routine vector
     GSIZET imax();
@@ -149,6 +151,8 @@ template <class T> class GTVector
     T min();
     #pragma acc routine vector
     T amin();
+    #pragma acc routine vector
+    T amindiff();
     #pragma acc routine vector
     T minn(GSIZET n);
     #pragma acc routine vector

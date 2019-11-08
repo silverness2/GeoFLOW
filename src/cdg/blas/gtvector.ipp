@@ -1167,6 +1167,32 @@ GTVector<T>::amax()
 
 //**********************************************************************************
 //**********************************************************************************
+// METHOD : amaxdiff
+// DESC   : Find max of absolute sequential differences
+// ARGS   : none.
+// RETURNS: T-type max
+//**********************************************************************************
+template<class T>
+T
+GTVector<T>::amaxdiff()
+{
+  assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
+
+  T diff;
+  T fm = std::numeric_limits<T>::min();
+
+  for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end()-1; j+=this->gindex_.stride() ) {
+    diff = fabs(this->data_[j+1] - this->data_[j]);
+    fm = MAX(fm,diff);
+  }
+
+  return fm;
+
+} // end amaxdiff
+
+
+//**********************************************************************************
+//**********************************************************************************
 // METHOD : minn
 // DESC   : Find max of first n elements
 // ARGS   : n : num elements past gindex.beg to check
@@ -1261,6 +1287,32 @@ GTVector<T>::amin()
   return fm;
 
 } // end amin
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : amindiff
+// DESC   : Find min of absolute sequential differences
+// ARGS   : none.
+// RETURNS: T-type min
+//**********************************************************************************
+template<class T>
+T
+GTVector<T>::amindiff()
+{
+  assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
+
+  T diff;
+  T fm = std::numeric_limits<T>::max();
+
+  for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end()-1; j+=this->gindex_.stride() ) {
+    diff = fabs(this->data_[j+1] - this->data_[j]);
+    fm = MIN(fm,diff);
+  }
+
+  return fm;
+
+} // end amindiff
 
 
 //**********************************************************************************
