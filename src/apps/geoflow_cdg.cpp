@@ -669,8 +669,8 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
     dX     = 0.05*grid.minnodedist();
   }
   if ( sgrid == "grid_icos" ) {
-    P0.x1 = 0.0 ;
-    P0.x2 = 2.0*PI;
+    P0.x1 = 0.0 ; // lat starting point
+    P0.x2 = 0.0 ; // lon starting point
     cart.resize(xnodes->size());   
     xkey.resize(GDIM);   
     for ( auto j=0; j<xnodes->size(); j++ ) cart[j] = &(*xnodes)[j];
