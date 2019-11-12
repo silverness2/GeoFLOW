@@ -72,7 +72,7 @@ void gio_write_state(GIOTraits &traits, GGrid &grid,
               svars[j].c_str(), traits.index, myrank);
       assert(iu[j] >= 0 && iu[j] < u.size() && "Invalid state component index");
       fname_.assign(cfname_);
-      gio_write(traits, fname_, *u[iu[j]]);
+      gio_write<GFTYPE>(traits, fname_, *u[iu[j]]);
     }
 
 } // end, gio_write_state
@@ -125,8 +125,22 @@ void gio_write_grid(GIOTraits &traits, GGrid &grid, const GTVector<GString> &sva
     for ( auto j=0; j<xnodes->size(); j++ ) {
       sprintf(cfname_, format.str().c_str(), traits.dir.c_str(), svars[j].c_str(),  myrank);
       fname_.assign(cfname_);
-      gio_write(traits, fname_, (*xnodes)[j]);
+      gio_write<GFTYPE>(traits, fname_, (*xnodes)[j]);
     }
+
+#if 1
+    // Write multiplicity:
+    sprintf(cfname_, format.str().c_str(), traits.dir.c_str(), "mult",  myrank);
+    fname_.assign(cfname_);
+    gio_write<GFTYPE>(traits, fname_, grid.get_ggfx().get_mult());
+
+    // Write (float) glob indices:
+    sprintf(cfname_, format.str().c_str(), traits.dir.c_str(), "glob_index",  myrank);
+    fname_.assign(cfname_);
+    gio_write<GNODEID>(traits, fname_, grid.get_ggfx().glob_index_);
+    
+#endif
+
 
 } // end, gio_write_grid
 
@@ -215,7 +229,7 @@ void gio_restart(const geoflow::tbox::PropertyTree& ptree, GINT igrid,
       else          // use state format
         sprintf(cfname_, format.str().c_str(), traits.dir.c_str(), stdlist[j].c_str(), itindex, myrank);
       fname_.assign(cfname_);
-      nr = gio_read(traits, fname_, *u[j]);
+      nr = gio_read<GFTYPE>(traits, fname_, *u[j]);
     }
 
     if ( igrid ) { // needed for grid restart
@@ -251,7 +265,8 @@ void gio_restart(const geoflow::tbox::PropertyTree& ptree, GINT igrid,
 //          time    : evol. time
 // RETURNS: none
 //**********************************************************************************
-GSIZET gio_write(GIOTraits &traits, GString fname, const GTVector<GFTYPE> &u) 
+template<typename T>
+GSIZET gio_write(GIOTraits &traits, GString fname, const GTVector<T> &u) 
 {
 
     GString  serr ="gio_write: ";
@@ -283,7 +298,7 @@ GSIZET gio_write(GIOTraits &traits, GString fname, const GTVector<GFTYPE> &u)
     fwrite(&traits.time        , sizeof(GFTYPE),    1, fp); // time stamp
 
     // Write field data:
-    nb = fwrite(u.data(), sizeof(GFTYPE), u.size(), fp);
+    nb = fwrite(u.data(), sizeof(T), u.size(), fp);
     fclose(fp);
 
     return nb;
@@ -301,7 +316,8 @@ GSIZET gio_write(GIOTraits &traits, GString fname, const GTVector<GFTYPE> &u)
 //          u       : field to output; resized if required
 // RETURNS: none
 //**********************************************************************************
-GSIZET gio_read(GIOTraits &traits, GString fname, GTVector<GFTYPE> &u)
+template<typename T>
+GSIZET gio_read(GIOTraits &traits, GString fname, GTVector<T> &u)
 {
 
     GString serr = "gio_read: ";
@@ -337,7 +353,7 @@ GSIZET gio_read(GIOTraits &traits, GString fname, GTVector<GFTYPE> &u)
     }
 
     u.resize(nd);
-    nb = fread(u.data(), sizeof(GFTYPE), nd, fp);
+    nb = fread(u.data(), sizeof(T), nd, fp);
 
     fclose(fp);
 
