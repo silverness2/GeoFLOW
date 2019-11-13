@@ -195,7 +195,7 @@ void GMorton_KeyGen<TK,TF>::key(TK id[], GTPoint<TF> point[], GINT  n)
 
   idsz = sizeof(TK);
 
-  nbits = BITSPERBYTE * idsz / gdim     - 1; // no bits per coord. direction
+  nbits = BITSPERBYTE * idsz / gdim; // - 1; // no bits per coord. direction
 //nbpc  = BITSPERBYTE * sizeof(ix[0])   - 1; // no. bits per integral coordinate
   tbits = gdim * nbits;                      // total no. bits for Morton integers
 
