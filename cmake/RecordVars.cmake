@@ -25,7 +25,7 @@ execute_process(
     OUTPUT_VARIABLE
         GIT_SHORT_HASH
 )
-string(REGEX REPLACE "\n$" "" GIT_SHORT_HASH "${GIT_SHORT_HASH}")
+string(REGEX REPLACE "\n" "" GIT_SHORT_HASH "${GIT_SHORT_HASH}")
 
 execute_process(
 	COMMAND
@@ -35,7 +35,7 @@ execute_process(
     OUTPUT_VARIABLE
         GIT_LONG_HASH
 )
-string(REGEX REPLACE "\n$" "" GIT_LONG_HASH "${GIT_LONG_HASH}")
+string(REGEX REPLACE "\n" "" GIT_LONG_HASH "${GIT_LONG_HASH}")
 
 execute_process(
 	COMMAND
@@ -45,7 +45,7 @@ execute_process(
     OUTPUT_VARIABLE
         GIT_COMMIT_TIME
 )
-string(REGEX REPLACE "\n$" "" GIT_COMMIT_TIME "${GIT_COMMIT_TIME}")
+string(REGEX REPLACE "\n" "" GIT_COMMIT_TIME "${GIT_COMMIT_TIME}")
 
 endif(GIT_EXECUTABLE)
 
