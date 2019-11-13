@@ -2,8 +2,8 @@
   "pde_name"             : "pde_burgers",
   "exp_order"            : [8, 8, 1],
   "exp_order_type"       : "constant",
-  "grid_type"            : "grid_box",
-  "initstate_block"      : "initstate_boxnwave",
+  "grid_type"            : "grid_icos",
+  "initstate_block"      : "initstate_icosnwave",
   "initforce_block"      : "",
   "use_forcing"          : false,
   "initstate_type"       : "direct",
@@ -80,7 +80,7 @@
   "initstate_icosnwave": {
     "latitude0"  : [10,  40 ],
     "longitude0" : [280, 330],
-    "Uparam"     : 1.0,
+    "Uparam"     : [1.0, 1.0],
     "t0"         : [0.02, 0.04]
   },
   "pde_burgers": {
@@ -105,7 +105,7 @@
   },
   "grid_icos": {
     "grid_name" : "grid_icos",
-    "ilevel"    : 9,
+    "ilevel"    : 0,
     "radius"    : 1.0
   },
   "grid_sphere" : {
@@ -136,7 +136,7 @@
     "grid_name" : "grid_box",
     "xyz0"      : [0.0, 0.0, 0.0],
     "delxyz"    : [1.0, 1.0, 1.0],
-    "num_elems" : [32, 32, 1],
+    "num_elems" : [16, 16, 1],
     "bdy_x_0"   : "fully_periodic",
     "bdy_x_1"   : "fully_periodic",
     "bdy_y_0"   : "fully_periodic",
@@ -160,12 +160,12 @@
     "mathop"      : "curl"
   },
   "curlvmag": {
-    "state_index" : [0, 1],
+    "state_index" : [0, 1, 2],
     "names"       : ["omega"],
     "mathop"      : "curlmag"
   },
   "vmag": {
-    "state_index" : [0, 1],
+    "state_index" : [0, 1, 2],
     "names"       : ["vmag"],
     "mathop"      : "vmag"
   },
@@ -206,9 +206,9 @@
     "nu_type" : "constant"
   },
   "time_integration": {
-    "integ_type" : "time",
+    "integ_type" : "cycle",
     "time_end"   : 0.150,
-    "cycle_end"  : 10,
+    "cycle_end"  : 1,
     "dt"         : 2.0e-6
   }
 

@@ -10,6 +10,7 @@
 #define _GMTK_HPP
 
 #include <assert.h>
+#include <limits>
 #include "gtypes.h"
 #include "cff_blas.h"
 
