@@ -102,6 +102,11 @@ GBOOL GGFX<T>::init(GNIDBuffer &glob_index)
 
   nglob_index_ = glob_index.size();
 
+#if defined(_G_DEBUG) || defined(_KEEP_INDICES)
+  glob_index_.resize(nglob_index_);
+  glob_index_ = glob_index;
+#endif
+
   // Get node id dynamic range:
   GNODEID lmax = glob_index.max();
   GComm::Allreduce(&lmax, &maxNodeVal_, 1, T2GCDatatype<GNODEID>(), GC_OP_MAX, comm_);
@@ -1736,27 +1741,27 @@ void GGFX<T>::initMult()
 
   assert(bInit_ && "Operator not initialized");
 
-  GTVector<T> mult(nglob_index_);
+  mult_.resize(nglob_index_);
 
-  mult = 1.0;
+  mult_ = 1.0;
 
 #if defined(GGFX_TRACE_OUTPUT)
  GPP(comm_,serr << " doing doOp...");
 #endif
   // Do DSS sum to find multiplicity:
-  doOp(mult, GGFX_OP_SUM);
+  doOp(mult_, GGFX_OP_SUM);
 
   // Compute 1/mult:
 #if defined(GGFX_TRACE_OUTPUT)
-    GPP(comm_,serr << " mult.size=" << mult.size());
+    GPP(comm_,serr << " mult.size=" << mult_.size());
 #endif
-  imult_.resize(mult.size());
-  for ( GSIZET j=0; j<mult.size(); j++ ) {
-    imult_[j] = 1.0/mult[j];
+  imult_.resize(mult_.size());
+  for ( GSIZET j=0; j<mult_.size(); j++ ) {
+    imult_[j] = 1.0/mult_[j];
   }
 
 #if defined(GGFX_TRACE_OUTPUT)
-  GPP(comm_,"GGFX<T>::initMult: mult=" << mult);
+  GPP(comm_,"GGFX<T>::initMult: mult=" << mult_);
   GPP(comm_,"GGFX<T>::initMult: imult=" << imult_);
 #endif
 

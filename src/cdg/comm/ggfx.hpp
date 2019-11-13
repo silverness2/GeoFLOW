@@ -17,6 +17,7 @@
 #include "gcomm.hpp"
 
 #undef GGFX_TRACE_OUTPUT
+#define _KEEP_INDICES
 
 // GGFX reduction operation defs:
 #if !defined(GGFX_OP_DEF)
@@ -39,11 +40,19 @@ public:
                       GBOOL    doOp(GTVector<T> &u,  GGFX_OP op);
                       GBOOL    doOp(GTVector<T> &u,  GSZBuffer &ind, GGFX_OP op);
                       GC_COMM  getComm() { return comm_; }
+#if defined(_G_DEBUG) || defined(_KEEP_INDICES)
+                      GTVector<T>         
+                              &get_mult() { return mult_; }
+#endif
+#endif
                       GTVector<T>         
                               &get_imult() { return imult_; }
 
                       void     resetTimes();
 
+#if defined(_G_DEBUG) || defined(_KEEP_INDICES)
+                      GNIDBuffer glob_index_;
+#endif
 private:
 // Private methods:
  
@@ -91,6 +100,7 @@ GLLMatrix          iOpL2LIndices_;  // matrix with local indices pointing to sha
 GSZBuffer          nOpL2LIndices_;  // number valid columns in each row of iOpLoIndices_
 GTMatrix<T>        sendBuff_     ;  // send buffer
 GTMatrix<T>        recvBuff_     ;  // recv buffer
+GTVector<T>        mult_         ;  // multiplicity matrix (for H1-smoothing)
 GTVector<T>        imult_        ;  // inverse of multiplicity matrix (for H1-smoothing)
 
 };
