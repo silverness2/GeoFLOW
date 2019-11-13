@@ -128,13 +128,20 @@ void gio_write_grid(GIOTraits &traits, GGrid &grid, const GTVector<GString> &sva
       gio_write<GFTYPE>(traits, fname_, (*xnodes)[j]);
     }
 
-#if 1
+#if defined(_G_DEBUG) 
     // Write multiplicity:
     sprintf(cfname_, format.str().c_str(), traits.dir.c_str(), "mult",  myrank);
     fname_.assign(cfname_);
     gio_write<GFTYPE>(traits, fname_, grid.get_ggfx().get_mult());
+ 
+    GPP(comm,
+                "mult_min="  << grid.get_ggfx().get_mult().min() 
+             << " mult_max=" << grid.get_ggfx().get_mult().max() );   
+    if ( GComm::WorldRank(comm) == 0 ) {
+      cout << "gio_write: mult=" << grid.get_ggfx().get_mult() << endl;
+    }
 
-    // Write (float) glob indices:
+    // Write glob indices:
     sprintf(cfname_, format.str().c_str(), traits.dir.c_str(), "glob_index",  myrank);
     fname_.assign(cfname_);
     gio_write<GNODEID>(traits, fname_, grid.get_ggfx().glob_index_);
