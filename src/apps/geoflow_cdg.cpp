@@ -688,14 +688,12 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
     for ( auto j=0; j<GDIM; j++ ) xkey[j] = utmp_[j];
     GMTK::cart2latlon(cart, xkey);
     for ( auto j=0; j<xkey[0]->size(); j++ ) (*xkey[0])[j] = 0.5*PI - (*xkey[0])[j]; 
-    for ( auto j=0; j<xkey[1]->size(); j++ ) (*xkey[1])[j]+= (*xkey[1])[j] < 0.0 ? 2.0*PI : 0.0;
+    for ( auto j=0; j<xkey[1]->size(); j++ ) (*xkey[1])[j] += (*xkey[1])[j] < 0.0 ? 2.0*PI : 0.0;
     rad   = gtree.getValue<GFTYPE>("radius");
     delta[0] = 0.5*grid.minlength()/(rad*pmax*pmax);
     delta[1] = grid.minlength()/(rad*pmax*pmax);
-    for ( auto j=0; j<dX.size(); j++ ) dX[j] = 0.2 *delta[j];
+    for ( auto j=0; j<dX.size(); j++ ) dX[j] = 0.1 *delta[j];
     gmorton.setType(GMORTON_INTERLEAVE);
-GPP(comm_, "init_ggfx: lat=" << *xkey[0]);
-GPP(comm_, "init_ggfx: lon=" << *xkey[1]);
 #else
     P0.resize(GDIM+1);
     dX.resize(GDIM+1);
