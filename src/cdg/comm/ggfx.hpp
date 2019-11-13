@@ -44,7 +44,6 @@ public:
                       GTVector<T>         
                               &get_mult() { return mult_; }
 #endif
-#endif
                       GTVector<T>         
                               &get_imult() { return imult_; }
 
