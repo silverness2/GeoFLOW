@@ -131,6 +131,12 @@ namespace GMTK
   template<typename T>  
   void    cart2spherical(const GTVector<GTVector<T>*> &vcart, GTVector<GTVector<T>*> &rlatlon);
   template<typename T>  
+  void    zero(GTVector<T> &v);
+  template<typename T>  
+  void    zero(GTVector<GTVector<T>*> &v);
+  template<typename T>  
+  void    zero(GTVector<GTVector<T>> &v);
+  template<typename T>  
   GDOUBLE energy(GGrid &grid, const GTVector<GTVector<T>*> &u, GTVector<GTVector<T>*> &tmp, GBOOL isglobal, GBOOL ismax=FALSE);
   template<typename T>  
   GDOUBLE enstrophy(GGrid &grid, const GTVector<GTVector<T>*> &u, GTVector<GTVector<T>*> &tmp, GBOOL isglobal, GBOOL ismax=FALSE);

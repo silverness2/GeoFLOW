@@ -305,5 +305,81 @@ void normalizeL2(GGrid &grid, GTVector<GTVector<T>*> &u, GTVector<GTVector<T>*> 
 } // end of method normalizeL2
 
 
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : zero (1)
+// DESC   :
+//          Set values < std::numeric_limits<>::epsilon()
+//          identically to 0
+//
+// ARGS   :
+//          u    : field
+// RETURNS: none.
+//**********************************************************************************
+template<typename T>
+void zero(GTVector<T> &u)
+{
+  T tiny=std::numeric_limits<T>::epsilon();
+
+  for ( auto j=0; j<u.size(); j++ ) {
+    if ( fabs(u[j]) < tiny ) u[j] = 0.0;
+  }
+
+
+} // end of method zero (1)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : zero (2)
+// DESC   :
+//          Set values < std::numeric_limits<>::epsilon()
+//          identically to 0
+//
+// ARGS   :
+//          u    : field
+// RETURNS: none.
+//**********************************************************************************
+template<typename T>
+void zero(GTVector<GTVector<T>*> &u)
+{
+  T tiny=std::numeric_limits<T>::epsilon();
+
+  for ( auto i=0; i<u.size(); i++ ) {
+    for ( auto j=0; j<u[i]->size(); j++ ) {
+      if ( fabs((*u[i])[j]) < tiny ) (*u[i])[j] = 0.0;
+    }
+  }
+
+
+} // end of method zero (2)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : zero (3)
+// DESC   :
+//          Set values < std::numeric_limits<>::epsilon()
+//          identically to 0
+//
+// ARGS   :
+//          u    : field
+// RETURNS: none.
+//**********************************************************************************
+template<typename T>
+void zero(GTVector<GTVector<T>> &u)
+{
+  T tiny=std::numeric_limits<T>::epsilon();
+
+  for ( auto i=0; i<u.size(); i++ ) {
+    for ( auto j=0; j<u[i].size(); j++ ) {
+      if ( fabs(u[i][j]) < tiny ) u[i][j] = 0.0;
+    }
+  }
+
+
+} // end of method zero (2)
+
+
 
 } // end, namespace GMTK
