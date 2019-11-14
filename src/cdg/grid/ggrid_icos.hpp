@@ -32,8 +32,8 @@
 // GICOS_CART: print in 3d cartesian coords;
 // GICOS_LATLONG: print in r-theta-phi coords in 3d, and 
 //    theta-phi in 2d
-enum GICOSPTYPE {GICOS_BASE, GICOS_ELEMENTAL}; 
-enum GCOORDSYST {GICOS_CART, GICOS_LATLONG}; 
+enum GICOSPTYPE      {GICOS_BASE, GICOS_ELEMENTAL}; 
+enum GCOORDSYST      {GICOS_CART, GICOS_LATLONG}; 
 
 typedef GTMatrix<GFTYPE> GFTMatrix;
 
@@ -126,6 +126,7 @@ friend  std::ostream&       operator<<(std::ostream&, GGridIcos &);       // Out
 
 
 
+         GString            sreftype_;      // subdivision/refinement type
          GINT               ilevel_;        // refinement level (>= 0)
          GINT               ndim_;          // grid dimensionality (2 or 3)
          GSIZET             nradelem_;      // # radial elements

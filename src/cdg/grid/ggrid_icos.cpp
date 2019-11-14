@@ -28,13 +28,13 @@ using namespace std;
 // RETURNS: none
 //**********************************************************************************
 GGridIcos::GGridIcos(const geoflow::tbox::PropertyTree &ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GC_COMM &comm)
-:          GGrid(ptree, b, comm),
-ilevel_                      (0),
-ndim_                     (GDIM),
-radiusi_                   (0.0),
-radiuso_                   (0.0), // don't need this one in 2d
-gdd_                   (NULLPTR),
-lshapefcn_             (NULLPTR)
+:                 GGrid(ptree, b, comm),
+ilevel_                             (0),
+ndim_                            (GDIM),
+radiusi_                          (0.0),
+radiuso_                          (0.0), // don't need this one in 2d
+gdd_                          (NULLPTR),
+lshapefcn_                    (NULLPTR)
 {
   assert(b.size() == GDIM && "Basis has incorrect dimensionality");
   
@@ -46,6 +46,7 @@ lshapefcn_             (NULLPTR)
   gbasis_ = b;
   lshapefcn_ = new GShapeFcn_linear();
   ilevel_  = gridptree.getValue<GINT>("ilevel");
+  sreftype_= gridptree.getValue<GString>("refine_type","GICOS_LAGRANGIAN");
   
   if ( ndim_ == 2 ) {
     assert(GDIM == 2 && "GDIM must be 2");
@@ -240,7 +241,7 @@ void GGridIcos::lagrefine()
 {
   GString serr = "GridIcos::lagrefine: ";
    
-  GLLONG ibeg, j, l, m, n, t;
+  GLLONG ibeg, j, l, m, n, nrows, t;
 
   // Re-dimension mesh points to be 3d: Expect
   // 20 * (ileve+1)^2, and 20 * (ilevel+1)^2 * 3 quads
@@ -253,16 +254,28 @@ void GGridIcos::lagrefine()
   GTVector<GTPoint<GFTYPE>> R0(2*(ilevel_+1)-1), R1(2*(ilevel_+1));
   GTVector<GTPoint<GFTYPE>> Rz(2*(ilevel_+1)+1); // interleave R0, R1
 
+  if      ( "GICOS_BISECTION" == sreftype_ ) {
+    // interpret ilevel_ as bisection count:
+    nrows = pow(2,ilevel_)-1; 
+  }
+  else if ( "GICOS_LAGRANGIAN" == sreftype_ ) {
+    // interpret ilevel_ as # 'Lagrangian' subdivisions:
+    nrows = ilevel_;
+  }
+  else {
+    assert(FALSE && "Invalid subdivision type (GICOS_LAGRANGIAN or GICOS_BISECTION");
+  }
+
 #pragma omp parallel private (ibeg,l,m,t,a,b,c,R0,R1,Rz) reduction(+: n)
   R0.resize(2*(ilevel_+1)-1);
   R1.resize(2*(ilevel_+1));
   Rz.resize(2*(ilevel_+1)+1);
 
-  // Do refinement of base mesh triandles:
+  // Do refinement of base mesh triangles:
 #pragma omp for
   for ( t=0; t<tbase_.size(); t++ ) { // for each base triangle 
     a = tbase_[t].v1; b = tbase_[t].v2; c = tbase_[t].v3;
-    for ( l=0; l<ilevel_+1; l++ ) { // for each triangle 'row'
+    for ( l=0; l<nrows+1; l++ ) { // for each triangle 'row'
       lagvert(a,b,c,l   ,R0); // get previous row of points
       lagvert(a,b,c,l+1 ,R1); // get current row of points
       interleave(R0, R1, l, Rz); // zig-zag from R1 to R0, to R1, etc
