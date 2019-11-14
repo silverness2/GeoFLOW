@@ -30,6 +30,7 @@ using namespace std;
 GGridIcos::GGridIcos(const geoflow::tbox::PropertyTree &ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GC_COMM &comm)
 :                 GGrid(ptree, b, comm),
 ilevel_                             (0),
+nrows_                              (0),
 ndim_                            (GDIM),
 radiusi_                          (0.0),
 radiuso_                          (0.0), // don't need this one in 2d
@@ -96,6 +97,7 @@ std::ostream &operator<<(std::ostream &str, GGridIcos &e)
   str << " radiusi: " << e.radiusi_;
   str << " radiusi: " << e.radiuso_;
   str << " level  : " << e.ilevel_;
+  str << " nrows  : " << e.nrows_;
   str << std::endl << " Centroids: " ;
   for ( GSIZET i=0; i<e.ftcentroids_.size(); i++ )
      str << (e.ftcentroids_[i]) << " " ;
@@ -241,41 +243,42 @@ void GGridIcos::lagrefine()
 {
   GString serr = "GridIcos::lagrefine: ";
    
-  GLLONG ibeg, j, l, m, n, nrows, t;
-
-  // Re-dimension mesh points to be 3d: Expect
-  // 20 * (ileve+1)^2, and 20 * (ilevel+1)^2 * 3 quads
-  tmesh_.resize(20*(ilevel_*(ilevel_+2)+1)); // refined triangular mesh
-  for ( j=0; j<tmesh_.size(); j++ ) tmesh_[j].resize(3);
-
-  GTPoint<GFTYPE> a(3), b(3), c(3); // base vertices
-
-  n = 0;
-  GTVector<GTPoint<GFTYPE>> R0(2*(ilevel_+1)-1), R1(2*(ilevel_+1));
-  GTVector<GTPoint<GFTYPE>> Rz(2*(ilevel_+1)+1); // interleave R0, R1
+  GLLONG ibeg, j, l, m, n, t;
 
   if      ( "GICOS_BISECTION" == sreftype_ ) {
-    // interpret ilevel_ as bisection count:
-    nrows = pow(2,ilevel_)-1; 
+    // interpret nrows_ as bisection count:
+    nrows_ = pow(2,ilevel_)-1; 
   }
   else if ( "GICOS_LAGRANGIAN" == sreftype_ ) {
-    // interpret ilevel_ as # 'Lagrangian' subdivisions:
-    nrows = ilevel_;
+    // interpret nrows_ as # 'Lagrangian' subdivisions:
+    nrows_ = ilevel_;
   }
   else {
     assert(FALSE && "Invalid subdivision type (GICOS_LAGRANGIAN or GICOS_BISECTION");
   }
 
+  // Re-dimension mesh points to be 3d: Expect
+  // 20 * (ileve+1)^2, and 20 * (ilevel+1)^2 * 3 quads
+  tmesh_.resize(20*(nrows_*(nrows_+2)+1)); // refined triangular mesh
+  for ( j=0; j<tmesh_.size(); j++ ) tmesh_[j].resize(3);
+
+  GTPoint<GFTYPE> a(3), b(3), c(3); // base vertices
+
+  n = 0;
+  GTVector<GTPoint<GFTYPE>> R0(2*(nrows_+1)-1), R1(2*(nrows_+1));
+  GTVector<GTPoint<GFTYPE>> Rz(2*(nrows_+1)+1); // interleave R0, R1
+
+
 #pragma omp parallel private (ibeg,l,m,t,a,b,c,R0,R1,Rz) reduction(+: n)
-  R0.resize(2*(ilevel_+1)-1);
-  R1.resize(2*(ilevel_+1));
-  Rz.resize(2*(ilevel_+1)+1);
+  R0.resize(2*(nrows_+1)-1);
+  R1.resize(2*(nrows_+1));
+  Rz.resize(2*(nrows_+1)+1);
 
   // Do refinement of base mesh triangles:
 #pragma omp for
   for ( t=0; t<tbase_.size(); t++ ) { // for each base triangle 
     a = tbase_[t].v1; b = tbase_[t].v2; c = tbase_[t].v3;
-    for ( l=0; l<nrows+1; l++ ) { // for each triangle 'row'
+    for ( l=0; l<nrows_+1; l++ ) { // for each triangle 'row'
       lagvert(a,b,c,l   ,R0); // get previous row of points
       lagvert(a,b,c,l+1 ,R1); // get current row of points
       interleave(R0, R1, l, Rz); // zig-zag from R1 to R0, to R1, etc
@@ -361,7 +364,7 @@ GGridIcos::lagvert(GTPoint<GFTYPE>&a, GTPoint<GFTYPE> &b, GTPoint<GFTYPE> &c,
 
   R.resizem(I+1);
 
-  GFTYPE fact = 1.0/static_cast<GFTYPE>(ilevel_+1);
+  GFTYPE fact = 1.0/static_cast<GFTYPE>(nrows_+1);
 
   // Build 'rail' points on L and R:
   xI = static_cast<GFTYPE>(I);

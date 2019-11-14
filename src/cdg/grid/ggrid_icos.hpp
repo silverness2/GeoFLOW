@@ -128,6 +128,7 @@ friend  std::ostream&       operator<<(std::ostream&, GGridIcos &);       // Out
 
          GString            sreftype_;      // subdivision/refinement type
          GINT               ilevel_;        // refinement level (>= 0)
+         GINT               nrows_;         // # rows in refine level ilevel
          GINT               ndim_;          // grid dimensionality (2 or 3)
          GSIZET             nradelem_;      // # radial elements
          GFTYPE             radiusi_;       // inner radius
