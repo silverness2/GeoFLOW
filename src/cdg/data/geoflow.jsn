@@ -104,9 +104,10 @@
     "bdy_config_method": ""
   },
   "grid_icos": {
-    "grid_name" : "grid_icos",
-    "ilevel"    : 0,
-    "radius"    : 1.0
+    "grid_name"   : "grid_icos",
+    "ilevel"      : 9,
+    "refine_type" : "GICOS_BISECTION",
+    "radius"      : 1.0
   },
   "grid_sphere" : {
     "grid_name"         : "grid_sphere",
