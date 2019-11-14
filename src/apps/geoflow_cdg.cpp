@@ -134,7 +134,6 @@ int main(int argc, char **argv)
     pIntegrator_ = IntegratorFactory<MyTypes>::build(ptree_, pEqn_, pMixer, pObservers, *grid_);
     pIntegrator_->get_traits().cycle = icycle;
 
-GPP(comm_,serr << "nelems_local=" << grid_->nelems());
 
     //***************************************************
     // Initialize state:
