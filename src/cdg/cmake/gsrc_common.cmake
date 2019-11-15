@@ -29,9 +29,6 @@
     )
 
  set(CDG_SEM_SRC    ${GHOME}/sem/gelem_base.cpp
-                    ${GHOME}/sem/gshapefcn_linear.cpp
-                    ${GHOME}/sem/gshapefcn_embed.cpp
-                    ${GHOME}/sem/gshapefcn_hostd.cpp
                     ${GHOME}/sem/gmass.cpp
                     ${GHOME}/sem/ghelmholtz.cpp
                     ${GHOME}/sem/gpdv.cpp
