@@ -185,8 +185,10 @@ GBOOL GGFX<T>::initSort(GNIDBuffer  &glob_index)
   GPP(comm_, serr << "Calling binSort...");
 #endif
 
+  GTimerStart("ggfx_binSort");
   bret = binSort(glob_index, gBinMat, numlocfilledbins,
                  max_numlocfilledbins, max_numlocbinmem, gBinBdy_, locWork);
+  GTimerStop("ggfx_binSort");
   if ( !bret ) {  
     GPP(comm_,serr << "binSort failed ");
     exit(1);
@@ -205,8 +207,10 @@ GBOOL GGFX<T>::initSort(GNIDBuffer  &glob_index)
   GPP(comm_,serr << "Calling createWorkBuffs...");
 #endif
 
+  GTimerStart("ggfx_workBuffs");
   GNIDMatrix isWork;         // Wrk send buff: iSendWorkTaskID.size x max_numlocbinmem
   bret = createWorkBuffs(gBinMat, max_numlocbinmem, iRecvWorkTaskID, irWork, iSendWorkTaskID, isWork);
+  GTimerStop("ggfx_workBuffs");
   if ( !bret ) {  
     GPP(comm_, serr << "createWorkBuffs failed ");
     exit(1);
@@ -222,7 +226,9 @@ GBOOL GGFX<T>::initSort(GNIDBuffer  &glob_index)
 #endif
 
   // Fill bins with global nodes & send out, and receive work:
+  GTimerStart("ggfx_sendRcvWork");
   bret = doSendRecvWork(glob_index, gBinBdy_, iRecvWorkTaskID, irWork, iSendWorkTaskID, isWork);
+  GTimerStop("ggfx_sendRcvWork");
   if ( !bret ) {  
     GPP(comm_,serr << "doSendRecvWork failed ");
     exit(1);
@@ -238,7 +244,9 @@ GBOOL GGFX<T>::initSort(GNIDBuffer  &glob_index)
 #if defined(GGFX_TRACE_OUTPUT)
   GPP(comm_,serr << "Calling doCommonNodeSort...");
 #endif
+  GTimerStart("ggfx_commonNodeSort");
   bret = doCommonNodeSort(glob_index, irWork, iRecvWorkTaskID, iSendWorkTaskID, mySharedData);
+  GTimerStop("ggfx_commonNodeSort");
   // NOTE: iSendWorkTaskID on exit should contain the list of tasks that sorted work
   //       data is received from. These should be the same task ids that were used
   //       in sending this local task's data to the work tasks it identified
@@ -252,7 +260,9 @@ GBOOL GGFX<T>::initSort(GNIDBuffer  &glob_index)
 #if defined(GGFX_TRACE_OUTPUT)
   GPP(comm_,serr << "Calling extractOpData...");
 #endif
+  GTimerStart("ggfx_extractOpData");
   bret = extractOpData(glob_index, mySharedData);
+  GTimerStop("ggfx_extractOpData");
   if ( !bret ) {  
     cout << serr << ": rank: " << GComm::WorldRank(comm_) << ": extractOpData failed" << endl;
     exit(1);
