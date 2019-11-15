@@ -692,7 +692,7 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
     delta[0] = 0.5*grid.minlength()/(rad*pmax*pmax);
     delta[1] = grid.minlength()/(rad*pmax*pmax);
     for ( auto j=0; j<dX.size(); j++ ) dX[j] = 0.1 *delta[j];
-    gmorton.setType(GMORTON_INTERLEAVE);
+    gmorton.setType(GMORTON_STACKED);
 #else
     P0.resize(GDIM+1);
     dX.resize(GDIM+1);
