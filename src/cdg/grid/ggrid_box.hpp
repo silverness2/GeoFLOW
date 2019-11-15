@@ -87,7 +87,8 @@ private:
          GINT                ndim_;          // grid dimensionality (2 or 3)
          GFTYPE              eps_;           // float epsilon for comparisons
          GDD_base           *gdd_;           // domain decomposition/partitioning object
-         GShapeFcn_linear   *lshapefcn_;     // linear shape func to compute 2d coords
+         GShapeFcn_linear<GFTYPE> 
+                            *lshapefcn_;     // linear shape func to compute 2d coords
          GTPoint<GFTYPE>     P0_;            // P0 = starting point of box origin
          GTPoint<GFTYPE>     P1_;            // P1 = diagonally-opposing box point
          GTPoint<GFTYPE>     dP_;            // box size

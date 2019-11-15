@@ -102,10 +102,10 @@ gshapefcn_       (NULLPTR)
   if ( b3 != NULLPTR ) b[2] = b3;
 
   if ( elemtype_ == GE_REGULAR || elemtype_ == GE_DEFORMED ) {
-    gshapefcn_ = new GShapeFcn_hostd();
+    gshapefcn_ = new GShapeFcn_hostd<GFTYPE>();
   }
   else if ( elemtype_ == GE_2DEMBEDDED ) { 
-    gshapefcn_ = new GShapeFcn_embed();
+    gshapefcn_ = new GShapeFcn_embed<GFTYPE>();
   }
 
   set_basis(b);
@@ -140,10 +140,10 @@ gshapefcn_       (NULLPTR)
   gbasis_ = NULLPTR;
 
   if ( elemtype_ == GE_REGULAR || elemtype_ == GE_DEFORMED ) {
-    gshapefcn_ = new GShapeFcn_hostd();
+    gshapefcn_ = new GShapeFcn_hostd<GFTYPE>();
   }
   else if ( elemtype_ == GE_2DEMBEDDED ) { 
-    gshapefcn_ = new GShapeFcn_embed();
+    gshapefcn_ = new GShapeFcn_embed<GFTYPE>();
   }
   set_basis(b);
  
@@ -259,10 +259,10 @@ void GElem_base::set_elemtype(GElemType etype)
   if ( gshapefcn_ != NULLPTR ) delete gshapefcn_; gshapefcn_ = NULLPTR;
 
   if ( elemtype_ == GE_REGULAR || elemtype_ == GE_DEFORMED ) {
-    gshapefcn_ = new GShapeFcn_hostd();
+    gshapefcn_ = new GShapeFcn_hostd<GFTYPE>();
   }
   else if ( elemtype_ == GE_2DEMBEDDED ) {
-    gshapefcn_ = new GShapeFcn_embed();
+    gshapefcn_ = new GShapeFcn_embed<GFTYPE>();
   }
 
 } // end of method set_elemtype
