@@ -109,6 +109,12 @@ friend  std::ostream&       operator<<(std::ostream&, GGridIcos &);       // Out
          template<typename T>
          void               reorderverts2d(GTVector<GTPoint<T>> &, GTVector<GSIZET>&,
                                            GTVector<GTPoint<T>> &);         // make verts consis with shapefcns
+         template<typename T>
+         void               copycast(GTVector<GTVector<GFTYPE>> &from, GTVector<GTVector<T>> &to);
+         template<typename T>
+         void               copycast(GTVector<GTVector<GFTYPE>*> &from, GTVector<GTVector<T>*> &to);
+         template<typename T>
+         void               copycast(GTPoint<GFTYPE> &from, GTPoint<T> &to);
 
          void               lagrefine();                                    // do 'Lagrange poly'-type refinement of base icos
          void               lagvert(GTPoint<GFTYPE> &a, 

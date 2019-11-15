@@ -481,11 +481,9 @@ void GGridIcos::do_elems2d(GINT irank)
   // For each triangle in base mesh owned by this rank...
   for ( GSIZET n=0; n<iind.size(); n++ ) { 
     i = iind[n];
-    for ( auto m=0; m<3; m++ ) {
-      v1[m] = (*tmesh_[i].v[0])[m];
-      v2[m] = (*tmesh_[i].v[1])[m];
-      v3[m] = (*tmesh_[i].v[2])[m]; 
-    }
+    copycast<GTICOS>(*tmesh_[i].v[0], v1);
+    copycast<GTICOS>(*tmesh_[i].v[1], v2);
+    copycast<GTICOS>(*tmesh_[i].v[2], v3);
     ct = (v1 + (v2 + v3)) * fact;  // triangle centroid; don't overwrite later on
     // Compute element vertices:
     // NOTE: Is this ordering compatible with shape functions 
@@ -522,15 +520,10 @@ void GGridIcos::do_elems2d(GINT irank)
       xiNodes = &pelem->xiNodes(); // node ref interval data
       xd .resize(xNodes->size());
       xid.resize(xiNodes->size());
-      for ( auto l=0; l<xd.size(); l++ ) {
-        xd[l].resize((*xNodes)[l].size());
-        for ( auto k=0; k<xd[j].size(); k++ ) xd[l][k] = (*xNodes)[l][k];
-      }
-      for ( auto l=0; l<xid.size(); l++ ) {
-        xid[l].resize(((*xiNodes)[l])->size());
-        pxid[l] = &xid[l];
-        for ( auto k=0; k<xid[j].size(); k++ ) xid[l][k] = (*(*xiNodes)[l])[k];
-      }
+      pxid.resize(xiNodes->size());
+      for ( auto l=0; l<xid.size(); l++ ) pxid[l] = &xid[l];
+      copycast<GTICOS>(*xNodes, xd);
+      copycast<GTICOS>(*xiNodes, pxid);
       
       Ni.resize(pelem->nnodes());
 
@@ -555,8 +548,9 @@ void GGridIcos::do_elems2d(GINT irank)
       gnomonic2cart<GTICOS>(xgtmp, 1.0, xlatc, xlongc, xd); //
       project2sphere<GTICOS>(xd, radiusi_);
       for ( auto l=0; l<xd.size(); l++ ) {
-        for ( auto k=0; k<xd[j].size(); k++ ) (*xNodes)[l][k] = xd[l][k];
+        for ( auto k=0; k<xd[l].size(); k++ ) (*xNodes)[l][k] = xd[l][k];
       }
+GPP(this->comm_, "xNodes" << *xNodes);
       pelem->init(*xNodes);
 
       nfnodes = 0;
@@ -603,6 +597,9 @@ void GGridIcos::do_elems3d(GINT irank)
   GTVector<GTVector<GFTYPE>>   xNodes2d(2);
   GTVector<GTVector<GFTYPE>*>  xiNodes2d(2);
   GTVector<GFTYPE>            *xiNodesr;
+  GTVector<GTVector<GTICOS>>   xd, xd2d;
+  GTVector<GTVector<GTICOS>>   xid, xid2d;
+  GTVector<GTVector<GTICOS>*>  pxid;
   GTVector<GTVector<GTICOS>>   xgtmp(3);
 
   // Do eveything on unit sphere, then project to radiusi_
@@ -649,9 +646,9 @@ void GGridIcos::do_elems3d(GINT irank)
   // For each triangle in base mesh owned by this rank...
   for ( GSIZET n=0; n<iind.size(); n++ ) { 
     i = iind[n];
-    v1 = *tmesh_[i].v[0];
-    v2 = *tmesh_[i].v[1];
-    v3 = *tmesh_[i].v[2];       
+    copycast<GTICOS>(*tmesh_[i].v[0], v1);
+    copycast<GTICOS>(*tmesh_[i].v[1], v2);
+    copycast<GTICOS>(*tmesh_[i].v[2], v3);
     ct = (v1 + (v2 + v3)) * fact;  // triangle centroid; don't overwrite later on
     // Compute element vertices:
     // NOTE: Is this ordering compatible with shape functions 
@@ -686,6 +683,12 @@ void GGridIcos::do_elems3d(GINT irank)
         xiNodes2d[m] = &pelem2d->xiNodes(m);
         xNodes2d [m].resizem(nxy);
       }
+      xd2d .resize(xNodes2d.size());
+      xid2d.resize(xiNodes2d.size());
+      pxid .resize(xiNodes2d.size());
+      for ( auto l=0; l<xid.size(); l++ ) pxid[l] = &xid2d[l];
+      copycast<GTICOS>(xNodes2d, xd2d);
+      copycast<GTICOS>(xiNodes2d, pxid);
 
       project2sphere<GTICOS>(cverts, 1.0); // project verts to unit sphere     
       c = (cverts[0] + cverts[1] + cverts[2] + cverts[3])*0.25; // elem centroid
@@ -698,22 +701,21 @@ void GGridIcos::do_elems3d(GINT irank)
       for ( GINT l=0; l<2; l++ ) { // loop over available gnomonic coords
         xgtmp[l].resizem(nxy);
         xgtmp[l] = 0.0;
-        xNodes2d[l] = 0.0;
         for ( GSIZET m=0; m<4; m++ ) { // loop over gnomonic vertices
           I[0] = m;
-          lshapefcn_->Ni(I, xiNodes2d, Ni);
+          lshapefcn_->Ni(I, pxid, Ni);
           xgtmp[l] += (Ni * (gverts[m][l]*0.25)); // gnomonic node coordinate
         }
       }
 
       // Convert 2d plane back to Cart coords and project to 
       // surface of inner sphere:
-      gnomonic2cart<GTICOS>(xgtmp, 1.0, xlatc, xlongc, xNodes2d); 
-      project2sphere<GTICOS>(xNodes2d, radiusi_);
-      xyz2spherical<GTICOS>(xNodes2d);
+      gnomonic2cart<GTICOS>(xgtmp, 1.0, xlatc, xlongc, xd2d); 
+      project2sphere<GTICOS>(xd2d, radiusi_);
+      xyz2spherical<GTICOS>(xd2d);
 
       // Loop over radial elements and build all elements 
-      // based on this patch:
+      // based on this patch (we're still in sph coords here):
       for ( GSIZET e=0; e<nradelem_; e++ ) {
         pelem = new GElem_base(GE_DEFORMED, gbasis_);
         xiNodesr = &pelem->xiNodes(2); // get radial reference nodes
@@ -722,11 +724,11 @@ void GGridIcos::do_elems3d(GINT irank)
         for ( GSIZET m=0; m<pelem->size(2); m++ ) { // for each radial node
           for ( GSIZET n=0; n<nxy; n++ ) { // find sph coords for each horizontal node
             (*xNodes)[0][n+m*nxy] =  0.5*rdelta*((*xiNodesr)[m] + 1.0);
-            (*xNodes)[1][n+m*nxy] =  xNodes2d[1][n];
-            (*xNodes)[2][n+m*nxy] =  xNodes2d[2][n];
+            (*xNodes)[1][n+m*nxy] =  xd2d[1][n];
+            (*xNodes)[2][n+m*nxy] =  xd2d[2][n];
           }
         }
-        spherical2xyz<GTICOS>(*xNodes);
+        spherical2xyz<GFTYPE>(*xNodes);
 
         pelem->init(*xNodes);
 

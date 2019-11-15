@@ -488,3 +488,73 @@ void GGridIcos::reorderverts2d(GTVector<GTPoint<T>> &uverts, GTVector<GSIZET> &i
 
 
 
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : copycast (1)
+// DESC   : copy 'from' array to 'to' array, while casting. Also, make sure
+//          sizes are correct.
+// ARGS   : from : 'from' array
+//          to   : 'to' array; may be of different type than 'from'
+// RETURNS: none.
+//**********************************************************************************
+template<typename T>
+void GGridIcos::copycast(GTVector<GTVector<GFTYPE>> &from, GTVector<GTVector<T>> &to)
+{
+
+  assert(to.size() == from.size() && "Incompatible dimensions");
+  for ( auto j=0; j<to.size(); j++ ) {
+    to[j].resize(from[j].size()); 
+    for ( auto i=0; i<to[j].size(); i++ ) {
+      to[j][i] = static_cast<T>(from[j][i]);
+    }
+  }
+  
+} // end of method copycast (1)
+
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : copycast (2)
+// DESC   : copy 'from' array to 'to' array, while casting. Also, make sure
+//          sizes are correct.
+// ARGS   : from : 'from' array
+//          to   : 'to' array; may be of different type than 'from'
+// RETURNS: none.
+//**********************************************************************************
+template<typename T>
+void GGridIcos::copycast(GTVector<GTVector<GFTYPE>*> &from, GTVector<GTVector<T>*> &to)
+{
+
+  assert(to.size() == from.size() && "Incompatible dimensions");
+  for ( auto j=0; j<to.size(); j++ ) {
+    to[j]->resize(from[j]->size()); 
+    for ( auto i=0; i<to[j]->size(); i++ ) {
+      (*to[j])[i] = static_cast<T>((*from[j])[i]);
+    }
+  }
+  
+} // end of method copycast (2)
+
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : copycast (3)
+// DESC   : copy 'form' point to 'to' point, while casting
+// ARGS   : from : 'from' point
+//          to   : 'to' point; may be of different type than 'from'
+// RETURNS: none.
+//**********************************************************************************
+template<typename T>
+void GGridIcos::copycast(GTPoint<GFTYPE> &from, GTPoint<T> &to)
+{
+
+  for ( auto j=0; j<to.size(); j++ ) {
+    to[j] = static_cast<T>(from[j]);
+  }
+  
+} // end of method copycast (3)
+
+
+
