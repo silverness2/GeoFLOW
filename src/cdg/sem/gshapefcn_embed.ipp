@@ -43,10 +43,11 @@ using namespace std;
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
-GShapeFcn_embed::GShapeFcn_embed()
+template<typename T>
+GShapeFcn_embed<T>::GShapeFcn_embed()
 {
-  gbasis_.resize(GDIM);
-  gbasis_ = NULLPTR;
+  this->gbasis_.resize(GDIM);
+  this->gbasis_ = NULLPTR;
 } // end of constructor method (1)
 
 
@@ -57,10 +58,11 @@ GShapeFcn_embed::GShapeFcn_embed()
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
-GShapeFcn_embed::GShapeFcn_embed(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b)
+template<typename T>
+GShapeFcn_embed<T>::GShapeFcn_embed(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b)
 {
-  gbasis_.resize(GDIM);
-  gbasis_ = b;
+  this->gbasis_.resize(GDIM);
+  this->gbasis_ = b;
 } // end of constructor method (2)
 
 
@@ -71,7 +73,8 @@ GShapeFcn_embed::GShapeFcn_embed(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b)
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
-GShapeFcn_embed::~GShapeFcn_embed()
+template<typename T>
+GShapeFcn_embed<T>::~GShapeFcn_embed()
 {
 } // end, destructor
 
@@ -100,8 +103,9 @@ GShapeFcn_embed::~GShapeFcn_embed()
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_embed::Ni(GTVector<GINT> &ishape, 
-                          GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N)
+template<typename T>
+void GShapeFcn_embed<T>::Ni(GTVector<GINT> &ishape, 
+                          GTVector<GTVector<T>*> &xi, GTVector<T> &N)
 {
   GSIZET n=0;
 
@@ -138,14 +142,15 @@ void GShapeFcn_embed::Ni(GTVector<GINT> &ishape,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_embed::Ni_1d(GTVector<GINT> &ishape, 
-                          GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N)
+template<typename T>
+void GShapeFcn_embed<T>::Ni_1d(GTVector<GINT> &ishape, 
+                          GTVector<GTVector<T>*> &xi, GTVector<T> &N)
 {
   
-  assert(gbasis_[0] != NULLPTR 
+  assert(this->gbasis_[0] != NULLPTR 
       && "No basis set" );
 
-  gbasis_[0]->evalBasis(ishape[0], *xi[0], N);
+  this->gbasis_[0]->evalBasis(ishape[0], *xi[0], N);
 
 } // end of method Ni_1d
 
@@ -174,17 +179,18 @@ void GShapeFcn_embed::Ni_1d(GTVector<GINT> &ishape,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_embed::Ni_2d(GTVector<GINT> &ishape, 
-                          GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N)
+template<typename T>
+void GShapeFcn_embed<T>::Ni_2d(GTVector<GINT> &ishape, 
+                          GTVector<GTVector<T>*> &xi, GTVector<T> &N)
 {
   
-  assert(gbasis_[0] != NULLPTR 
-      && gbasis_[1] != NULLPTR
+  assert(this->gbasis_[0] != NULLPTR 
+      && this->gbasis_[1] != NULLPTR
       && "No basis set" );
   d_.resizem(xi.size());
   for ( GSIZET j=0; j<xi.size(); j++ ) {
     d_[j].resize(xi[j]->size());
-    gbasis_[j]->evalBasis(ishape[j], *xi[j], d_[j]);
+    this->gbasis_[j]->evalBasis(ishape[j], *xi[j], d_[j]);
   }
 
   GSIZET n = 0;
@@ -218,18 +224,19 @@ void GShapeFcn_embed::Ni_2d(GTVector<GINT> &ishape,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_embed::Ni_3d(GTVector<GINT> &ishape, 
-                          GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N)
+template<typename T>
+void GShapeFcn_embed<T>::Ni_3d(GTVector<GINT> &ishape, 
+                          GTVector<GTVector<T>*> &xi, GTVector<T> &N)
 {
-  assert(gbasis_[0] != NULLPTR 
-      && gbasis_[1] != NULLPTR 
-      && gbasis_[2] != NULLPTR 
+  assert(this->gbasis_[0] != NULLPTR 
+      && this->gbasis_[1] != NULLPTR 
+      && this->gbasis_[2] != NULLPTR 
       && "No basis set" );
 
   d_.resizem(xi.size());
   for ( GSIZET j=0; j<xi.size(); j++ ) {
     d_[j].resize(xi[j]->size());
-    gbasis_[0]->evalBasis(ishape[j], *xi[j], d_[j]);
+    this->gbasis_[0]->evalBasis(ishape[j], *xi[j], d_[j]);
   }
 
   GSIZET n=0;
@@ -263,9 +270,10 @@ void GShapeFcn_embed::Ni_3d(GTVector<GINT> &ishape,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_embed::dNdXi(GTVector<GINT> &ishape, GINT jder, 
-                            GTVector<GTVector<GFTYPE>*> &xi, 
-                            GTVector<GFTYPE> &dNdxi)
+template<typename T>
+void GShapeFcn_embed<T>::dNdXi(GTVector<GINT> &ishape, GINT jder, 
+                            GTVector<GTVector<T>*> &xi, 
+                            GTVector<T> &dNdxi)
 {
 
 #if defined(_G_IS1D)
@@ -297,14 +305,15 @@ void GShapeFcn_embed::dNdXi(GTVector<GINT> &ishape, GINT jder,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_embed::dNdXi_1d(GTVector<GINT> &ishape, GINT jder, 
-                               GTVector<GTVector<GFTYPE>*> &xi, 
-                               GTVector<GFTYPE> &dNdxi)
+template<typename T>
+void GShapeFcn_embed<T>::dNdXi_1d(GTVector<GINT> &ishape, GINT jder, 
+                               GTVector<GTVector<T>*> &xi, 
+                               GTVector<T> &dNdxi)
 {
-  assert(gbasis_[0] != NULLPTR 
+  assert(this->gbasis_[0] != NULLPTR 
       && "No basis set" );
   assert(jder==1 && "Invalid matrix element");
-  gbasis_[0]->evalDBasis(ishape[0], *xi[0], dNdxi);
+  this->gbasis_[0]->evalDBasis(ishape[0], *xi[0], dNdxi);
 
   
 } // end of method dNdXi_1d
@@ -335,26 +344,27 @@ void GShapeFcn_embed::dNdXi_1d(GTVector<GINT> &ishape, GINT jder,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_embed::dNdXi_2d(GTVector<GINT> &ishape, GINT jder, 
-                               GTVector<GTVector<GFTYPE>*> &xi, 
-                               GTVector<GFTYPE> &dNdxi)
+template<typename T>
+void GShapeFcn_embed<T>::dNdXi_2d(GTVector<GINT> &ishape, GINT jder, 
+                               GTVector<GTVector<T>*> &xi, 
+                               GTVector<T> &dNdxi)
 {
 
   // Note: since 2d surface can be embedded, then we
   //       we can compute the derivative wrt xi_3 == zeta, so:
   assert(jder>0 && jder<=(GDIM+1) && "Invalid matrix element");
-  assert(gbasis_[0] != NULLPTR 
-      && gbasis_[1] != NULLPTR
+  assert(this->gbasis_[0] != NULLPTR 
+      && this->gbasis_[1] != NULLPTR
       && "No basis set" );
 
   d_.resizem(GDIM);
   for ( GSIZET j=0; j<GDIM; j++ ) { 
     d_[j].resizem(xi[j]->size());
     if ( j == (jder-1) ) { // covers the case where jder=3
-      gbasis_[j]->evalDBasis(ishape[j], *xi[j], d_[j]);
+      this->gbasis_[j]->evalDBasis(ishape[j], *xi[j], d_[j]);
     }
     else { 
-      gbasis_[j]->evalBasis (ishape[j], *xi[j], d_[j]);
+      this->gbasis_[j]->evalBasis (ishape[j], *xi[j], d_[j]);
     }
   }
 
@@ -388,14 +398,15 @@ void GShapeFcn_embed::dNdXi_2d(GTVector<GINT> &ishape, GINT jder,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_embed::dNdXi_3d(GTVector<GINT> &ishape, GINT jder, 
-                               GTVector<GTVector<GFTYPE>*> &xi, 
-                               GTVector<GFTYPE> &dNdxi)
+template<typename T>
+void GShapeFcn_embed<T>::dNdXi_3d(GTVector<GINT> &ishape, GINT jder, 
+                               GTVector<GTVector<T>*> &xi, 
+                               GTVector<T> &dNdxi)
 {
   assert(jder>0 && jder>xi.size() && "Invalid matrix element");
-  assert(gbasis_[0] != NULLPTR 
-      && gbasis_[1] != NULLPTR
-      && gbasis_[2] != NULLPTR
+  assert(this->gbasis_[0] != NULLPTR 
+      && this->gbasis_[1] != NULLPTR
+      && this->gbasis_[2] != NULLPTR
       && "No basis set" );
 
 
@@ -403,10 +414,10 @@ void GShapeFcn_embed::dNdXi_3d(GTVector<GINT> &ishape, GINT jder,
   for ( GSIZET j=0; j<xi.size(); j++ ) {
     d_[j].resize(xi[j]->size());
     if ( (j+1) != jder ) {
-      gbasis_[j]->evalBasis (ishape[j], *xi[j], d_[j]);
+      this->gbasis_[j]->evalBasis (ishape[j], *xi[j], d_[j]);
     }
     else {
-      gbasis_[j]->evalDBasis(ishape[j], *xi[j], d_[j]);
+      this->gbasis_[j]->evalDBasis(ishape[j], *xi[j], d_[j]);
     }
   }
 

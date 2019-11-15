@@ -11,6 +11,7 @@
 #include "gnbasis.hpp"
 #include "gtvector.hpp"
 
+template<typename T>
 class GShapeFcn_base
 {
 
@@ -25,9 +26,9 @@ virtual  void             operator=(const GShapeFcn_base &obj)
                           {gbasis_ = obj.gbasis_;}
                    
 // Methods:
-virtual void              Ni(GTVector<GINT> &I, GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &Ni)=0;                                // shape function,  N_I
-virtual void              dNdXi(GTVector<GINT> &I, GINT j, GTVector<GTVector<GFTYPE>*> &xi,
-                                                 GTVector<GFTYPE> &out)=0; // dN_I/Xi^j for I, j
+virtual void              Ni(GTVector<GINT> &I, GTVector<GTVector<T>*> &xi, GTVector<T> &Ni)=0;                                // shape function,  N_I
+virtual void              dNdXi(GTVector<GINT> &I, GINT j, GTVector<GTVector<T>*> &xi,
+                                                 GTVector<T> &out)=0; // dN_I/Xi^j for I, j
 virtual void              set_basis(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b)  // set basis functions
                           { gbasis_.resize(b.size()); gbasis_ = b; }
 

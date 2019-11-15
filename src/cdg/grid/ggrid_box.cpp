@@ -92,7 +92,7 @@ lshapefcn_             (NULLPTR)
     ne_  [j] = sne[j];
   }
 
-  lshapefcn_ = new GShapeFcn_linear();
+  lshapefcn_ = new GShapeFcn_linear<GFTYPE>();
   if ( GDIM == 2 ) {
     init2d();
   }

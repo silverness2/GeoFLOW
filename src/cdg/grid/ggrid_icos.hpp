@@ -36,6 +36,7 @@ enum GICOSPTYPE      {GICOS_BASE, GICOS_ELEMENTAL};
 enum GCOORDSYST      {GICOS_CART, GICOS_LATLONG}; 
 
 typedef GTMatrix<GFTYPE> GFTMatrix;
+typedef GQUAD GTICOS;
 
 class GGridIcos : public GGrid
 {
@@ -75,26 +76,39 @@ friend  std::ostream&       operator<<(std::ostream&, GGridIcos &);       // Out
   private:
          void               init2d();                                       // initialize base icosahedron for 2d grid
          void               init3d();                                       // initialize for 3d grid
-         void               project2sphere(GTVector<GTriangle<GFTYPE>> &, 
-                                           GFTYPE rad);                     // project Cart mesh to sphere
-         void               project2sphere(GTVector<GTPoint<GFTYPE>> &, 
-                                           GFTYPE rad);                     // project points to sphere
-         void               project2sphere(GTVector<GTVector<GFTYPE>> &, 
-                                           GFTYPE rad);                     // project points to sphere
-         void               spherical2xyz(GTVector<GTPoint<GFTYPE>*> &);    // (r,lat,long) to (x,y,z)
-         void               spherical2xyz(GTVector<GTPoint<GFTYPE>>  &);    // (r,lat,long) to (x,y,z)
-         void               spherical2xyz(GTVector<GTVector<GFTYPE>> &);    // (r,lat,long) to (x,y,z)
-         void               xyz2spherical(GTVector<GTPoint<GFTYPE>*> &);    // (x,y,z) to (r, lat, long) 
-         void               xyz2spherical(GTVector<GTVector<GFTYPE>> &);    // (x,y,z) to (r, lat, long) 
-         void               xyz2spherical(GTVector<GTPoint<GFTYPE>>  &);    // (x,y,z) to (r, lat, long) 
-         void               cart2gnomonic(GTVector<GTPoint<GFTYPE>> &, GFTYPE, GFTYPE, GFTYPE, 
-                                          GTVector<GTPoint<GFTYPE>> &);     // transform to gnomonic space
-         void               gnomonic2cart(GTVector<GTVector<GFTYPE>> &, GFTYPE, GFTYPE, GFTYPE, 
-                                          GTVector<GTVector<GFTYPE>> &);    // transform from gnomonic space
-         void               gnomonic2cart(GTVector<GTPoint<GFTYPE>> &, GFTYPE, GFTYPE, GFTYPE, 
-                                          GTVector<GTPoint<GFTYPE>> &);     // transform from gnomonic space
-         void               reorderverts2d(GTVector<GTPoint<GFTYPE>> &, GTVector<GSIZET>&,
-                                           GTVector<GTPoint<GFTYPE>> &);    // make verts consis with shapefcns
+         template<typename T>
+         void               project2sphere(GTVector<GTriangle<T>> &, 
+                                           T rad);                          // project Cart mesh to sphere
+         template<typename T>
+         void               project2sphere(GTVector<GTPoint<T>> &, 
+                                           T rad);                          // project points to sphere
+         template<typename T>
+         void               project2sphere(GTVector<GTVector<T>> &, 
+                                           T  rad);                        // project points to sphere
+         template<typename T>
+         void               spherical2xyz(GTVector<GTPoint<T>*> &);        // (r,lat,long) to (x,y,z)
+         template<typename T>
+         void               spherical2xyz(GTVector<GTPoint<T>>  &);        // (r,lat,long) to (x,y,z)
+         template<typename T>
+         void               spherical2xyz(GTVector<GTVector<T>> &);        // (r,lat,long) to (x,y,z)
+         template<typename T>
+         void               xyz2spherical(GTVector<GTPoint<T>*> &);        // (x,y,z) to (r, lat, long) 
+         template<typename T>
+         void               xyz2spherical(GTVector<GTVector<T>> &);         // (x,y,z) to (r, lat, long) 
+         template<typename T>
+         void               xyz2spherical(GTVector<GTPoint<T>>  &);         // (x,y,z) to (r, lat, long) 
+         template<typename T>
+         void               cart2gnomonic(GTVector<GTPoint<T>> &, T, T, T,
+                                          GTVector<GTPoint<T>> &);          // transform to gnomonic space
+         template<typename T>
+         void               gnomonic2cart(GTVector<GTVector<T>> &, T, T, T,
+                                          GTVector<GTVector<T>> &);         // transform from gnomonic space
+         template<typename T>
+         void               gnomonic2cart(GTVector<GTPoint<T>> &, T, T, T, 
+                                          GTVector<GTPoint<T>> &);          // transform from gnomonic space
+         template<typename T>
+         void               reorderverts2d(GTVector<GTPoint<T>> &, GTVector<GSIZET>&,
+                                           GTVector<GTPoint<T>> &);         // make verts consis with shapefcns
 
          void               lagrefine();                                    // do 'Lagrange poly'-type refinement of base icos
          void               lagvert(GTPoint<GFTYPE> &a, 
@@ -134,7 +148,8 @@ friend  std::ostream&       operator<<(std::ostream&, GGridIcos &);       // Out
          GFTYPE             radiusi_;       // inner radius
          GFTYPE             radiuso_;       // outer radius (=radiusi in 2d)
          GDD_base          *gdd_;           // domain decomposition/partitioning object
-         GShapeFcn_linear  *lshapefcn_;     // linear shape func to compute 2d coords
+         GShapeFcn_linear<GTICOS>
+                           *lshapefcn_;     // linear shape func to compute 2d coords
          GTVector<GINT>     iup_;           // triangle pointing 'up' flag
 
          GTVector<GTriangle<GFTYPE>>    
@@ -151,5 +166,7 @@ friend  std::ostream&       operator<<(std::ostream&, GGridIcos &);       // Out
          GIMatrix            ifv0_;         // indices into fv0_ for each face of base icosahedron 
 
 };
+
+#include "ggrid_icos.ipp"
 
 #endif
