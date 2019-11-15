@@ -590,19 +590,20 @@ void GGridIcos::do_elems3d(GINT irank)
 {
   GString           serr = "GridIcos::do_elems3d (1): ";
   GSIZET            nxy;
-  GFTYPE            fact, r0, rdelta, xlatc, xlongc;
-  GTVector<GFPoint> cverts(4), gverts(4), tverts(4);
-  GTPoint<GFTYPE>   c(3), ct(3), v1(3), v2(3), v3(3); // 3d points
+  GTICOS            fact, r0, rdelta, xlatc, xlongc;
+  GTVector<GTPoint<GTICOS>>
+                    cverts(4), gverts(4), tverts(4);
+  GTPoint<GTICOS>   c(3), ct(3), v1(3), v2(3), v3(3); // 3d points
   GElem_base        *pelem;
   GElem_base        *pelem2d;
   GTVector<GINT>    iind;
   GTVector<GINT>    I(1);
-  GTVector<GFTYPE>  Ni;
+  GTVector<GTICOS>  Ni;
   GTVector<GTVector<GFTYPE>>  *xNodes;
   GTVector<GTVector<GFTYPE>>   xNodes2d(2);
   GTVector<GTVector<GFTYPE>*>  xiNodes2d(2);
   GTVector<GFTYPE>            *xiNodesr;
-  GTVector<GTVector<GFTYPE>>   xgtmp(3);
+  GTVector<GTVector<GTICOS>>   xgtmp(3);
 
   // Do eveything on unit sphere, then project to radiusi_
   // as a final step.
@@ -686,14 +687,14 @@ void GGridIcos::do_elems3d(GINT irank)
         xNodes2d [m].resizem(nxy);
       }
 
-      project2sphere<GFTYPE>(cverts, 1.0); // project verts to unit sphere     
+      project2sphere<GTICOS>(cverts, 1.0); // project verts to unit sphere     
       c = (cverts[0] + cverts[1] + cverts[2] + cverts[3])*0.25; // elem centroid
       xlatc  = asin(c.x3)         ; // reference lat/long
       xlongc = atan2(c.x2,c.x1);
       xlongc = xlongc < 0.0 ? 2*PI+xlongc : xlongc;
 
-      cart2gnomonic<GFTYPE>(cverts, 1.0, xlatc, xlongc, tverts); // gnomonic vertices of quads
-      reorderverts2d(tverts, isort, gverts); // reorder vertices consistenet with shape fcn
+      cart2gnomonic<GTICOS>(cverts, 1.0, xlatc, xlongc, tverts); // gnomonic vertices of quads
+      reorderverts2d<GTICOS>(tverts, isort, gverts); // reorder vertices consistenet with shape fcn
       for ( GINT l=0; l<2; l++ ) { // loop over available gnomonic coords
         xgtmp[l].resizem(nxy);
         xgtmp[l] = 0.0;
@@ -707,9 +708,9 @@ void GGridIcos::do_elems3d(GINT irank)
 
       // Convert 2d plane back to Cart coords and project to 
       // surface of inner sphere:
-      gnomonic2cart<GFTYPE>(xgtmp, 1.0, xlatc, xlongc, xNodes2d); 
-      project2sphere<GFTYPE>(xNodes2d, radiusi_);
-      xyz2spherical<GFTYPE>(xNodes2d);
+      gnomonic2cart<GTICOS>(xgtmp, 1.0, xlatc, xlongc, xNodes2d); 
+      project2sphere<GTICOS>(xNodes2d, radiusi_);
+      xyz2spherical<GTICOS>(xNodes2d);
 
       // Loop over radial elements and build all elements 
       // based on this patch:
@@ -725,7 +726,7 @@ void GGridIcos::do_elems3d(GINT irank)
             (*xNodes)[2][n+m*nxy] =  xNodes2d[2][n];
           }
         }
-        spherical2xyz<GFTYPE>(*xNodes);
+        spherical2xyz<GTICOS>(*xNodes);
 
         pelem->init(*xNodes);
 
