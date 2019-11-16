@@ -29,7 +29,7 @@ void GGridIcos::project2sphere(GTVector<GTriangle<T>> &tmesh, T rad)
       r = v.norm();
       xlat  = asin(v.x3/r);
       xlong = atan2(v.x2,v.x1);
-      xlong = xlong < 0.0 ? 2*PI+xlong : xlong;
+      xlong = xlong < 0.0 ? 2.0*PI+xlong : xlong;
       v.x1 = rad*cos(xlat)*cos(xlong);
       v.x2 = rad*cos(xlat)*sin(xlong);
       v.x3 = rad*sin(xlat);
@@ -62,7 +62,7 @@ void GGridIcos::project2sphere(GTVector<GTPoint<T>> &plist, T rad)
     r = v.norm();
     xlat  = asin(v.x3/r);
     xlong = atan2(v.x2,v.x1);
-    xlong = xlong < 0.0 ? 2*PI+xlong : xlong;
+    xlong = xlong < 0.0 ? 2.0*PI+xlong : xlong;
     v.x1 = rad*cos(xlat)*cos(xlong);
     v.x2 = rad*cos(xlat)*sin(xlong);
     v.x3 = rad*sin(xlat);
@@ -93,7 +93,7 @@ void GGridIcos::project2sphere(GTVector<GTVector<T>> &plist, T rad)
     r = sqrt(x*x + y*y + z*z);
     xlat  = asin(z/r);
     xlong = atan2(y,x);
-    xlong = xlong < 0.0 ? 2*PI+xlong : xlong;
+    xlong = xlong < 0.0 ? 2.0*PI+xlong : xlong;
     plist[0][i] = rad*cos(xlat)*cos(xlong);
     plist[1][i] = rad*cos(xlat)*sin(xlong);
     plist[2][i] = rad*sin(xlat);
@@ -199,7 +199,7 @@ void GGridIcos::xyz2spherical(GTVector<GTPoint<T>*> &plist)
    plist[i]->x1 = r;
    plist[i]->x2 = asin(z/r);
    plist[i]->x3 = atan2(y,x);
-   plist[i]->x3 = plist[i]->x3 < 0.0 ? 2*PI+plist[i]->x3 : plist[i]->x3;
+   plist[i]->x3 = plist[i]->x3 < 0.0 ? 2.0*PI+plist[i]->x3 : plist[i]->x3;
   }
 
 } // end of method xyz2spherical (1)
@@ -226,7 +226,7 @@ void GGridIcos::xyz2spherical(GTVector<GTVector<T>> &plist)
    plist[i][0] = r;
    plist[i][1] = asin(z/r);
    plist[i][2] = atan2(y,x);
-   plist[i][2] = plist[i][2] < 0.0 ? 2*PI+plist[i][2] : plist[i][2];
+   plist[i][2] = plist[i][2] < 0.0 ? 2.0*PI+plist[i][2] : plist[i][2];
   }
 
 } // end of method xyz2spherical (2)
@@ -253,7 +253,7 @@ void GGridIcos::xyz2spherical(GTVector<GTPoint<T>> &plist)
    plist[i].x1 = r;
    plist[i].x2 = asin(z/r);
    plist[i].x3 = atan2(y,x);
-   plist[i].x3 = plist[i].x3 < 0.0 ? 2*PI+plist[i].x3 : plist[i].x3;
+   plist[i].x3 = plist[i].x3 < 0.0 ? 2.0*PI+plist[i].x3 : plist[i].x3;
   }
 
 } // end of method xyz2spherical (3)
@@ -297,7 +297,7 @@ void GGridIcos::cart2gnomonic(GTVector<GTPoint<T>> &clist, T rad, T xlatc, T xlo
     r      = clist[i].norm();
     xlat   = asin(clist[i].x3/r);
     xlong  = atan2(clist[i].x2,clist[i].x1);
-    xlong  = xlong < 0.0 ? 2*PI+xlong : xlong;
+    xlong  = xlong < 0.0 ? 2.0*PI+xlong : xlong;
 #if 0
     den    = sin(xlatc)*sin(xlat) + cos(xlatc)*cos(xlat)*cos(xlong-xlongc);  
     xlatp  = asin( cos(xlatc)*sin(xlat) - sin(xlatc)*cos(xlat)*cos(xlong-xlongc) );
