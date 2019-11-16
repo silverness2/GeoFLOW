@@ -15,8 +15,7 @@
  set(CDG_COMM_SRC   ${GHOME}/comm/gcomm.cpp 
     )
 
- set(CDG_GRID_SRC   ${GHOME}/grid/gdd_base.cpp
-                    ${GHOME}/grid/ggrid.cpp
+ set(CDG_GRID_SRC   ${GHOME}/grid/ggrid.cpp
                     ${GHOME}/grid/ggrid_icos.cpp
                     ${GHOME}/grid/ggrid_box.cpp
                     ${GHOME}/grid/ggrid_factory.cpp
