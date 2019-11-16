@@ -16,6 +16,7 @@
 #include "gtvector.hpp"
 #include "gtmatrix.hpp"
 
+template<typename T>
 class GDD_base
 {
 
@@ -28,12 +29,15 @@ public:
 virtual  GDD_base        &operator=(const GDD_base &g) { nprocs_ = g.nprocs_; return *this; }
 
                    
-virtual  GSIZET           doDD(const GTVector<GTVector<GFTYPE>> &x, GINT irank, GTVector<GINT> &iret );
-virtual  GSIZET           doDD(const GTVector<GTPoint<GFTYPE>>  &x, GINT irank, GTVector<GINT> &iret);
+virtual  GSIZET           doDD(const GTVector<GTVector<T>> &x, GINT irank, GTVector<GINT> &iret );
+virtual  GSIZET           doDD(const GTVector<GTPoint<T>>  &x, GINT irank, GTVector<GINT> &iret);
 
 private:
 
 GINT               nprocs_ ;  // number of tasks/ranks to partition into
 
 };
+
+#include "gdd_base.ipp"
+
 #endif

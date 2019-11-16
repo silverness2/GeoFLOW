@@ -144,7 +144,7 @@ std::ostream &operator<<(std::ostream &str, GGridBox &e)
 // ARGS   : GDD_base pointer
 // RETURNS: none
 //**********************************************************************************
-void GGridBox::set_partitioner(GDD_base *gdd)
+void GGridBox::set_partitioner(GDD_base<GFTYPE> *gdd)
 {
 
   gdd_ = gdd;

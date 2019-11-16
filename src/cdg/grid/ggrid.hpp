@@ -45,7 +45,7 @@ virtual void                 do_elems(GTMatrix<GINT> &p,
                                GTVector<GTVector<GFTYPE>> &xnodes) = 0; // compute grid on restart
 virtual void                 do_face_normals()=0;                       // compute normals to elem faces 
 virtual void                 do_bdy_normals ()=0;                       // compute normals to doimain bdy
-virtual void                 set_partitioner(GDD_base *d) = 0;          // set and use GDD object
+//virtual void                 set_partitioner(GDD_base<GTICOS> *d) = 0;   // set and use GDD object
 
 #if 0
 virtual void                 set_bdy_callback(

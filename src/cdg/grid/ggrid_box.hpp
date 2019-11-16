@@ -48,7 +48,7 @@ public:
                               GTVector<GTVector<GFTYPE>> &xnodes);           // compute elems from restart data
         void                do_face_normals();                               // compute normals to elem faces
         void                do_bdy_normals ();                               // compute normals to doimain bdy
-        void                set_partitioner(GDD_base *d);                    // set and use GDD object
+        void                set_partitioner(GDD_base<GFTYPE> *d);            // set and use GDD object
         void                set_basis(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b); // set element basis
         void                periodize();                                     // periodize coords, if allowed
         void                unperiodize();                                   // un-periodize coords, if allow
@@ -86,7 +86,7 @@ private:
 
          GINT                ndim_;          // grid dimensionality (2 or 3)
          GFTYPE              eps_;           // float epsilon for comparisons
-         GDD_base           *gdd_;           // domain decomposition/partitioning object
+         GDD_base<GFTYPE>    *gdd_;           // domain decomposition/partitioning object
          GShapeFcn_linear<GFTYPE> 
                             *lshapefcn_;     // linear shape func to compute 2d coords
          GTPoint<GFTYPE>     P0_;            // P0 = starting point of box origin

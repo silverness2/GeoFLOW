@@ -59,10 +59,10 @@ public:
                               GTVector<GTVector<GFTYPE>> &xnodes);        // compute elems from restart data)
         void                do_face_normals();                            // compute normals to elem faces
         void                do_bdy_normals ();                            // compute normals to doimain bd
-        void                set_partitioner(GDD_base *d);                 // set and use GDD object
-        GTVector<GTriangle<GFTYPE>> 
+        void                set_partitioner(GDD_base<GTICOS> *d);         // set and use GDD object
+        GTVector<GTriangle<GTICOS>> 
                            &get_tmesh(){ return tmesh_;}                  // get complete triang. mesh
-        GTVector    <GHex<GFTYPE>> 
+        GTVector    <GHex<GTICOS>> 
                            &get_hmesh(){ return hmesh_;}                  // get complete hex  mesh
         void                print(const GString &filename, 
                             GCOORDSYST icoord=GICOS_LATLONG);             // print grid to file
@@ -109,24 +109,28 @@ friend  std::ostream&       operator<<(std::ostream&, GGridIcos &);       // Out
          template<typename T>
          void               reorderverts2d(GTVector<GTPoint<T>> &, GTVector<GSIZET>&,
                                            GTVector<GTPoint<T>> &);         // make verts consis with shapefcns
-         template<typename T>
-         void               copycast(GTVector<GTVector<GFTYPE>> &from, GTVector<GTVector<T>> &to);
-         template<typename T>
-         void               copycast(GTVector<GTVector<GFTYPE>*> &from, GTVector<GTVector<T>*> &to);
-         template<typename T>
-         void               copycast(GTPoint<GFTYPE> &from, GTPoint<T> &to);
+         template<typename TF, typename TT>
+         void               copycast(GTVector<GTVector<TF>> &from, GTVector<GTVector<TT>> &to);
+         template<typename TF, typename TT>
+         void               copycast(GTVector<GTVector<TF>*> &from, GTVector<GTVector<TT>*> &to);
+         template<typename TF, typename TT>
+         void               copycast(GTPoint<TF> &from, GTPoint<TT> &to);
 
          void               lagrefine();                                    // do 'Lagrange poly'-type refinement of base icos
-         void               lagvert(GTPoint<GFTYPE> &a, 
-                                    GTPoint<GFTYPE> &b, 
-                                    GTPoint<GFTYPE> &c,
-                                    GINT I, GTVector<GTPoint<GFTYPE>> &R);   // get list of points, R at index I
+         template<typename T>
+         void               lagvert(GTPoint<T> &a, 
+                                    GTPoint<T> &b, 
+                                    GTPoint<T> &c,
+                                    GINT I, GTVector<GTPoint<T>> &R);      // get list of points, R at index I
 
-         void               interleave(GTVector<GTPoint<GFTYPE>> &R0,           // interleave rows of points for trianlges
-                                    GTVector<GTPoint<GFTYPE>> &R1,
-                                    GINT I, GTVector<GTPoint<GFTYPE>> &Rz);
-         void               order_latlong2d(GTVector<GFPoint> &verts);       // order vertics via lat-long
-         void               order_triangles(GTVector<GTriangle<GFTYPE>> &);    // order triangle verts
+         template<typename T>
+         void               interleave(GTVector<GTPoint<T>> &R0,           // interleave rows of points for trianlges
+                                    GTVector<GTPoint<T>> &R1,
+                                    GINT I, GTVector<GTPoint<T>> &Rz);
+         template<typename T>
+         void               order_latlong2d(GTVector<GTPoint<T>> &verts);  // order vertics via lat-long
+         template<typename T>
+         void               order_triangles(GTVector<GTriangle<T>> &);     // order triangle verts
 
        
          void               do_elems2d(GINT rank);              // do 2d grid
@@ -153,22 +157,22 @@ friend  std::ostream&       operator<<(std::ostream&, GGridIcos &);       // Out
          GSIZET             nradelem_;      // # radial elements
          GFTYPE             radiusi_;       // inner radius
          GFTYPE             radiuso_;       // outer radius (=radiusi in 2d)
-         GDD_base          *gdd_;           // domain decomposition/partitioning object
+         GDD_base<GTICOS>  *gdd_;           // domain decomposition/partitioning object
          GShapeFcn_linear<GTICOS>
                            *lshapefcn_;     // linear shape func to compute 2d coords
          GTVector<GINT>     iup_;           // triangle pointing 'up' flag
 
-         GTVector<GTriangle<GFTYPE>>    
+         GTVector<GTriangle<GTICOS>>    
                             tmesh_;         // array of final mesh triangles
-         GTVector<GTPoint<GFTYPE>>
+         GTVector<GTPoint<GTICOS>>
                             ftcentroids_ ;  // centroids of finest triangles/faces/ or hexes
-         GTVector<GTriangle<GFTYPE>>     
+         GTVector<GTriangle<GTICOS>>     
                              tbase_;        // array of base triangles
          GTVector<GNBasis<GCTYPE,GFTYPE>*> 
                              gbasis_;       // directional bases
-         GTVector<GHex<GFTYPE>>  
+         GTVector<GHex<GTICOS>>  
                              hmesh_;        // list of vertices for each 3d (hex) element
-         GTMatrix<GFTYPE>    fv0_;          // vertex list for base icosahedron
+         GTMatrix<GTICOS>    fv0_;          // vertex list for base icosahedron
          GIMatrix            ifv0_;         // indices into fv0_ for each face of base icosahedron 
 
 };

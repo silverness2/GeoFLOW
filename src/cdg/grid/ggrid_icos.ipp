@@ -307,7 +307,7 @@ void GGridIcos::cart2gnomonic(GTVector<GTPoint<T>> &clist, T rad, T xlatc, T xlo
     glist[i].x2 = rad*tan(xlatp)*sec(xlongp);
 #else
     den    = sin(xlatc)*sin(xlat) + cos(xlatc)*cos(xlat)*cos(xlong-xlongc); 
-    den    = fabs(den) < std::numeric_limits<GFTYPE>::epsilon() ? 0.0 : 1.0/den;
+    den    = fabs(den) < std::numeric_limits<T>::epsilon() ? 0.0 : 1.0/den;
     glist[i].x1 = rad*cos(xlat)*sin(xlong-xlongc)*den;
     glist[i].x2 = rad*( cos(xlatc)*sin(xlat) - sin(xlatc)*cos(xlat)*cos(xlong-xlongc) ) * den;
 #endif
@@ -497,15 +497,15 @@ void GGridIcos::reorderverts2d(GTVector<GTPoint<T>> &uverts, GTVector<GSIZET> &i
 //          to   : 'to' array; may be of different type than 'from'
 // RETURNS: none.
 //**********************************************************************************
-template<typename T>
-void GGridIcos::copycast(GTVector<GTVector<GFTYPE>> &from, GTVector<GTVector<T>> &to)
+template<typename TF, typename TT>
+void GGridIcos::copycast(GTVector<GTVector<TF>> &from, GTVector<GTVector<TT>> &to)
 {
 
   assert(to.size() == from.size() && "Incompatible dimensions");
   for ( auto j=0; j<to.size(); j++ ) {
     to[j].resize(from[j].size()); 
     for ( auto i=0; i<to[j].size(); i++ ) {
-      to[j][i] = static_cast<T>(from[j][i]);
+      to[j][i] = static_cast<TT>(from[j][i]);
     }
   }
   
@@ -522,15 +522,15 @@ void GGridIcos::copycast(GTVector<GTVector<GFTYPE>> &from, GTVector<GTVector<T>>
 //          to   : 'to' array; may be of different type than 'from'
 // RETURNS: none.
 //**********************************************************************************
-template<typename T>
-void GGridIcos::copycast(GTVector<GTVector<GFTYPE>*> &from, GTVector<GTVector<T>*> &to)
+template<typename TF, typename TT>
+void GGridIcos::copycast(GTVector<GTVector<TF>*> &from, GTVector<GTVector<TT>*> &to)
 {
 
   assert(to.size() == from.size() && "Incompatible dimensions");
   for ( auto j=0; j<to.size(); j++ ) {
     to[j]->resize(from[j]->size()); 
     for ( auto i=0; i<to[j]->size(); i++ ) {
-      (*to[j])[i] = static_cast<T>((*from[j])[i]);
+      (*to[j])[i] = static_cast<TT>((*from[j])[i]);
     }
   }
   
@@ -546,15 +546,212 @@ void GGridIcos::copycast(GTVector<GTVector<GFTYPE>*> &from, GTVector<GTVector<T>
 //          to   : 'to' point; may be of different type than 'from'
 // RETURNS: none.
 //**********************************************************************************
-template<typename T>
-void GGridIcos::copycast(GTPoint<GFTYPE> &from, GTPoint<T> &to)
+template<typename TF, typename TT>
+void GGridIcos::copycast(GTPoint<TF> &from, GTPoint<TT> &to)
 {
 
   for ( auto j=0; j<to.size(); j++ ) {
-    to[j] = static_cast<T>(from[j]);
+    to[j] = static_cast<TT>(from[j]);
   }
   
 } // end of method copycast (3)
 
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : interleave
+// DESC   : Utility routine to interleave 2 rows of points 
+// ARGS   : R0   : row of points above
+//          R1   : row of points below
+//          I    : 'row index' (0 ... iLevel+1 of R1 
+//          Rz   : list of vertices (points) interleaved, so that following
+//                 ordering represents triangles in 'Lagrangian refinement':
+//                 (Rz(0), Rz(1), Rz(2)); (Rz(1) Rz(2) Rz(3)) , ...
+// RETURNS: none.
+//**********************************************************************************
+template<typename T>
+void GGridIcos::interleave(GTVector<GTPoint<T>> &R0, GTVector<GTPoint<T>> &R1,
+                   GINT I, GTVector<GTPoint<T>> &Rz)
+{
+  GString serr = "GridIcos::interleave: ";
+
+  // Interlaeave R0 and R1:
+  for ( GSIZET j=0; j<Rz.size(); j++ ) {
+    if ( j%2 == 0 ) Rz   [j] = R1[j/2];
+    else            Rz   [j] = R0[(j-1)/2];
+  }
+
+} // end of method interleave
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : lagvert
+// DESC   : Utility routine to compute 'Lagrangian-refined' vertices from 'base' 
+//          vertices and vertex indices. Not vectorized.
+//          Given bse vertices, find vertices at 'row index' I
+// ARGS   : a,b,c: base vertices
+//          I    : 'row index' (0 ... iLevel+1
+//          R    : list of vertices (points) at I
+// RETURNS: none.
+//**********************************************************************************
+template<typename T>
+void GGridIcos::lagvert(GTPoint<T>&a, GTPoint<T> &b, GTPoint<T> &c,
+                   GINT I, GTVector<GTPoint<T>> &R)
+{
+  GString serr = "GridIcos::lagvert: ";
+
+  GFTYPE xI, xJ;
+
+  GTPoint<T> rL(3);
+  GTPoint<T> rR(3);
+
+  R.resizem(I+1);
+
+  GFTYPE fact = 1.0/static_cast<T>(nrows_+1);
+
+  // Build 'rail' points on L and R:
+  xI = static_cast<T>(I);
+  rL = a + ( (b - a) * (xI * fact) );
+  rR = a + ( (c - a) * (xI * fact) );
+
+  // Compute R vertices based on refinement indices:
+  fact = I > 0 ? 1.0/static_cast<T>(I) : 1.0;
+  for ( GSIZET j=0; j<I+1; j++ ) {
+    xJ = static_cast<T>(j);
+    R[j] = rL + (rR - rL)*(xJ*fact);
+  }
+
+} // end of method lagvert
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : order_latlong2d
+// DESC   : Order 2d vertices on exit s.t. they roughly define a 'box' 
+//          in spherical coords. Used only for quad elements.
+// ARGS   : verts : Array of vertices, re-ordered on exit
+// RETURNS: none.
+//**********************************************************************************
+template<typename T>
+void GGridIcos::order_latlong2d(GTVector<GTPoint<T>> &verts)
+{
+
+  assert(verts.size() == 4 && "4 vertices must be provided");
+
+  GString              serr = "GGridIcos::order_latlong2d: ";
+  GTVector<GSIZET>     isortlon(4);
+  GTVector<T>  lon(4), lat(4);
+  GTVector<GTPoint<T>> cverts(4);       // copy of input verts
+  GTVector<GTPoint<T>> sverts(4);       // sverts in sph coords
+
+  cverts = verts;
+  sverts = verts;
+  xyz2spherical<T>(sverts); // convert verts to latlon
+
+  // Isolate lat, lon:
+  for ( GSIZET j=0; j<4; j++ ) {
+    lat[j] = sverts[j].x2;
+    lon[j] = sverts[j].x3;
+  }
+
+  // Sort lon in increasing order:
+  lon.sortincreasing(isortlon);
+
+  // Check vertices near 0-2pi axis:
+  if ( fabs(lon[isortlon[0]] - lon[isortlon[3]]) < PI ) {
+    for ( GSIZET j=0; j<4; j++ ) {
+      if ( lon[j] > 1.5*PI && lon[j] <=2.0*PI ) lon[j] -= 2.0*PI;
+    }
+  }
+
+  lon.sortincreasing(isortlon);
+
+  // Find 2 points with smallest lon, set v0 and v3
+  // based on lat to define 'box':
+  if ( lat[isortlon[0]] < lat[isortlon[1]] ) {
+    verts[0] = cverts[isortlon[0]];
+    verts[3] = cverts[isortlon[1]];
+  }
+  else {
+    verts[0] = cverts[isortlon[1]];
+    verts[3] = cverts[isortlon[0]];
+  }
+  
+  // Find 2 points with largest lon, set v1 and v2
+  // based on lat to define 'box':
+  if ( lat[isortlon[2]] < lat[isortlon[3]] ) {
+    verts[1] = cverts[isortlon[2]];
+    verts[2] = cverts[isortlon[3]];
+  }
+  else {
+    verts[1] = cverts[isortlon[3]];
+    verts[2] = cverts[isortlon[2]];
+  }
+
+#if 0
+  cout << serr << " on entry: verts=" << cverts << endl;
+  cout << serr << " on exit : verts=" << verts << endl;
+#endif
+
+} // end, method order_latlong2d
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : order_triangles
+// DESC   : Order triangle vertices
+// ARGS   : tmesh: Array of vertices, re-ordered on exit
+// RETURNS: none.
+//**********************************************************************************
+template<typename T>
+void GGridIcos::order_triangles(GTVector<GTriangle<T>> &tmesh)
+{
+
+  GString              serr = "GGridIcos::order_triangles: ";
+  GTVector<GSIZET>     isortlon(3);
+  GTVector<T>          lon(3), lat(3);
+  GTVector<GTPoint<T>> cverts(3);       // copy of input verts
+  GTVector<GTPoint<T>> sverts(3);       // sverts in sph coords
+
+  iup_.resize(tmesh.size());
+  iup_ = 0;
+  for ( GSIZET i=0; i<tmesh.size(); i++ ) {
+    for ( GSIZET j=0; j<3; j++ ) cverts[j] = *tmesh[i].v[j];
+    sverts = cverts;
+    xyz2spherical<T>(sverts); // convert verts to latlon
+    for ( GSIZET j=0; j<3; j++ ) {
+      lat[j] = sverts[j].x2;
+      lon[j] = sverts[j].x3;
+    }
+    lon.sortincreasing(isortlon);
+
+    // Check vertices near 0-2pi axis; if triangle
+    // spans it, subtract 2pi to make longitude negative:
+    if ( fabs(lon[isortlon[0]] - lon[isortlon[2]]) < PI ) {
+      for ( GSIZET j=0; j<3; j++ ) {
+        if ( lon[j] > 1.5*PI && lon[j] <= 2.0*PI ) lon[j] -= 2.0*PI;
+      }
+    }
+    lon.sortincreasing(isortlon);
+    
+    if ( lat[isortlon[1]] > lat[isortlon[0]]
+      && lat[isortlon[1]] > lat[isortlon[2]] ) { // pointing upwards
+     *tmesh[i].v[0] =  cverts[isortlon[0]];
+     *tmesh[i].v[1] =  cverts[isortlon[2]];
+     *tmesh[i].v[2] =  cverts[isortlon[1]];
+      iup_[i] = 1;
+    }
+
+    if ( lat[isortlon[1]] < lat[isortlon[0]]
+      && lat[isortlon[1]] < lat[isortlon[2]] ) { // pointing downwards
+     *tmesh[i].v[0] =  cverts[isortlon[1]];
+     *tmesh[i].v[1] =  cverts[isortlon[2]];
+     *tmesh[i].v[2] =  cverts[isortlon[0]];
+    }
+  }
+
+} // end, method order_triangles
 
 
