@@ -602,14 +602,14 @@ void GGridIcos::lagvert(GTPoint<T>&a, GTPoint<T> &b, GTPoint<T> &c,
 {
   GString serr = "GridIcos::lagvert: ";
 
-  GFTYPE xI, xJ;
+  T   xI, xJ;
 
   GTPoint<T> rL(3);
   GTPoint<T> rR(3);
 
   R.resizem(I+1);
 
-  GFTYPE fact = 1.0/static_cast<T>(nrows_+1);
+  T fact = 1.0/static_cast<T>(nrows_+1);
 
   // Build 'rail' points on L and R:
   xI = static_cast<T>(I);
