@@ -69,7 +69,7 @@ typedef std::string GString;
 #define GWORD      int
 #define GDWORD     long
 #define GKEY       size_t
-#define GNODEID    size_t
+#define GNODEID    long long
 #define GSIZET     size_t
 #define GFPOS      size_t
 #define GFLOAT     float
