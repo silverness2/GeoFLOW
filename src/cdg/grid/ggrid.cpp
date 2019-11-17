@@ -787,11 +787,6 @@ void GGrid::globalize_coords()
    // Reset global scope:
    for ( GSIZET j=0; j<nxy; j++ ) xNodes_[j].range_reset();
 
-GPP(comm_,"GGrid::globalize_coords: xNodes=" << xNodes_[0]);
-GPP(comm_,"GGrid::globalize_coords: yNodes=" << xNodes_[1]);
-if ( xNodes_.size() > 2 )
-GPP(comm_,"GGrid::globalize_coords: zNodes=" << xNodes_[2]);
-
 
 } // end, method globalize_coords
 
