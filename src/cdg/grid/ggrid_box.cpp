@@ -836,7 +836,7 @@ void GGridBox::find_subdomain()
       ib = MAX(beg_lin-static_cast<GLONG>(j*ne_[0]),0); 
       ie = MIN(end_lin-static_cast<GLONG>(j*ne_[0]),ne_[0]-1); 
       for ( GLONG i=ib; i<=ie; i++ ) {
-        for ( auto i=0; i<4; i++ ) qmesh_[n][i].resize(ndim_);
+        for ( auto l=0; l<4; l++ ) qmesh_[n][l].resize(ndim_);
         v0.x1 = P0_.x1+i*dx.x1; v0.x2 = P0_.x2+j*dx.x2;
                                          qmesh_[n].v1 = v0;
         dv.x1 = dx.x1 ; dv.x2 = 0.0  ;   qmesh_[n].v2 = v0 + dv;
