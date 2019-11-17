@@ -79,8 +79,7 @@ public:
     if ( gdim_>0) x1 = p[0]; if ( gdim_>1) x2 = p[1]; if (gdim_>2) x3 = p[2]; if ( gdim_>3) x4 = p[3];}
 
   inline void  operator=(const std::vector<T> &p)
-  { assert(p.size() <= gdim_ );
-    for ( GINT j=0; j<gdim_; j++ ) *px_[j] = p[j];
+  { for ( GINT j=0; j<gdim_; j++ ) *px_[j] = p[j];
     if ( gdim_>0) x1 = p[0]; if ( gdim_>1) x2 = p[1]; if (gdim_>2) x3 = p[2]; if ( gdim_>3) x4 = p[3];}
 
   inline void  operator=(const GTVector<T> &p)
