@@ -108,8 +108,10 @@ GBOOL GGFX<T>::init(GNIDBuffer &glob_index)
 #endif
 
   // Get node id dynamic range:
-  GNODEID lmax = glob_index.max();
-  GComm::Allreduce(&lmax, &maxNodeVal_, 1, T2GCDatatype<GNODEID>(), GC_OP_MAX, comm_);
+  GNODEID loc = glob_index.max();
+  GComm::Allreduce(&loc, &maxNodeVal_, 1, T2GCDatatype<GNODEID>(), GC_OP_MAX, comm_);
+  loc = glob_index.min();
+  GComm::Allreduce(&loc, &minNodeVal_, 1, T2GCDatatype<GNODEID>(), GC_OP_MIN, comm_);
  
   // Do initial sorting of all sortable data. 
 #if defined(GGFX_TRACE_OUTPUT)
@@ -309,9 +311,9 @@ GBOOL GGFX<T>::binSort(GNIDBuffer &nodelist, GIMatrix &gBinMat,
   gBinBdy.resize(nprocs_,2);
 
   // Node list can be in any order:
-  GNODEID nDel = (maxNodeVal_+1) / nprocs_;
-  GNODEID nRem = (maxNodeVal_+1) % nprocs_;
-  GNODEID nRange0 = 0;
+  GNODEID nDel = (maxNodeVal_-minNodeVal_+1) / nprocs_;
+  GNODEID nRem = (maxNodeVal_-minNodeVal_+1) % nprocs_;
+  GNODEID nRange0 = minNodeVal_;
   GNODEID nRange1;
   for ( i=0, n=0; i<nprocs_; i++ ) { // cycle over bins (tasks)
     nRange1  = nRange0 + nDel + ( (i<nRem || (i==nprocs_-1)) ? 1:0) - 1; // set range owned by task

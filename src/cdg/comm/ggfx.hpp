@@ -85,7 +85,8 @@ GC_COMM            comm_         ;  // communicator
 GINT               nprocs_       ;  // number of tasks/ranks
 GINT               rank_         ;  // this rank
 GSIZET             nglob_index_  ;  // number of indices in call to Init
-GNODEID            maxNodeVal_   ;  // Node value dynamical range
+GNODEID            maxNodeVal_   ;  // Node value dynamical range max
+GNODEID            minNodeVal_   ;  // Node value dynamical range min
 GNODEID            maxNodes_     ;  // total number of nodes distributed among all procs
 GNIDMatrix         gBinBdy_      ;  // global bin bdy ranges for each task [0,nporocs_-1]
 GIBuffer           iOpL2RTasks_  ;  // task ids to send op data to, and recv from
