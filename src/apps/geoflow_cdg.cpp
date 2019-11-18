@@ -691,7 +691,7 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
     rad   = gtree.getValue<GFTYPE>("radius");
     delta[0] = 0.5*grid.minlength()/(rad*pmax*pmax);
     delta[1] = grid.minlength()/(rad*pmax*pmax);
-    for ( auto j=0; j<dX.size(); j++ ) dX[j] = 0.05 *delta[j];
+    for ( auto j=0; j<dX.size(); j++ ) dX[j] = 0.1 *delta[j];
     gmorton.setType(GMORTON_STACKED);
 //  gmorton.setType(GMORTON_INTERLEAVE);
 #else
