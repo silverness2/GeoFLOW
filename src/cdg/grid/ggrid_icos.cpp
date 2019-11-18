@@ -479,6 +479,7 @@ void GGridIcos::do_elems2d(GINT irank)
       gnomonic2cart<GTICOS>(xgtmp, 1.0, xlatc, xlongc, xd); //
       project2sphere<GTICOS>(xd, radiusi_);
       for ( auto l=0; l<xd.size(); l++ ) {
+        assert( xd[l].isfinite() );
         for ( auto k=0; k<xd[l].size(); k++ ) (*xNodes)[l][k] = xd[l][k];
       }
       pelem->init(*xNodes);
