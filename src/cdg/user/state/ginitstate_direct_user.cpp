@@ -262,7 +262,7 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
 
   bret = TRUE;
   for ( j=0; j<GDIM+1; j++ ) {
-     bret = bret && u[j]->isfinite();
+     bret = bret && u[j]->isfinite(i);
   }
 
   assert(bret && "Initial conditions not finite!");
