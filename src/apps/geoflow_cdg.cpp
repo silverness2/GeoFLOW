@@ -661,6 +661,7 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
   P0.resize(GDIM);
   dX.resize(GDIM);
   xnodes = &grid.xNodes();
+  glob_indices.resize(grid_->ndof());
 
   // If (x, y, z) < epsilon, set to 0:
   GMTK::zero(*xnodes);
