@@ -134,7 +134,6 @@ int main(int argc, char **argv)
     pIntegrator_ = IntegratorFactory<MyTypes>::build(ptree_, pEqn_, pMixer, pObservers, *grid_);
     pIntegrator_->get_traits().cycle = icycle;
 
-
     //***************************************************
     // Initialize state:
     //***************************************************
@@ -734,6 +733,9 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
     static_cast<GGridBox*>(&grid)->periodize();
   }
 
+  delta  = grid.minnodedist();
+  dX     = 0.05*delta;
+  xnodes = &grid.xNodes();
   glob_indices.resize(grid.ndof());
 
 
