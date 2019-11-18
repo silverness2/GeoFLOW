@@ -1085,7 +1085,7 @@ GBOOL GTVector<T>::isfinite(GSIZET &iwhere)
 
   for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end() && j<=this->gindex_.end() && bret; j+=this->gindex_.stride() ) {
     bret = std::isfinite(this->data_[j]);
-    if ( bret ) iwhere = j;
+    if ( !bret ) iwhere = j;
   }
  
   return bret;
