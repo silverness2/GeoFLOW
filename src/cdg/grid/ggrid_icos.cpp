@@ -413,9 +413,9 @@ void GGridIcos::do_elems2d(GINT irank)
   // For each triangle in base mesh owned by this rank...
   for ( GSIZET n=0; n<iind.size(); n++ ) { 
     i = iind[n];
-    copycast<GTICOS,GTICOS>(*tmesh_[i].v[0], v1);
-    copycast<GTICOS,GTICOS>(*tmesh_[i].v[1], v2);
-    copycast<GTICOS,GTICOS>(*tmesh_[i].v[2], v3);
+    v1 = *tmesh_[i].v[0];
+    v2 = *tmesh_[i].v[1];
+    v3 = *tmesh_[i].v[2];
     ct = (v1 + (v2 + v3)) * fact;  // triangle centroid; don't overwrite later on
     // Compute element vertices:
     // NOTE: Is this ordering compatible with shape functions 
