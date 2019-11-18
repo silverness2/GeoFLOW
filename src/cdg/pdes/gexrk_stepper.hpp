@@ -11,6 +11,7 @@
 #include "gtvector.hpp"
 #include "gtmatrix.hpp"
 #include "gbutcherrk.hpp"
+#include "ggrid.hpp"
 #include "ggfx.hpp"
 
 #include <functional>
@@ -24,7 +25,7 @@ typedef T  Time;
 
 public:
                            GExRKStepper() = delete;
-                           GExRKStepper(GSIZET nstage);
+                           GExRKStepper(GGrid &grid, GSIZET nstage);
                           ~GExRKStepper();
                            GExRKStepper(const GExRKStepper &a) = default;
                            GExRKStepper &operator=(const GExRKStepper &bu) = default;
@@ -77,7 +78,8 @@ private:
         GINT               nstage_;                          // no stages (not nec. 'order'!)
         GButcherRK<T>      butcher_;                         // Butcher tableau
         GTVector<State>    K_;                               // RK stage update vectors
-        GGFX<GFTYPE>      *ggfx_;                           // geom-free exchange op
+        GGrid             *grid_;                            // grid object
+        GGFX<GFTYPE>      *ggfx_;                            // geom-free exchange op
         std::function<void(const Time &t,                    
                            const State  &uin,
                            const State  &uf,
