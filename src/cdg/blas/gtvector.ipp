@@ -1051,14 +1051,13 @@ GTVector<T>::operator*=(const GTVector &b)
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : isfinite
+// METHOD : isfinite (1)
 // DESC   : Find if a nan or inf exists in vector
 // ARGS   : 
 // RETURNS: TRUE if ok (all members are finite);  else FALSE
 //**********************************************************************************
 template<class T>
-T
-GTVector<T>::isfinite()
+GBOOL GTVector<T>::isfinite()
 {
   GBOOL bret = TRUE;
 
@@ -1068,7 +1067,30 @@ GTVector<T>::isfinite()
  
   return bret;
 
-} // end isfinite
+} // end isfinite (1)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : isfinite (2)
+// DESC   : Find if a nan or inf exists in vector, and provide index
+//          of first occurrence.
+// ARGS   : iwhere: index of first occurrence; set only if isfinite == FALSE
+// RETURNS: TRUE if ok (all members are finite);  else FALSE
+//**********************************************************************************
+template<class T>
+GBOOL GTVector<T>::isfinite(GSIZET &iwhere)
+{
+  GBOOL bret = TRUE;
+
+  for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end() && j<=this->gindex_.end() && bret; j+=this->gindex_.stride() ) {
+    bret = std::isfinite(this->data_[j]);
+    if ( !bret ) iwhere = j;
+  }
+ 
+  return bret;
+
+} // end isfinite (2)
 
 
 //**********************************************************************************
@@ -1167,6 +1189,32 @@ GTVector<T>::amax()
 
 //**********************************************************************************
 //**********************************************************************************
+// METHOD : amaxdiff
+// DESC   : Find max of absolute sequential differences > 0
+// ARGS   : none.
+// RETURNS: T-type max
+//**********************************************************************************
+template<class T>
+T
+GTVector<T>::amaxdiff(T tiny)
+{
+  assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
+
+  T diff;
+  T fm = std::numeric_limits<T>::min();
+
+  for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end()-1; j+=this->gindex_.stride() ) {
+    diff = fabs(this->data_[j+1] - this->data_[j]);
+    if ( diff > tiny ) fm = MAX(fm,diff);
+  }
+
+  return fm;
+
+} // end amaxdiff
+
+
+//**********************************************************************************
+//**********************************************************************************
 // METHOD : minn
 // DESC   : Find max of first n elements
 // ARGS   : n : num elements past gindex.beg to check
@@ -1261,6 +1309,32 @@ GTVector<T>::amin()
   return fm;
 
 } // end amin
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : amindiff
+// DESC   : Find min of absolute sequential differences > 0
+// ARGS   : none.
+// RETURNS: T-type min
+//**********************************************************************************
+template<class T>
+T
+GTVector<T>::amindiff(T tiny)
+{
+  assert(std::is_arithmetic<T>::value && "Requires arithmetic template parameter");
+
+  T diff;
+  T fm = std::numeric_limits<T>::max();
+
+  for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end()-1; j+=this->gindex_.stride() ) {
+    diff = fabs(this->data_[j+1] - this->data_[j]);
+    if ( diff > tiny ) fm = MIN(fm,diff);
+  }
+
+  return fm;
+
+} // end amindiff
 
 
 //**********************************************************************************

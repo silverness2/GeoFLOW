@@ -138,11 +138,16 @@ void GMorton_KeyGen<TK,TF>::setIntegralLen(GTPoint<TF> &inP0, GTPoint<TF> &indX)
 
   delmax_ = std::numeric_limits<TF>::min();
 
+  P0_.resize(inP0.dim());
+  dX_.resize(inP0.dim());
   P0_ = inP0;
   dX_ = indX;
   for ( GSIZET i=0; i<P0_.dim(); i++ ) {
-    idX_   [i] = 1.0 / dX_[i];
+    if ( dX_[i] <= 0 ) {
+      cout << "GMorton_KeyGen<TK,TF>::setIntegralLen: dX=" << dX_ << endl;
+    }
     assert(dX_[i] > 0.0 && "Invalid integral length scale");
+    idX_   [i] = 1.0 / dX_[i];
     delmax_    = MAX(delmax_,dX_[i]);
     dmin       = MIN(dmin,indX[i]);
   }
@@ -190,9 +195,9 @@ void GMorton_KeyGen<TK,TF>::key(TK id[], GTPoint<TF> point[], GINT  n)
 
   idsz = sizeof(TK);
 
-  nbits = BITSPERBYTE * idsz / gdim; // - 1;   // no bits per coord. direction
-  nbpc  = BITSPERBYTE * sizeof(ix[0]); // - 1; // no. bits per integral coordinate
-  tbits = gdim * nbits;                    // total no. bits for Morton integers
+  nbits = BITSPERBYTE * idsz / gdim; // - 1; // no bits per coord. direction
+//nbpc  = BITSPERBYTE * sizeof(ix[0])   - 1; // no. bits per integral coordinate
+  tbits = gdim * nbits;                      // total no. bits for Morton integers
 
 
   if ( !bintlenset_ ) {
@@ -349,6 +354,41 @@ void GMorton_KeyGen<TK,TF>::key(GTVector<TK> &id, GTVector<GTVector<TF>> &x)
 //              id   : Array of length 'n' containing the resultant keys. This
 //                     must be allocated by caller and be of size 'n'.
 //              x    : Array of coordinates with each being a vector
+//
+// RETURNS    : none.
+//**********************************************************************************
+template<typename TK, typename TF>
+void GMorton_KeyGen<TK,TF>::key(GTVector<TK> &id, GTVector<GTVector<TF>*> &x)
+{
+  assert(id.size() == x[0]->size() && "GMorton_KeyGen::key(4): incompatible dimensions");
+  GTPoint<TF> p(x.size());
+
+  for ( GSIZET j=0; j<x[0]->size(); j++ ) {
+    for ( GSIZET i=0; i<p.dim(); i++ ) p[i] = (*x[i])[j];
+    key(&id[j], &p, 1);
+  }
+
+} // end of method key (4)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD     : key (5)
+// DESCRIPTION: Computes Morton-ordered key
+//              GMORTON_TYPE is defined as follows:
+//              Let X = x7 x6 x5 x4 x3 x2 x1 x0  and
+//                  Y = y7 y6 y5 y4 y3 y2 y1 y0 
+//              be the X,Y values of a point, where x0, ... x7 represent the bits 
+//              0-7 of an 8-bit float, and the same for Y.
+//              Then GMORTON_INTERLEAVE means that the computed key will be
+//                  KEY = y7x7 y6x6 ... x2x2 y1x1 y0x0
+//              while for GMORTON_STACKED the key is s.t.:
+//                  KEY = y7y6y5...y2y1y0x7x6...x2x1x0.
+//              with an obvious extension to 3D
+// ARGUMENTS  : 
+//              id   : Array of length 'n' containing the resultant keys. This
+//                     must be allocated by caller and be of size 'n'.
+//              x    : Array of coordinates with each being a vector
 //              ix   : array of indices into x to provide indices, id. There 
 //                     will ix.size() indices provided in id
 //
@@ -358,7 +398,7 @@ template<typename TK, typename TF>
 void GMorton_KeyGen<TK,TF>::key(GTVector<TK> &id, GTVector<GTVector<TF>> &x, 
                                 GTVector<GINT> &ix)
 {
-  assert(id.size() == ix.size() && "GMorton_KeyGen::key(4): incompatible dimensions ");
+  assert(id.size() == ix.size() && "GMorton_KeyGen::key(5): incompatible dimensions ");
   GTPoint<TF> p(x.size());
 
   for ( GSIZET j=0; j<ix.size(); j++ ) {
@@ -366,6 +406,6 @@ void GMorton_KeyGen<TK,TF>::key(GTVector<TK> &id, GTVector<GTVector<TF>> &x,
     key(&id[j], &p, 1);
   }
 
-} // end of method key (4)
+} // end of method key (5)
 
 

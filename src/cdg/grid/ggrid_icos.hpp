@@ -32,10 +32,11 @@
 // GICOS_CART: print in 3d cartesian coords;
 // GICOS_LATLONG: print in r-theta-phi coords in 3d, and 
 //    theta-phi in 2d
-enum GICOSPTYPE {GICOS_BASE, GICOS_ELEMENTAL}; 
-enum GCOORDSYST {GICOS_CART, GICOS_LATLONG}; 
+enum GICOSPTYPE      {GICOS_BASE, GICOS_ELEMENTAL}; 
+enum GCOORDSYST      {GICOS_CART, GICOS_LATLONG}; 
 
 typedef GTMatrix<GFTYPE> GFTMatrix;
+typedef GQUAD GTICOS;
 
 class GGridIcos : public GGrid
 {
@@ -58,10 +59,10 @@ public:
                               GTVector<GTVector<GFTYPE>> &xnodes);        // compute elems from restart data)
         void                do_face_normals();                            // compute normals to elem faces
         void                do_bdy_normals ();                            // compute normals to doimain bd
-        void                set_partitioner(GDD_base *d);                 // set and use GDD object
-        GTVector<GTriangle<GFTYPE>> 
+        void                set_partitioner(GDD_base<GTICOS> *d);         // set and use GDD object
+        GTVector<GTriangle<GTICOS>> 
                            &get_tmesh(){ return tmesh_;}                  // get complete triang. mesh
-        GTVector    <GHex<GFTYPE>> 
+        GTVector    <GHex<GTICOS>> 
                            &get_hmesh(){ return hmesh_;}                  // get complete hex  mesh
         void                print(const GString &filename, 
                             GCOORDSYST icoord=GICOS_LATLONG);             // print grid to file
@@ -75,38 +76,61 @@ friend  std::ostream&       operator<<(std::ostream&, GGridIcos &);       // Out
   private:
          void               init2d();                                       // initialize base icosahedron for 2d grid
          void               init3d();                                       // initialize for 3d grid
-         void               project2sphere(GTVector<GTriangle<GFTYPE>> &, 
-                                           GFTYPE rad);                     // project Cart mesh to sphere
-         void               project2sphere(GTVector<GTPoint<GFTYPE>> &, 
-                                           GFTYPE rad);                     // project points to sphere
-         void               project2sphere(GTVector<GTVector<GFTYPE>> &, 
-                                           GFTYPE rad);                     // project points to sphere
-         void               spherical2xyz(GTVector<GTPoint<GFTYPE>*> &);    // (r,lat,long) to (x,y,z)
-         void               spherical2xyz(GTVector<GTPoint<GFTYPE>>  &);    // (r,lat,long) to (x,y,z)
-         void               spherical2xyz(GTVector<GTVector<GFTYPE>> &);    // (r,lat,long) to (x,y,z)
-         void               xyz2spherical(GTVector<GTPoint<GFTYPE>*> &);    // (x,y,z) to (r, lat, long) 
-         void               xyz2spherical(GTVector<GTVector<GFTYPE>> &);    // (x,y,z) to (r, lat, long) 
-         void               xyz2spherical(GTVector<GTPoint<GFTYPE>>  &);    // (x,y,z) to (r, lat, long) 
-         void               cart2gnomonic(GTVector<GTPoint<GFTYPE>> &, GFTYPE, GFTYPE, GFTYPE, 
-                                          GTVector<GTPoint<GFTYPE>> &);     // transform to gnomonic space
-         void               gnomonic2cart(GTVector<GTVector<GFTYPE>> &, GFTYPE, GFTYPE, GFTYPE, 
-                                          GTVector<GTVector<GFTYPE>> &);    // transform from gnomonic space
-         void               gnomonic2cart(GTVector<GTPoint<GFTYPE>> &, GFTYPE, GFTYPE, GFTYPE, 
-                                          GTVector<GTPoint<GFTYPE>> &);     // transform from gnomonic space
-         void               reorderverts2d(GTVector<GTPoint<GFTYPE>> &, GTVector<GSIZET>&,
-                                           GTVector<GTPoint<GFTYPE>> &);    // make verts consis with shapefcns
+         template<typename T>
+         void               project2sphere(GTVector<GTriangle<T>> &, 
+                                           T rad);                          // project Cart mesh to sphere
+         template<typename T>
+         void               project2sphere(GTVector<GTPoint<T>> &, 
+                                           T rad);                          // project points to sphere
+         template<typename T>
+         void               project2sphere(GTVector<GTVector<T>> &, 
+                                           T  rad);                        // project points to sphere
+         template<typename T>
+         void               spherical2xyz(GTVector<GTPoint<T>*> &);        // (r,lat,long) to (x,y,z)
+         template<typename T>
+         void               spherical2xyz(GTVector<GTPoint<T>>  &);        // (r,lat,long) to (x,y,z)
+         template<typename T>
+         void               spherical2xyz(GTVector<GTVector<T>> &);        // (r,lat,long) to (x,y,z)
+         template<typename T>
+         void               xyz2spherical(GTVector<GTPoint<T>*> &);        // (x,y,z) to (r, lat, long) 
+         template<typename T>
+         void               xyz2spherical(GTVector<GTVector<T>> &);         // (x,y,z) to (r, lat, long) 
+         template<typename T>
+         void               xyz2spherical(GTVector<GTPoint<T>>  &);         // (x,y,z) to (r, lat, long) 
+         template<typename T>
+         void               cart2gnomonic(GTVector<GTPoint<T>> &, T, T, T,
+                                          GTVector<GTPoint<T>> &);          // transform to gnomonic space
+         template<typename T>
+         void               gnomonic2cart(GTVector<GTVector<T>> &, T, T, T,
+                                          GTVector<GTVector<T>> &);         // transform from gnomonic space
+         template<typename T>
+         void               gnomonic2cart(GTVector<GTPoint<T>> &, T, T, T, 
+                                          GTVector<GTPoint<T>> &);          // transform from gnomonic space
+         template<typename T>
+         void               reorderverts2d(GTVector<GTPoint<T>> &, GTVector<GSIZET>&,
+                                           GTVector<GTPoint<T>> &);         // make verts consis with shapefcns
+         template<typename TF, typename TT>
+         void               copycast(GTVector<GTVector<TF>> &from, GTVector<GTVector<TT>> &to);
+         template<typename TF, typename TT>
+         void               copycast(GTVector<GTVector<TF>*> &from, GTVector<GTVector<TT>*> &to);
+         template<typename TF, typename TT>
+         void               copycast(GTPoint<TF> &from, GTPoint<TT> &to);
 
          void               lagrefine();                                    // do 'Lagrange poly'-type refinement of base icos
-         void               lagvert(GTPoint<GFTYPE> &a, 
-                                    GTPoint<GFTYPE> &b, 
-                                    GTPoint<GFTYPE> &c,
-                                    GINT I, GTVector<GTPoint<GFTYPE>> &R);   // get list of points, R at index I
+         template<typename T>
+         void               lagvert(GTPoint<T> &a, 
+                                    GTPoint<T> &b, 
+                                    GTPoint<T> &c,
+                                    GINT I, GTVector<GTPoint<T>> &R);      // get list of points, R at index I
 
-         void               interleave(GTVector<GTPoint<GFTYPE>> &R0,           // interleave rows of points for trianlges
-                                    GTVector<GTPoint<GFTYPE>> &R1,
-                                    GINT I, GTVector<GTPoint<GFTYPE>> &Rz);
-         void               order_latlong2d(GTVector<GFPoint> &verts);       // order vertics via lat-long
-         void               order_triangles(GTVector<GTriangle<GFTYPE>> &);    // order triangle verts
+         template<typename T>
+         void               interleave(GTVector<GTPoint<T>> &R0,           // interleave rows of points for trianlges
+                                    GTVector<GTPoint<T>> &R1,
+                                    GINT I, GTVector<GTPoint<T>> &Rz);
+         template<typename T>
+         void               order_latlong2d(GTVector<GTPoint<T>> &verts);  // order vertics via lat-long
+         template<typename T>
+         void               order_triangles(GTVector<GTriangle<T>> &);     // order triangle verts
 
        
          void               do_elems2d(GINT rank);              // do 2d grid
@@ -126,28 +150,33 @@ friend  std::ostream&       operator<<(std::ostream&, GGridIcos &);       // Out
 
 
 
+         GString            sreftype_;      // subdivision/refinement type
          GINT               ilevel_;        // refinement level (>= 0)
+         GINT               nrows_;         // # rows in refine level ilevel
          GINT               ndim_;          // grid dimensionality (2 or 3)
          GSIZET             nradelem_;      // # radial elements
          GFTYPE             radiusi_;       // inner radius
          GFTYPE             radiuso_;       // outer radius (=radiusi in 2d)
-         GDD_base          *gdd_;           // domain decomposition/partitioning object
-         GShapeFcn_linear  *lshapefcn_;     // linear shape func to compute 2d coords
+         GDD_base<GTICOS>  *gdd_;           // domain decomposition/partitioning object
+         GShapeFcn_linear<GTICOS>
+                           *lshapefcn_;     // linear shape func to compute 2d coords
          GTVector<GINT>     iup_;           // triangle pointing 'up' flag
 
-         GTVector<GTriangle<GFTYPE>>    
+         GTVector<GTriangle<GTICOS>>    
                             tmesh_;         // array of final mesh triangles
-         GTVector<GTPoint<GFTYPE>>
+         GTVector<GTPoint<GTICOS>>
                             ftcentroids_ ;  // centroids of finest triangles/faces/ or hexes
-         GTVector<GTriangle<GFTYPE>>     
+         GTVector<GTriangle<GTICOS>>     
                              tbase_;        // array of base triangles
          GTVector<GNBasis<GCTYPE,GFTYPE>*> 
                              gbasis_;       // directional bases
-         GTVector<GHex<GFTYPE>>  
+         GTVector<GHex<GTICOS>>  
                              hmesh_;        // list of vertices for each 3d (hex) element
-         GTMatrix<GFTYPE>    fv0_;          // vertex list for base icosahedron
+         GTMatrix<GTICOS>    fv0_;          // vertex list for base icosahedron
          GIMatrix            ifv0_;         // indices into fv0_ for each face of base icosahedron 
 
 };
+
+#include "ggrid_icos.ipp"
 
 #endif

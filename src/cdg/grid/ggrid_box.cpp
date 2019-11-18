@@ -60,15 +60,19 @@ lshapefcn_             (NULLPTR)
   std::vector<GFTYPE> spt(3); // tmp array
   std::vector  <int> sne   ; // tmp array
   spt = gridptree.getArray<GFTYPE>("xyz0");
-  P0_ = spt;
+  P0_.resize(GDIM);
+  P1_.resize(GDIM);
+  dP_.resize(GDIM);
+  for ( auto j=0; j<GDIM; j++ ) P0_[j] = spt[j];
   spt = gridptree.getArray<GFTYPE>("delxyz");
   sne = gridptree.getArray<int>("num_elems");
 
   eps_ = 100*std::numeric_limits<GFTYPE>::epsilon();
   // compute global bdy range, and global vertices:
-  dP_  = spt;
+  for ( auto j=0; j<GDIM; j++ ) dP_[j] = spt[j];
   P1_ = P0_ + dP_;
   gverts_.resize(2*ndim_);
+  for ( auto j=0; j<gverts_.size(); j++ ) gverts_[j].resize(GDIM);
   if ( ndim_ == 2 ) {
     gverts_[0] = P0_; 
     gp = P0_; gp.x1 += dP_.x1; gverts_[1] = gp; 
@@ -92,7 +96,7 @@ lshapefcn_             (NULLPTR)
     ne_  [j] = sne[j];
   }
 
-  lshapefcn_ = new GShapeFcn_linear();
+  lshapefcn_ = new GShapeFcn_linear<GFTYPE>();
   if ( GDIM == 2 ) {
     init2d();
   }
@@ -144,7 +148,7 @@ std::ostream &operator<<(std::ostream &str, GGridBox &e)
 // ARGS   : GDD_base pointer
 // RETURNS: none
 //**********************************************************************************
-void GGridBox::set_partitioner(GDD_base *gdd)
+void GGridBox::set_partitioner(GDD_base<GFTYPE> *gdd)
 {
 
   gdd_ = gdd;
@@ -832,6 +836,7 @@ void GGridBox::find_subdomain()
       ib = MAX(beg_lin-static_cast<GLONG>(j*ne_[0]),0); 
       ie = MIN(end_lin-static_cast<GLONG>(j*ne_[0]),ne_[0]-1); 
       for ( GLONG i=ib; i<=ie; i++ ) {
+        for ( auto l=0; l<4; l++ ) qmesh_[n][l].resize(ndim_);
         v0.x1 = P0_.x1+i*dx.x1; v0.x2 = P0_.x2+j*dx.x2;
                                          qmesh_[n].v1 = v0;
         dv.x1 = dx.x1 ; dv.x2 = 0.0  ;   qmesh_[n].v2 = v0 + dv;
@@ -854,6 +859,7 @@ void GGridBox::find_subdomain()
         ib = MAX(beg_lin-static_cast<GLONG>(k*nxy+j*ne_[0]),0); 
         ie = MIN(end_lin-static_cast<GLONG>(k*nxy+j*ne_[0]),ne_[0]-1); 
         for ( GLONG i=ib; i<=ie; i++ ) { 
+          for ( auto l=0; l<4; l++ ) qmesh_[n][l].resize(ndim_);
           v0.x1 = P0_.x1+i*dx.x1; v0.x2 = P0_.x2+j*dx.x2; v0.x3 = P0_.x3+k*dx.x3; 
                                                           hmesh_[n].v1 = v0;
           dv.x1 = dx.x1 ; dv.x2 = 0.0  ; dv.x3 = 0.0   ;  hmesh_[n].v2 = v0 + dv;

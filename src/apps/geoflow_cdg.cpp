@@ -90,6 +90,12 @@ int main(int argc, char **argv)
     GTimerStop("gen_grid");
 
     //***************************************************
+    // Create state and tmp space:
+    //***************************************************
+    EH_MESSAGE("geoflow: allocate tmp space...");
+    allocate(ptree_);
+
+    //***************************************************
     // Initialize gather/scatter operator:
     //***************************************************
     EH_MESSAGE("geoflow: initialize gather/scatter...");
@@ -100,12 +106,6 @@ int main(int argc, char **argv)
 
     GTimerStop("init_ggfx_op");
     EH_MESSAGE("geoflow: gather/scatter initialized.");
-
-    //***************************************************
-    // Create state and tmp space:
-    //***************************************************
-    EH_MESSAGE("geoflow: allocate tmp space...");
-    allocate(ptree_);
 
     //***************************************************
     // Create equation set:
@@ -133,8 +133,6 @@ int main(int argc, char **argv)
     EH_MESSAGE("geoflow: create integrator...");
     pIntegrator_ = IntegratorFactory<MyTypes>::build(ptree_, pEqn_, pMixer, pObservers, *grid_);
     pIntegrator_->get_traits().cycle = icycle;
-
-GPP(comm_,serr << "nelems_local=" << grid_->nelems());
 
     //***************************************************
     // Initialize state:
@@ -638,12 +636,17 @@ void update_boundary(const Time &t, State &u, State &ub)
 void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
 {
   GString                        serr = "init_ggfx: ";
-  GFTYPE                         delta;
+  GBOOL                          bret;
+  GINT                           pmax;
+  GFTYPE                         delta[3], ldelta[3];
   GFTYPE                         rad;
+  GFTYPE                         tiny = 100.0*std::numeric_limits<GFTYPE>::epsilon();
   GMorton_KeyGen<GNODEID,GFTYPE> gmorton;
   GTPoint<GFTYPE>                dX, porigin, P0;
   GTVector<GNODEID>              glob_indices;
   GTVector<GTVector<GFTYPE>>    *xnodes;
+  State                          cart;
+  State                          xkey;
   GString                        sgrid;
   std::vector<GFTYPE>            pstd;
   PropertyTree                   gtree;
@@ -651,21 +654,77 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
   sgrid = ptree.getValue<GString>("grid_type");
   gtree = ptree.getPropertyTree(sgrid);
 
+  pmax = 0;
+  for ( auto j=0; j<gbasis_.size(); j++ ) pmax = MAX(pmax, gbasis_[j]->getOrder());
+
+
+  P0.resize(GDIM);
+  dX.resize(GDIM);
+  xnodes = &grid.xNodes();
+
+  // If (x, y, z) < epsilon, set to 0:
+  GMTK::zero(*xnodes);
+
   if ( sgrid == "grid_box" ) {
-    pstd = gtree.getArray<GFTYPE>("xyz0");
-    P0   = pstd;
+    pstd   = gtree.getArray<GFTYPE>("xyz0");
+    P0     = pstd;
+    xkey.resize(GDIM);   
+    for ( auto j=0; j<GDIM; j++ ) xkey[j] = &(*xnodes)[j];
+    dX     = 0.05*grid.minnodedist();
+//  gmorton.setDoLog(TRUE);
+    gmorton.setType(GMORTON_STACKED);
   }
   if ( sgrid == "grid_icos" ) {
+#if 1
+    P0.resize(GDIM);
+    dX.resize(GDIM);
+    cart.resize(xnodes->size());   
+    xkey.resize(GDIM);   
+    P0.x1 = 0.0 ; // lat starting point
+    P0.x2 = 0.0 ; // lon starting point
+    for ( auto j=0; j<xnodes->size(); j++ ) cart[j] = &(*xnodes)[j];
+    for ( auto j=0; j<GDIM; j++ ) xkey[j] = utmp_[j];
+    GMTK::cart2latlon(cart, xkey);
+    for ( auto j=0; j<xkey[0]->size(); j++ ) (*xkey[0])[j] = 0.5*PI - (*xkey[0])[j]; 
+    for ( auto j=0; j<xkey[1]->size(); j++ ) (*xkey[1])[j] += (*xkey[1])[j] < 0.0 ? 2.0*PI : 0.0;
     rad   = gtree.getValue<GFTYPE>("radius");
-    P0.x1 = -rad ;
-    P0.x2 = -rad ;
-    P0.x3 = -rad ;
+    delta[0] = 0.5*grid.minlength()/(rad*pmax*pmax);
+    delta[1] = grid.minlength()/(rad*pmax*pmax);
+    for ( auto j=0; j<dX.size(); j++ ) dX[j] = 0.1 *delta[j];
+    gmorton.setType(GMORTON_STACKED);
+//  gmorton.setType(GMORTON_INTERLEAVE);
+#else
+    P0.resize(GDIM+1);
+    dX.resize(GDIM+1);
+    xkey.resize(GDIM+1);   
+    rad   = gtree.getValue<GFTYPE>("radius");
+    P0.x1 = -rad-tiny; P0.x2 = -rad-tiny; P0.x3 = -rad-tiny;
+    for ( auto j=0; j<xkey.size(); j++ ) xkey[j] = utmp_[j];
+    delta[0] = grid.minlength()/(pmax*pmax);
+    delta[1] = grid.minlength()/(pmax*pmax);
+    delta[2] = grid.minlength()/(pmax*pmax);
+    for ( auto j=0; j<dX.size(); j++ ) dX[j] = 0.01 *delta[j];
+//  dX     = 0.1*grid.minnodedist();
+//  gmorton.setDoLog(TRUE);
+    gmorton.setType(GMORTON_INTERLEAVE);
+//  gmorton.setType(GMORTON_STACKED);
+#endif
   }
   if ( sgrid == "grid_sphere" ) {
-    rad   = gtree.getValue<GFTYPE>("radiuso");
-    P0.x1 = -rad ;
-    P0.x2 = -rad ;
-    P0.x3 = -rad ;
+    rad   = gtree.getValue<GFTYPE>("radiusi");
+    P0.x1 = 0.0; // lat starting point
+    P0.x2 = 0.0; // long starting point
+    P0.x3 = rad; // radius starting point
+    cart.resize(xnodes->size());   
+    xkey.resize(GDIM);   
+    for ( auto j=0; j<xnodes->size(); j++ ) cart[j] = &(*xnodes)[j];
+    for ( auto j=0; j<GDIM; j++ ) xkey[j] = utmp_[j];
+    GMTK::cart2spherical(cart, xkey);
+    for ( auto j=0; j<GDIM; j++ ) ldelta[j] = xkey[j]->amindiff(tiny);
+    GComm::Allreduce(ldelta, delta, GDIM, T2GCDatatype<GFTYPE>(), GC_OP_MIN, comm_);
+    for ( auto j=0; j<GDIM; j++ ) dX[j] = 0.25*delta[j];
+//  gmorton.setDoLog(TRUE);
+    gmorton.setType(GMORTON_STACKED);
   }
 
   // First, periodize coords if required to, 
@@ -679,16 +738,16 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
   xnodes = &grid.xNodes();
   glob_indices.resize(grid.ndof());
 
+
   // Integralize *all* internal nodes
   // using Morton indices:
 //gmorton.setDoLog(TRUE);
-  gmorton.setType(GMORTON_STACKED);
+//gmorton.setType(GMORTON_STACKED);
 //gmorton.setType(GMORTON_INTERLEAVE);
   gmorton.setIntegralLen(P0,dX);
-  gmorton.key(glob_indices, *xnodes);
+  gmorton.key(glob_indices, xkey);
 
   // Initialize gather/scatter operator:
-  GBOOL bret;
   ggfx = new GGFX<GFTYPE>();
   assert(ggfx != NULLPTR && "Cannot instantiate GGFX operator");
   bret = ggfx->init(glob_indices);

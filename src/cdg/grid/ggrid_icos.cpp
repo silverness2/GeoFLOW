@@ -28,13 +28,14 @@ using namespace std;
 // RETURNS: none
 //**********************************************************************************
 GGridIcos::GGridIcos(const geoflow::tbox::PropertyTree &ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GC_COMM &comm)
-:          GGrid(ptree, b, comm),
-ilevel_                      (0),
-ndim_                     (GDIM),
-radiusi_                   (0.0),
-radiuso_                   (0.0), // don't need this one in 2d
-gdd_                   (NULLPTR),
-lshapefcn_             (NULLPTR)
+:                 GGrid(ptree, b, comm),
+ilevel_                             (0),
+nrows_                              (0),
+ndim_                            (GDIM),
+radiusi_                          (0.0),
+radiuso_                          (0.0), // don't need this one in 2d
+gdd_                          (NULLPTR),
+lshapefcn_                    (NULLPTR)
 {
   assert(b.size() == GDIM && "Basis has incorrect dimensionality");
   
@@ -44,8 +45,9 @@ lshapefcn_             (NULLPTR)
 
   gbasis_.resize(b.size());
   gbasis_ = b;
-  lshapefcn_ = new GShapeFcn_linear();
+  lshapefcn_ = new GShapeFcn_linear<GTICOS>();
   ilevel_  = gridptree.getValue<GINT>("ilevel");
+  sreftype_= gridptree.getValue<GString>("refine_type","GICOS_LAGRANGIAN");
   
   if ( ndim_ == 2 ) {
     assert(GDIM == 2 && "GDIM must be 2");
@@ -95,6 +97,7 @@ std::ostream &operator<<(std::ostream &str, GGridIcos &e)
   str << " radiusi: " << e.radiusi_;
   str << " radiusi: " << e.radiuso_;
   str << " level  : " << e.ilevel_;
+  str << " nrows  : " << e.nrows_;
   str << std::endl << " Centroids: " ;
   for ( GSIZET i=0; i<e.ftcentroids_.size(); i++ )
      str << (e.ftcentroids_[i]) << " " ;
@@ -111,7 +114,7 @@ std::ostream &operator<<(std::ostream &str, GGridIcos &e)
 // ARGS   : GDD_base pointer
 // RETURNS: none
 //**********************************************************************************
-void GGridIcos::set_partitioner(GDD_base *gdd)
+void GGridIcos::set_partitioner(GDD_base<GTICOS> *gdd)
 {
 
   gdd_ = gdd;
@@ -195,7 +198,7 @@ fv0_(11,0) = -0.276393202250021; fv0_(11,1) = -0.850650808352040; fv0_(11,2) = -
   ifv0_(19,0) = 3 ; ifv0_(19,1) = 10; ifv0_(19,2) = 6 ;
 
   // Copy base data to new structure:
-  GTPoint<GFTYPE> pt;
+  GTPoint<GTICOS> pt;
   tbase_.resize(ifv0_.size(1));
   for ( GSIZET j=0; j<tbase_.size(); j++ ) tbase_[j].resize(3);
   for ( GSIZET i=0; i<ifv0_.size(1); i++ ) { // for all triangles:
@@ -242,30 +245,43 @@ void GGridIcos::lagrefine()
    
   GLLONG ibeg, j, l, m, n, t;
 
+  if      ( "GICOS_BISECTION" == sreftype_ ) {
+    // interpret nrows_ as bisection count:
+    nrows_ = pow(2,ilevel_)-1; 
+  }
+  else if ( "GICOS_LAGRANGIAN" == sreftype_ ) {
+    // interpret nrows_ as # 'Lagrangian' subdivisions:
+    nrows_ = ilevel_;
+  }
+  else {
+    assert(FALSE && "Invalid subdivision type (GICOS_LAGRANGIAN or GICOS_BISECTION");
+  }
+
   // Re-dimension mesh points to be 3d: Expect
   // 20 * (ileve+1)^2, and 20 * (ilevel+1)^2 * 3 quads
-  tmesh_.resize(20*(ilevel_*(ilevel_+2)+1)); // refined triangular mesh
+  tmesh_.resize(20*(nrows_*(nrows_+2)+1)); // refined triangular mesh
   for ( j=0; j<tmesh_.size(); j++ ) tmesh_[j].resize(3);
 
-  GTPoint<GFTYPE> a(3), b(3), c(3); // base vertices
+  GTPoint<GTICOS> a(3), b(3), c(3); // base vertices
 
   n = 0;
-  GTVector<GTPoint<GFTYPE>> R0(2*(ilevel_+1)-1), R1(2*(ilevel_+1));
-  GTVector<GTPoint<GFTYPE>> Rz(2*(ilevel_+1)+1); // interleave R0, R1
+  GTVector<GTPoint<GTICOS>> R0(2*(nrows_+1)-1), R1(2*(nrows_+1));
+  GTVector<GTPoint<GTICOS>> Rz(2*(nrows_+1)+1); // interleave R0, R1
+
 
 #pragma omp parallel private (ibeg,l,m,t,a,b,c,R0,R1,Rz) reduction(+: n)
-  R0.resize(2*(ilevel_+1)-1);
-  R1.resize(2*(ilevel_+1));
-  Rz.resize(2*(ilevel_+1)+1);
+  R0.resize(2*(nrows_+1)-1);
+  R1.resize(2*(nrows_+1));
+  Rz.resize(2*(nrows_+1)+1);
 
-  // Do refinement of base mesh triandles:
+  // Do refinement of base mesh triangles:
 #pragma omp for
   for ( t=0; t<tbase_.size(); t++ ) { // for each base triangle 
     a = tbase_[t].v1; b = tbase_[t].v2; c = tbase_[t].v3;
-    for ( l=0; l<ilevel_+1; l++ ) { // for each triangle 'row'
-      lagvert(a,b,c,l   ,R0); // get previous row of points
-      lagvert(a,b,c,l+1 ,R1); // get current row of points
-      interleave(R0, R1, l, Rz); // zig-zag from R1 to R0, to R1, etc
+    for ( l=0; l<nrows_+1; l++ ) { // for each triangle 'row'
+      lagvert<GTICOS>(a,b,c,l   ,R0); // get previous row of points
+      lagvert<GTICOS>(a,b,c,l+1 ,R1); // get current row of points
+      interleave<GTICOS>(R0, R1, l, Rz); // zig-zag from R1 to R0, to R1, etc
       for ( m=0; m<2*l+1; m++ ) { // loop over all tri's on this row
         ibeg = m;
         tmesh_[n].v1 = Rz[ibeg];
@@ -278,15 +294,15 @@ void GGridIcos::lagrefine()
 
   
   // Project all vertices to unit sphere:
-  project2sphere(tmesh_,1.0);
+  project2sphere<GTICOS>(tmesh_,1.0);
 
   // Order triangles (set iup_ flags):
-  order_triangles(tmesh_);
+  order_triangles<GTICOS>(tmesh_);
 
   // Compute centroids of all triangles:
   ftcentroids_.clear();
   ftcentroids_.resize(tmesh_.size());
-  GFTYPE fact = 1.0/3.0;
+  GTICOS fact = 1.0/3.0;
   for ( j=0; j<tmesh_.size(); j++ ) { // for each triangle
     a =  tmesh_[j].v1 + tmesh_[j].v2;
     a += tmesh_[j].v3;
@@ -295,74 +311,6 @@ void GGridIcos::lagrefine()
   }
 
 } // end of method lagrefine
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : interleave
-// DESC   : Utility routine to interleave 2 rows of points 
-// ARGS   : R0   : row of points above
-//          R1   : row of points below
-//          I    : 'row index' (0 ... iLevel+1 of R1 
-//          Rz   : list of vertices (points) interleaved, so that following
-//                 ordering represents triangles in 'Lagrangian refinement':
-//                 (Rz(0), Rz(1), Rz(2)); (Rz(1) Rz(2) Rz(3)) , ...
-// RETURNS: none.
-//**********************************************************************************
-void
-GGridIcos::interleave(GTVector<GTPoint<GFTYPE>> &R0, GTVector<GTPoint<GFTYPE>> &R1,
-                   GINT I, GTVector<GTPoint<GFTYPE>> &Rz)
-{
-  GString serr = "GridIcos::interleave: ";
-
-  // Interlaeave R0 and R1:
-  for ( GSIZET j=0; j<Rz.size(); j++ ) {
-    if ( j%2 == 0 ) Rz   [j] = R1[j/2];
-    else            Rz   [j] = R0[(j-1)/2];
-  }
-
-} // end of method interleave
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : lagvert
-// DESC   : Utility routine to compute 'Lagrangian-refined' vertices from 'base' 
-//          vertices and vertex indices. Not vectorized.
-//          Given bse vertices, find vertices at 'row index' I
-// ARGS   : a,b,c: base vertices
-//          I    : 'row index' (0 ... iLevel+1
-//          R    : list of vertices (points) at I
-// RETURNS: none.
-//**********************************************************************************
-void
-GGridIcos::lagvert(GTPoint<GFTYPE>&a, GTPoint<GFTYPE> &b, GTPoint<GFTYPE> &c,
-                   GINT I, GTVector<GTPoint<GFTYPE>> &R)
-{
-  GString serr = "GridIcos::lagvert: ";
-
-  GFTYPE xI, xJ;
-
-  GTPoint<GFTYPE> rL(3);
-  GTPoint<GFTYPE> rR(3);
-
-  R.resizem(I+1);
-
-  GFTYPE fact = 1.0/static_cast<GFTYPE>(ilevel_+1);
-
-  // Build 'rail' points on L and R:
-  xI = static_cast<GFTYPE>(I);
-  rL = a + ( (b - a) * (xI * fact) );
-  rR = a + ( (c - a) * (xI * fact) );
-
-  // Compute R vertices based on refinement indices:
-  fact = I > 0 ? 1.0/static_cast<GFTYPE>(I) : 1.0;
-  for ( GSIZET j=0; j<I+1; j++ ) {
-    xJ = static_cast<GFTYPE>(j);
-    R[j] = rL + (rR - rL)*(xJ*fact);
-  }
-
-} // end of method lagvert
 
 
 //**********************************************************************************
@@ -412,22 +360,25 @@ void GGridIcos::do_elems2d(GINT irank)
 {
   GString           serr = "GridIcos::do_elems2d (1): ";
   GFTYPE            fact, xlatc, xlongc;
-  GTVector<GFPoint> cverts(4), gverts(4), tverts(4);
-  GTPoint<GFTYPE>   c(3), ct(3), v1(3), v2(3), v3(3); // 3d points
+  GTVector<GTPoint<GTICOS>> cverts(4), gverts(4), tverts(4);
+  GTPoint<GTICOS>    c(3), ct(3), v1(3), v2(3), v3(3); // 3d points
   GElem_base        *pelem;
   GTVector<GINT>    iind;
   GTVector<GINT>    I(1);
-  GTVector<GFTYPE>  Ni;
-  GTVector<GTVector<GFTYPE>>  *xNodes;
-  GTVector<GTVector<GFTYPE>*> *xiNodes;
-  GTVector<GTVector<GFTYPE>>   xgtmp(3);
+  GTVector<GTICOS>  Ni;
+  GTVector<GTVector<GFTYPE>>   *xNodes;
+  GTVector<GTVector<GFTYPE>*>  *xiNodes;
+  GTVector<GTVector<GTICOS>>    xd;
+  GTVector<GTVector<GTICOS>>    xid;
+  GTVector<GTVector<GTICOS>*>   pxid;
+  GTVector<GTVector<GTICOS>>    xgtmp(3);
 
   // Do eveything on unit sphere, then project to radiusi_
   // as a final step.
 
   assert(gbasis_.size()>0 && "Must set basis first");
 
-  if ( gdd_ == NULLPTR ) gdd_ = new GDD_base(nprocs_);
+  if ( gdd_ == NULLPTR ) gdd_ = new GDD_base<GTICOS>(nprocs_);
 
   // Resize points to appropriate size:
   for ( GSIZET j=0; j<tmesh_.size(); j++ ) tmesh_[j].resize(3);
@@ -462,9 +413,9 @@ void GGridIcos::do_elems2d(GINT irank)
   // For each triangle in base mesh owned by this rank...
   for ( GSIZET n=0; n<iind.size(); n++ ) { 
     i = iind[n];
-    v1 = *tmesh_[i].v[0];
-    v2 = *tmesh_[i].v[1];
-    v3 = *tmesh_[i].v[2];       
+    copycast<GTICOS,GTICOS>(*tmesh_[i].v[0], v1);
+    copycast<GTICOS,GTICOS>(*tmesh_[i].v[1], v2);
+    copycast<GTICOS,GTICOS>(*tmesh_[i].v[2], v3);
     ct = (v1 + (v2 + v3)) * fact;  // triangle centroid; don't overwrite later on
     // Compute element vertices:
     // NOTE: Is this ordering compatible with shape functions 
@@ -473,7 +424,7 @@ void GGridIcos::do_elems2d(GINT irank)
       pelem = new GElem_base(GE_2DEMBEDDED, gbasis_);
       cverts[0] = v1; cverts[1] = (v1+v2)*0.5; cverts[2] = ct; cverts[3] = (v1+v3)*0.5;
 #if 0
-      order_latlong2d(cverts);
+      order_latlong2d<GTICOS>(cverts);
 #else
       if ( iup_[i] == 1 ) {
       switch (j) {
@@ -499,28 +450,37 @@ void GGridIcos::do_elems2d(GINT irank)
       
       xNodes  = &pelem->xNodes();  // node spatial data
       xiNodes = &pelem->xiNodes(); // node ref interval data
+      xd .resize(xNodes->size());
+      xid.resize(xiNodes->size());
+      pxid.resize(xiNodes->size());
+      for ( auto l=0; l<xid.size(); l++ ) pxid[l] = &xid[l];
+      copycast<GFTYPE,GTICOS>(*xNodes, xd);
+      copycast<GFTYPE,GTICOS>(*xiNodes, pxid);
+      
       Ni.resize(pelem->nnodes());
 
-      project2sphere(cverts, 1.0); // project verts to unit sphere     
+      project2sphere<GTICOS>(cverts, 1.0); // project verts to unit sphere     
       c = (cverts[0] + cverts[1] + cverts[2] + cverts[3])*0.25; // elem centroid
       xlatc  = asin(c.x3)         ; // reference lat/long
       xlongc = atan2(c.x2,c.x1);
       xlongc = xlongc < 0.0 ? 2*PI+xlongc : xlongc;
 
-      cart2gnomonic(cverts, 1.0, xlatc, xlongc, tverts); // gnomonic vertices of quads
-      reorderverts2d(tverts, isort, gverts); // reorder vertices consistenet with shape fcn
+      cart2gnomonic<GTICOS>(cverts, 1.0, xlatc, xlongc, tverts); // gnomonic vertices of quads
+      reorderverts2d<GTICOS>(tverts, isort, gverts); // reorder vertices consistenet with shape fcn
       for ( GSIZET l=0; l<2; l++ ) { // loop over available gnomonic coords
         xgtmp[l].resizem(pelem->nnodes());
         xgtmp[l] = 0.0;
-        (*xNodes)[l] = 0.0;
         for ( GSIZET m=0; m<4; m++ ) { // loop over gnomonic vertices
           I[0] = m;
-          lshapefcn_->Ni(I, *xiNodes, Ni);
+          lshapefcn_->Ni(I, pxid, Ni);
           xgtmp[l] += (Ni * (gverts[m][l]*0.25)); // gnomonic node coordinate
         }
       }
-      gnomonic2cart(xgtmp, 1.0, xlatc, xlongc, *xNodes); //
-      project2sphere(*xNodes, radiusi_);
+      gnomonic2cart<GTICOS>(xgtmp, 1.0, xlatc, xlongc, xd); //
+      project2sphere<GTICOS>(xd, radiusi_);
+      for ( auto l=0; l<xd.size(); l++ ) {
+        for ( auto k=0; k<xd[l].size(); k++ ) (*xNodes)[l][k] = xd[l][k];
+      }
       pelem->init(*xNodes);
 
       nfnodes = 0;
@@ -554,26 +514,30 @@ void GGridIcos::do_elems3d(GINT irank)
 {
   GString           serr = "GridIcos::do_elems3d (1): ";
   GSIZET            nxy;
-  GFTYPE            fact, r0, rdelta, xlatc, xlongc;
-  GTVector<GFPoint> cverts(4), gverts(4), tverts(4);
-  GTPoint<GFTYPE>   c(3), ct(3), v1(3), v2(3), v3(3); // 3d points
+  GTICOS            fact, r0, rdelta, xlatc, xlongc;
+  GTVector<GTPoint<GTICOS>>
+                    cverts(4), gverts(4), tverts(4);
+  GTPoint<GTICOS>   c(3), ct(3), v1(3), v2(3), v3(3); // 3d points
   GElem_base        *pelem;
   GElem_base        *pelem2d;
   GTVector<GINT>    iind;
   GTVector<GINT>    I(1);
-  GTVector<GFTYPE>  Ni;
+  GTVector<GTICOS>  Ni;
   GTVector<GTVector<GFTYPE>>  *xNodes;
   GTVector<GTVector<GFTYPE>>   xNodes2d(2);
   GTVector<GTVector<GFTYPE>*>  xiNodes2d(2);
   GTVector<GFTYPE>            *xiNodesr;
-  GTVector<GTVector<GFTYPE>>   xgtmp(3);
+  GTVector<GTVector<GTICOS>>   xd, xd2d;
+  GTVector<GTVector<GTICOS>>   xid, xid2d;
+  GTVector<GTVector<GTICOS>*>  pxid;
+  GTVector<GTVector<GTICOS>>   xgtmp(3);
 
   // Do eveything on unit sphere, then project to radiusi_
   // as a final step.
 
   assert(gbasis_.size()>0 && "Must set basis first");
 
-  if ( gdd_ == NULLPTR ) gdd_ = new GDD_base(nprocs_);
+  if ( gdd_ == NULLPTR ) gdd_ = new GDD_base<GTICOS>(nprocs_);
 
   // Resize points to appropriate size:
   for ( GSIZET j=0; j<tmesh_.size(); j++ ) tmesh_[j].resize(3);
@@ -612,9 +576,9 @@ void GGridIcos::do_elems3d(GINT irank)
   // For each triangle in base mesh owned by this rank...
   for ( GSIZET n=0; n<iind.size(); n++ ) { 
     i = iind[n];
-    v1 = *tmesh_[i].v[0];
-    v2 = *tmesh_[i].v[1];
-    v3 = *tmesh_[i].v[2];       
+    copycast<GTICOS,GTICOS>(*tmesh_[i].v[0], v1);
+    copycast<GTICOS,GTICOS>(*tmesh_[i].v[1], v2);
+    copycast<GTICOS,GTICOS>(*tmesh_[i].v[2], v3);
     ct = (v1 + (v2 + v3)) * fact;  // triangle centroid; don't overwrite later on
     // Compute element vertices:
     // NOTE: Is this ordering compatible with shape functions 
@@ -649,34 +613,39 @@ void GGridIcos::do_elems3d(GINT irank)
         xiNodes2d[m] = &pelem2d->xiNodes(m);
         xNodes2d [m].resizem(nxy);
       }
+      xd2d .resize(xNodes2d.size());
+      xid2d.resize(xiNodes2d.size());
+      pxid .resize(xiNodes2d.size());
+      for ( auto l=0; l<xid.size(); l++ ) pxid[l] = &xid2d[l];
+      copycast<GFTYPE,GTICOS>(xNodes2d, xd2d);
+      copycast<GFTYPE,GTICOS>(xiNodes2d, pxid);
 
-      project2sphere(cverts, 1.0); // project verts to unit sphere     
+      project2sphere<GTICOS>(cverts, 1.0); // project verts to unit sphere     
       c = (cverts[0] + cverts[1] + cverts[2] + cverts[3])*0.25; // elem centroid
       xlatc  = asin(c.x3)         ; // reference lat/long
       xlongc = atan2(c.x2,c.x1);
       xlongc = xlongc < 0.0 ? 2*PI+xlongc : xlongc;
 
-      cart2gnomonic(cverts, 1.0, xlatc, xlongc, tverts); // gnomonic vertices of quads
-      reorderverts2d(tverts, isort, gverts); // reorder vertices consistenet with shape fcn
+      cart2gnomonic<GTICOS>(cverts, 1.0, xlatc, xlongc, tverts); // gnomonic vertices of quads
+      reorderverts2d<GTICOS>(tverts, isort, gverts); // reorder vertices consistenet with shape fcn
       for ( GINT l=0; l<2; l++ ) { // loop over available gnomonic coords
         xgtmp[l].resizem(nxy);
         xgtmp[l] = 0.0;
-        xNodes2d[l] = 0.0;
         for ( GSIZET m=0; m<4; m++ ) { // loop over gnomonic vertices
           I[0] = m;
-          lshapefcn_->Ni(I, xiNodes2d, Ni);
+          lshapefcn_->Ni(I, pxid, Ni);
           xgtmp[l] += (Ni * (gverts[m][l]*0.25)); // gnomonic node coordinate
         }
       }
 
       // Convert 2d plane back to Cart coords and project to 
       // surface of inner sphere:
-      gnomonic2cart(xgtmp, 1.0, xlatc, xlongc, xNodes2d); 
-      project2sphere(xNodes2d, radiusi_);
-      xyz2spherical(xNodes2d);
+      gnomonic2cart<GTICOS>(xgtmp, 1.0, xlatc, xlongc, xd2d); 
+      project2sphere<GTICOS>(xd2d, radiusi_);
+      xyz2spherical<GTICOS>(xd2d);
 
       // Loop over radial elements and build all elements 
-      // based on this patch:
+      // based on this patch (we're still in sph coords here):
       for ( GSIZET e=0; e<nradelem_; e++ ) {
         pelem = new GElem_base(GE_DEFORMED, gbasis_);
         xiNodesr = &pelem->xiNodes(2); // get radial reference nodes
@@ -685,11 +654,11 @@ void GGridIcos::do_elems3d(GINT irank)
         for ( GSIZET m=0; m<pelem->size(2); m++ ) { // for each radial node
           for ( GSIZET n=0; n<nxy; n++ ) { // find sph coords for each horizontal node
             (*xNodes)[0][n+m*nxy] =  0.5*rdelta*((*xiNodesr)[m] + 1.0);
-            (*xNodes)[1][n+m*nxy] =  xNodes2d[1][n];
-            (*xNodes)[2][n+m*nxy] =  xNodes2d[2][n];
+            (*xNodes)[1][n+m*nxy] =  xd2d[1][n];
+            (*xNodes)[2][n+m*nxy] =  xd2d[2][n];
           }
         }
-        spherical2xyz(*xNodes);
+        spherical2xyz<GFTYPE>(*xNodes);
 
         pelem->init(*xNodes);
 
@@ -877,8 +846,8 @@ void GGridIcos::print(const GString &filename, GCOORDSYST icoord)
   GString serr = "GridIcos::print: ";
   std::ofstream ios;
 
-  GTPoint<GFTYPE> pt;
-  GFTYPE          r, xlat, xlong;
+  GTPoint<GTICOS> pt;
+  GTICOS          r, xlat, xlong;
 
   ios.open(filename);
   if ( icoord == GICOS_LATLONG) { // print in lat-long
@@ -909,600 +878,6 @@ void GGridIcos::print(const GString &filename, GCOORDSYST icoord)
   ios.close();
 
 } // end of method print
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : project2sphere (1)
-// DESC   : Project Cartesian coords to sphere, specified by rad argument, and
-//          express in Cartesian coords.  Necessary for 2d grids.
-// ARGS   : tmesh: Vector of triangles (vertices), modified to contain 
-//                 projected coordinates
-// RETURNS: none.
-//**********************************************************************************
-void GGridIcos::project2sphere(GTVector<GTriangle<GFTYPE>> &tmesh, GFTYPE rad)
-{
-  GString serr = "GridIcos::project2sphere (1): ";
-
-  GFTYPE r, xlat, xlong;
-  GTPoint<GFTYPE> v;
-
-  for ( GSIZET i=0; i<tmesh_.size(); i++ ) { // loop over all triangles in tmesh
-    for ( GSIZET j=0; j<3; j++ ) { // guaranteed to have 3 points each
-      v = *tmesh[i].v[j];
-      r = v.norm();
-      xlat  = asin(v.x3/r);
-      xlong = atan2(v.x2,v.x1);
-      xlong = xlong < 0.0 ? 2*PI+xlong : xlong;
-      v.x1 = rad*cos(xlat)*cos(xlong);
-      v.x2 = rad*cos(xlat)*sin(xlong);
-      v.x3 = rad*sin(xlat);
-      *tmesh[i].v[j] = v;
-    }
-  }
-
-} // end of method project2sphere (1)
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : project2sphere (2)
-// DESC   : Project Cartesian coords to sphere, specified by rad argument.
-//          Necessary for 2d grids.
-// ARGS   : plist: Vector of points, modified to contain 
-//                 projected coordinates. Must be 3d points.
-// RETURNS: none.
-//**********************************************************************************
-void GGridIcos::project2sphere(GTVector<GTPoint<GFTYPE>> &plist, GFTYPE rad)
-{
-  GString serr = "GridIcos::project2sphere (2): ";
-
-  GFTYPE r, xlat, xlong;
-  GTPoint<GFTYPE> v;
-
-  for ( GSIZET i=0; i<plist.size(); i++ ) { // loop over all points
-    v = plist[i];
-    r = v.norm();
-    xlat  = asin(v.x3/r);
-    xlong = atan2(v.x2,v.x1);
-    xlong = xlong < 0.0 ? 2*PI+xlong : xlong;
-    v.x1 = rad*cos(xlat)*cos(xlong);
-    v.x2 = rad*cos(xlat)*sin(xlong);
-    v.x3 = rad*sin(xlat);
-    plist[i] = v;
-  }
-
-} // end of method project2sphere (2)
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : project2sphere (3)
-// DESC   : Project Cartesian coords to sphere, specified by rad argument.
-//          Necessary for 2d grids.
-// ARGS   : plist: Vector of vectors, one vector for each dimension, modified to 
-//                 contain projected coordinates. Must be 3d points.
-// RETURNS: none.
-//**********************************************************************************
-void GGridIcos::project2sphere(GTVector<GTVector<GFTYPE>> &plist, GFTYPE rad)
-{
-  GString serr = "GridIcos::project2sphere (3): ";
-
-  GFTYPE r, xlat, xlong, x, y, z;
-
-  for ( GSIZET i=0; i<plist[0].size(); i++ ) { // loop over all points
-    x = plist[0][i]; y = plist[1][i]; z = plist[2][i];
-    r = sqrt(x*x + y*y + z*z);
-    xlat  = asin(z/r);
-    xlong = atan2(y,x);
-    xlong = xlong < 0.0 ? 2*PI+xlong : xlong;
-    plist[0][i] = rad*cos(xlat)*cos(xlong);
-    plist[1][i] = rad*cos(xlat)*sin(xlong);
-    plist[2][i] = rad*sin(xlat);
-  }
-
-} // end of method project2sphere (3)
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : spherical2xyz (1)
-// DESC   : Transform from spherical-polar to Cartesian coords
-// ARGS   : plist: Vector of points, representing spherical coordinates 
-//                 (r, lat, long), to be converted to (x, y, z), in-place
-// RETURNS: none.
-//**********************************************************************************
-void GGridIcos::spherical2xyz(GTVector<GTPoint<GFTYPE>*> &plist)
-{
-  GString serr = "GridIcos::spherical2xyz(1): ";
-
-  GFTYPE r, xlat, xlong;
-
-  for ( GSIZET i=0; i<plist.size(); i++ ) { // loop over all points
-    r = plist[i]->x1; xlat = plist[i]->x2; xlong = plist[i]->x3;
-    plist[i]->x1 = r*cos(xlat)*cos(xlong);
-    plist[i]->x2 = r*cos(xlat)*sin(xlong);
-    plist[i]->x3 = r*sin(xlat);
-  }
-
-} // end of method spherical2xyz (1)
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : spherical2xyz (2)
-// DESC   : Transform from spherical-polar to Cartesian coords
-// ARGS   : plist: Vector of points, representing spherical coordinates 
-//                 (r, lat, long), to be converted to (x, y, z), in-place
-// RETURNS: none.
-//**********************************************************************************
-void GGridIcos::spherical2xyz(GTVector<GTPoint<GFTYPE>> &plist)
-{
-  GString serr = "GridIcos::spherical2xyz(2): ";
-
-  GFTYPE r, xlat, xlong;
-
-  for ( GSIZET i=0; i<plist.size(); i++ ) { // loop over all points
-    r = plist[i].x1; xlat = plist[i].x2; xlong = plist[i].x3;
-    plist[i].x1 = r*cos(xlat)*cos(xlong);
-    plist[i].x2 = r*cos(xlat)*sin(xlong);
-    plist[i].x3 = r*sin(xlat);
-  }
-
-} // end of method spherical2xyz (2)
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : spherical2xyz (3)
-// DESC   : Transform from spherical-polar to Cartesian coords
-// ARGS   : plist: Vector of points, representing spherical coordinates 
-//                 (r, lat, long), to be converted to (x, y, z), in-place
-// RETURNS: none.
-//**********************************************************************************
-void GGridIcos::spherical2xyz(GTVector<GTVector<GFTYPE>> &plist)
-{
-  GString serr = "GridIcos::spherical2xyz(3): ";
-  assert(plist.size() >= 3 && "Invalid dimensionality on input array");
-
-  GFTYPE r, xlat, xlong;
-
-  for ( GSIZET i=0; i<plist[0].size(); i++ ) { // loop over all points
-    r = plist[0][i]; xlat = plist[1][i]; xlong = plist[2][i];
-    plist[0][i] = r*cos(xlat)*cos(xlong);
-    plist[1][i] = r*cos(xlat)*sin(xlong);
-    plist[2][i] = r*sin(xlat);
-  }
-
-} // end of method spherical2xyz (3)
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : xyz2spherical (1)
-// DESC   : Transform from Cartesian coords to spherical-polar
-// ARGS   : plist: Vector of points, representing Cartesian coordinates 
-//                 (x,y,z) to be converted to (r, lat, long), in-place
-// RETURNS: none.
-//**********************************************************************************
-void GGridIcos::xyz2spherical(GTVector<GTPoint<GFTYPE>*> &plist)
-{
-  GString serr = "GridIcos::xyz2spherica(1): ";
-
-  GFTYPE r, x, y, z;
-
-  for ( GSIZET i=0; i<plist.size(); i++ ) { // loop over all points
-   x = plist[i]->x1; y = plist[i]->x2; z = plist[i]->x3;
-   r = sqrt(x*x + y*y + z*z);
-   plist[i]->x1 = r;
-   plist[i]->x2 = asin(z/r);
-   plist[i]->x3 = atan2(y,x);
-   plist[i]->x3 = plist[i]->x3 < 0.0 ? 2*PI+plist[i]->x3 : plist[i]->x3;
-  }
-
-} // end of method xyz2spherical (1)
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : xyz2spherical (2)
-// DESC   : Transform from Cartesian coords to spherical-polar
-// ARGS   : plist: Vector of points, representing Cartesian coordinates 
-//                 (x,y,z) to be converted to (r, lat, long), in-place
-// RETURNS: none.
-//**********************************************************************************
-void GGridIcos::xyz2spherical(GTVector<GTVector<GFTYPE>> &plist)
-{
-  GString serr = "GridIcos::xyz2spherica(2): ";
-
-  GFTYPE r, x, y, z;
-
-  for ( GSIZET i=0; i<plist.size(); i++ ) { // loop over all points
-   x = plist[i][0]; y = plist[i][1]; z = plist[i][2];
-   r = sqrt(x*x + y*y + z*z);
-   plist[i][0] = r;
-   plist[i][1] = asin(z/r);
-   plist[i][2] = atan2(y,x);
-   plist[i][2] = plist[i][2] < 0.0 ? 2*PI+plist[i][2] : plist[i][2];
-  }
-
-} // end of method xyz2spherical (2)
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : xyz2spherical (3)
-// DESC   : Transform from Cartesian coords to spherical-polar
-// ARGS   : plist: Vector of points, representing Cartesian coordinates 
-//                 (x,y,z) to be converted to (r, lat, long), in-place
-// RETURNS: none.
-//**********************************************************************************
-void GGridIcos::xyz2spherical(GTVector<GTPoint<GFTYPE>> &plist)
-{
-  GString serr = "GridIcos::xyz2spherica(3): ";
-
-  GFTYPE r, x, y, z;
-
-  for ( GSIZET i=0; i<plist.size(); i++ ) { // loop over all points
-   x = plist[i].x1; y = plist[i].x2; z = plist[i].x3;
-   r = sqrt(x*x + y*y + z*z);
-   plist[i].x1 = r;
-   plist[i].x2 = asin(z/r);
-   plist[i].x3 = atan2(y,x);
-   plist[i].x3 = plist[i].x3 < 0.0 ? 2*PI+plist[i].x3 : plist[i].x3;
-  }
-
-} // end of method xyz2spherical (3)
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : cart2gnomonic
-// DESC   : Transform Cartesian coords to gnomonic space
-// ARGS   : clist: Vector of Cartesian points
-//          rad  : radius of sphere
-//          xlatc,
-//          xlongc: lat and long of reference vector (usually a centroid)
-//          glist: converted gnomonic points
-//          
-// RETURNS: none.
-//**********************************************************************************
-void GGridIcos::cart2gnomonic(GTVector<GTPoint<GFTYPE>> &clist, GFTYPE rad, GFTYPE xlatc, GFTYPE xlongc, GTVector<GTPoint<GFTYPE>> &glist)
-{
-  GString serr = "GridIcos::cart2gnomonic: ";
-
-
-  // Gnomonic transform given by (th=lat, and phi = long; thc, phic refer
-  // to refernce lat and long):
-  // x = rad [ cos(th) sin(phi-phic) ] / 
-  //     [sin(thc)sin(th) + cos(thc)cos(th)cos(phi-phic)]
-  // y = rad [ cos(thc)sin(th) - sin(thc)cos(th)cos(phi-phic) ] / 
-  //     [sin(thc)sin(th) + cos(thc)cos(th)cos(th-thc)]
-  // This can be rewritten as:
-  // x = rad tan(longp), y = rad tan(latp) sec(longp)
-  // where
-  // latp  = arcsin[cos(thc)sin(th) - sin(thc)cos(th)cos(phi-phic)]
-  // longp = atan [ [ cos(th) sin(phi-phic) / 
-  //                  [sin(thc)sin(th) + cos(thc)cos(th)cos(phi-phic)] ] ]
-  // 
-
-  GFTYPE xlatp, xlongp;
-  GFTYPE den, r, xlat, xlong;
-  for ( GSIZET i=0; i<clist.size(); i++ ) { // loop over all points
-    r      = clist[i].norm();
-    xlat   = asin(clist[i].x3/r);
-    xlong  = atan2(clist[i].x2,clist[i].x1);
-    xlong  = xlong < 0.0 ? 2*PI+xlong : xlong;
-#if 0
-    den    = sin(xlatc)*sin(xlat) + cos(xlatc)*cos(xlat)*cos(xlong-xlongc);  
-    xlatp  = asin( cos(xlatc)*sin(xlat) - sin(xlatc)*cos(xlat)*cos(xlong-xlongc) );
-    xlongp = atan2( cos(xlat)*sin(xlong-xlongc),den );
-
-    glist[i].x1 = rad*tan(xlongp);
-    glist[i].x2 = rad*tan(xlatp)*sec(xlongp);
-#else
-    den    = sin(xlatc)*sin(xlat) + cos(xlatc)*cos(xlat)*cos(xlong-xlongc); 
-    den    = fabs(den) < std::numeric_limits<GFTYPE>::epsilon() ? 0.0 : 1.0/den;
-    glist[i].x1 = rad*cos(xlat)*sin(xlong-xlongc)*den;
-    glist[i].x2 = rad*( cos(xlatc)*sin(xlat) - sin(xlatc)*cos(xlat)*cos(xlong-xlongc) ) * den;
-#endif
-  }
-
-} // end of method cart2gnomonic
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : gnomonic2cart (1)
-// DESC   : Transform gnomonic coords to Cartesian space
-// ARGS   : glist: Vector of gnomonic coords
-//          rad  : radius of sphere
-//          xlatc,
-//          xlongc: lat and long of reference vector (usually a centroid)
-//          clist: converted Cartesian coords
-//          
-// RETURNS: none.
-//**********************************************************************************
-void GGridIcos::gnomonic2cart(GTVector<GTVector<GFTYPE>> &glist, GFTYPE rad, GFTYPE xlatc, GFTYPE xlongc, GTVector<GTVector<GFTYPE>> &clist)
-{
-  GString serr = "GridIcos::gnomonic2cart (1): ";
-  assert(glist.size() >= 2 && clist.size() >= 3 && "Incompaible coordinate dimensions");
-
-
-  // Gnomonic transform given by (th=lat, and phi = long; thc, phic refer
-  // to refernce lat and long):
-  //   x = rad [ cos(th) sin(phi-phic) ] / 
-  //       [sin(thc)sin(th) + cos(thc)cos(th)cos(phi-phic)]
-  //   y = rad [ cos(thc)sin(th) - sin(thc)cos(th)cos(phi-phic) ] / 
-  //       [sin(thc)sin(th) + cos(thc)cos(th)cos(th-thc)]
-  // 
-  // Reverse this here... Solving for tan(th), and cos(phi-phic), arrive at:
-  //   th  = asin( cos(b)sin(thc) + y*sin(b)*cos(thc)/rho )
-  //   phi = phic + atan( x*sin(b) / ( rho*cos(thc)*cos(b) - y*sin(thc)*sin(b) ) ) 
-  // where
-  //   rho = sqrt(x^2 + y^2)
-  //   b   = atan(rho)  
-  //
-  // (From Wolfram Research)
-
-  GFTYPE beta, rho, x, xlat, xlong, y;
-  GFTYPE eps = std::numeric_limits<GFTYPE>::epsilon();
-  for ( GSIZET i=0; i<glist[0].size(); i++ ) { // loop over all points
-    x      = glist[0][i];
-    y      = glist[1][i];
-
-
-    if ( fabs(x) < eps && fabs(y) < eps ) {
-      xlat = xlatc;
-      xlong = xlongc;
-    } else {
-      rho    = sqrt(x*x + y*y);
-      beta   = atan(rho);
-      xlat   = asin( cos(beta)*sin(xlatc) + (y*sin(beta)*cos(xlatc))/rho );
-      xlong  = xlongc + atan2( x*sin(beta), 
-                               rho*cos(xlatc)*cos(beta)-y*sin(xlatc)*sin(beta) );
-    }
-
-    // Convert to spherical-polar to  Cart. coordinates:
-    clist[0][i] = rad*cos(xlat)*cos(xlong);
-    clist[1][i] = rad*cos(xlat)*sin(xlong);
-    clist[2][i] = rad*sin(xlat);
-  }
-
-} // end of method gnomonic2cart (1)
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : gnomonic2cart (2)
-// DESC   : Transform gnomonic coords to Cartesian space
-// ARGS   : glist: Vector of gnomonic coords
-//          rad  : radius of sphere
-//          xlatc,
-//          xlongc: lat and long of reference vector (usually a centroid)
-//          clist: converted Cartesian coords
-//          
-// RETURNS: none.
-//**********************************************************************************
-void GGridIcos::gnomonic2cart(GTVector<GTPoint<GFTYPE>> &glist, GFTYPE rad, GFTYPE xlatc, GFTYPE xlongc, GTVector<GTPoint<GFTYPE>> &clist)
-{
-  GString serr = "GridIcos::gnomonic2cart(2): ";
-
-
-  // Gnomonic transform given by (th=lat, and phi = long; thc, phic refer
-  // to refernce lat and long):
-  //   x = rad [ cos(th) sin(phi-phic) ] / 
-  //       [sin(thc)sin(th) + cos(thc)cos(th)cos(phi-phic)]
-  //   y = rad [ cos(thc)sin(th) - sin(thc)cos(th)cos(phi-phic) ] / 
-  //       [sin(thc)sin(th) + cos(thc)cos(th)cos(th-thc)]
-  // Reverse this here... Solving for tan(th), and cos(phi-phic), arrive at:
-  //   th  = asin( cos(b)sin(thc) + y*sin(b)*cos(thc)/rho )
-  //   phi = phic + atan( x*sin(b) / ( rho*cos(thc)*cos(b) - y*sin(thc)*sin(b) ) ) 
-  // where
-  //   rho = sqrt(x^2 + y^2)
-  //   b   = atan(rho)  
-  // (From Wolfram Research)
-
-  GFTYPE beta, rho, x, xlat, xlong, y;
-  GFTYPE eps = std::numeric_limits<GFTYPE>::epsilon();
-  for ( GSIZET i=0; i<clist.size(); i++ ) { // loop over all points
-    x      = glist[i][0];
-    y      = glist[i][1];
-
-    if ( fabs(x) < eps && fabs(y) < eps ) {
-      xlat = xlatc;
-      xlong = xlongc;
-    } else {
-      rho    = sqrt(x*x + y*y);
-      beta   = atan(rho);
-      xlat   = asin( cos(beta)*sin(xlatc) + (y*sin(beta)*cos(xlatc))/rho );
-      xlong  = xlongc + atan2( x*sin(beta), 
-                               rho*cos(xlatc)*cos(beta)-y*sin(xlatc)*sin(beta) );
-    }
-    // Convert to spherical-polar to  Cart. coordinates:
-    clist[i][0] = rad*cos(xlat)*cos(xlong);
-    clist[i][1] = rad*cos(xlat)*sin(xlong);
-    clist[i][2] = rad*sin(xlat);
-  }
-
-} // end of method gnomonic2cart(2)
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : reorderverts2d
-// DESC   : Reorder specified vertices to be consistent with
-//          shape functions
-// ARGS   : uverts : list of unordered vertices
-//          overts : array of ordered vertices, returned
-// RETURNS: none.
-//**********************************************************************************
-void GGridIcos::reorderverts2d(GTVector<GTPoint<GFTYPE>> &uverts, GTVector<GSIZET> &isort, 
-                               GTVector<GTPoint<GFTYPE>> &overts)
-{
-  GString serr = "GridIcos::reorderverts2d: ";
-
-  assert(uverts.size() == 4 && "Incorrect number of vertices");
-
-
-  GTVector<GFTYPE> x(4);
-  GTVector<GSIZET> Ixy(4);
-
-
-  isort.resize(4);
-  for ( GSIZET i=0; i<uverts.size(); i++ ) { 
-    x[i] = uverts[i].x1;
-  }
-
-  x.sortincreasing(Ixy);
-
-  // Do 'left' -hand vertices:
-  if ( uverts[Ixy[0]].x2 < uverts[Ixy[1]].x2 ) {
-    isort[0] = Ixy[0];
-    isort[3] = Ixy[1];
-  } else {
-    isort[0] = Ixy[1];
-    isort[3] = Ixy[0];
-  }
-
-  // Do 'right' -hand vertices:
-  if ( uverts[Ixy[2]].x2 < uverts[Ixy[3]].x2 ) {
-    isort[1] = Ixy[2];
-    isort[2] = Ixy[3];
-  } else {
-    isort[1] = Ixy[3];
-    isort[2] = Ixy[2];
-  }
-
-  for ( GSIZET j=0; j<4; j++ ) overts[j] = uverts[isort[j]];
-  
-} // end of method reorderverts2d
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : order_latlong2d
-// DESC   : Order 2d vertices on exit s.t. they roughly define a 'box' 
-//          in spherical coords. Used only for quad elements.
-// ARGS   : verts : Array of vertices, re-ordered on exit
-// RETURNS: none.
-//**********************************************************************************
-void GGridIcos::order_latlong2d(GTVector<GFPoint> &verts)
-{
-
-  assert(verts.size() == 4 && "4 vertices must be provided");
-
-  GString           serr = "GGridIcos::order_latlong2d: ";
-  GTVector<GSIZET>  isortlon(4);
-  GTVector<GFTYPE>  lon(4), lat(4);
-  GTVector<GFPoint> cverts(4);       // copy of input verts
-  GTVector<GFPoint> sverts(4);       // sverts in sph coords
-
-  cverts = verts;
-  sverts = verts;
-  xyz2spherical(sverts); // convert verts to latlon
-
-  // Isolate lat, lon:
-  for ( GSIZET j=0; j<4; j++ ) {
-    lat[j] = sverts[j].x2;
-    lon[j] = sverts[j].x3;
-  }
-
-  // Sort lon in increasing order:
-  lon.sortincreasing(isortlon);
-
-  // Check vertices near 0-2pi axis:
-  if ( fabs(lon[isortlon[0]] - lon[isortlon[3]]) < PI ) {
-    for ( GSIZET j=0; j<4; j++ ) {
-      if ( lon[j] > 1.5*PI && lon[j] <=2.0*PI ) lon[j] -= 2.0*PI;
-    }
-  }
-
-  lon.sortincreasing(isortlon);
-
-  // Find 2 points with smallest lon, set v0 and v3
-  // based on lat to define 'box':
-  if ( lat[isortlon[0]] < lat[isortlon[1]] ) {
-    verts[0] = cverts[isortlon[0]];
-    verts[3] = cverts[isortlon[1]];
-  }
-  else {
-    verts[0] = cverts[isortlon[1]];
-    verts[3] = cverts[isortlon[0]];
-  }
-  
-  // Find 2 points with largest lon, set v1 and v2
-  // based on lat to define 'box':
-  if ( lat[isortlon[2]] < lat[isortlon[3]] ) {
-    verts[1] = cverts[isortlon[2]];
-    verts[2] = cverts[isortlon[3]];
-  }
-  else {
-    verts[1] = cverts[isortlon[3]];
-    verts[2] = cverts[isortlon[2]];
-  }
-
-#if 0
-  cout << serr << " on entry: verts=" << cverts << endl;
-  cout << serr << " on exit : verts=" << verts << endl;
-#endif
-
-} // end, method order_latlong2d
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : order_triangles
-// DESC   : Order triangle vertices
-// ARGS   : tmesh: Array of vertices, re-ordered on exit
-// RETURNS: none.
-//**********************************************************************************
-void GGridIcos::order_triangles(GTVector<GTriangle<GFTYPE>> &tmesh)
-{
-
-  GString           serr = "GGridIcos::order_triangles: ";
-  GTVector<GSIZET>  isortlon(3);
-  GTVector<GFTYPE>  lon(3), lat(3);
-  GTVector<GFPoint> cverts(3);       // copy of input verts
-  GTVector<GFPoint> sverts(3);       // sverts in sph coords
-
-  iup_.resize(tmesh.size());
-  iup_ = 0;
-  for ( GSIZET i=0; i<tmesh.size(); i++ ) {
-    for ( GSIZET j=0; j<3; j++ ) cverts[j] = *tmesh[i].v[j];
-    sverts = cverts;
-    xyz2spherical(sverts); // convert verts to latlon
-    for ( GSIZET j=0; j<3; j++ ) {
-      lat[j] = sverts[j].x2;
-      lon[j] = sverts[j].x3;
-    }
-    lon.sortincreasing(isortlon);
-
-    // Check vertices near 0-2pi axis; if triangle
-    // spans it, subtract 2pi to make longitude negative:
-    if ( fabs(lon[isortlon[0]] - lon[isortlon[2]]) < PI ) {
-      for ( GSIZET j=0; j<3; j++ ) {
-        if ( lon[j] > 1.5*PI && lon[j] <= 2.0*PI ) lon[j] -= 2.0*PI;
-      }
-    }
-    lon.sortincreasing(isortlon);
-    
-    if ( lat[isortlon[1]] > lat[isortlon[0]]
-      && lat[isortlon[1]] > lat[isortlon[2]] ) { // pointing upwards
-     *tmesh[i].v[0] =  cverts[isortlon[0]];
-     *tmesh[i].v[1] =  cverts[isortlon[2]];
-     *tmesh[i].v[2] =  cverts[isortlon[1]];
-      iup_[i] = 1;
-    }
-
-    if ( lat[isortlon[1]] < lat[isortlon[0]]
-      && lat[isortlon[1]] < lat[isortlon[2]] ) { // pointing downwards
-     *tmesh[i].v[0] =  cverts[isortlon[1]];
-     *tmesh[i].v[1] =  cverts[isortlon[2]];
-     *tmesh[i].v[2] =  cverts[isortlon[0]];
-    }
-  }
-
-} // end, method order_triangles
 
 
 //**********************************************************************************

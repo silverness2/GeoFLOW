@@ -40,15 +40,7 @@ using namespace std;
 // DESC   : Instantiate with grid + state + tmp. Use for fully nonlinear
 //          Burgers equation, heat equation.
 //          grid      : grid object
-//          traits    :
-//            ssteptype : stepper type
-//            itorder   : time order to du/dt derivative for multistep
-//                        methods; RK num stages (~ order)
-//            inorder   : order of approximation for nonlin term
-//            doheat    : do heat equation only? If this is TRUE, then neither 
-//                        of the following 2 flags have any meaning.
-//            pureadv   : do pure advection? Has meaning only if doheat==FALSE
-//            bconserved: do conservative form? Has meaning only if pureadv==FALSE.
+//          traits    : GBurgers:Traits struct
 //          tmp       : Array of tmp vector pointers, pointing to vectors
 //                      of same size as State. Must be MAX(2*DIM+2,iorder+1)
 //                      vectors
@@ -462,7 +454,7 @@ void GBurgers<TypePack>::init(GBurgers::Traits &traits)
 
   switch ( isteptype_ ) {
     case GSTEPPER_EXRK:
-      gexrk_ = new GExRKStepper<GFTYPE>(itorder_);
+      gexrk_ = new GExRKStepper<GFTYPE>(*grid_, itorder_);
       gexrk_->setRHSfunction(rhs);
       gexrk_->set_apply_bdy_callback(applybc);
       gexrk_->set_ggfx(ggfx_);

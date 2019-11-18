@@ -60,9 +60,11 @@ void  gio_restart(const geoflow::tbox::PropertyTree& ptree, GINT igrid,
 
 GSIZET gio_read_header(GIOTraits&, GString filename);
 
-GSIZET gio_write(GIOTraits&, GString filename, const GTVector<GFTYPE> &u);
+template<typename T>
+GSIZET gio_write(GIOTraits&, GString filename, const GTVector<T> &u);
 
-GSIZET gio_read (GIOTraits&, GString filename, GTVector<GFTYPE> &u);
+template<typename T>
+GSIZET gio_read (GIOTraits&, GString filename, GTVector<T> &u);
 
 void   gio_resize(GINT n);
 

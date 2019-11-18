@@ -37,10 +37,11 @@
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
-GShapeFcn_hostd::GShapeFcn_hostd()
+template<typename T>
+GShapeFcn_hostd<T>::GShapeFcn_hostd()
 {
-  gbasis_.resize(GDIM);
-  gbasis_ = NULLPTR;
+  this->gbasis_.resize(GDIM);
+  this->gbasis_ = NULLPTR;
 } // end of constructor method (1)
 
 
@@ -51,10 +52,11 @@ GShapeFcn_hostd::GShapeFcn_hostd()
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
-GShapeFcn_hostd::GShapeFcn_hostd(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b)
+template<typename T>
+GShapeFcn_hostd<T>::GShapeFcn_hostd(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b)
 {
-  gbasis_.resize(GDIM);
-  gbasis_ = b;
+  this->gbasis_.resize(GDIM);
+  this->gbasis_ = b;
 } // end of constructor method (2)
 
 
@@ -65,7 +67,8 @@ GShapeFcn_hostd::GShapeFcn_hostd(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b)
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
-GShapeFcn_hostd::~GShapeFcn_hostd()
+template<typename T>
+GShapeFcn_hostd<T>::~GShapeFcn_hostd()
 {
 } // end, destructor
 
@@ -96,8 +99,9 @@ GShapeFcn_hostd::~GShapeFcn_hostd()
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_hostd::Ni(GTVector<GINT> &ishape, 
-                          GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N)
+template<typename T>
+void GShapeFcn_hostd<T>::Ni(GTVector<GINT> &ishape, 
+                          GTVector<GTVector<T>*> &xi, GTVector<T> &N)
 {
 
 #if defined(_G_IS1D)
@@ -133,11 +137,12 @@ void GShapeFcn_hostd::Ni(GTVector<GINT> &ishape,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_hostd::Ni_1d(GTVector<GINT> &ishape, 
-                          GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N)
+template<typename T>
+void GShapeFcn_hostd<T>::Ni_1d(GTVector<GINT> &ishape, 
+                          GTVector<GTVector<T>*> &xi, GTVector<T> &N)
 {
   
-  gbasis_[0]->evalBasis(ishape[0], *xi[0], N);
+  this->gbasis_[0]->evalBasis(ishape[0], *xi[0], N);
 
 } // end of method Ni_1d
 
@@ -163,13 +168,14 @@ void GShapeFcn_hostd::Ni_1d(GTVector<GINT> &ishape,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_hostd::Ni_2d(GTVector<GINT> &ishape, 
-                          GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N)
+template<typename T>
+void GShapeFcn_hostd<T>::Ni_2d(GTVector<GINT> &ishape, 
+                          GTVector<GTVector<T>*> &xi, GTVector<T> &N)
 {
   
   for ( GSIZET j=0; j<xi.size(); j++ ) {
     d_[j].resize(xi[j]->size());
-    gbasis_[j]->evalBasis(ishape[j], *xi[j], d_[j]);
+    this->gbasis_[j]->evalBasis(ishape[j], *xi[j], d_[j]);
   }
 
   GSIZET n = 0;
@@ -203,12 +209,13 @@ void GShapeFcn_hostd::Ni_2d(GTVector<GINT> &ishape,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_hostd::Ni_3d(GTVector<GINT> &ishape, 
-                          GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N)
+template<typename T>
+void GShapeFcn_hostd<T>::Ni_3d(GTVector<GINT> &ishape, 
+                          GTVector<GTVector<T>*> &xi, GTVector<T> &N)
 {
   for ( GSIZET j=0; j<xi.size(); j++ ) {
     d_[j].resize(xi[j]->size());
-    gbasis_[0]->evalBasis(ishape[j], *xi[j], d_[j]);
+    this->gbasis_[0]->evalBasis(ishape[j], *xi[j], d_[j]);
   }
 
   GSIZET n=0;
@@ -242,9 +249,10 @@ void GShapeFcn_hostd::Ni_3d(GTVector<GINT> &ishape,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_hostd::dNdXi(GTVector<GINT> &ishape, GINT jder, 
-                            GTVector<GTVector<GFTYPE>*> &xi, 
-                            GTVector<GFTYPE> &dNdxi)
+template<typename T>
+void GShapeFcn_hostd<T>::dNdXi(GTVector<GINT> &ishape, GINT jder, 
+                            GTVector<GTVector<T>*> &xi, 
+                            GTVector<T> &dNdxi)
 {
 
 #if defined(_G_IS1D)
@@ -276,12 +284,13 @@ void GShapeFcn_hostd::dNdXi(GTVector<GINT> &ishape, GINT jder,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_hostd::dNdXi_1d(GTVector<GINT> &ishape, GINT jder, 
-                               GTVector<GTVector<GFTYPE>*> &xi, 
-                               GTVector<GFTYPE> &dNdxi)
+template<typename T>
+void GShapeFcn_hostd<T>::dNdXi_1d(GTVector<GINT> &ishape, GINT jder, 
+                               GTVector<GTVector<T>*> &xi, 
+                               GTVector<T> &dNdxi)
 {
   assert(jder==1 && "Invalid matrix element");
-  gbasis_[0]->evalDBasis(ishape[0], *xi[0], dNdxi);
+  this->gbasis_[0]->evalDBasis(ishape[0], *xi[0], dNdxi);
 
   
 } // end of method dNdXi_1d
@@ -306,19 +315,20 @@ void GShapeFcn_hostd::dNdXi_1d(GTVector<GINT> &ishape, GINT jder,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_hostd::dNdXi_2d(GTVector<GINT> &ishape, GINT jder, 
-                               GTVector<GTVector<GFTYPE>*> &xi, 
-                               GTVector<GFTYPE> &dNdxi)
+template<typename T>
+void GShapeFcn_hostd<T>::dNdXi_2d(GTVector<GINT> &ishape, GINT jder, 
+                               GTVector<GTVector<T>*> &xi, 
+                               GTVector<T> &dNdxi)
 {
   assert(jder>0 && jder<=(GDIM+1) && "Invalid matrix element");
 
   for ( GSIZET j=0; j<GDIM+1; j++ ) { 
     d_[j].resize(xi[j]->size());
     if ( j == (jder-1)) {
-      gbasis_[j]->evalDBasis(ishape[j], *xi[j], d_[j]);
+      this->gbasis_[j]->evalDBasis(ishape[j], *xi[j], d_[j]);
     }
     else {
-      gbasis_[j]->evalBasis (ishape[j], *xi[j], d_[j]);
+      this->gbasis_[j]->evalBasis (ishape[j], *xi[j], d_[j]);
     }
   }
 
@@ -350,19 +360,20 @@ void GShapeFcn_hostd::dNdXi_2d(GTVector<GINT> &ishape, GINT jder,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_hostd::dNdXi_3d(GTVector<GINT> &ishape, GINT jder, 
-                               GTVector<GTVector<GFTYPE>*> &xi, 
-                               GTVector<GFTYPE> &dNdxi)
+template<typename T>
+void GShapeFcn_hostd<T>::dNdXi_3d(GTVector<GINT> &ishape, GINT jder, 
+                               GTVector<GTVector<T>*> &xi, 
+                               GTVector<T> &dNdxi)
 {
   assert(jder>0 && jder>xi.size() && "Invalid matrix element");
 
   for ( GSIZET j=0; j<xi.size(); j++ ) {
     d_[j].resize(xi[j]->size());
     if ( j == jder ) {
-      gbasis_[j]->evalDBasis(ishape[j], *xi[j], d_[j]);
+      this->gbasis_[j]->evalDBasis(ishape[j], *xi[j], d_[j]);
     }
     else {
-      gbasis_[j]->evalBasis (ishape[j], *xi[j], d_[j]);
+      this->gbasis_[j]->evalBasis (ishape[j], *xi[j], d_[j]);
     }
   }
 

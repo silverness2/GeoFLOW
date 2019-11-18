@@ -102,9 +102,16 @@ GBOOL GGFX<T>::init(GNIDBuffer &glob_index)
 
   nglob_index_ = glob_index.size();
 
+#if defined(_G_DEBUG) || defined(_KEEP_INDICES)
+  glob_index_.resize(nglob_index_);
+  glob_index_ = glob_index;
+#endif
+
   // Get node id dynamic range:
-  GNODEID lmax = glob_index.max();
-  GComm::Allreduce(&lmax, &maxNodeVal_, 1, T2GCDatatype<GNODEID>(), GC_OP_MAX, comm_);
+  GNODEID loc = glob_index.max();
+  GComm::Allreduce(&loc, &maxNodeVal_, 1, T2GCDatatype<GNODEID>(), GC_OP_MAX, comm_);
+  loc = glob_index.min();
+  GComm::Allreduce(&loc, &minNodeVal_, 1, T2GCDatatype<GNODEID>(), GC_OP_MIN, comm_);
  
   // Do initial sorting of all sortable data. 
 #if defined(GGFX_TRACE_OUTPUT)
@@ -180,8 +187,10 @@ GBOOL GGFX<T>::initSort(GNIDBuffer  &glob_index)
   GPP(comm_, serr << "Calling binSort...");
 #endif
 
+  GTimerStart("ggfx_binSort");
   bret = binSort(glob_index, gBinMat, numlocfilledbins,
                  max_numlocfilledbins, max_numlocbinmem, gBinBdy_, locWork);
+  GTimerStop("ggfx_binSort");
   if ( !bret ) {  
     GPP(comm_,serr << "binSort failed ");
     exit(1);
@@ -200,8 +209,10 @@ GBOOL GGFX<T>::initSort(GNIDBuffer  &glob_index)
   GPP(comm_,serr << "Calling createWorkBuffs...");
 #endif
 
+  GTimerStart("ggfx_workBuffs");
   GNIDMatrix isWork;         // Wrk send buff: iSendWorkTaskID.size x max_numlocbinmem
   bret = createWorkBuffs(gBinMat, max_numlocbinmem, iRecvWorkTaskID, irWork, iSendWorkTaskID, isWork);
+  GTimerStop("ggfx_workBuffs");
   if ( !bret ) {  
     GPP(comm_, serr << "createWorkBuffs failed ");
     exit(1);
@@ -217,7 +228,9 @@ GBOOL GGFX<T>::initSort(GNIDBuffer  &glob_index)
 #endif
 
   // Fill bins with global nodes & send out, and receive work:
+  GTimerStart("ggfx_sendRcvWork");
   bret = doSendRecvWork(glob_index, gBinBdy_, iRecvWorkTaskID, irWork, iSendWorkTaskID, isWork);
+  GTimerStop("ggfx_sendRcvWork");
   if ( !bret ) {  
     GPP(comm_,serr << "doSendRecvWork failed ");
     exit(1);
@@ -233,7 +246,9 @@ GBOOL GGFX<T>::initSort(GNIDBuffer  &glob_index)
 #if defined(GGFX_TRACE_OUTPUT)
   GPP(comm_,serr << "Calling doCommonNodeSort...");
 #endif
+  GTimerStart("ggfx_commonNodeSort");
   bret = doCommonNodeSort(glob_index, irWork, iRecvWorkTaskID, iSendWorkTaskID, mySharedData);
+  GTimerStop("ggfx_commonNodeSort");
   // NOTE: iSendWorkTaskID on exit should contain the list of tasks that sorted work
   //       data is received from. These should be the same task ids that were used
   //       in sending this local task's data to the work tasks it identified
@@ -247,7 +262,9 @@ GBOOL GGFX<T>::initSort(GNIDBuffer  &glob_index)
 #if defined(GGFX_TRACE_OUTPUT)
   GPP(comm_,serr << "Calling extractOpData...");
 #endif
+  GTimerStart("ggfx_extractOpData");
   bret = extractOpData(glob_index, mySharedData);
+  GTimerStop("ggfx_extractOpData");
   if ( !bret ) {  
     cout << serr << ": rank: " << GComm::WorldRank(comm_) << ": extractOpData failed" << endl;
     exit(1);
@@ -294,9 +311,9 @@ GBOOL GGFX<T>::binSort(GNIDBuffer &nodelist, GIMatrix &gBinMat,
   gBinBdy.resize(nprocs_,2);
 
   // Node list can be in any order:
-  GNODEID nDel = (maxNodeVal_+1) / nprocs_;
-  GNODEID nRem = (maxNodeVal_+1) % nprocs_;
-  GNODEID nRange0 = 0;
+  GNODEID nDel = (maxNodeVal_-minNodeVal_+1) / nprocs_;
+  GNODEID nRem = (maxNodeVal_-minNodeVal_+1) % nprocs_;
+  GNODEID nRange0 = minNodeVal_;
   GNODEID nRange1;
   for ( i=0, n=0; i<nprocs_; i++ ) { // cycle over bins (tasks)
     nRange1  = nRange0 + nDel + ( (i<nRem || (i==nprocs_-1)) ? 1:0) - 1; // set range owned by task
@@ -1736,27 +1753,27 @@ void GGFX<T>::initMult()
 
   assert(bInit_ && "Operator not initialized");
 
-  GTVector<T> mult(nglob_index_);
+  mult_.resize(nglob_index_);
 
-  mult = 1.0;
+  mult_ = 1.0;
 
 #if defined(GGFX_TRACE_OUTPUT)
  GPP(comm_,serr << " doing doOp...");
 #endif
   // Do DSS sum to find multiplicity:
-  doOp(mult, GGFX_OP_SUM);
+  doOp(mult_, GGFX_OP_SUM);
 
   // Compute 1/mult:
 #if defined(GGFX_TRACE_OUTPUT)
-    GPP(comm_,serr << " mult.size=" << mult.size());
+    GPP(comm_,serr << " mult.size=" << mult_.size());
 #endif
-  imult_.resize(mult.size());
-  for ( GSIZET j=0; j<mult.size(); j++ ) {
-    imult_[j] = 1.0/mult[j];
+  imult_.resize(mult_.size());
+  for ( GSIZET j=0; j<mult_.size(); j++ ) {
+    imult_[j] = 1.0/mult_[j];
   }
 
 #if defined(GGFX_TRACE_OUTPUT)
-  GPP(comm_,"GGFX<T>::initMult: mult=" << mult);
+  GPP(comm_,"GGFX<T>::initMult: mult=" << mult_);
   GPP(comm_,"GGFX<T>::initMult: imult=" << imult_);
 #endif
 

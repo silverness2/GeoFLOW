@@ -1,5 +1,5 @@
 //==================================================================================
-// Module       : gdd_default.cpp
+// Module       : gdd_base.ipp
 // Date         : 8/28/18 (DLR)
 // Description  : Forms virtual abstract base class for domain 
 //                decomposition objects. Default behaviour is to
@@ -21,7 +21,8 @@
 //          b     : vector of basis pointers, of size at least GDIM. 
 // RETURNS: none
 //**********************************************************************************
-GDD_base::GDD_base(GINT nprocs)
+template<typename T>
+GDD_base<T>::GDD_base(GINT nprocs)
 :
 nprocs_  (nprocs)
 {
@@ -35,7 +36,8 @@ nprocs_  (nprocs)
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
-GDD_base::GDD_base(const GDD_base &obj)
+template<typename T>
+GDD_base<T>::GDD_base(const GDD_base &obj)
 {
   nprocs_ = obj.nprocs_;
 } // end, destructor
@@ -48,7 +50,8 @@ GDD_base::GDD_base(const GDD_base &obj)
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
-GDD_base::~GDD_base()
+template<typename T>
+GDD_base<T>::~GDD_base()
 {
 } // end, destructor
 
@@ -66,9 +69,10 @@ GDD_base::~GDD_base()
 //                 be 'ownded' by task irank. Size will be set here.
 // RETURNS: number of elements belonging to rank irank.
 //**********************************************************************************
-GSIZET GDD_base::doDD(const GTVector<GTVector<GFTYPE>>&x, GINT irank, GTVector<GINT> &iret)
+template<typename T>
+GSIZET GDD_base<T>::doDD(const GTVector<GTVector<T>>&x, GINT irank, GTVector<GINT> &iret)
 {
-  GString serr = "GDD_base::doDD (1): ";
+  GString serr = "GDD_base<T>::doDD (1): ";
   assert(irank >=0 && irank < nprocs_ && "Invalid rank");
 
   GSIZET nxp  = x[0].size() / nprocs_;
@@ -107,9 +111,10 @@ GSIZET GDD_base::doDD(const GTVector<GTVector<GFTYPE>>&x, GINT irank, GTVector<G
 //                 be 'ownded' by task irank.
 // RETURNS: number of elements belonging to rank irank.
 //**********************************************************************************
-GSIZET GDD_base::doDD(const GTVector<GTPoint<GFTYPE>> &x, GINT irank, GTVector<GINT> &iret)
+template<typename T>
+GSIZET GDD_base<T>::doDD(const GTVector<GTPoint<T>> &x, GINT irank, GTVector<GINT> &iret)
 {
-  GString serr = "GDD_base::doDD (2): ";
+  GString serr = "GDD_base<T>::doDD (2): ";
   assert(irank >=0 && irank < nprocs_ && "Invalid rank");
 
   GSIZET nxp  = x.size() / nprocs_;

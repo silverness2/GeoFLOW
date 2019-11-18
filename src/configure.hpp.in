@@ -39,6 +39,7 @@
 //
 #if defined(DO_DEBUG) && !defined(USE_OPENACC)
 	#define _G_BOUNDS_CHK
+	#define _G_DEBUG
 #endif
 
 #if defined(USE_GBLAS)

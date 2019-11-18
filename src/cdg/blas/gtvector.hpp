@@ -136,11 +136,15 @@ template <class T> class GTVector
 
 
     #pragma acc routine vector
-    T isfinite();
+    GBOOL isfinite();
+    #pragma acc routine vector
+    GBOOL isfinite(GSIZET &iwhere);
     #pragma acc routine vector
     T max();
     #pragma acc routine vector
     T amax();
+    #pragma acc routine vector
+    T amaxdiff(T tiny);
     #pragma acc routine vector
     T maxn(GSIZET n);
     #pragma acc routine vector
@@ -149,6 +153,8 @@ template <class T> class GTVector
     T min();
     #pragma acc routine vector
     T amin();
+    #pragma acc routine vector
+    T amindiff(T tiny);
     #pragma acc routine vector
     T minn(GSIZET n);
     #pragma acc routine vector

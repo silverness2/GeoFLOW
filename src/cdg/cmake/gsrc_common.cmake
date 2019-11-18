@@ -15,8 +15,7 @@
  set(CDG_COMM_SRC   ${GHOME}/comm/gcomm.cpp 
     )
 
- set(CDG_GRID_SRC   ${GHOME}/grid/gdd_base.cpp
-                    ${GHOME}/grid/ggrid.cpp
+ set(CDG_GRID_SRC   ${GHOME}/grid/ggrid.cpp
                     ${GHOME}/grid/ggrid_icos.cpp
                     ${GHOME}/grid/ggrid_box.cpp
                     ${GHOME}/grid/ggrid_factory.cpp
@@ -29,9 +28,6 @@
     )
 
  set(CDG_SEM_SRC    ${GHOME}/sem/gelem_base.cpp
-                    ${GHOME}/sem/gshapefcn_linear.cpp
-                    ${GHOME}/sem/gshapefcn_embed.cpp
-                    ${GHOME}/sem/gshapefcn_hostd.cpp
                     ${GHOME}/sem/gmass.cpp
                     ${GHOME}/sem/ghelmholtz.cpp
                     ${GHOME}/sem/gpdv.cpp

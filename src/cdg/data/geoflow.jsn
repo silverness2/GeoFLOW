@@ -3,14 +3,14 @@
   "exp_order"            : [8, 8, 1],
   "exp_order_type"       : "constant",
   "grid_type"            : "grid_icos",
-  "initstate_block"      : "initstate_boxnwave",
+  "initstate_block"      : "initstate_icosnwave",
   "initforce_block"      : "",
   "use_forcing"          : false,
   "initstate_type"       : "direct",
   "initforce_type"       : "",
   "restart_index"        : 0,
   "benchmark"            : false,
-  "do_comparison"        : false,
+  "do_comparison"        : true,
   "observer_list"        : ["posixio_observer", "global_diag_basic"],
   "initvss": {
     "name"     : "simplesum",
@@ -67,6 +67,17 @@
     "adv_vel": [1.0, 0.0, 0.0]
   },
   "initstate_boxnwave": {
+<<<<<<< HEAD
+    "x0"        : [0.35 , 0.65],
+    "y0"        : [0.35 , 0.65],
+    "z0"        : [0.35 , 0.65],
+    "ULparam"   : [1.0  , 1.0],
+    "t0"        : [0.002, 0.008],
+    "planar"    : [false, false],
+    "prop_dir_x": [0    , 0],
+    "prop_dir_y": [0    , 0],
+    "prop_dir_z": [0    , 0]
+=======
     "x0"        : [0.3 , 0.5],
     "y0"        : [0.3 , 0.5],
     "z0"        : [0.3 , 0.5],
@@ -76,11 +87,16 @@
     "prop_dir_x": [1.0 , 0.0],
     "prop_dir_y": [1.0 , 0.0],
     "prop_dir_z": [1.0 , 0.0]
+>>>>>>> develop
   },
   "initstate_icosnwave": {
     "latitude0"  : [10,  40 ],
     "longitude0" : [280, 330],
+<<<<<<< HEAD
+    "Uparam"     : [1.0, 1.0],
+=======
     "Uparam"     : 1.0,
+>>>>>>> develop
     "t0"         : [0.02, 0.04]
   },
   "pde_burgers": {
@@ -104,9 +120,16 @@
     "bdy_config_method": ""
   },
   "grid_icos": {
+<<<<<<< HEAD
+    "grid_name"   : "grid_icos",
+    "ilevel"      : 9,
+    "refine_type" : "GICOS_BISECTION",
+    "radius"      : 1.0
+=======
     "grid_name" : "grid_icos",
     "ilevel"    : 9,
     "radius"    : 1.0
+>>>>>>> develop
   },
   "grid_sphere" : {
     "grid_name"         : "grid_sphere",
@@ -136,7 +159,11 @@
     "grid_name" : "grid_box",
     "xyz0"      : [0.0, 0.0, 0.0],
     "delxyz"    : [1.0, 1.0, 1.0],
+<<<<<<< HEAD
+    "num_elems" : [16, 16, 1],
+=======
     "num_elems" : [32, 32, 1],
+>>>>>>> develop
     "bdy_x_0"   : "fully_periodic",
     "bdy_x_1"   : "fully_periodic",
     "bdy_y_0"   : "fully_periodic",
@@ -184,9 +211,13 @@
     "indirectory"        : "outs",
     "outdirectory"       : "outs",
     "cadence_type"       : "cycle",
+<<<<<<< HEAD
+    "cycle_interval"     : 800,
+=======
     "cycle_interval"     : 200,
+>>>>>>> develop
     "time_interval"      : 0.01,
-    "state_index"        : [0, 1, 2],
+    "state_index"        : [0, 1],
     "state_names"        : ["u1", "u2", "u3"],
     "grid_names"         : ["xgrid", "ygrid", "zgrid"],
     "derived_quantities" : ["vmag", "curlvmag"],
@@ -207,9 +238,15 @@
   },
   "time_integration": {
     "integ_type" : "cycle",
+<<<<<<< HEAD
+    "time_end"   : 0.150,
+    "cycle_end"  : 1,
+    "dt"         : 2.0e-6
+=======
     "time_end"   : 1.1101,
     "cycle_end"  : 10,
     "dt"         : 1.0e-6
+>>>>>>> develop
   }
 
 }

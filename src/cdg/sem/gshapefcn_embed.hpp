@@ -34,7 +34,8 @@
 #include "gtvector.hpp"
 #include "gshapefcn_base.hpp"
 
-class GShapeFcn_embed: public GShapeFcn_base
+template<typename T> 
+class GShapeFcn_embed: public GShapeFcn_base<T>
 {
 
 public:
@@ -45,36 +46,38 @@ public:
                          ~GShapeFcn_embed();
 
          void             operator=(const GShapeFcn_embed &obj)
-                          { zeta_ = obj.zeta_; gbasis_ = obj.gbasis_; }
+                          { zeta_ = obj.zeta_; this->gbasis_ = obj.gbasis_; }
                    
 // Methods:
         void              Ni(GTVector<GINT> &I,
-                             GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N); // N^i
+                             GTVector<GTVector<T>*> &xi, GTVector<T> &N); // N^i
         void              dNdXi(GTVector<GINT> &I, GINT j, 
-                                                GTVector<GTVector<GFTYPE>*> &xi,
-                                                GTVector<GFTYPE> &out);   // dN^i/Xi^j for i, j
-        void              set_zeta(GFTYPE zeta) { zeta_ = zeta; }
+                                                GTVector<GTVector<T>*> &xi,
+                                                GTVector<T> &out);   // dN^i/Xi^j for i, j
+        void              set_zeta(T zeta) { zeta_ = zeta; }
 
 private:
         void              Ni_1d(GTVector<GINT> &I,
-                             GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N); 
+                             GTVector<GTVector<T>*> &xi, GTVector<T> &N); 
         void              Ni_2d(GTVector<GINT> &I,
-                             GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N); 
+                             GTVector<GTVector<T>*> &xi, GTVector<T> &N); 
         void              Ni_3d(GTVector<GINT> &I,
-                             GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N); 
+                             GTVector<GTVector<T>*> &xi, GTVector<T> &N); 
         void              dNdXi_1d(GTVector<GINT> &I, GINT j, 
-                                                   GTVector<GTVector<GFTYPE>*> &xi,
-                                                   GTVector<GFTYPE> &out); 
+                                                   GTVector<GTVector<T>*> &xi,
+                                                   GTVector<T> &out); 
         void              dNdXi_2d(GTVector<GINT> &I, GINT j,
-                                                   GTVector<GTVector<GFTYPE>*> &xi,
-                                                   GTVector<GFTYPE> &out); 
+                                                   GTVector<GTVector<T>*> &xi,
+                                                   GTVector<T> &out); 
         void              dNdXi_3d(GTVector<GINT> &I, GINT j,
-                                                   GTVector<GTVector<GFTYPE>*> &xi,
-                                                   GTVector<GFTYPE> &out); 
+                                                   GTVector<GTVector<T>*> &xi,
+                                                   GTVector<T> &out); 
 
-        GFTYPE                       zeta_; // embedding reference 3(4)-coordinate
-        GTVector<GTVector<GFTYPE>>   d_;    // tmp vectors for multiplications
-
+        T                       zeta_; // embedding reference 3(4)-coordinate
+        GTVector<GTVector<T>>   d_;    // tmp vectors for multiplications
 
 };
+
+#include "gshapefcn_embed.ipp"
+
 #endif

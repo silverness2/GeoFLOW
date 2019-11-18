@@ -24,39 +24,43 @@
 #include "gnbasis.hpp"
 #include "gshapefcn_base.hpp"
 
-class GShapeFcn_linear: public GShapeFcn_base
+template<typename T>
+class GShapeFcn_linear: public GShapeFcn_base<T>
 {
 
 public:
 
                           GShapeFcn_linear();
-                          GShapeFcn_linear(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b) {gbasis_ = b;}
+                          GShapeFcn_linear(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b) {this->gbasis_ = b;}
                           GShapeFcn_linear(const GShapeFcn_linear &);
                          ~GShapeFcn_linear();
 
 // Methods:
         void              Ni(GTVector<GINT> &ishape,
-                          GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N); // N_i
+                          GTVector<GTVector<T>*> &xi, GTVector<T> &N); // N_i
         void              dNdXi(GTVector<GINT> &I, GINT jder,
-                                GTVector<GTVector<GFTYPE>*> &xi,
-                                GTVector<GFTYPE> &dNdxi);                         // dN^i/Xi^j for i, j
+                                GTVector<GTVector<T>*> &xi,
+                                GTVector<T> &dNdxi);                         // dN^i/Xi^j for i, j
 
 private:
         void              Ni_1d(GTVector<GINT> &I,
-                             GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N); 
+                             GTVector<GTVector<T>*> &xi, GTVector<T> &N); 
         void              Ni_2d(GTVector<GINT> &I,
-                             GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N); 
+                             GTVector<GTVector<T>*> &xi, GTVector<T> &N); 
         void              Ni_3d(GTVector<GINT> &I,
-                             GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N); 
+                             GTVector<GTVector<T>*> &xi, GTVector<T> &N); 
         void              dNdXi_1d(GTVector<GINT> &I, GINT j, 
-                                                   GTVector<GTVector<GFTYPE>*> &xi,
-                                                   GTVector<GFTYPE> &out); 
+                                                   GTVector<GTVector<T>*> &xi,
+                                                   GTVector<T> &out); 
         void              dNdXi_2d(GTVector<GINT> &I, GINT j,
-                                                   GTVector<GTVector<GFTYPE>*> &xi,
-                                                   GTVector<GFTYPE> &out); 
+                                                   GTVector<GTVector<T>*> &xi,
+                                                   GTVector<T> &out); 
         void              dNdXi_3d(GTVector<GINT> &I, GINT j,
-                                                   GTVector<GTVector<GFTYPE>*> &xi,
-                                                   GTVector<GFTYPE> &out); 
+                                                   GTVector<GTVector<T>*> &xi,
+                                                   GTVector<T> &out); 
 
 };
+
+#include "gshapefcn_linear.ipp"
+
 #endif

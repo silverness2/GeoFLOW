@@ -30,7 +30,8 @@
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
-GShapeFcn_linear::GShapeFcn_linear()
+template<typename T>
+GShapeFcn_linear<T>::GShapeFcn_linear()
 {
 } // end of constructor method (1)
 
@@ -42,7 +43,8 @@ GShapeFcn_linear::GShapeFcn_linear()
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
-GShapeFcn_linear::~GShapeFcn_linear()
+template<typename T>
+GShapeFcn_linear<T>::~GShapeFcn_linear()
 {
 } // end, destructor
 
@@ -67,8 +69,9 @@ GShapeFcn_linear::~GShapeFcn_linear()
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_linear::Ni(GTVector<GINT> &ishape, 
-                          GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N)
+template<typename T>
+void GShapeFcn_linear<T>::Ni(GTVector<GINT> &ishape, 
+                             GTVector<GTVector<T>*> &xi, GTVector<T> &N)
 {
   GSIZET n=0;
 
@@ -104,13 +107,14 @@ void GShapeFcn_linear::Ni(GTVector<GINT> &ishape,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_linear::Ni_1d(GTVector<GINT> &ishape, 
-                          GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N)
+template<typename T>
+void GShapeFcn_linear<T>::Ni_1d(GTVector<GINT> &ishape, 
+                                GTVector<GTVector<T>*> &xi, GTVector<T> &N)
 {
   GSIZET n=0;
 
-  GTVector<GFTYPE>  *xi0 = xi[0];
-  GFTYPE rm, rp;
+  GTVector<T>  *xi0 = xi[0];
+  T rm, rp;
   if ( ishape[0] == 0 ) {
     for ( GSIZET i=0; i<xi0->size(); i++, n++ ) {
       rm = 1.0 - (*xi0)[i]; rp = 1.0 + (*xi0)[i];
@@ -143,14 +147,15 @@ void GShapeFcn_linear::Ni_1d(GTVector<GINT> &ishape,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_linear::Ni_2d(GTVector<GINT> &ishape, 
-                          GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N)
+template<typename T>
+void GShapeFcn_linear<T>::Ni_2d(GTVector<GINT> &ishape, 
+                                GTVector<GTVector<T>*> &xi, GTVector<T> &N)
 {
   GSIZET n=0;
 
-  GTVector<GFTYPE>  *xi0 = xi[0];
-  GTVector<GFTYPE>  *xi1 = xi[1];
-  GFTYPE rm, rp, sm, sp;
+  GTVector<T>  *xi0 = xi[0];
+  GTVector<T>  *xi1 = xi[1];
+  T rm, rp, sm, sp;
   switch ( ishape[0] ) {
     case 0:
       for ( GSIZET j=0; j<xi1->size(); j++ ) {
@@ -209,15 +214,16 @@ void GShapeFcn_linear::Ni_2d(GTVector<GINT> &ishape,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_linear::Ni_3d(GTVector<GINT> & ishape, 
-                          GTVector<GTVector<GFTYPE>*> &xi, GTVector<GFTYPE> &N)
+template<typename T>
+void GShapeFcn_linear<T>::Ni_3d(GTVector<GINT> & ishape, 
+                                GTVector<GTVector<T>*> &xi, GTVector<T> &N)
 {
   GSIZET n=0;
 
-  GTVector<GFTYPE>  *xi0 = xi[0];
-  GTVector<GFTYPE>  *xi1 = xi[1];
-  GTVector<GFTYPE>  *xi2 = xi[2];
-  GFTYPE rm, rp, sm, sp, tm, tp;
+  GTVector<T>  *xi0 = xi[0];
+  GTVector<T>  *xi1 = xi[1];
+  GTVector<T>  *xi2 = xi[2];
+  T rm, rp, sm, sp, tm, tp;
 
   switch ( ishape[0] ) {
     case 0:
@@ -340,9 +346,10 @@ void GShapeFcn_linear::Ni_3d(GTVector<GINT> & ishape,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_linear::dNdXi(GTVector<GINT> &ishape, GINT j, 
-                               GTVector<GTVector<GFTYPE>*> &xi, 
-                               GTVector<GFTYPE> &dxdxi)
+template<typename T>
+void GShapeFcn_linear<T>::dNdXi(GTVector<GINT> &ishape, GINT j, 
+                                GTVector<GTVector<T>*> &xi, 
+                                GTVector<T> &dxdxi)
 {
 
 #if defined(_G_IS1D)
@@ -372,14 +379,15 @@ void GShapeFcn_linear::dNdXi(GTVector<GINT> &ishape, GINT j,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_linear::dNdXi_1d(GTVector<GINT> &ishape, GINT jder, 
-                               GTVector<GTVector<GFTYPE>*> &xi, 
-                               GTVector<GFTYPE> &dxdxi)
+template<typename T>
+void GShapeFcn_linear<T>::dNdXi_1d(GTVector<GINT> &ishape, GINT jder, 
+                                   GTVector<GTVector<T>*> &xi, 
+                                   GTVector<T> &dxdxi)
 {
 
   assert(jder==1 && "Invalid matrix element");
 
-  GTVector<GFTYPE>  *xi0 = xi[0];
+  GTVector<T>  *xi0 = xi[0];
 
   switch (jder) {
     case 0:
@@ -413,17 +421,18 @@ void GShapeFcn_linear::dNdXi_1d(GTVector<GINT> &ishape, GINT jder,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_linear::dNdXi_2d(GTVector<GINT> &ishape, GINT jder, 
-                               GTVector<GTVector<GFTYPE>*> &xi, 
-                               GTVector<GFTYPE> &dxdxi)
+template<typename T>
+void GShapeFcn_linear<T>::dNdXi_2d(GTVector<GINT> &ishape, GINT jder, 
+                                   GTVector<GTVector<T>*> &xi, 
+                                   GTVector<T> &dxdxi)
 {
 
   assert(jder>=1 && jder<=2 && "Invalid matrix element");
 
   GSIZET n = 0;
-  GTVector<GFTYPE>  *xi0 = xi[0];
-  GTVector<GFTYPE>  *xi1 = xi[1];
-  GFTYPE rm, rp, sm, sp;
+  GTVector<T>  *xi0 = xi[0];
+  GTVector<T>  *xi1 = xi[1];
+  T rm, rp, sm, sp;
 
   switch (ishape[0]) {
     case 0:
@@ -523,17 +532,18 @@ void GShapeFcn_linear::dNdXi_2d(GTVector<GINT> &ishape, GINT jder,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GShapeFcn_linear::dNdXi_3d(GTVector<GINT> &ishape, GINT jder, 
-                               GTVector<GTVector<GFTYPE>*> &xi, 
-                               GTVector<GFTYPE> &dxdxi)
+template<typename T>
+void GShapeFcn_linear<T>::dNdXi_3d(GTVector<GINT> &ishape, GINT jder, 
+                                   GTVector<GTVector<T>*> &xi, 
+                                   GTVector<T> &dxdxi)
 {
 
   assert(jder>=1 && jder<=3 && "Invalid matrix element");
 
-  GTVector<GFTYPE>  *xi0 = xi[0];
-  GTVector<GFTYPE>  *xi1 = xi[1];
-  GTVector<GFTYPE>  *xi2 = xi[2];
-  GFTYPE rm, rp, sm, sp, tm, tp;
+  GTVector<T>  *xi0 = xi[0];
+  GTVector<T>  *xi1 = xi[1];
+  GTVector<T>  *xi2 = xi[2];
+  T rm, rp, sm, sp, tm, tp;
   GSIZET n;
 
   n = 0;

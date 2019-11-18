@@ -34,15 +34,19 @@ namespace ginitstate {
 GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
 {
   GString          serr = "impl_boxnwaveburgers: ";
-  GBOOL            bplanar=TRUE; // planar or circularized
-  GBOOL            brot   =FALSE;
-  GSIZET           i, j, idir, nxy;
-  GFTYPE           A, K2, nu, Re, r2, t0, tdenom;
+  GBOOL            brot =FALSE;
+  GINT             nlump=0;
+  GSIZET           i, j, nxy;
+  GFTYPE           K2, nu, Re, r2, tdenom;
   GFTYPE           efact, sum, tfact, xfact;
-  GTVector<GFTYPE> K(GDIM), xx(GDIM), si(GDIM), sig(GDIM);
-  GTPoint<GFTYPE>  r0(3), P0(3), gL(3);
-  std::vector<GFTYPE> kprop;
-  GString          snut;
+  GTVector<GFTYPE> xx(GDIM), si(GDIM), sig(GDIM), t0;
+  GTPoint<GFTYPE>  kprop(3), r0(3), P0(3), gL(3);
+  std::vector<GFTYPE>  kxprop, kyprop, kzprop;
+  std::vector<GFTYPE>  xinit , yinit , zinit ;
+  std::vector<GBOOL>   bplanar;
+  std::vector<GFTYPE>  tinit;
+  std::vector<GFTYPE>  ULparam;
+  GString              snut;
 
   PropertyTree nwaveptree = ptree   .getPropertyTree(sconfig);
   PropertyTree boxptree   = ptree   .getPropertyTree("grid_box");
@@ -67,64 +71,206 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
   // were Re is 'Reynolds' number: Re = A / 2nu; can think of
   // A ~ U L scaling. But we won't parameterize in terms of Re, 
   // but rather, nu.
-  // Set some parameters:
-  r0.x1  = nwaveptree.getValue<GFTYPE>("x0"); 
-  r0.x2  = nwaveptree.getValue<GFTYPE>("y0"); 
-  r0.x3  = nwaveptree.getValue<GFTYPE>("z0"); 
-  A      = nwaveptree.getValue<GFTYPE>("ULparm",1.0);
-//Re     = nwaveptree.getValue<GFTYPE>("Re",6.0);
-  t0     = nwaveptree.getValue<GFTYPE>("t0",0.04);
-  bplanar= nwaveptree.getValue<GBOOL>("planar",TRUE);
-  kprop  = nwaveptree.getArray<GFTYPE>("prop_dir");
-  nu     = nuptree   .getValue<GFTYPE>("nu",0.0833);
-  snut   = nuptree   .getValue<GString>("nu_type","constant");
-  K      = kprop;
-  K     *= 1.0/K.Eucnorm();
+  // Get some parameters; xinit, tinit, ULparam, bplanar, kprop,
+  // should have the same number, nlump, elements, one foreach 'wave':
+  xinit      = nwaveptree.getArray<GFTYPE>("x0"); 
+  yinit      = nwaveptree.getArray<GFTYPE>("y0"); 
+  zinit      = nwaveptree.getArray<GFTYPE>("z0"); 
+  tinit      = nwaveptree.getArray<GFTYPE>("t0");
+  ULparam    = nwaveptree.getArray<GFTYPE>("ULparam");
+  bplanar    = nwaveptree.getArray<GBOOL> ("planar");
+  kxprop = nwaveptree.getArray<GFTYPE>("prop_dir_x");
+  kyprop = nwaveptree.getArray<GFTYPE>("prop_dir_y");
+  kzprop = nwaveptree.getArray<GFTYPE>("prop_dir_z");
+//Re         = nwaveptree.getValue<GFTYPE>("Re",6.0);
 
-  K2     = 0.0 ; for ( GSIZET i=0; i<GDIM; i++ ) K2 += K[i]*K[i];
+  nu       = nuptree   .getValue<GFTYPE>("nu",0.0833);
+  snut     = nuptree   .getValue<GString>("nu_type","constant");
+
+  t0 = tinit;
+
+  assert(yinit  .size() == xinit.size()
+      && tinit  .size() == xinit.size()
+      && ULparam.size() == xinit.size()
+      && bplanar.size() == xinit.size()
+      && kxprop .size() == xinit.size()
+      && kyprop .size() == xinit.size()
+      && "(1)Lump count must be consistent");
+
+  if ( GDIM > 2 ) {
+    assert(zinit  .size() == xinit.size()
+        && kzprop .size() == xinit.size()
+        && "(2)Lump count must be consistent");
+  }
+  nlump = xinit.size();
 
   assert( snut == "constant" && "nu_type must bet set to 'constant')");
-
-  // If prop direction has more than one component != 0. Then
-  // front is rotated (but still planar):
-  for ( i=0, brot=TRUE; i<GDIM; i++ ) brot = brot && K[i] != 0.0 ;
-  for ( i=0, idir=0; i<GDIM; i++ ) if ( K[i] > 0 ) {idir=i; break;}
-
-  if ( time <= 10.0*std::numeric_limits<GFTYPE>::epsilon() ) time = K2 * t0;
-  Re = A/(2.0*nu); // set Re from nu
-
   cout << "impl_boxnwaveburgers: nu=" << nu << " Re=" << Re << " time=" << time << endl;
 
+  if ( time <= 10.0*std::numeric_limits<GFTYPE>::epsilon() ) time = t0.max();
 
-  for ( j=0; j<nxy; j++ ) {
-    for ( i=0; i<GDIM; i++ ) {
-      xx[i] = (*xnodes)[i][j] - r0[i];
-      (*u[i])[j] = 0.0;
-    }
-    if ( bplanar ) { // compute k.r for planar wave
-      for ( i=0, sum=0.0; i<GDIM; i++ ) { 
-        sum += K[i]*xx[i];
-        xx[i] = 0.0;
-      }
-      xx[0] = sum;
-    }
-    for ( i=0, r2=0.0; i<GDIM; i++ ) r2 += xx[i]*xx[i];  
-
-    // u(x,t) = (x/t) [ 1 + sqrt(t/t0) (e^Re - 1)^-1 exp(x^2/(4 nu t)) ]^-1
-    tdenom = 1.0/(4.0*nu*time);
-    tfact  = bplanar ? sqrt(time/t0): time/t0;
-    efact  = tfact * exp(r2*tdenom) / ( exp(Re) - 1.0 );
-    xfact  = 1.0 /( time * (  1.0 + efact ) );
-    for ( i=0; i<GDIM; i++ ) (*u[i])[j] = xx[i]*xfact;
-//cout << "impl_boxnwaveburgers: ux[" << j << "]=" << (*u[0])[j] << endl;
-    // dU1max = 1.0 / ( time * (sqrt(time/A) + 1.0) );
-    // aArea  = 4.0*nu*log( 1.0 + sqrt(A/time) );
+  for ( i=0; i<GDIM; i++ ) {
+    *u[i] = 0.0;
   }
+
+  for ( GINT ilump=0; ilump<nlump; ilump++ ) {
+    r0[0]  = xinit[ilump]; r0[1]  = yinit[ilump]; 
+    if ( GDIM > 2 ) r0[2]  = zinit[ilump]; 
+    kprop[0] = kxprop[ilump]; kprop[1] = kyprop[ilump];
+    if ( GDIM > 2 ) kprop[2]  = kzprop[ilump]; 
+    Re  = ULparam[ilump]/nu; // set Re from nu and ULparam
+    kprop  *= 1.0/kprop.norm();
+    tdenom  = 1.0/(4.0*nu*time);
+    tfact   = bplanar[ilump] ? sqrt(time/t0[ilump]): time/t0[ilump];
+    for ( i=0, K2=0.0; i<GDIM; i++ ) K2 += kprop[i]*kprop[i];
+
+    // If prop direction has more than one component != 0. Then
+    // front is rotated (but still planar):
+//  for ( i=0, brot=TRUE; i<GDIM; i++ ) brot = brot && K[i] != 0.0 ;
+//  for ( i=0, idir=0; i<GDIM; i++ ) if ( K[i] > 0 ) {idir=i; break;}
+//  K2 = brot && K2 == 0.0 ? 1.0 : K2;
+//  if ( time <= 10.0*std::numeric_limits<GFTYPE>::epsilon() ) time = K2 * t0;
+    for ( j=0; j<nxy; j++ ) {
+      for ( i=0; i<GDIM; i++ ) {
+        xx[i] = (*xnodes)[i][j] - r0[i];
+      }
+      if ( bplanar[ilump] ) { // compute k.r for planar wave
+        for ( i=0, sum=0.0; i<GDIM; i++ ) { 
+          sum += kprop[i]*xx[i];
+          xx[i] = 0.0;
+        }
+        xx[0] = sum;
+      }
+      for ( i=0, r2=0.0; i<GDIM; i++ ) r2 += xx[i]*xx[i];  
+  
+      efact   = tfact * exp(r2*tdenom) / ( exp(Re) - 1.0 );
+      xfact   = 1.0 /( time * (  1.0 + efact ) );
+      // u(x,t) = (x/t) [ 1 + sqrt(t/t0) (e^Re - 1)^-1 exp(x^2/(4 nu t)) ]^-1
+      for ( i=0; i<GDIM; i++ ) (*u[i])[j] += xx[i]*xfact;
+  //cout << "impl_boxnwaveburgers: ux[" << j << "]=" << (*u[0])[j] << endl;
+      // dU1max = 1.0 / ( time * (sqrt(time/A) + 1.0) );
+      // aArea  = 4.0*nu*log( 1.0 + sqrt(A/time) );
+    } // end, coord loop
+  } // end, lump loop
 
 
   return TRUE;
 
 } // end, impl_boxnwaveburgers
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : impl_icosnwaveburgers
+// DESC   : Initialize state for Burgers with N-wave on icos grids
+// ARGS   : ptree  : main prop tree
+//          sconfig: ptree block name containing variable config
+//          grid   : grid
+//          t      : time
+//          utmp   : tmp arrays
+//          ub     : bdy vectors (one for each state element)
+//          u      : current state
+// RETURNS: TRUE on success; else FALSE 
+//**********************************************************************************
+GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
+{
+  GString          serr = "impl_icosnwaveburgers: ";
+  GBOOL            bret;
+  GSIZET           i, j, nxy;
+  GFTYPE           nu, Re, r, s, tdenom;
+  GFTYPE           lat, lon;
+  GFTYPE           efact, sum, tfact, xfact;
+  GFTYPE           x, y, z;
+  GTVector<GFTYPE>            t0, xx(GDIM+1);
+  GTVector<GTPoint<GFTYPE>>   r0(GDIM+1);
+  std::vector<GFTYPE>         lat0, lon0, st0, Uparam;
+
+  PropertyTree nwaveptree = ptree   .getPropertyTree(sconfig);
+  PropertyTree gridptree  = ptree   .getPropertyTree("grid_icos");
+  PropertyTree nuptree    = ptree.getPropertyTree("dissipation_traits");
+
+  GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
+
+  assert(grid.gtype() == GE_2DEMBEDDED && "Invalid element types");
+  assert(u.size() >= GDIM+1 && "Insufficient number of state members");
+
+
+  nxy = (*xnodes)[0].size(); // same size for x, y, z
+
+  // From Whitham's book, in 1d:
+  // u(x,t) = (x/t) [ 1 + sqrt(t/t0) (e^Re - 1)^-1 exp(x^2/(4 nu t))i ]^-1
+  // were Re is 'Reynolds' number: Re = A / 2nu; can think of
+  // A ~ U L scaling. But we won't parameterize in terms of Re, 
+  // but rather, nu.
+  // Set some parameters:
+  r      = gridptree.getValue <GFTYPE>("radius");
+  lat0   = nwaveptree.getArray<GFTYPE>("latitude0"); 
+  lon0   = nwaveptree.getArray<GFTYPE>("longitude0"); 
+  Uparam = nwaveptree.getArray<GFTYPE>("Uparam");
+//Re     = nwaveptree.getValue<GFTYPE>("Re",6.0);
+  st0    = nwaveptree.getArray<GFTYPE>("t0");
+  nu     = nuptree   .getValue<GFTYPE>("nu",0.0833);
+
+  t0.resize(st0.size());
+  t0     = st0;
+  assert(lat0.size() == lon0.size() 
+      && lat0.size() == t0.size()
+      && "lat0, lon0, and t0 must be the same size");
+
+  if ( time <= 10.0*std::numeric_limits<GFTYPE>::epsilon() ) time = t0.max();
+
+  // Convert initial positions to radians:
+  for ( GINT ilump=0; ilump<lat0.size(); ilump++) {
+    lat0[ilump]    *= (PI/180.0);
+    lon0[ilump]    *= (PI/180.0);
+    r0  [ilump].x1  = r*cos(lat0[ilump])*cos(lon0[ilump]);
+    r0  [ilump].x2  = r*cos(lat0[ilump])*sin(lon0[ilump]);
+    r0  [ilump].x3  = r*sin(lat0[ilump]);
+  }
+
+  for ( i=0; i<GDIM+1; i++ ) *u[i] = 0.0;
+   
+  // Initialize each lump:
+  for ( GINT ilump=0; ilump<lat0.size(); ilump++) {
+    Re = Uparam[ilump]*r/nu; // set Re from nu, U, radius
+    for ( j=0; j<nxy; j++ ) {
+       x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
+       lat = asin(z/r);
+       lon = atan2(y,x);
+      for ( i=0; i<GDIM+1; i++ ) { // find arclength from lump center
+        xx[i] = (*xnodes)[i][j] - r0[ilump][i];
+      }
+/*
+      xx[0] = r*lat;
+      xx[1] = r*lon;
+*/
+      s     = acos( sin(lat)*sin(lat0[ilump])
+            +       cos(lat)*cos(lat0[ilump])*cos(lon - lon0[ilump]) );
+  
+      tdenom = 1.0/(4.0*nu*time);
+      tfact  = time/t0[ilump];
+      efact  = tfact * exp(s*s*tdenom) / ( exp(Re) - 1.0 );
+      xfact  = 1.0 /( time * (  1.0 + efact ) );
+      for ( i=0; i<GDIM+1; i++ ) (*u[i])[j] += xx[i]*xfact;
+      // dU1max = 1.0 / ( time * (sqrt(time/A) + 1.0) );
+      // aArea  = 4.0*nu*log( 1.0 + sqrt(A/time) );
+    } // end, coord j-loop 
+  } // end, ilump-loop
+
+//GMTK::vsphere2cart(grid, usph, GVECTYPE_PHYS, u);
+  GMTK::constrain2sphere(grid, u);
+
+  bret = TRUE;
+  for ( j=0; j<GDIM+1; j++ ) {
+     bret = bret && u[j]->isfinite(i);
+  }
+
+  assert(bret && "Initial conditions not finite!");
+
+
+  return bret;
+
+} // end, impl_icosnwaveburgers
 
 
 //**********************************************************************************

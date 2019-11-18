@@ -224,7 +224,7 @@ GTVector<GFTYPE>        Ni_           ; // tensor product shape function
 
 // Geometry data:
 GFTYPE                  volume_;        // volume (3d), area(2d)
-GShapeFcn_base         *gshapefcn_;     // shape fcn object; depends on elemtype
+GShapeFcn_base<GFTYPE>  *gshapefcn_;     // shape fcn object; depends on elemtype
 GTVector<GFPoint>       edgeCentroid_;  // phys loc of edge centroids, global coords
 GTVector<GFPoint>       faceCentroid_;  // phys loc of face centroids, global coords
 GFPoint                 elemCentroid_;  // phys loc of elem centroid, global coords

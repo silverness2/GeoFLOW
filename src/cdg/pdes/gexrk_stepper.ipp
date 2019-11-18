@@ -15,13 +15,14 @@ using namespace std;
 // ARGS   : nstage: number stages not necessarily == truncation order
 //**********************************************************************************
 template<typename T>
-GExRKStepper<T>::GExRKStepper(GSIZET nstage)
+GExRKStepper<T>::GExRKStepper(GGrid &grid, GSIZET nstage)
 :
 bRHS_                 (FALSE),
 bapplybc_             (FALSE),
 bupdatebc_            (FALSE),
-nstage_               (nstage),
-ggfx_                 (NULLPTR)
+nstage_              (nstage),
+grid_                 (&grid),
+ggfx_               (NULLPTR)
 {
   butcher_ .setOrder(nstage_);
 } // end of constructor (1) method
@@ -108,6 +109,7 @@ void GExRKStepper<T>::step(const Time &t, const State &uin, State &uf, State &ub
         GMTK::saxpby(*isum,  1.0, *K_[j][n], (*beta)(m,j)*h);
      *u[n]  = (*uin[n]) + (*isum);
     }
+    GMTK::constrain2sphere(*grid_, u);
 
     if ( bupdatebc_ ) bdy_update_callback_(tt, u, ub); 
     if ( bapplybc_  ) bdy_apply_callback_ (tt, u, ub); 
@@ -122,6 +124,7 @@ void GExRKStepper<T>::step(const Time &t, const State &uin, State &uf, State &ub
       *isum     = (*K_[m][n])*( (*c)[m]*h );
       *uout[n] += *isum; // += h * c_m * k_m
     }
+    GMTK::constrain2sphere(*grid_, uout);
   } // end, m-loop
 
    // Do contrib from final stage, M = nstage_:
@@ -131,6 +134,7 @@ void GExRKStepper<T>::step(const Time &t, const State &uin, State &uf, State &ub
        GMTK::saxpby(*isum,  1.0, *K_[j][n], (*beta)(nstage_-1,j)*h);
      *u[n] = (*uin[n]) + (*isum);
    }
+    GMTK::constrain2sphere(*grid_, u);
 
 #if 0
    if ( ggfx_ != NULLPTR ) {
@@ -157,6 +161,7 @@ void GExRKStepper<T>::step(const Time &t, const State &uin, State &uf, State &ub
     *uout[n] += *isum; // += h * c_M * k_M
    }
    if ( bapplybc_  ) bdy_apply_callback_ (tt, uout, ub); 
+   GMTK::constrain2sphere(*grid_, uout);
 
    if ( ggfx_ != NULLPTR ) {
      for ( n=0; n<nstate; n++ ) { // for each state member, uout

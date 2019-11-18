@@ -102,10 +102,10 @@ gshapefcn_       (NULLPTR)
   if ( b3 != NULLPTR ) b[2] = b3;
 
   if ( elemtype_ == GE_REGULAR || elemtype_ == GE_DEFORMED ) {
-    gshapefcn_ = new GShapeFcn_hostd();
+    gshapefcn_ = new GShapeFcn_hostd<GFTYPE>();
   }
   else if ( elemtype_ == GE_2DEMBEDDED ) { 
-    gshapefcn_ = new GShapeFcn_embed();
+    gshapefcn_ = new GShapeFcn_embed<GFTYPE>();
   }
 
   set_basis(b);
@@ -140,10 +140,10 @@ gshapefcn_       (NULLPTR)
   gbasis_ = NULLPTR;
 
   if ( elemtype_ == GE_REGULAR || elemtype_ == GE_DEFORMED ) {
-    gshapefcn_ = new GShapeFcn_hostd();
+    gshapefcn_ = new GShapeFcn_hostd<GFTYPE>();
   }
   else if ( elemtype_ == GE_2DEMBEDDED ) { 
-    gshapefcn_ = new GShapeFcn_embed();
+    gshapefcn_ = new GShapeFcn_embed<GFTYPE>();
   }
   set_basis(b);
  
@@ -259,10 +259,10 @@ void GElem_base::set_elemtype(GElemType etype)
   if ( gshapefcn_ != NULLPTR ) delete gshapefcn_; gshapefcn_ = NULLPTR;
 
   if ( elemtype_ == GE_REGULAR || elemtype_ == GE_DEFORMED ) {
-    gshapefcn_ = new GShapeFcn_hostd();
+    gshapefcn_ = new GShapeFcn_hostd<GFTYPE>();
   }
   else if ( elemtype_ == GE_2DEMBEDDED ) {
-    gshapefcn_ = new GShapeFcn_embed();
+    gshapefcn_ = new GShapeFcn_embed<GFTYPE>();
   }
 
 } // end of method set_elemtype
@@ -1172,13 +1172,13 @@ cout << serr << "cos(_x_, _G_)=" << cost << " |G|=" << jacv[n] << " xGx=" << x*G
       for ( k=0; k<nind; k++ ) { // loop over desired indices only
         n = pind[k];
         jacv[k] = G(0,0)[n]*G(1,1)[n] - G(0,1)[n]*G(1,0)[n];
-        pChk = pChk && fabs(jacv[k]) > fabs(std::numeric_limits<GFTYPE>::epsilon());  // test for zero Jac 
+//      pChk = pChk && fabs(jacv[k]) > fabs(std::numeric_limits<GFTYPE>::epsilon());  // test for zero Jac 
       }
     }
     else  {
       for ( n=0; n<jacv.size(); n++ ) {
         jacv[n] = G(0,0)[n]*G(1,1)[n] - G(0,1)[n]*G(1,0)[n];
-        pChk = pChk && fabs(jacv[n]) > fabs(std::numeric_limits<GFTYPE>::epsilon());  // test for zero Jac 
+//      pChk = pChk && fabs(jacv[n]) > fabs(std::numeric_limits<GFTYPE>::epsilon());  // test for zero Jac 
       }
     }
     return;
@@ -1191,7 +1191,7 @@ cout << serr << "cos(_x_, _G_)=" << cost << " |G|=" << jacv[n] << " xGx=" << x*G
       jacv[k] = G(0,0)[n]*(G(1,1)[n]*G(2,2)[n] - G(1,2)[n]*G(2,1)[n])
               - G(0,1)[n]*(G(1,0)[n]*G(2,2)[n] - G(1,2)[n]*G(2,0)[n])
               + G(0,2)[n]*(G(1,0)[n]*G(2,1)[n] - G(1,1)[n]*G(2,0)[n]);
-      pChk = pChk && fabs(jacv[k]) > std::numeric_limits<GFTYPE>::epsilon();  // test for zero det
+//    pChk = pChk && fabs(jacv[k]) > std::numeric_limits<GFTYPE>::epsilon();  // test for zero det
     }
   }
   else {
@@ -1207,7 +1207,7 @@ cout << serr << "cos(_x_, _G_)=" << cost << " |G|=" << jacv[n] << " xGx=" << x*G
         r   = sqrt( x*x + y*y + z*z );
         jacv[n] /= r;
       }
-      pChk = pChk && fabs(jacv[n]) > std::numeric_limits<GFTYPE>::epsilon();  // test for zero det
+//    pChk = pChk && fabs(jacv[n]) > std::numeric_limits<GFTYPE>::epsilon();  // test for zero det
     }
   }
 

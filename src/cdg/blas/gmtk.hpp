@@ -10,6 +10,7 @@
 #define _GMTK_HPP
 
 #include <assert.h>
+#include <limits>
 #include "gtypes.h"
 #include "cff_blas.h"
 
@@ -124,6 +125,18 @@ namespace GMTK
   void    constrain2sphere(GGrid &grid, GTVector<GTVector<T>*> &v);
   template<typename T>  
   void    vsphere2cart(GGrid &grid, const GTVector<GTVector<T>*> &vsph, GVectorType vtype, GTVector<GTVector<T>*> &vcart);
+  template<typename T>  
+  void    vcart2sphere(GGrid &grid, const GTVector<GTVector<T>*> &vcart, GVectorType vtype, GTVector<GTVector<T>*> &vsph);
+  template<typename T>  
+  void    cart2latlon(const GTVector<GTVector<T>*> &vcart, GTVector<GTVector<T>*> &latlon);
+  template<typename T>  
+  void    cart2spherical(const GTVector<GTVector<T>*> &vcart, GTVector<GTVector<T>*> &rlatlon);
+  template<typename T>  
+  void    zero(GTVector<T> &v);
+  template<typename T>  
+  void    zero(GTVector<GTVector<T>*> &v);
+  template<typename T>  
+  void    zero(GTVector<GTVector<T>> &v);
   template<typename T>  
   GDOUBLE energy(GGrid &grid, const GTVector<GTVector<T>*> &u, GTVector<GTVector<T>*> &tmp, GBOOL isglobal, GBOOL ismax=FALSE);
   template<typename T>  
