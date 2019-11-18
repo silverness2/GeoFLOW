@@ -293,6 +293,7 @@ void GGridIcos::cart2gnomonic(GTVector<GTPoint<T>> &clist, T rad, T xlatc, T xlo
 
   T xlatp, xlongp;
   T den, r, xlat, xlong;
+  T eps = 10.0*std::numeric_limits<GFTYPE>::epsilon();
   for ( GSIZET i=0; i<clist.size(); i++ ) { // loop over all points
     r      = clist[i].norm();
     xlat   = asin(clist[i].x3/r);
@@ -307,7 +308,7 @@ void GGridIcos::cart2gnomonic(GTVector<GTPoint<T>> &clist, T rad, T xlatc, T xlo
     glist[i].x2 = rad*tan(xlatp)*sec(xlongp);
 #else
     den    = sin(xlatc)*sin(xlat) + cos(xlatc)*cos(xlat)*cos(xlong-xlongc); 
-    den    = fabs(den) < std::numeric_limits<T>::epsilon() ? 0.0 : 1.0/den;
+    den    = fabs(den) < eps ? 0.0 : 1.0/den;
     glist[i].x1 = rad*cos(xlat)*sin(xlong-xlongc)*den;
     glist[i].x2 = rad*( cos(xlatc)*sin(xlat) - sin(xlatc)*cos(xlat)*cos(xlong-xlongc) ) * den;
 #endif
@@ -351,8 +352,9 @@ void GGridIcos::gnomonic2cart(GTVector<GTVector<T>> &glist, T rad, T xlatc, T xl
   //
   // (From Wolfram Research)
 
-  T beta, rho, x, xlat, xlong, y;
-  T eps = std::numeric_limits<T>::epsilon();
+  T X, Y;
+  T beta, rho, sign, x, xlat, xlong, y;
+  T eps = 10.0*std::numeric_limits<GFTYPE>::epsilon();
   for ( GSIZET i=0; i<glist[0].size(); i++ ) { // loop over all points
     x      = glist[0][i];
     y      = glist[1][i];
@@ -364,9 +366,13 @@ void GGridIcos::gnomonic2cart(GTVector<GTVector<T>> &glist, T rad, T xlatc, T xl
     } else {
       rho    = sqrt(x*x + y*y);
       beta   = atan(rho);
-      xlat   = asin( cos(beta)*sin(xlatc) + (y*sin(beta)*cos(xlatc))/rho );
-      xlong  = xlongc + atan2( x*sin(beta), 
-                               rho*cos(xlatc)*cos(beta)-y*sin(xlatc)*sin(beta) );
+      Y      = cos(beta)*sin(xlatc) + (y*sin(beta)*cos(xlatc))/rho;
+      sign   = copysign(1.0, Y);
+      Y      = sign* MIN(fabs(Y),1.0);
+      xlat   = asin( Y );
+      Y      = x*sin(beta);
+      X      = rho*cos(xlatc)*cos(beta)-y*sin(xlatc)*sin(beta);
+      xlong  = xlongc + atan2( Y, X);
     }
 
     // Convert to spherical-polar to  Cart. coordinates:
@@ -410,8 +416,9 @@ void GGridIcos::gnomonic2cart(GTVector<GTPoint<T>> &glist, T rad, T xlatc, T xlo
   //   b   = atan(rho)  
   // (From Wolfram Research)
 
-  T beta, rho, x, xlat, xlong, y;
-  T eps = std::numeric_limits<T>::epsilon();
+  T X, Y;
+  T beta, rho, sign, x, xlat, xlong, y;
+  T eps = 10.0*std::numeric_limits<GFTYPE>::epsilon();
   for ( GSIZET i=0; i<clist.size(); i++ ) { // loop over all points
     x      = glist[i][0];
     y      = glist[i][1];
@@ -422,9 +429,13 @@ void GGridIcos::gnomonic2cart(GTVector<GTPoint<T>> &glist, T rad, T xlatc, T xlo
     } else {
       rho    = sqrt(x*x + y*y);
       beta   = atan(rho);
-      xlat   = asin( cos(beta)*sin(xlatc) + (y*sin(beta)*cos(xlatc))/rho );
-      xlong  = xlongc + atan2( x*sin(beta), 
-                               rho*cos(xlatc)*cos(beta)-y*sin(xlatc)*sin(beta) );
+      Y      = cos(beta)*sin(xlatc) + (y*sin(beta)*cos(xlatc))/rho;
+      sign   = copysign(1.0, Y);
+      Y      = sign* MIN(fabs(Y),1.0);
+      xlat   = asin( Y );
+      Y      = x*sin(beta);
+      X      = rho*cos(xlatc)*cos(beta)-y*sin(xlatc)*sin(beta);
+      xlong  = xlongc + atan2( Y, X );
     }
     // Convert to spherical-polar to  Cart. coordinates:
     clist[i][0] = rad*cos(xlat)*cos(xlong);
