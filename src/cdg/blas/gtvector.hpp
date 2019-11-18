@@ -136,7 +136,9 @@ template <class T> class GTVector
 
 
     #pragma acc routine vector
-    T isfinite();
+    GBOOL isfinite();
+    #pragma acc routine vector
+    GBOOL isfinite(GSIZET &iwhere);
     #pragma acc routine vector
     T max();
     #pragma acc routine vector

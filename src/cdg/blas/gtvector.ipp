@@ -1051,14 +1051,13 @@ GTVector<T>::operator*=(const GTVector &b)
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : isfinite
+// METHOD : isfinite (1)
 // DESC   : Find if a nan or inf exists in vector
 // ARGS   : 
 // RETURNS: TRUE if ok (all members are finite);  else FALSE
 //**********************************************************************************
 template<class T>
-T
-GTVector<T>::isfinite()
+GBOOL GTVector<T>::isfinite()
 {
   GBOOL bret = TRUE;
 
@@ -1068,7 +1067,30 @@ GTVector<T>::isfinite()
  
   return bret;
 
-} // end isfinite
+} // end isfinite (1)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : isfinite (2)
+// DESC   : Find if a nan or inf exists in vector, and provide index
+//          of first occurrence.
+// ARGS   : iwhere: index of first occurrence; set only if isfinite == FALSE
+// RETURNS: TRUE if ok (all members are finite);  else FALSE
+//**********************************************************************************
+template<class T>
+GBOOL GTVector<T>::isfinite(GSIZET &iwhere)
+{
+  GBOOL bret = TRUE;
+
+  for ( GLLONG j=this->gindex_.beg(); j<=this->gindex_.end() && j<=this->gindex_.end() && bret; j+=this->gindex_.stride() ) {
+    bret = std::isfinite(this->data_[j]);
+    if ( bret ) iwhere = j;
+  }
+ 
+  return bret;
+
+} // end isfinite (2)
 
 
 //**********************************************************************************
