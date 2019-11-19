@@ -36,7 +36,7 @@ enum GICOSPTYPE      {GICOS_BASE, GICOS_ELEMENTAL};
 enum GCOORDSYST      {GICOS_CART, GICOS_LATLONG}; 
 
 typedef GTMatrix<GFTYPE> GFTMatrix;
-typedef GQUAD GTICOS;
+typedef GFTYPE GTICOS;
 
 class GGridIcos : public GGrid
 {

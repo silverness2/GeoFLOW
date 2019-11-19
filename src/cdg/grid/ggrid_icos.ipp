@@ -369,10 +369,10 @@ void GGridIcos::gnomonic2cart(GTVector<GTVector<T>> &glist, T rad, T xlatc, T xl
       Y      = cos(beta)*sin(xlatc) + (y*sin(beta)*cos(xlatc))/rho;
       sign   = copysign(1.0, Y);
       Y      = sign* MIN(fabs(Y),1.0);
-      xlat   = asin( Y );
+      xlat   = asin(Y);
       Y      = x*sin(beta);
       X      = rho*cos(xlatc)*cos(beta)-y*sin(xlatc)*sin(beta);
-      xlong  = xlongc + atan2( Y, X);
+      xlong  = xlongc + atan2(Y, X);
     }
 
     // Convert to spherical-polar to  Cart. coordinates:
@@ -432,10 +432,10 @@ void GGridIcos::gnomonic2cart(GTVector<GTPoint<T>> &glist, T rad, T xlatc, T xlo
       Y      = cos(beta)*sin(xlatc) + (y*sin(beta)*cos(xlatc))/rho;
       sign   = copysign(1.0, Y);
       Y      = sign* MIN(fabs(Y),1.0);
-      xlat   = asin( Y );
+      xlat   = asin(Y);
       Y      = x*sin(beta);
       X      = rho*cos(xlatc)*cos(beta)-y*sin(xlatc)*sin(beta);
-      xlong  = xlongc + atan2( Y, X );
+      xlong  = xlongc + atan2(Y, X);
     }
     // Convert to spherical-polar to  Cart. coordinates:
     clist[i][0] = rad*cos(xlat)*cos(xlong);

@@ -454,7 +454,7 @@ void GGridIcos::do_elems2d(GINT irank)
       xid.resize(xiNodes->size());
       pxid.resize(xiNodes->size());
       for ( auto l=0; l<xid.size(); l++ ) pxid[l] = &xid[l];
-      copycast<GFTYPE,GTICOS>(*xNodes, xd);
+//    copycast<GFTYPE,GTICOS>(*xNodes, xd);
       copycast<GFTYPE,GTICOS>(*xiNodes, pxid);
       
       Ni.resize(pelem->nnodes());
