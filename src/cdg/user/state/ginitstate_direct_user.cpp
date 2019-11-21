@@ -237,14 +237,15 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
        lat = asin(z/r);
        lon = atan2(y,x);
-      for ( i=0; i<GDIM+1; i++ ) { // find arclength from lump center
+      for ( i=0; i<GDIM+1; i++ ) { 
         xx[i] = (*xnodes)[i][j] - r0[ilump][i];
       }
 /*
       xx[0] = r*lat;
       xx[1] = r*lon;
 */
-      s     = acos( sin(lat)*sin(lat0[ilump])
+      // find arclength from lump center
+      s     = r*acos( sin(lat)*sin(lat0[ilump])
             +       cos(lat)*cos(lat0[ilump])*cos(lon - lon0[ilump]) );
   
       tdenom = 1.0/(4.0*nu*time);
