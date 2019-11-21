@@ -755,34 +755,6 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
     static_cast<GGridBox*>(&grid)->unperiodize();
   }
 
-GBOOL bf=FALSE;
-GSIZET im;
-GFTYPE eps =1.0e-9;
-GFTYPE x, y, z, x0, y0, z0;
-GTVector<GFTYPE> *mult= &ggfx->get_mult();
-cout << " init_ggfx: mult=1 case: " << endl;
-for ( auto j=0; j<mult->size(); j++ ) {
-  im = (*mult)[j]+0.5;
-  if ( im == 1 ) {
-    x0 = (*xnodes)[0][j];
-    y0 = (*xnodes)[1][j];
-    z0 = (*xnodes)[2][j];
-    cout << " init_ggfx: [" << j << "]: glob_id=" << glob_indices[j] 
-         << " x0=" << (*xnodes)[0][j] << " y0=" << (*xnodes)[1][j] 
-         << " z0=" << (*xnodes)[2][j] << endl;
-    bf = TRUE;
-  }
-}
-for ( auto j=0; j<mult->size() && bf; j++ ) {
-  x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-  if ( fabs(x-x0) <= eps && fabs(y-y0)<=eps && fabs(z-z0)<=eps ) {
-    cout << " init_ggfx: [" << j << "]: glob_id=" << glob_indices[j] 
-         << " x=" << (*xnodes)[0][j] << " y=" << (*xnodes)[1][j] 
-         << " z=" << (*xnodes)[2][j] << endl;
-  }
-}
-
-
 } // end method init_ggfx
 
 
