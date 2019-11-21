@@ -460,6 +460,7 @@ void GGridIcos::do_elems2d(GINT irank)
       Ni.resize(pelem->nnodes());
 
       project2sphere<GTICOS>(cverts, 1.0); // project verts to unit sphere     
+#if 0
       c = (cverts[0] + cverts[1] + cverts[2] + cverts[3])*0.25; // elem centroid
       xlatc  = asin(c.x3)         ; // reference lat/long
       xlongc = atan2(c.x2,c.x1);
@@ -467,6 +468,8 @@ void GGridIcos::do_elems2d(GINT irank)
 
       cart2gnomonic<GTICOS>(cverts, 1.0, xlatc, xlongc, tverts); // gnomonic vertices of quads
       reorderverts2d<GTICOS>(tverts, isort, gverts); // reorder vertices consistenet with shape fcn
+#endif
+      gverts = cverts;
       for ( GSIZET l=0; l<2; l++ ) { // loop over available gnomonic coords
         xgtmp[l].resizem(pelem->nnodes());
         xgtmp[l] = 0.0;
@@ -476,7 +479,9 @@ void GGridIcos::do_elems2d(GINT irank)
           xgtmp[l] += (Ni * (gverts[m][l]*0.25)); // gnomonic node coordinate
         }
       }
+#if 0
       gnomonic2cart<GTICOS>(xgtmp, 1.0, xlatc, xlongc, xd); //
+#endif
       project2sphere<GTICOS>(xd, radiusi_);
       for ( auto l=0; l<xd.size(); l++ ) {
         assert( xd[l].isfinite() );
