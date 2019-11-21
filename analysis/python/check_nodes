@@ -1,0 +1,344 @@
+#!/usr/bin/env python3
+#
+#
+
+import numpy as np
+import os
+import struct
+import scipy.spatial as ss
+
+
+
+def isInt(val):
+    try:
+        int(val)
+        return True
+    except ValueError:
+        return False
+
+
+def get_variable_info(dir_path):
+    """ 
+    Return a dict of variables data within a directory
+    
+    Returns:
+        vdict[<name>] = ([processors],[steps])
+    """
+    vdict = {}
+    for filename in os.listdir(dir_path):
+        sfile = filename.split('.')
+        if (len(sfile) == 4) and (sfile[3] == 'out') and isInt(sfile[1]) and isInt(sfile[2]):
+            name = sfile[0]
+            step = int(sfile[1])
+            proc = int(sfile[2])
+            if name not in vdict:
+                vdict[name] = ([],[])
+            vdict[name][0].append(proc)
+            vdict[name][1].append(step)
+    for key in vdict.keys():
+        vdict[key][0].sort()
+        vdict[key][1].sort()
+    return vdict
+
+def get_variable_procs(vdict):
+    """
+    Return list of all Processors we have variable files for
+    """
+    # Make a Set intersection of all Variable Processors
+    vkeys = sorted(vdict.keys())
+    pset = set(vdict[vkeys[0]][0])
+    for key in vkeys[1:]:
+        pset = pset & set(vdict[key][0])
+    return sorted(pset)   
+
+def get_variable_steps(vdict):
+    """
+    Return list of all Processors we have variable files for
+    """
+    # Make a Set intersection of all Variable Processors
+    vkeys = sorted(vdict.keys())
+    sset = set(vdict[vkeys[0]][1])
+    for key in vkeys[1:]:
+        sset = sset & set(vdict[key][1])
+    return sorted(sset)
+
+
+def report_variable_info(vdict):
+    print(' ')
+    print('========== Variables Detected within Directory ==========')
+    print('---------------------------------------------------------')
+    print('                    Processor                Step')
+    print('Name            min    max  total      min    max  total')
+    print('---------------------------------------------------------')
+    for key,val in vdict.items():
+        print('%-12s %6d %6d %6d   %6d %6d %6d'%
+              (key,val[0][0],val[0][-1],len(val[0]),val[1][0],val[1][-1],len(val[1])))
+        
+
+def get_coordinate_info(dir_path):
+    """ 
+    Return a dict of coordinates data within a directory
+    
+    Returns:
+        vdict[<name>] = [steps]
+    """
+    vdict = {}
+    for filename in os.listdir(dir_path):
+        sfile = filename.split('.')
+        if (len(sfile) == 3) and (sfile[2] == 'out') and isInt(sfile[1]):
+            name = sfile[0]
+            proc = int(sfile[1])
+            if name not in vdict:
+                vdict[name] = []
+            vdict[name].append(proc)
+    for key in vdict.keys():
+        vdict[key].sort()
+    return vdict
+
+
+def get_coordinate_procs(cdict):
+    """
+    Return list of all Processors we have coordinate files for
+    """
+    # Make a Set intersection of all Coordinate Processors
+    ckeys = sorted(cdict.keys())
+    cset = set(cdict[ckeys[0]])
+    for key in ckeys[1:]:
+        cset = cset & set(cdict[key])
+    return sorted(cset)   
+    
+
+def report_coordinate_info(vdict):
+    print(' ')
+    print('== Coordinates Detected within Directory ==')
+    print('-------------------------------------------')
+    print('                    Processor')
+    print('Name            min    max  total')
+    print('-------------------------------------------')
+    for key,val in vdict.items():
+        print('%-12s %6d %6d %6d'%
+              (key,val[0],val[-1],len(val)))
+
+
+
+def determine_data(steps,variables,cdict,vdict):
+    """
+    Determine which of the requested steps and variables
+    we can generate files for
+    
+    Returns:
+        data[step]['processors'] = List of processors data exists for
+        data[step]['variables']  = List of variables data exists for
+        
+    To be used at "step" generate files with "variables" on "processors"
+    """
+    data = {}
+    
+    # For each requested step to process
+    for s in steps:
+        
+        # Get a list of processors with Variables & Coordinates
+        pset = set(get_coordinate_procs(cdict))
+        for v in variables:
+            if s not in vdict[v][1]: # if step doesn't exists for variable
+                pset = set() # Empty set
+                break
+            pset = pset & set(vdict[v][0]) #intersect all procs
+        
+        data[s] = {}
+        data[s]['processors'] = sorted(pset)
+        data[s]['variables']  = sorted(variables)
+    
+    return data
+
+     
+def read_header(filename, isz=8):
+    """
+    Read all data from a file header
+    """
+
+    # Read file
+    with open(filename,'rb') as fid:
+        data = fid.read(80) # read 80 bytes
+
+    # Extract data from bytes
+    ftype = 'd'
+    if isz == 4:
+        ftype = 'f'
+    
+    results = {}
+    results['vers'], results['dim'], results['nelems'] = struct.unpack('@IIQ',data[:16])
+
+    sbyte = 4 + 4 + 8
+    ebyte = sbyte + 4*results['dim']
+    results['porder'] = list( struct.unpack('@'+'I'*results['dim'],data[sbyte:ebyte]) )
+
+    sbyte = ebyte
+    ebyte = sbyte + 4
+    results['gtype'] = struct.unpack('@I',data[sbyte:ebyte])[0]
+
+    sbyte = ebyte
+    ebyte = sbyte + 8
+    results['cycle'] = struct.unpack('@Q',data[sbyte:ebyte])[0]
+
+    fmt = '@' + ftype
+    sbyte = ebyte
+    ebyte = sbyte + struct.calcsize(fmt)
+    results['time'] = struct.unpack(fmt,data[sbyte:ebyte])[0]
+        
+    results['skip'] = ebyte
+
+    return results
+
+
+def read_file(filename, isz=8):
+    """
+    Read all data from a file (header + data)
+    """
+
+    # Read the header
+    results = read_header(filename, isz)
+
+    # Assign data type format
+    ftype = 'd'
+    if isz == 4:
+        ftype = 'f'
+    
+    # Calculate how many nodes to read   
+    sz = results['nelems']
+    for i in range(0,results['dim']):
+        sz = sz * (results['porder'][i]+1)
+        
+    data = open(filename,'rb').read()
+    fmt = '@' + ftype*sz
+    results['data'] = struct.unpack_from(fmt, data[results['skip']:]) 
+    
+    # Check for Nan's in File
+    nan_array = np.isnan(results['data'])
+    if any(nan_array):
+        nan_list = np.argwhere(nan_array)
+        print("ERROR: Found %d NaN's in file: %s"%(len(nan_list),filename))
+        print('Replacing...')
+        results['data'] = np.nan_to_num(results['data'])
+        
+    return results
+
+def read_int_file(filename, isz=8):
+    """
+    Read all data from a file (header + data)
+    """
+
+    # Read the header
+    results = read_header(filename, isz)
+
+    # Assign data type format
+    ftype = 'q'
+    if isz == 4:
+        ftype = 'l'
+    
+    # Calculate how many nodes to read   
+    sz = results['nelems']
+    for i in range(0,results['dim']):
+        sz = sz * (results['porder'][i]+1)
+        
+    data = open(filename,'rb').read()
+    fmt = '@' + ftype*sz
+    results['data'] = struct.unpack_from(fmt, data[results['skip']:]) 
+    
+    # Check for Nan's in File
+    nan_array = np.isnan(results['data'])
+    if any(nan_array):
+        nan_list = np.argwhere(nan_array)
+        print("ERROR: Found %d NaN's in file: %s"%(len(nan_list),filename))
+        print('Replacing...')
+        results['data'] = np.nan_to_num(results['data'])
+        
+    return results
+
+
+def get_coords(processor, directory=None, isz=8):
+    """
+    Read all coordinate data into memory
+    """    
+    xfile = 'xgrid.%05d.out'%(processor)
+    yfile = 'ygrid.%05d.out'%(processor)
+    zfile = 'zgrid.%05d.out'%(processor)
+    if directory:
+        xfile = os.path.join(directory, xfile)
+        yfile = os.path.join(directory, yfile)
+        zfile = os.path.join(directory, zfile)
+    xdata = read_file(xfile,isz)
+    ydata = read_file(yfile,isz)
+    zdata = read_file(zfile,isz)
+    return xdata,ydata,zdata               
+
+
+
+class Parameters:
+    """
+    Simple class to pass parameters through calls
+    """
+    input_directory  = '.'
+    output_directory = '.'
+    isz = 8
+
+
+    
+    
+if __name__ == '__main__':
+    """
+    Main program which runs when called
+    """
+    # Generate Parallel VTK Files for each step
+    tol = 0.00127 * 0.1
+    input_dir = 'data_20191121'
+    ranks = [0, 125]
+    
+    point_list = []
+
+    # Place all points into 1 Giant List
+    for proc in range( *ranks ):
+        x,y,z = get_coords(proc, input_dir)
+
+        # Read Multiplicity
+        rank_file = '%s.%05d.out'%('mult', proc)
+        var_file  = os.path.join(input_dir,rank_file)
+        mult_data = read_file(var_file)
+
+        # Read Morton Index
+        rank_file = '%s.%05d.out'%('glob_index', proc)
+        var_file  = os.path.join(input_dir,rank_file)
+        mort_data = read_int_file(var_file)
+
+        # Place into single list
+        for i, pt in enumerate(zip(x['data'],y['data'],z['data'])):
+            xyz = np.array([pt[0],pt[1],pt[2]])
+            point_list.append( (xyz, proc, mort_data['data'][i], mult_data['data'][i]) ) 
+    
+    print('Total Points = %8d'%(len(point_list)))
+    
+    # Place all points into KD Tree
+    nodes = [p[0] for p in point_list]       
+    tree = ss.KDTree(nodes)
+    
+    # Loop over all points finding if within tol
+    mis_morton = 0
+    mis_mult   = 0
+    for i, val in enumerate(point_list):
+        if i%1000 == 0:
+            print('Points Searched %8d   Mismatches Found %8d'%(i,mis_mult))
+        pts = tree.query_ball_point(val[0],tol)  
+        
+        if len(pts) != val[3]:
+            mis_mult = mis_mult + 1
+        
+        morts = [point_list[p][2] for p in pts]
+        if len(morts) != morts.count(morts[0]):
+            mis_morton = mis_morton + 1  
+    
+    print(' ')
+    print('Points Searched     = %8d'%(len(point_list)))
+    print('Total Multip Errors = %8d'%(mis_mult))
+    print('Total Morton Errors = %8d'%(mis_morton))   
+        
+        
