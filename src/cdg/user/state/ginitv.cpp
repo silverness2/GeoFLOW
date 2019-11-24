@@ -163,12 +163,15 @@ GBOOL impl_abc_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Ti
     r = sqrt(x*x + y*y+z*z);
     alat = asin(z/r); along = atan2(y,x); 
     for ( GINT k=kdn; k<=kup; k++ ) {
-//    (*usph[1])[j] +=  B*k*cos(k*along) / pow(k,p); // lat
-//    (*usph[0])[j] += -A*k*sin(k*alat) / pow(k,p);  // long
+#if 1
+      (*usph[1])[j] +=  B*k*cos(k*along) / pow(k,p); // lat
+      (*usph[0])[j] += -A*k*sin(k*alat) / pow(k,p);  // long
+#else
       pi2         = 2.0*PI*k;
       (*u[0])[j] +=  ( B*cos(pi2*y) + C*sin(pi2*z) ) / pow(k,p);
       (*u[1])[j] +=  ( A*sin(pi2*x) + C*cos(pi2*z) ) / pow(k,p);
       (*u[2])[j] +=  ( A*cos(pi2*x) + B*sin(pi2*y) ) / pow(k,p);
+#endif
     }
   }
 //GMTK::vsphere2cart(grid, usph, GVECTYPE_PHYS, u);
