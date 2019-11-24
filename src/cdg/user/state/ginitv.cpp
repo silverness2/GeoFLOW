@@ -174,7 +174,7 @@ GBOOL impl_abc_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Ti
 #endif
     }
   }
-//GMTK::vsphere2cart(grid, usph, GVECTYPE_PHYS, u);
+  GMTK::vsphere2cart(grid, usph, GVECTYPE_PHYS, u);
   
 #elif defined(_G_IS3D)
 
