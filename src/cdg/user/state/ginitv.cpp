@@ -469,8 +469,8 @@ GBOOL impl_simpsum_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid
       (*usph[0])[j] +=  (sin(kn*lat+phase1) + 4.0*sin((kn+0.5)*lat+phase1)) / pow(kn,p);
       (*usph[1])[j] +=  (sin(kn*lon+phase2) + 4.0*sin((kn+0.5)*lon+phase2)) / pow(kn,p);
 #else
-      (*usph[0])[j] +=  cos(kn*lon_phase3)*(sin(kn*lat+phase1) + 4.0*sin((kn+0.5)*lat+phase1)) / pow(kn,p);
-      (*usph[1])[j] +=  sin(kn*lon_phase3)*(kn*cos(kn*lat+phase1) + 4.0*(kn+0.5)cos((kn+0.5)*lat+phase1)) / pow(kn,p+1);
+      (*usph[0])[j] +=  cos(kn*lon+phase3)*(sin(kn*lat+phase1) + 4.0*sin((kn+0.5)*lat+phase1)) / pow(kn,p);
+      (*usph[1])[j] +=  sin(kn*lon+phase3)*(kn*cos(kn*lat+phase1) + 4.0*(kn+0.5)*cos((kn+0.5)*lat+phase1)) / pow(kn,p+1);
 #endif
     } // end, j-loop
   } // end, k loop
