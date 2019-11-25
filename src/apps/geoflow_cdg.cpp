@@ -176,7 +176,7 @@ int main(int argc, char **argv)
 #if defined(_G_USE_GPTL)
 //  GPTLpr(myrank);
     GPTLpr_file("timings.txt");
-    GPTLpr_summary();
+    GPTLpr_summary(comm_);
 #endif
     GTimerFinal();
 
