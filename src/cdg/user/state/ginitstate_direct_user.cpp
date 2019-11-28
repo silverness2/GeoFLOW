@@ -153,10 +153,9 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
     } // end, coord loop
   } // end, lump loop
 
+  return bret;
 
-  return TRUE;
-
-} // end, impl_boxnwaveburgers
+} // end, impl_icosnwaveburgers
 
 
 //**********************************************************************************
