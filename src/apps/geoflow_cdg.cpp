@@ -735,6 +735,11 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
     static_cast<GGridBox*>(&grid)->periodize();
   }
 
+  delta  = grid.minnodedist();
+  dX     = 0.05*delta;
+  xnodes = &grid.xNodes();
+  glob_indices.resize(grid.ndof());
+
   // Integralize *all* internal nodes
   // using Morton indices:
 //gmorton.setDoLog(TRUE);
