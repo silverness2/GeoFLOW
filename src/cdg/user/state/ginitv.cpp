@@ -270,8 +270,6 @@ GBOOL impl_simpsum1d_box(const PropertyTree &ptree, GString &sconfig, GGrid &gri
       x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
 //    (*u[0])[j] +=  (cos(kn*x+phase1) + sin(kn*x+phase2)) / pow(kn,p);
       (*u[0])[j] +=  ( sin(kn*x+phase1) + 4.0*sin((kn+0.5)*x+phase1) ) / pow(kn,p);
-<<<<<<< HEAD
-=======
     }
   }
   
