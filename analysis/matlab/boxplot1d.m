@@ -150,6 +150,7 @@ elseif ( plottype(1) == 0 && plottype(2) == 1 )
 elseif ( plottype(1) == 1 && plottype(2) == 1 )
   h = loglog(abs(xg), abs(ug), symb);
 else
+  h = -1;
   if doplot > 0
     error('invalid value for plottype (must be 1 or 0');
   end
