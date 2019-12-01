@@ -34,7 +34,7 @@ namespace ginitstate {
 GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
 {
   GString          serr = "impl_boxnwaveburgers: ";
-  GBOOL            brot =FALSE;
+  GBOOL            bret = TRUE, brot = FALSE;
   GINT             nlump=0;
   GSIZET           i, j, nxy;
   GFTYPE           K2, nu, Re, r2, tdenom;
