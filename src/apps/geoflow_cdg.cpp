@@ -638,12 +638,12 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
   GString                        serr = "init_ggfx: ";
   GBOOL                          bret;
   GINT                           pmax;
-  GFTYPE                         delta[3], ldelta[3];
   GFTYPE                         rad;
   GFTYPE                         tiny = 100.0*std::numeric_limits<GFTYPE>::epsilon();
   GMorton_KeyGen<GNODEID,GFTYPE> gmorton;
   GTPoint<GFTYPE>                dX, porigin, P0;
   GTVector<GNODEID>              glob_indices;
+  GTVector<GFTYPE>               delta, ldelta;
   GTVector<GTVector<GFTYPE>>    *xnodes;
   State                          cart;
   State                          xkey;
@@ -660,6 +660,7 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
 
   P0.resize(GDIM);
   dX.resize(GDIM);
+  delta.resize(GDIM);
   xnodes = &grid.xNodes();
   glob_indices.resize(grid_->ndof());
 
@@ -723,8 +724,8 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
     for ( auto j=0; j<GDIM; j++ ) xkey[j] = utmp_[j];
     GMTK::cart2spherical(cart, xkey);
     for ( auto j=0; j<GDIM; j++ ) ldelta[j] = xkey[j]->amindiff(tiny);
-    GComm::Allreduce(ldelta, delta, GDIM, T2GCDatatype<GFTYPE>(), GC_OP_MIN, comm_);
-    for ( auto j=0; j<GDIM; j++ ) dX[j] = 0.25*delta[j];
+    GComm::Allreduce(ldelta.data(), delta.data(), GDIM, T2GCDatatype<GFTYPE>(), GC_OP_MIN, comm_);
+    for ( auto j=0; j<GDIM; j++ ) dX[j] = 0.025*delta[j];
 //  gmorton.setDoLog(TRUE);
     gmorton.setType(GMORTON_STACKED);
   }
@@ -735,8 +736,6 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
     static_cast<GGridBox*>(&grid)->periodize();
   }
 
-  delta  = grid.minnodedist();
-  dX     = 0.05*delta;
   xnodes = &grid.xNodes();
   glob_indices.resize(grid.ndof());
 
