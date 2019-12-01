@@ -140,19 +140,19 @@ end
 % Plot 1d profile:
 [xg I] = sort(xg,1);
 ug    = ug(I);
-figure
-if ( plottype(1) == 0 && plottype(2) == 0 )
-  h = plot(xg, ug, symb);
-elseif ( plottype(1) == 1 && plottype(2) == 0 )
-  h = semilogx(abs(xg), ug, symb);
-elseif ( plottype(1) == 0 && plottype(2) == 1 )
-  h = semilogy(xg, abs(ug), symb);
-elseif ( plottype(1) == 1 && plottype(2) == 1 )
-  h = loglog(abs(xg), abs(ug), symb);
-else
-  h = -1;
-  if doplot > 0
-    error('invalid value for plottype (must be 1 or 0');
+h = -1;
+if doplot > 0
+  figure
+  if ( plottype(1) == 0 && plottype(2) == 0 )
+    h = plot(xg, ug, symb);
+  elseif ( plottype(1) == 1 && plottype(2) == 0 )
+    h = semilogx(abs(xg), ug, symb);
+  elseif ( plottype(1) == 0 && plottype(2) == 1 )
+    h = semilogy(xg, abs(ug), symb);
+  elseif ( plottype(1) == 1 && plottype(2) == 1 )
+    h = loglog(abs(xg), abs(ug), symb);
+  else
+    error('invalid plottype');
   end
 end
 
