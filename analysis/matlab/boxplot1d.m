@@ -34,7 +34,7 @@ if nargin < 5
   jindex   = 1;
 end 
 sz = size(plottype)
-if sz(1)*sz(2) ~= 2 
+if ~isempty(plottype) && sz(1)*sz(2) ~= 2 
   error('incorrect plottype specification');
 end
 
