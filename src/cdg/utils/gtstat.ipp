@@ -106,7 +106,8 @@ void GTStat<T>::dopdf1d(GTVector<T> &u, GBOOL ifixmin, GBOOL ifixmax, T &fmin, T
   utmp = u;
   iend = utmp.size()-1;
 
-  // Check if doing 1-sided pdf:
+  // Check if doing 1-sided pdf: zero-out
+  // values that don't match sided-ness:
   if      ( iside ==  1 ) { // keep positive entries
     for ( auto j=0; j< utmp.size(); j++ ) {
       utmp[j] = MAX(0.0, utmp[j]);
@@ -133,9 +134,7 @@ void GTStat<T>::dopdf1d(GTVector<T> &u, GBOOL ifixmin, GBOOL ifixmax, T &fmin, T
     utmp.range(0,iend);
     ftmp = utmp.min();
     GComm::Allreduce(&ftmp, &fmin, 1, T2GCDatatype<T>() , GC_OP_MIN, comm_);
-    if ( dolog ) {
-      fmin += tiny;
-    }
+    fmin += dolog ? tiny : 0.0;
     utmp.range_reset();
   }
 
@@ -143,9 +142,7 @@ void GTStat<T>::dopdf1d(GTVector<T> &u, GBOOL ifixmin, GBOOL ifixmax, T &fmin, T
     utmp.range(0,iend);
     ftmp = utmp.max();
     GComm::Allreduce(&ftmp, &fmax, 1, T2GCDatatype<T>() , GC_OP_MAX, comm_);
-    if ( dolog ) {
-      fmax += tiny;
-    }
+    fmax += dolog ? tiny : 0.0;
     utmp.range_reset();
   }
 
@@ -164,6 +161,7 @@ void GTStat<T>::dopdf1d(GTVector<T> &u, GBOOL ifixmin, GBOOL ifixmax, T &fmin, T
     else {
       nbins_ = static_cast<GSIZET>( fabs(bmax - bmin) / fixedwidth_ );
     }
+
   }
   assert(nbins_ > 0 && "Invalid bin count");
 
