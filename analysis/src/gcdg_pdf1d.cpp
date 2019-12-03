@@ -77,6 +77,7 @@ int main(int argc, char **argv)
     GTStat<GFTYPE>             *gstat=NULLPTR;
     GTVector<GFTYPE>            u, uavg, utmp; 
     std::stringstream           sformat;
+    std::stringstream           snum;
     GString                     spref;
     char                        stask[16];
 
@@ -87,6 +88,7 @@ int main(int argc, char **argv)
     giotraits.wtime  = traits.wtime;
     giotraits.dir    = traits.odir;
 
+    snum << "_b" << traits.nbins;
     cout << "main: instantiate GTStat operator................." << endl;
     if ( traits.bfixedwidth ) {
       gstat = new GTStat<GFTYPE>(traits.fixedwidth, comm_);
@@ -98,10 +100,10 @@ int main(int argc, char **argv)
     cout << "main: GTStat operator instantiated." << endl;
     if ( traits.doavg ) { // set output name for average
         if ( traits.dolog ) {
-          foutput = traits.odir + "/" + traits.opref + "_log_avg_.txt";
+          foutput = traits.odir + "/" + traits.opref + snum.str() + "_log_avg_.txt";
         }
         else {
-          foutput = traits.odir + "/" + traits.opref + "_avg_.txt";
+          foutput = traits.odir + "/" + traits.opref + snum.str() + "_avg_.txt";
         }
     }
 
@@ -114,10 +116,10 @@ int main(int argc, char **argv)
 
       if ( !traits.doavg ) { // not doing averaging
         if ( traits.dolog ) {
-          foutput = traits.odir + "/" + traits.opref + "_log_" + preflist[i] + ".txt";
+          foutput = traits.odir + "/" + traits.opref + snum.str() + "_log_" + preflist[i] + ".txt";
         }
         else {
-          foutput = traits.odir + "/" + traits.opref + "_" + preflist[i] + ".txt";
+          foutput = traits.odir + "/" + traits.opref + snum.str() + "_" + preflist[i] + ".txt";
         }
       }
       cout << "main: prefix" << preflist[i] << ": processing " << finput << endl;

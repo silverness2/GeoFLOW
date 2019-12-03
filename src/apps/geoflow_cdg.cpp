@@ -176,7 +176,7 @@ int main(int argc, char **argv)
 #if defined(_G_USE_GPTL)
 //  GPTLpr(myrank);
     GPTLpr_file("timings.txt");
-    GPTLpr_summary();
+    GPTLpr_summary(comm_);
 #endif
     GTimerFinal();
 
@@ -638,12 +638,12 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
   GString                        serr = "init_ggfx: ";
   GBOOL                          bret;
   GINT                           pmax;
-  GFTYPE                         delta[3], ldelta[3];
   GFTYPE                         rad;
   GFTYPE                         tiny = 100.0*std::numeric_limits<GFTYPE>::epsilon();
   GMorton_KeyGen<GNODEID,GFTYPE> gmorton;
   GTPoint<GFTYPE>                dX, porigin, P0;
   GTVector<GNODEID>              glob_indices;
+  GTVector<GFTYPE>               delta, ldelta;
   GTVector<GTVector<GFTYPE>>    *xnodes;
   State                          cart;
   State                          xkey;
@@ -660,7 +660,9 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
 
   P0.resize(GDIM);
   dX.resize(GDIM);
+  delta.resize(GDIM);
   xnodes = &grid.xNodes();
+  glob_indices.resize(grid_->ndof());
 
   // If (x, y, z) < epsilon, set to 0:
   GMTK::zero(*xnodes);
@@ -676,6 +678,7 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
   }
   if ( sgrid == "grid_icos" ) {
 #if 1
+    // Set indices from lat/lon coords:
     P0.resize(GDIM);
     dX.resize(GDIM);
     cart.resize(xnodes->size());   
@@ -690,7 +693,7 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
     rad   = gtree.getValue<GFTYPE>("radius");
     delta[0] = 0.5*grid.minlength()/(rad*pmax*pmax);
     delta[1] = grid.minlength()/(rad*pmax*pmax);
-    for ( auto j=0; j<dX.size(); j++ ) dX[j] = 0.1 *delta[j];
+    for ( auto j=0; j<dX.size(); j++ ) dX[j] = 0.025 *delta[j];
     gmorton.setType(GMORTON_STACKED);
 //  gmorton.setType(GMORTON_INTERLEAVE);
 #else
@@ -721,8 +724,8 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
     for ( auto j=0; j<GDIM; j++ ) xkey[j] = utmp_[j];
     GMTK::cart2spherical(cart, xkey);
     for ( auto j=0; j<GDIM; j++ ) ldelta[j] = xkey[j]->amindiff(tiny);
-    GComm::Allreduce(ldelta, delta, GDIM, T2GCDatatype<GFTYPE>(), GC_OP_MIN, comm_);
-    for ( auto j=0; j<GDIM; j++ ) dX[j] = 0.25*delta[j];
+    GComm::Allreduce(ldelta.data(), delta.data(), GDIM, T2GCDatatype<GFTYPE>(), GC_OP_MIN, comm_);
+    for ( auto j=0; j<GDIM; j++ ) dX[j] = 0.025*delta[j];
 //  gmorton.setDoLog(TRUE);
     gmorton.setType(GMORTON_STACKED);
   }
@@ -733,11 +736,8 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
     static_cast<GGridBox*>(&grid)->periodize();
   }
 
-  delta  = grid.minnodedist();
-  dX     = 0.05*delta;
   xnodes = &grid.xNodes();
   glob_indices.resize(grid.ndof());
-
 
   // Integralize *all* internal nodes
   // using Morton indices:

@@ -137,11 +137,13 @@ GBurgers<TypePack>::~GBurgers()
 template<typename TypePack>
 void GBurgers<TypePack>::dt_impl(const Time &t, State &u, Time &dt)
 {
-   GString serr = "GBurgers<TypePack>::dt_impl: ";
-   GSIZET ibeg, iend;
-   GFTYPE dtmin, dt1, umax;
-   GFTYPE        drmin  = grid_->minnodedist();
-   GElemList    *gelems = &grid_->elems();
+   GString    serr = "GBurgers<TypePack>::dt_impl: ";
+   GINT       pmax;
+   GSIZET     ibeg, iend;
+   GFTYPE     dtmin, dt1, umax;
+   GFTYPE     drmin  = grid_->minlength();
+   GElemList *gelems = &grid_->elems();
+   GTVector<GNBasis<GCTYPE,GFTYPE>*> *gbasis;
 
    // This is an estimate. The minimum length on each element,
    // computed in GGrid object is divided by the maximum of
@@ -152,9 +154,12 @@ void GBurgers<TypePack>::dt_impl(const Time &t, State &u, Time &dt)
      for ( auto k=1; k<u.size(); k++ ) { // each advecting u
        for ( auto e=0; e<gelems->size(); e++ ) { // for each element
          ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
+         gbasis = &(*gelems)[e]->gbasis();
+         pmax = 0;
+         for ( auto j=0; j<gbasis->size(); j++ ) MAX(pmax, (*gbasis)[j]->getOrder());
          u[k]->range(ibeg, iend);
          umax = u[k]->amax();
-         dtmin = MIN(dtmin, drmin / umax);
+         dtmin = MIN(dtmin, drmin / (pmax*pmax*umax));
        }
        u[k]->range_reset();
      }
@@ -163,9 +168,12 @@ void GBurgers<TypePack>::dt_impl(const Time &t, State &u, Time &dt)
      for ( auto k=0; k<u.size(); k++ ) { // each advecting u
        for ( auto e=0; e<gelems->size(); e++ ) { // for each element
          ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
+         gbasis = &(*gelems)[e]->gbasis();
+         pmax = 0;
+         for ( auto j=0; j<gbasis->size(); j++ ) MAX(pmax, (*gbasis)[j]->getOrder());
          u[k]->range(ibeg, iend);
          umax = u[k]->amax();
-         dtmin = MIN(dtmin, drmin / umax);
+         dtmin = MIN(dtmin, drmin / (pmax*pmax*umax));
        }
        u[k]->range_reset();
      }

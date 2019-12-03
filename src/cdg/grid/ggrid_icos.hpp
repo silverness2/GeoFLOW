@@ -36,7 +36,7 @@ enum GICOSPTYPE      {GICOS_BASE, GICOS_ELEMENTAL};
 enum GCOORDSYST      {GICOS_CART, GICOS_LATLONG}; 
 
 typedef GTMatrix<GFTYPE> GFTMatrix;
-typedef GQUAD GTICOS;
+typedef GFTYPE GTICOS;
 
 class GGridIcos : public GGrid
 {
@@ -107,7 +107,9 @@ friend  std::ostream&       operator<<(std::ostream&, GGridIcos &);       // Out
          void               gnomonic2cart(GTVector<GTPoint<T>> &, T, T, T, 
                                           GTVector<GTPoint<T>> &);          // transform from gnomonic space
          template<typename T>
-         void               reorderverts2d(GTVector<GTPoint<T>> &, GTVector<GSIZET>&,
+         void               reorderverts2d(GTVector<GTPoint<T>> &, 
+                                           GTVector<GTPoint<T>>&, 
+                                           GTVector<GSIZET>&,
                                            GTVector<GTPoint<T>> &);         // make verts consis with shapefcns
          template<typename TF, typename TT>
          void               copycast(GTVector<GTVector<TF>> &from, GTVector<GTVector<TT>> &to);
