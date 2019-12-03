@@ -269,8 +269,7 @@ GBOOL impl_simpsum1d_box(const PropertyTree &ptree, GString &sconfig, GGrid &gri
     for ( GSIZET j=0; j<nn; j++ ) {
       x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
 //    (*u[0])[j] +=  (cos(kn*x+phase1) + sin(kn*x+phase2)) / pow(kn,p);
-<<<<<<< HEAD
-      (*u[0])[j] +=  ( sin(kn*x+phase1) + 4.0*sin((kn+0.5)*x+phase1) ) / pow(kn,p);
+      (*u[0])[j] +=  ( sin(kn*x+phase1) + 4.0*sin((kn+0.5)*x+phase2) ) / pow(kn,p);
     }
   }
   
@@ -359,9 +358,6 @@ GBOOL impl_simpsum_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
         (*u[0])[j] +=  ( sin(knx*x+phase1) + 4.0*sin((kn+0.5)*x+phase1) ) / pow(kn,p);
         (*u[1])[j] +=  ( sin(kny*y+phase2) + 4.0*sin((kn+0.5)*y+phase2) ) / pow(kn,p);
       }
-=======
-      (*u[0])[j] +=  ( sin(kn*x+phase1) + 4.0*sin((kn+0.5)*x+phase2) ) / pow(kn,p);
->>>>>>> 6066cd95ecc42a4af07f0c2ed5f7acdca54a6bb6
     }
   }
   
