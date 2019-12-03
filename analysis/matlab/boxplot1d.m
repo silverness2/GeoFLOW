@@ -1,14 +1,19 @@
-function [xg  ug h] = boxplot1d(svar, tindex, jindex)
+function [xg  ug h] = boxplot1d(svar, tindex, plottype, symb, jindex)
 %
 % Does a line plot 2D GeoFLOW Posix data in x-direction, 
 % at fixed specified y-index
 %
 %  Usage:
-%    [xg ug h] = boxplot1d('u1',10)
+%    [xg ug h] = boxplot1d('u1',10, [0 1])
 %
 %  Input:
 %    s1var   : prefix for field file. Required
 %    tindex  : time index for output. Required
+%    plottype: array with 2 elems; a 1 in one element
+%              implies log on correspoing axis. 
+%              I.e., [1 0] means log-lin, [0 1] lin-log, 
+%              [1 1], log-log. If empty, no plot is done.
+%    symb    : plot symbol. Default is 'k-' (blaxk solid)
 %    jindex  : j-index. Default is 0.
 %
 %  Output:
@@ -20,9 +25,26 @@ if nargin < 2
   error('must specify svar and tindex');
 end 
 if nargin < 3
-  jindex = 0;
+  plottype = [0 0];
 end 
+if nargin < 4
+  symb     = 'k-';
+end 
+if nargin < 5
+  jindex   = 1;
+end 
+sz = size(plottype)
+if ~isempty(plottype) && sz(1)*sz(2) ~= 2 
+  error('incorrect plottype specification');
+end
 
+doplot = 1
+if isempty(plottype)
+  doplot = 0
+end
+
+lwidth = 2;
+szfont = 16;
 
 ntasks = 2;
 scoord = {'xgrid','ygrid' 'zgrid'};
@@ -118,7 +140,28 @@ end
 % Plot 1d profile:
 [xg I] = sort(xg,1);
 ug    = ug(I);
-figure
-h = plot(xg, ug, 'k-');
-title(sprintf('%s index=%d  t=%f', svar, tindex, time));
+h = -1;
+if doplot > 0
+  figure
+  if ( plottype(1) == 0 && plottype(2) == 0 )
+    h = plot(xg, ug, symb);
+  elseif ( plottype(1) == 1 && plottype(2) == 0 )
+    h = semilogx(abs(xg), ug, symb);
+  elseif ( plottype(1) == 0 && plottype(2) == 1 )
+    h = semilogy(xg, abs(ug), symb);
+  elseif ( plottype(1) == 1 && plottype(2) == 1 )
+    h = loglog(abs(xg), abs(ug), symb);
+  else
+    error('invalid plottype');
+  end
+end
 
+if doplot > 0
+
+  %title(sprintf('%s index=%d  t=%f', svar, tindex, time));
+  title(sprintf('index=%d  t=%f', tindex, time));
+  xlabel('x','FontSize',szfont,'FontWeight','Bold');
+  ylabel(strtok(svar),'FontSize',szfont,'FontWeight','Bold');
+  set(gca,'XMinorTick','on','YMinorTick','on','LineWidth',lwidth,'FontSize',szfont,'FontWeight','Bold');
+  
+end

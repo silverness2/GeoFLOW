@@ -42,6 +42,10 @@
 #include "tbox/mpixx.hpp"
 #include "tbox/global_manager.hpp"
 #include "tbox/input_manager.hpp"
+#if defined(_G_USE_GPTL)
+  #include "gptl.h"
+  #include "gptlmpi.h"
+#endif
 
 using namespace geoflow::pdeint;
 using namespace geoflow::tbox;

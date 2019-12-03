@@ -293,6 +293,7 @@ void GGridIcos::cart2gnomonic(GTVector<GTPoint<T>> &clist, T rad, T xlatc, T xlo
 
   T xlatp, xlongp;
   T den, r, xlat, xlong;
+  T eps = 10.0*std::numeric_limits<GFTYPE>::epsilon();
   for ( GSIZET i=0; i<clist.size(); i++ ) { // loop over all points
     r      = clist[i].norm();
     xlat   = asin(clist[i].x3/r);
@@ -307,7 +308,7 @@ void GGridIcos::cart2gnomonic(GTVector<GTPoint<T>> &clist, T rad, T xlatc, T xlo
     glist[i].x2 = rad*tan(xlatp)*sec(xlongp);
 #else
     den    = sin(xlatc)*sin(xlat) + cos(xlatc)*cos(xlat)*cos(xlong-xlongc); 
-    den    = fabs(den) < std::numeric_limits<T>::epsilon() ? 0.0 : 1.0/den;
+    den    = fabs(den) < eps ? 0.0 : 1.0/den;
     glist[i].x1 = rad*cos(xlat)*sin(xlong-xlongc)*den;
     glist[i].x2 = rad*( cos(xlatc)*sin(xlat) - sin(xlatc)*cos(xlat)*cos(xlong-xlongc) ) * den;
 #endif
@@ -351,8 +352,9 @@ void GGridIcos::gnomonic2cart(GTVector<GTVector<T>> &glist, T rad, T xlatc, T xl
   //
   // (From Wolfram Research)
 
-  T beta, rho, x, xlat, xlong, y;
-  T eps = std::numeric_limits<T>::epsilon();
+  T X, Y;
+  T beta, rho, sign, x, xlat, xlong, y;
+  T eps = 10.0*std::numeric_limits<GFTYPE>::epsilon();
   for ( GSIZET i=0; i<glist[0].size(); i++ ) { // loop over all points
     x      = glist[0][i];
     y      = glist[1][i];
@@ -364,9 +366,13 @@ void GGridIcos::gnomonic2cart(GTVector<GTVector<T>> &glist, T rad, T xlatc, T xl
     } else {
       rho    = sqrt(x*x + y*y);
       beta   = atan(rho);
-      xlat   = asin( cos(beta)*sin(xlatc) + (y*sin(beta)*cos(xlatc))/rho );
-      xlong  = xlongc + atan2( x*sin(beta), 
-                               rho*cos(xlatc)*cos(beta)-y*sin(xlatc)*sin(beta) );
+      Y      = cos(beta)*sin(xlatc) + (y*sin(beta)*cos(xlatc))/rho;
+      sign   = copysign(1.0, Y);
+      Y      = sign* MIN(fabs(Y),1.0);
+      xlat   = asin(Y);
+      Y      = x*sin(beta);
+      X      = rho*cos(xlatc)*cos(beta)-y*sin(xlatc)*sin(beta);
+      xlong  = xlongc + atan2(Y, X);
     }
 
     // Convert to spherical-polar to  Cart. coordinates:
@@ -410,8 +416,9 @@ void GGridIcos::gnomonic2cart(GTVector<GTPoint<T>> &glist, T rad, T xlatc, T xlo
   //   b   = atan(rho)  
   // (From Wolfram Research)
 
-  T beta, rho, x, xlat, xlong, y;
-  T eps = std::numeric_limits<T>::epsilon();
+  T X, Y;
+  T beta, rho, sign, x, xlat, xlong, y;
+  T eps = 10.0*std::numeric_limits<GFTYPE>::epsilon();
   for ( GSIZET i=0; i<clist.size(); i++ ) { // loop over all points
     x      = glist[i][0];
     y      = glist[i][1];
@@ -422,9 +429,13 @@ void GGridIcos::gnomonic2cart(GTVector<GTPoint<T>> &glist, T rad, T xlatc, T xlo
     } else {
       rho    = sqrt(x*x + y*y);
       beta   = atan(rho);
-      xlat   = asin( cos(beta)*sin(xlatc) + (y*sin(beta)*cos(xlatc))/rho );
-      xlong  = xlongc + atan2( x*sin(beta), 
-                               rho*cos(xlatc)*cos(beta)-y*sin(xlatc)*sin(beta) );
+      Y      = cos(beta)*sin(xlatc) + (y*sin(beta)*cos(xlatc))/rho;
+      sign   = copysign(1.0, Y);
+      Y      = sign* MIN(fabs(Y),1.0);
+      xlat   = asin(Y);
+      Y      = x*sin(beta);
+      X      = rho*cos(xlatc)*cos(beta)-y*sin(xlatc)*sin(beta);
+      xlong  = xlongc + atan2(Y, X);
     }
     // Convert to spherical-polar to  Cart. coordinates:
     clist[i][0] = rad*cos(xlat)*cos(xlong);
@@ -438,34 +449,50 @@ void GGridIcos::gnomonic2cart(GTVector<GTPoint<T>> &glist, T rad, T xlatc, T xlo
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : reorderverts2d
-// DESC   : Reorder specified vertices to be consistent with
+// DESC   : Reorder specified elem vertices to be consistent with
 //          shape functions
-// ARGS   : uverts : list of unordered vertices
-//          overts : array of ordered vertices, returned
+// ARGS   : uverts : list of unordered 3-vertices
+//          tverts : temp array of points equal in number to uverts
+//          isort  : array of sorting indirection indices
+//          overts : array of ordered 3-vertices, returned
 // RETURNS: none.
 //**********************************************************************************
 template<typename T>
-void GGridIcos::reorderverts2d(GTVector<GTPoint<T>> &uverts, GTVector<GSIZET> &isort, 
+void GGridIcos::reorderverts2d(GTVector<GTPoint<T>> &uverts, GTVector<GTPoint<T>> &tverts, GTVector<GSIZET> &isort, 
                                GTVector<GTPoint<T>> &overts)
 {
   GString serr = "GridIcos::reorderverts2d: ";
 
-  assert(uverts.size() == 4 && "Incorrect number of vertices");
+  assert(uverts.size() == 4 
+      && overts.size() == 4
+      && "Incorrect number of vertices");
 
-
-  GTVector<T> x(4);
+  T                xlatc, xlongc;
+  GTPoint<T>       c(3);
+  GTVector<T>      x(4);
   GTVector<GSIZET> Ixy(4);
+  
+  for ( auto j=0; j<tverts.size(); j++ ) tverts[j].resize(2);
 
+  c = (uverts[0] + uverts[1] + uverts[2] + uverts[3])*0.25; // elem centroid
+  xlatc  = asin(c.x3); // reference lat/long
+  xlongc = atan2(c.x2,c.x1);
+  xlongc = xlongc < 0.0 ? 2*PI+xlongc : xlongc;
+
+  // Convert to gnomonic coords so that we
+  // can examine truly 2d planar coords when
+  // re-ordering:
+  cart2gnomonic<T>(uverts, 1.0, xlatc, xlongc, tverts); // gnomonic vertices of quads
 
   isort.resize(4);
-  for ( GSIZET i=0; i<uverts.size(); i++ ) { 
-    x[i] = uverts[i].x1;
+  for ( auto i=0; i<tverts.size(); i++ ) { 
+    x[i] = tverts[i].x1;
   }
 
   x.sortincreasing(Ixy);
 
   // Do 'left' -hand vertices:
-  if ( uverts[Ixy[0]].x2 < uverts[Ixy[1]].x2 ) {
+  if ( tverts[Ixy[0]].x2 < tverts[Ixy[1]].x2 ) {
     isort[0] = Ixy[0];
     isort[3] = Ixy[1];
   } else {
@@ -474,7 +501,7 @@ void GGridIcos::reorderverts2d(GTVector<GTPoint<T>> &uverts, GTVector<GSIZET> &i
   }
 
   // Do 'right' -hand vertices:
-  if ( uverts[Ixy[2]].x2 < uverts[Ixy[3]].x2 ) {
+  if ( tverts[Ixy[2]].x2 < tverts[Ixy[3]].x2 ) {
     isort[1] = Ixy[2];
     isort[2] = Ixy[3];
   } else {
@@ -482,7 +509,7 @@ void GGridIcos::reorderverts2d(GTVector<GTPoint<T>> &uverts, GTVector<GSIZET> &i
     isort[2] = Ixy[2];
   }
 
-  for ( GSIZET j=0; j<4; j++ ) overts[j] = uverts[isort[j]];
+  for ( auto j=0; j<4; j++ ) overts[j] = uverts[isort[j]];
   
 } // end of method reorderverts2d
 

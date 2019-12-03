@@ -163,15 +163,18 @@ GBOOL impl_abc_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Ti
     r = sqrt(x*x + y*y+z*z);
     alat = asin(z/r); along = atan2(y,x); 
     for ( GINT k=kdn; k<=kup; k++ ) {
-//    (*usph[1])[j] +=  B*k*cos(k*along) / pow(k,p); // lat
-//    (*usph[0])[j] += -A*k*sin(k*alat) / pow(k,p);  // long
+#if 1
+      (*usph[1])[j] +=  B*k*cos(k*along) / pow(k,p); // lat
+      (*usph[0])[j] += -A*k*sin(k*alat) / pow(k,p);  // long
+#else
       pi2         = 2.0*PI*k;
       (*u[0])[j] +=  ( B*cos(pi2*y) + C*sin(pi2*z) ) / pow(k,p);
       (*u[1])[j] +=  ( A*sin(pi2*x) + C*cos(pi2*z) ) / pow(k,p);
       (*u[2])[j] +=  ( A*cos(pi2*x) + B*sin(pi2*y) ) / pow(k,p);
+#endif
     }
   }
-//GMTK::vsphere2cart(grid, usph, GVECTYPE_PHYS, u);
+  GMTK::vsphere2cart(grid, usph, GVECTYPE_PHYS, u);
   
 #elif defined(_G_IS3D)
 
@@ -225,7 +228,7 @@ GBOOL impl_simpsum1d_box(const PropertyTree &ptree, GString &sconfig, GGrid &gri
   GFTYPE       E0, kn, L, p, x, y, z;
   GFTYPE       phase1, phase2;
   GTPoint<GFTYPE>
-               G0, G1;
+               G0(2), G1(2);
   PropertyTree vtree ;
   GTVector<GTVector<GFTYPE>>
               *xnodes = &grid.xNodes();
@@ -266,6 +269,7 @@ GBOOL impl_simpsum1d_box(const PropertyTree &ptree, GString &sconfig, GGrid &gri
     for ( GSIZET j=0; j<nn; j++ ) {
       x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
 //    (*u[0])[j] +=  (cos(kn*x+phase1) + sin(kn*x+phase2)) / pow(kn,p);
+<<<<<<< HEAD
       (*u[0])[j] +=  ( sin(kn*x+phase1) + 4.0*sin((kn+0.5)*x+phase1) ) / pow(kn,p);
     }
   }
@@ -355,6 +359,9 @@ GBOOL impl_simpsum_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
         (*u[0])[j] +=  ( sin(knx*x+phase1) + 4.0*sin((kn+0.5)*x+phase1) ) / pow(kn,p);
         (*u[1])[j] +=  ( sin(kny*y+phase2) + 4.0*sin((kn+0.5)*y+phase2) ) / pow(kn,p);
       }
+=======
+      (*u[0])[j] +=  ( sin(kn*x+phase1) + 4.0*sin((kn+0.5)*x+phase2) ) / pow(kn,p);
+>>>>>>> 6066cd95ecc42a4af07f0c2ed5f7acdca54a6bb6
     }
   }
   
@@ -421,7 +428,7 @@ GBOOL impl_simpsum_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid
   GSIZET       nn ;
   GFTYPE       E0, kn, p, r, x, y, z;
   GFTYPE       lat, lon;
-  GFTYPE       phase1, phase2;
+  GFTYPE       phase1, phase2, phase3;
   PropertyTree vtree ;
   GTVector<GTVector<GFTYPE>>
               *xnodes = &grid.xNodes();
@@ -455,14 +462,20 @@ GBOOL impl_simpsum_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid
 //*u[2] = 0.0;
   for ( GINT k=kdn; k<=kup; k++ ) {
     kn = static_cast<GFTYPE>(k);
-    phase2 = (*distribution)(generator);
     phase1 = (*distribution)(generator);
+    phase2 = (*distribution)(generator);
+    phase3 = (*distribution)(generator);
     for ( GSIZET j=0; j<nn; j++ ) {
       x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j]; 
       r = sqrt(x*x + y*y + z*z);
       lat = asin(z/r); lon = atan2(y,x);
+#if 0
       (*usph[0])[j] +=  (sin(kn*lat+phase1) + 4.0*sin((kn+0.5)*lat+phase1)) / pow(kn,p);
       (*usph[1])[j] +=  (sin(kn*lon+phase2) + 4.0*sin((kn+0.5)*lon+phase2)) / pow(kn,p);
+#else
+      (*usph[0])[j] +=  cos(kn*lon+phase3)*(sin(kn*lat+phase1) + 4.0*sin((kn+0.5)*lat+phase1)) / pow(kn,p);
+      (*usph[1])[j] +=  sin(kn*lon+phase3)*(kn*cos(kn*lat+phase1) + 4.0*(kn+0.5)*cos((kn+0.5)*lat+phase1)) / pow(kn,p+1);
+#endif
     } // end, j-loop
   } // end, k loop
   

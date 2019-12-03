@@ -209,6 +209,7 @@ void GPosixIOObserver<EquationType>::print_derived(const Time &t, const State &u
         for ( auto i=0; i<iuout.size(); i++ ) {
           sprintf(stmp, "derived%d_c%d", j+1, i+1);
           sdqnames[j] = stmp; 
+          this->grid_->get_ggfx().doOp(*uout[i], GGFX_OP_SMOOTH);
         }
       }
 

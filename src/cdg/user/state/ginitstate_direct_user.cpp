@@ -34,7 +34,7 @@ namespace ginitstate {
 GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
 {
   GString          serr = "impl_boxnwaveburgers: ";
-  GBOOL            brot =FALSE;
+  GBOOL            bret = TRUE, brot = FALSE;
   GINT             nlump=0;
   GSIZET           i, j, nxy;
   GFTYPE           K2, nu, Re, r2, tdenom;
@@ -153,10 +153,9 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
     } // end, coord loop
   } // end, lump loop
 
+  return bret;
 
-  return TRUE;
-
-} // end, impl_boxnwaveburgers
+} // end, impl_icosnwaveburgers
 
 
 //**********************************************************************************
@@ -237,21 +236,25 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
        lat = asin(z/r);
        lon = atan2(y,x);
-      for ( i=0; i<GDIM+1; i++ ) { // find arclength from lump center
+      for ( i=0; i<GDIM+1; i++ ) { 
         xx[i] = (*xnodes)[i][j] - r0[ilump][i];
       }
 /*
       xx[0] = r*lat;
       xx[1] = r*lon;
 */
-      s     = acos( sin(lat)*sin(lat0[ilump])
+      // find arclength from lump center
+      s     = r*acos( sin(lat)*sin(lat0[ilump])
             +       cos(lat)*cos(lat0[ilump])*cos(lon - lon0[ilump]) );
   
       tdenom = 1.0/(4.0*nu*time);
       tfact  = time/t0[ilump];
       efact  = tfact * exp(s*s*tdenom) / ( exp(Re) - 1.0 );
       xfact  = 1.0 /( time * (  1.0 + efact ) );
-      for ( i=0; i<GDIM+1; i++ ) (*u[i])[j] += xx[i]*xfact;
+      for ( i=0; i<GDIM+1; i++ ) {
+        (*u[i])[j] += xx[i]*xfact;
+        assert( std::isfinite((*u[i])[j]) );
+      }
       // dU1max = 1.0 / ( time * (sqrt(time/A) + 1.0) );
       // aArea  = 4.0*nu*log( 1.0 + sqrt(A/time) );
     } // end, coord j-loop 
@@ -261,7 +264,7 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
   GMTK::constrain2sphere(grid, u);
 
   bret = TRUE;
-  for ( j=0; j<GDIM+1 && !bret; j++ ) {
+  for ( j=0; j<GDIM+1; j++ ) {
      bret = bret && u[j]->isfinite(i);
   }
 
