@@ -390,7 +390,7 @@ GBOOL impl_simpsum_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
           kn  = sqrt(knx*knx + kny*kny + knz*knz);
           phase1 = (*distribution)(generator);
           for ( GSIZET j=0; j<nn; j++ ) {
-            x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (xnodes)[2][j];
+            x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
             (*u[m])[j] +=  ( sin(knx*x+phase1) + 4.0*sin(knyh*y+phase2) + 2.0* sin(knzh*z+phase3) ) / pow(kn,p);
           }
         }
