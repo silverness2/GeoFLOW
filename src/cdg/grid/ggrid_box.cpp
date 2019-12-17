@@ -71,7 +71,7 @@ lshapefcn_             (NULLPTR)
   // compute global bdy range, and global vertices:
   for ( auto j=0; j<GDIM; j++ ) dP_[j] = spt[j];
   P1_ = P0_ + dP_;
-  gverts_.resize(2*ndim_);
+  gverts_.resize(pow(2,ndim_));
   for ( auto j=0; j<gverts_.size(); j++ ) gverts_[j].resize(GDIM);
   if ( ndim_ == 2 ) {
     gverts_[0] = P0_; 
@@ -859,7 +859,6 @@ void GGridBox::find_subdomain()
         ib = MAX(beg_lin-static_cast<GLONG>(k*nxy+j*ne_[0]),0); 
         ie = MIN(end_lin-static_cast<GLONG>(k*nxy+j*ne_[0]),ne_[0]-1); 
         for ( GLONG i=ib; i<=ie; i++ ) { 
-          for ( auto l=0; l<4; l++ ) qmesh_[n][l].resize(ndim_);
           v0.x1 = P0_.x1+i*dx.x1; v0.x2 = P0_.x2+j*dx.x2; v0.x3 = P0_.x3+k*dx.x3; 
                                                           hmesh_[n].v1 = v0;
           dv.x1 = dx.x1 ; dv.x2 = 0.0  ; dv.x3 = 0.0   ;  hmesh_[n].v2 = v0 + dv;
