@@ -987,7 +987,7 @@ void GGridBox::config_bdy(const PropertyTree &ptree,
   }
   
   // Fill in uniform bdy types:
-  for ( auto j=0; j<2*GDIM; j++ ) { 
+  for ( auto j=0; j<2*GDIM; j++ ) { // for each global bdy face 
     if ( !buniform[j] ) continue;
     // First, find global bdy indices:
     if ( bperiodic && bdytype[j] != GBDY_PERIODIC  ) {
@@ -1018,7 +1018,8 @@ void GGridBox::config_bdy(const PropertyTree &ptree,
     igbdyt[j].resize(itmp.size()); igbdyt[j] = btmp;
     itmp.clear();
     btmp.clear();
-  }
+
+  } // end, global bdy face loop
 
 
 } // end of method config_bdy
