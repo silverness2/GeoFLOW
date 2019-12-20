@@ -9,6 +9,7 @@
 #if !defined(GEOFLOW_CDG_MAIN_H)
 #define GEOFLOW_CDG_MAIN_H
 
+#include <omp.h>
 #include "gexec.h"
 #include "gtypes.h"
 #include <stdio.h>

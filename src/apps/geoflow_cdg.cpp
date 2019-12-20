@@ -84,7 +84,7 @@ int main(int argc, char **argv)
     // Create grid:
     //***************************************************
     EH_MESSAGE("geoflow: build grid...");
-    GTimerReset();
+//  GTimerReset();
     GTimerStart("gen_grid");
 
     grid_ = GGridFactory::build(ptree_, gbasis_, comm_);
@@ -100,7 +100,7 @@ int main(int argc, char **argv)
     // Initialize gather/scatter operator:
     //***************************************************
     EH_MESSAGE("geoflow: initialize gather/scatter...");
-    GTimerReset();
+//  GTimerReset();
     GTimerStart("init_ggfx_op");
 
     init_ggfx(ptree_, *grid_, ggfx_);
@@ -157,7 +157,7 @@ int main(int argc, char **argv)
     //***************************************************
     GComm::Synch();
     EH_MESSAGE("geoflow: do time stepping...");
-    GTimerReset();
+//  GTimerReset();
     GTimerStart("time_loop");
 
     pIntegrator_->time_integrate(t, uf_, ub_, u_);
@@ -169,7 +169,6 @@ int main(int argc, char **argv)
     // Do benchmarking if required:
     //***************************************************
     EH_MESSAGE("geoflow: do benchmark...");
-    GTimerReset();
     GTimerStart("benchmark_timer");
     do_bench("benchmark.txt", pIntegrator_->get_numsteps());
     EH_MESSAGE("geoflow: benchmark done.");
@@ -391,7 +390,7 @@ void do_bench(GString fname, GSIZET ncyc)
 
     GINT   myrank   = GComm::WorldRank(comm_);
     GINT   ntasks   = GComm::WorldSize(comm_);
-    GINT   nthreads = 0;
+    GINT   nthreads = 1;
     GFTYPE dxmin, lmin;
     GFTYPE ttotal;
     GFTYPE tggfx;
@@ -399,6 +398,11 @@ void do_bench(GString fname, GSIZET ncyc)
     std::ifstream itst;
     std::ofstream ios;
     GTVector<GSIZET> lsz(2), gsz(2);
+
+    #pragma omp parallel //num_threads(3)
+    {
+     nthreads = omp_get_num_threads();
+    }
 
     // Get global no elements and dof & lengths:
     lsz[0] = grid_->nelems();
@@ -434,11 +438,11 @@ void do_bench(GString fname, GSIZET ncyc)
       ios << dxmin           << "   " ;
       ios << lmin            << "   " ;
       ios << ntasks          << "   " ;
-      ios << nthreads        << "   ";
-      ios << ttotal          << "   ";
-      ios << tggfx           << "   ";
-      ios << texch                   ;
-      ios << endl;
+      ios << nthreads        << "   " ;
+      ios << ttotal          << "   " ;
+      ios << tggfx           << "   " ;
+      ios << texch                    ;
+      ios << endl                     ;
 
       ios.close();
     }
