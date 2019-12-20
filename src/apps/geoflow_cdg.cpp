@@ -84,7 +84,6 @@ int main(int argc, char **argv)
     // Create grid:
     //***************************************************
     EH_MESSAGE("geoflow: build grid...");
-//  GTimerReset();
     GTimerStart("gen_grid");
 
     grid_ = GGridFactory::build(ptree_, gbasis_, comm_);
@@ -100,7 +99,6 @@ int main(int argc, char **argv)
     // Initialize gather/scatter operator:
     //***************************************************
     EH_MESSAGE("geoflow: initialize gather/scatter...");
-//  GTimerReset();
     GTimerStart("init_ggfx_op");
 
     init_ggfx(ptree_, *grid_, ggfx_);
@@ -157,7 +155,6 @@ int main(int argc, char **argv)
     //***************************************************
     GComm::Synch();
     EH_MESSAGE("geoflow: do time stepping...");
-//  GTimerReset();
     GTimerStart("time_loop");
 
     pIntegrator_->time_integrate(t, uf_, ub_, u_);
