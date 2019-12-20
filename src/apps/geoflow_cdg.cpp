@@ -84,6 +84,7 @@ int main(int argc, char **argv)
     // Create grid:
     //***************************************************
     EH_MESSAGE("geoflow: build grid...");
+    GTimerReset();
     GTimerStart("gen_grid");
 
     grid_ = GGridFactory::build(ptree_, gbasis_, comm_);
@@ -99,6 +100,7 @@ int main(int argc, char **argv)
     // Initialize gather/scatter operator:
     //***************************************************
     EH_MESSAGE("geoflow: initialize gather/scatter...");
+    GTimerReset();
     GTimerStart("init_ggfx_op");
 
     init_ggfx(ptree_, *grid_, ggfx_);
@@ -166,7 +168,12 @@ int main(int argc, char **argv)
     //***************************************************
     // Do benchmarking if required:
     //***************************************************
+    EH_MESSAGE("geoflow: do benchmark...");
+    GTimerReset();
+    GTimerStart("benchmark_timer");
     do_bench("benchmark.txt", pIntegrator_->get_numsteps());
+    EH_MESSAGE("geoflow: benchmark done.");
+    GTimerStop("benchmark_timer");
 
     //***************************************************
     // Compare solution if required:
@@ -174,6 +181,7 @@ int main(int argc, char **argv)
     compare(ptree_, *grid_, pEqn_, t, utmp_, ub_, u_);
  
 #if defined(_G_USE_GPTL)
+    GComm::Synch();
 //  GPTLpr(myrank);
     GPTLpr_file("timings.txt");
     GPTLpr_summary(comm_);
@@ -392,10 +400,12 @@ void do_bench(GString fname, GSIZET ncyc)
     std::ofstream ios;
     GTVector<GSIZET> lsz(2), gsz(2);
 
-    // Get global no elements and dof:
+    // Get global no elements and dof & lengths:
     lsz[0] = grid_->nelems();
     lsz[1] = grid_->ndof();
     GComm::Allreduce(lsz.data(), gsz.data(), 2, T2GCDatatype<GSIZET>() , GC_OP_SUM, comm_);
+    dxmin = grid_->minnodedist();
+    lmin  = grid_->minlength();
     if ( myrank == 0 ) {
       itst.open(fname);
       ios.open(fname,std::ios_base::app);
@@ -419,9 +429,6 @@ void do_bench(GString fname, GSIZET ncyc)
       GPTLget_wallclock("ggfx_doop"     , 0,  &tggfx ); tggfx  /= ncyc;
       GPTLget_wallclock("ggfx_doop_exch", 0,  &texch ); texch  /= ncyc;
 
-      dxmin = grid_->minnodedist();
-      lmin  = grid_->minlength();
-  
       ios << gsz[0]          << "   " ;
       ios << gsz[1]          << "   " ;
       ios << dxmin           << "   " ;
