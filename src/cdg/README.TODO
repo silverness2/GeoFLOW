@@ -1,0 +1,23 @@
+done: 1.   Apply FUZZYEQ to bdy location in ggrid_icos.cpp. 
+2.   Handle Neumann bdy conditions: can same setup (use of ub) be used?
+3.   Merge GComm with tbox
+done: 4.   Build more generic driver/main program for all time-dep PDE sets
+5.   Add constraint of field to sphere in embedded grid type case
+6.   Make sure face indices, bdy types are being handled properly in GGridIcos for 3D elems
+7.   Make sure that all element-local data that has been globalized is cleared
+8.   Verify computation of amount of tmp space required by solver
+9.   Complete flux operator, and validate faceNormal vector computations for DG
+done:10.  Test I X I X D, I X D X I, etc operators; use only compute_refderivs, not
+          compute_refderivsW in GAdvect to reduce no. flops required. NB: testing 
+          done, but integration not done.
+done: 11.  Add restart capability.
+done: 12.  Add forcing.
+done: 13.  Generalize the application of initial conditions.
+14.  Cube-sphere grid.
+15.  Remove iOpR2LIndices and associated quaitites from GGFX
+16.  Should we handle boundary updates in the same way as forcing, not via a callback, but in call to constructor (e.g., like the 'mixer' object in Integrator)?
+17. Command line args in main driver: push off to a method; set traits var once we decide what we can change via command line
+18. Templatize functions in gmtk.cpp. Generally, these aren't templated bec. the use GGrid object methods that themselves aren't templated.
+19. IMPORTANT: (a) code the do_face_normals virtual methods in GGridBox and GGridIcos. These find normals at all element face nodes, and are used to compute integral of fluxes at element faces used for conservative methods; (b) code the do_bdy_normals in GGridBox and GGridIcos classes. These compute the normals at canonical domain boundaries, and are required to specify, e.g., Neuman boundary conditions at those surfaces.
+20. Abstract the io: create new class for gio; add factory for different types. Move gioposix to general observer that uses new factory to decide which IO scheme to use.
+21. There is a bug in GGFX if GNODEID is size_t

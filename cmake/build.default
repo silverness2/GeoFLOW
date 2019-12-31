@@ -1,0 +1,91 @@
+#
+# ========================== Build Options ===========================
+#
+set   (GDIM 2)                           # Dimensionality
+
+option(DO_TESTS       "DO_TESTS"      OFF)  # Build testing targets
+option(DO_GEOFLOW     "DO_GEOFLOW"    ON)   # Build GeoFLOW target
+
+option(DO_DEBUG       "DO_DEBUG"      ON)   # Compile for DEBUG
+option(USE_OPENMP     "USE_OPENMP"    ON)   # Compile for OpenMP
+option(USE_MPI        "USE_MPI"       ON)   # Build with MPI?
+option(USE_OPENACC    "USE_OPENACC"   OFF)  # Compile for OpenACC
+option(USE_GBLAS      "USE_GBLAS"     ON)   # Use GBlas instead of C
+option(USE_GPTL       "USE_GPTL"      OFF)  # Build with GPTL?
+option(USE_PAPI       "USE_PAPI"      OFF)  # Is GPTL built with PAPI support?
+option(DO_AUTO_PROF   "DO_AUTO_PROF"  OFF)  # Do auto-profing with GPTL?
+option(VERBOSE_CMAKE  "VERBOSE_CMAKE" ON)   # Verbose CMake Ouput
+
+#
+# ============================== Build Type ============================
+# Default: 
+# > cmake -D CMAKE_BUILD_TYPE=Debug
+#
+#set(CMAKE_BUILD_TYPE debug)
+
+#
+# ========================== Compiler (Serial) ==========================
+# Default: 
+# Use environment variables CC, CXX, FC, F77, F90, etc.
+# > CC=gcc-4.2 CXX=/usr/bin/g++-4.2 cmake ..
+#
+# Alternate:
+# Use CMake variables CMAKE_C_COMPILER, CMAKE_CXX_COMPILER, etc.
+# > cmake -D CMAKE_C_COMPILER=gcc-4.2 -D CMAKE_CXX_COMPILER=g++-4.2 ..
+#
+
+
+#
+# ======================== Compiler (MPI Parallel) ========================
+# Default:
+# Set the serial compiler to the MPI wrapper
+#
+# Alternate: 
+# Use environment variables.
+#   - MPI_C_COMPILER
+#   - MPI_CXX_COMPILER 
+#   - MPI_Fortran_COMPILER
+# > cmake -D MPI_CXX_COMPILER=/opt/openmpi/bin/mpiicc 
+# 
+# Alternate: 
+# Let CMake determine a MPI wrapper using your path variables
+#
+
+
+#
+# ========================== Boost Library ==========================
+# Default: 
+# Use environment variables BOOST_ROOT
+# > cmake -D BOOST_ROOT=/opt/boost/boost_1_69_0/gcc/8.2.1 
+#
+set(BOOST_ROOT 
+	"" 
+CACHE STRING "Location of Boost Library")
+
+#
+# ========================== GPTL Library ===========================
+# Default: 
+# Use environment variables GPTL_ROOT
+# > cmake -D GPTL_ROOT=/opt/gptl/gcc/8.2.1
+#
+set(GPTL_ROOT 
+	"" 
+CACHE STRING "Location of GPTL Library")
+
+#
+# ========================== PAPI Library ===========================
+# Default: 
+# Use environment variables PAPI_ROOT
+# > cmake -D PAPI_ROOT=/opt/papi/gcc/8.2.1
+#
+set(PAPI_ROOT 
+	"" 
+CACHE STRING "Location of PAPI Library")
+
+
+
+
+
+
+
+
