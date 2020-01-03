@@ -776,7 +776,6 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   itmp  .resize(irWork.size(1)*irWork.size(2));
   nidtmp.resize(irWork.size(1)*irWork.size(2));
   iitmp .resize(irWork.size(1));
-  itasks.resize(irWork.size(2));
   iiitmp.resize(10);
   icol.resize(10);
   iivals = new GSIZET [10]; nivals = 10; // largest multiplicity possible (will be resized later)
@@ -785,6 +784,7 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   EH_MESSAGE("GGFX::doCommonNodeSort: call irWork.distinct_floor...");
   nd = irWork.data().distinct_floor(ivals, nvals, -1, nidtmp.data(), itmp.data()); // find distinct nodes ids
   ikeep.resize(nd);
+  itasks.resize(nd);
   EH_MESSAGE("GGFX::doCommonNodeSort: irWork.distinct_floor done.");
   for ( j=0, nkeep=npos=0; j<nd; j++ ) { // compute multiplicity of distinct node ids
     nid = (*niddata)[ivals[j]];
