@@ -2177,10 +2177,10 @@ GTVector<T>::distinctrng_floor(GSIZET ibeg, GSIZET n, GSIZET is,
   for ( i=this->gindex_.beg()+ibeg; i<this->gindex_.beg()+n; i+=is+this->gindex_.stride()-1 ) {
     if ( this->data_[i] <= floor ) continue;
     bcont = FALSE;
-    for ( j=0; j<nfound && !bcont;j++ ) {
+    for ( j=0; j<nfound && !bcont; j++ ) {
       bcont = this->data_[i] == tunique[j];
     }
-
+    
     if ( !bcont ) { // if not in unique buff, add it:
       itmp   [nfound] = i;
       tunique[nfound] = this->data_[i];
@@ -2240,7 +2240,7 @@ GTVector<T>::distinct(GSIZET  *&indices, GSIZET  &nd,
 // ARGS   : indices : GTVector containing indices into the buffer which contain
 //                    the distinct values. Must be dimensioned >= any possible nd,
 //                    as no checking is done. This array is deleted and re-allocated.
-//          nd      : number of distinct values. nd=0 is not considered an error
+//          nd      : size of 'indices' array; modified as necessary
 //          floor   : min value; s.t. distinct value is >= floor
 //          tunique : tmp array of type T, of size at least of size()
 //          itmp    : tmp array of type GSIZET, of size at least of size()
@@ -2255,7 +2255,7 @@ GTVector<T>::distinct_floor(GSIZET  *&indices, GSIZET  &nd,
   assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value &&
     "Invalid template type: distinct_floor(GSIZET*, GSIZET&, T)");
 
-  GSIZET n = distinctrng_floor(this->gindex_.beg(), this->gindex_.end()-this->gindex_.end()+1, 1, indices, nd, floor, tunique, itmp);
+  GSIZET n = distinctrng_floor(this->gindex_.beg(), this->gindex_.end(), 1, indices, nd, floor, tunique, itmp);
 
   return n;
 } // end of method distinct_floor
