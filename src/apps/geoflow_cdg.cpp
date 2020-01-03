@@ -392,6 +392,8 @@ void do_bench(GString fname, GSIZET ncyc)
     GFTYPE ttotal;
     GFTYPE tggfx;
     GFTYPE texch;
+    GFTYPE tgrid;
+    GFTYPE tggfxinit;
     std::ifstream itst;
     std::ofstream ios;
     GTVector<GSIZET> lsz(2), gsz(2);
@@ -421,7 +423,9 @@ void do_bench(GString fname, GSIZET ncyc)
         ios << "nthreads" << "  ";
         ios << "ttotal"   << "  ";
         ios << "tggfx"    << "  ";
-        ios << "texch"           ;
+        ios << "texch"    << "  ";
+        ios << "tgrid"    << "  ";
+        ios << "tggfxinit"       ;
         ios << endl;
       }
       itst.close();
@@ -429,6 +433,8 @@ void do_bench(GString fname, GSIZET ncyc)
       GPTLget_wallclock("time_loop"     , 0,  &ttotal); ttotal /= ncyc;
       GPTLget_wallclock("ggfx_doop"     , 0,  &tggfx ); tggfx  /= ncyc;
       GPTLget_wallclock("ggfx_doop_exch", 0,  &texch ); texch  /= ncyc;
+      GPTLget_wallclock("gen_grid"      , 0,  &tgrid); 
+      GPTLget_wallclock("init_ggfx_op"  , 0,  &tggfxinit); 
 
       ios << gsz[0]          << "   " ;
       ios << gsz[1]          << "   " ;
@@ -438,7 +444,9 @@ void do_bench(GString fname, GSIZET ncyc)
       ios << nthreads        << "   " ;
       ios << ttotal          << "   " ;
       ios << tggfx           << "   " ;
-      ios << texch                    ;
+      ios << texch           << "   " ;
+      ios << tgrid           << "   " ;
+      ios << tggfxinit                ;
       ios << endl                     ;
 
       ios.close();
