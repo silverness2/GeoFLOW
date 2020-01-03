@@ -1148,7 +1148,7 @@ void GGrid::init_bc_info()
       igbdyt_[nind++] = igbdyt_bydface_[j][i];
     }
   }
- 
+
 
   // Create bdy type bins (one bin for each GBdyType), and
   // for each type, set the indirection indices into global
