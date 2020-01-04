@@ -725,7 +725,7 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   GString    serr = "GGFX<T>::doCommonNodeSort: ";
   GSIZET     i, j, k, nr, ns;
   GBOOL      bret=TRUE;
-  GINT       itask, nl;
+  GINT       itask, myrank, nl;
 
   if ( !bBinSorted_ ) return FALSE;
 
@@ -748,6 +748,9 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
 #if defined(GGFX_TRACE_OUTPUT)
   EH_MESSAGE("GGFX::doCommonNodeSort: Entering...");
 #endif
+
+  myrank = GComm::WorldRank();
+
   niddata = &irWork.data();
 
   // For each task in iRecvWorkTaskID from which we received work data 
@@ -764,8 +767,8 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
 #endif
 
 #if defined(GGFX_TRACE_OUTPUT_LEV2)
-    GPP(comm_,serr << "irwork.size1=" << irWork.size(1)
-        << " irwork.size2=" << irWork.size(2));
+    GPP(comm_,serr << "irWork.size1=" << irWork.size(1)
+        << " irWork.size2=" << irWork.size(2));
 #endif
 #if defined(GGFX_TRACE_OUTPUT)
   EH_MESSAGE("GGFX::doCommonNodeSort: Compute sizes...");
@@ -780,6 +783,7 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   icol.resize(10);
   iivals = new GSIZET [10]; nivals = 10; // largest multiplicity possible (will be resized later)
   ijvals = new GSIZET [10]; njvals = 10; // largest multiplicity possible (will be resized later)
+  vvals  = new GSIZET [10]; 
 
   EH_MESSAGE("GGFX::doCommonNodeSort: call irWork.distinct_floor...");
   nd = irWork.data().distinct_floor(ivals, nvals, -1, nidtmp.data(), itmp.data()); // find distinct nodes ids
@@ -788,27 +792,20 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   EH_MESSAGE("GGFX::doCommonNodeSort: irWork.distinct_floor done.");
   for ( j=0, nkeep=npos=0; j<nd; j++ ) { // compute multiplicity of distinct node ids
     nid = (*niddata)[ivals[j]];
-EH_MESSAGE("GGFX::doCommonNodeSort: call niddata->multiplicity...");
     mult = niddata->multiplicity(nid, iivals, nivals); // find linear indices for nid
     if ( mult > 1 ) {
-EH_MESSAGE("GGFX::doCommonNodeSort: icol.resizem...");
       icol.resizem(mult);
       iiitmp.resizem(mult);
-EH_MESSAGE("GGFX::doCommonNodeSort: iiitmp.resizem...");
       // Recall that matrices are stored col-major, so get matrix 
       // column/tasks where nid is located:
       for ( auto i=0; i<mult; i++ ) icol[i] = iivals[i] / irWork.dim(1); 
       ikeep[nkeep] = ivals[j]; // keep indices for nodes with mult>1   
-EH_MESSAGE("GGFX::doCommonNodeSort: icol.distinctrng...");
-      nnd = icol.distinctrng(0,mult,1,ijvals,njvals,iitmp.data(),iiitmp.data()); // find # tasks that own nid
-EH_MESSAGE("GGFX::doCommonNodeSort: icol.distinctrng done.");
+      nnd = icol.distinctrng(0,mult,1,vvals,ijvals,njvals,iitmp.data(),iiitmp.data()); // find # tasks that own nid
       itasks[nkeep].resize(nnd);
-EH_MESSAGE("GGFX::doCommonNodeSort: itasks[nkeep].resize done.");
-      for ( auto k=0; k<nnd; k++ ) itasks[nkeep][k] = ijvals[k];
+      for ( auto k=0; k<nnd; k++ ) itasks[nkeep][k] = vvals[k];
       npos  += nnd + 2; // required size of each entry
       itmp[nkeep] = nnd;
       nkeep++;
-EH_MESSAGE("GGFX::doCommonNodeSort: iteration done.");
     }
   }
   EH_MESSAGE("GGFX::doCommonNodeSort: get sizes done.");
@@ -847,7 +844,12 @@ EH_MESSAGE("GGFX::doCommonNodeSort: iteration done.");
   // mySharedData column length must be at least 
   // the number of tasks work data was sent to:
 #if  defined(GGFX_TRACE_OUTPUT_LEV2)
+    GPP(comm_,serr << "itmp=" << itmp);
+itasks.range(0,nkeep-1);
+    GPP(comm_,serr << "itasks=" << itasks);
+itasks.range_reset();
     GPP(comm_,serr << "gsz1=" << gsz[0] << " gsz2=" << gsz[1]);
+    GPP(comm_,serr << "iRecvWorkTaskID=" << iRecvWorkTaskID);
 #endif
   mySharedData.resize(gsz[0],gsz[1]);
 
@@ -856,8 +858,9 @@ EH_MESSAGE("GGFX::doCommonNodeSort: iteration done.");
   EH_MESSAGE("GGFX::doCommonNodeSort: Fill send_buff...");
 #endif
   GTimerStart("ggfx_cNS_fill_send_buff");
+
+
   // Last, fill send buffer with sorted work data:
-  npos = 0;
   sendShNodeWrk.set(-1);
   for ( j=0, npos=0; j<nkeep; j++ ) { // cycle over each node with mult>1
     nid = (*niddata)[ikeep[j]];
@@ -865,9 +868,14 @@ EH_MESSAGE("GGFX::doCommonNodeSort: iteration done.");
     icol.resizem(mult);
     sendShNodeWrk(npos  ,0) = nid;
     sendShNodeWrk(npos+1,0) = itmp[j];
-    for ( auto k=0; k<itmp[j]; k++ ) sendShNodeWrk(npos+k+2,0) = iRecvWorkTaskID[itasks[j][k]];
+  
+    for ( auto k=0; k<itmp[j]; k++ ) {
+      itask = iRecvWorkTaskID[itasks[j][k]];
+      sendShNodeWrk(npos+k+2,0) = itask; //iRecvWorkTask]ID[itasks[j][k]];
+    }
     npos  += itmp[j] + 2; // required size of each entry
   }
+
   GTimerStop("ggfx_cNS_fill_send_buff");
 
 #if defined(GGFX_TRACE_OUTPUT_LEV2)
@@ -1269,7 +1277,6 @@ GBOOL GGFX<T>::doOp(GTVector<T> &u, GGFX_OP op)
 
   assert( std::is_arithmetic<T>::value && "Illegal template type");
 
-  GINT      irank;
   GINT      i, j;
   GBOOL     bret=TRUE;
   GString   serr = "GGFX<T>::doOp(1): ";
@@ -1359,7 +1366,6 @@ template<typename T> GBOOL GGFX<T>::doOp(GTVector<T> &u, GTVector<GSIZET> &iind,
 {
   assert( std::is_arithmetic<T>::value && "Illegal template type");
 
-  GINT      irank;
   GINT      i, j;
   GBOOL     bret=TRUE;
   GString   serr = "GGFX<T>::doOp(2): ";
