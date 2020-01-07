@@ -226,7 +226,8 @@ GBOOL impl_simpsum1d_box(const PropertyTree &ptree, GString &sconfig, GGrid &gri
   GINT         kdn, kup, pdef;
   GSIZET       nn ;
   GFTYPE       E0, kn, knh, L, p, x, y, z;
-  GFTYPE       phase1, phase2;
+  GFTYPE       knx, kny, knz, knxh, knyh, knzh;
+  GFTYPE       phase1, phase2, phase3;
   GTPoint<GFTYPE>
                G0(2), G1(2);
   PropertyTree vtree ;
@@ -273,8 +274,98 @@ GBOOL impl_simpsum1d_box(const PropertyTree &ptree, GString &sconfig, GGrid &gri
       (*u[0])[j] +=  ( sin(kn*x+phase1) + 4.0*sin(knh*x+phase2) ) / pow(kn,p);
     }
   }
-  
 #elif defined(_G_IS3D)
+  assert(FALSE && "method intended for 2d mimicking 1d only");
+#endif
+
+  GMTK::normalizeL2(grid, u, utmp, E0);
+
+  delete distribution;
+
+} // end, method impl_simpsum1d_box
+
+  
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : impl_simpsum_box
+// DESC   : Inititialize velocity with simple sum of waves in x-dir only,
+//          scaled by k^p. For box grids, 2d mimicking 1d
+// ARGS   : ptree  : main property tree
+//          sconfig: ptree block name containing variable config
+//          grid   : grid object
+//          time   : initialization time
+//          utmp   : tmp arrays
+//          ub     : boundary state (also initialized here)
+//          u      : velocity-state to be initialized.
+// RETURNS: TRUE on success; else FALSE 
+//**********************************************************************************
+GBOOL impl_simpsum_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
+{
+  GGridBox *tgrid = dynamic_cast<GGridBox*>(&grid);
+  assert(tgrid != NULLPTR && "Box grid required");
+
+  GINT         kdn, kup, pdef;
+  GSIZET       nn ;
+  GFTYPE       E0, L[GDIM], p, x, y, z;
+  GFTYPE       kn, knx, kny, knz, knxh, knyh, knzh;
+  GFTYPE       phase1, phase2, phase3;
+  GTPoint<GFTYPE>
+               G0(GDIM), G1(GDIM);
+  PropertyTree vtree ;
+  GTVector<GTVector<GFTYPE>>
+              *xnodes = &grid.xNodes();
+  std::default_random_engine
+               generator;
+  std::normal_distribution<GFTYPE>
+              *distribution;
+
+#if defined(_G_IS3D)
+  pdef = 2;
+#else
+  pdef = 3;
+#endif
+
+  G0 = tgrid->getP0();
+  G1 = tgrid->getP1();
+
+  vtree  = ptree.getPropertyTree(sconfig);
+  kdn    = vtree.getValue<GINT>("kdn");
+  kup    = vtree.getValue<GINT>("kup");
+  p      = vtree.getValue<GFTYPE>("kpower",pdef);
+  E0     = vtree.getValue<GFTYPE>("E0", 1.0);
+  nn     = (*xnodes)[0].size();
+
+//distribution = new normal_distribution<GFTYPE>(0,sqrt(2.0*E0));
+  distribution = new normal_distribution<GFTYPE>(0,2.0*PI);
+
+#if defined(_G_IS2D)
+  // Stream fcn is 
+  //   psi = Sum_i { -cos(2pi*ki*x) ) / ki^p }
+  // Compute vel components s.t. ux = d psi / dy, uy = -d psi / dx
+
+  L[0] = G1.x1 - G0.x1;
+  L[1] = G1.x2 - G0.x2;
+  *u[0] = 0.0;
+  *u[1] = 0.0;
+  for ( GINT ky=kdn; ky<=kup; ky++ ) {
+    kny  = 2.0*PI*static_cast<GFTYPE>(ky)/L[1];
+    knyh = 2.0*PI*static_cast<GFTYPE>(ky+0.5)/L[1];
+    phase2 = (*distribution)(generator);
+    for ( GINT kx=kdn; kx<=kup; kx++ ) {
+      knx    = 2.0*PI*static_cast<GFTYPE>(kx)/L[0];
+      knxh   = 2.0*PI*static_cast<GFTYPE>(kx+0.5)/L[0];
+      kn     = sqrt(knx*knx + kny*kny);
+      phase1 = (*distribution)(generator);
+      for ( GSIZET j=0; j<nn; j++ ) {
+        x = (*xnodes)[0][j]; y = (*xnodes)[1][j];
+        (*u[0])[j] +=  ( sin(knx*x+phase1) + 4.0*sin(knxh*x+phase1) ) / pow(kn,p);
+        (*u[1])[j] +=  ( sin(kny*y+phase2) + 4.0*sin(knyh*y+phase2) ) / pow(kn,p);
+      }
+    }
+  }
+
+#elif defined(_G_IS3D)
+
   L[0] = G1.x1 - G0.x1;
   L[1] = G1.x2 - G0.x2;
   L[2] = G1.x3 - G0.x3;
@@ -305,6 +396,7 @@ GBOOL impl_simpsum1d_box(const PropertyTree &ptree, GString &sconfig, GGrid &gri
   }
 
 #endif
+
 
   GMTK::normalizeL2(grid, u, utmp, E0);
 
