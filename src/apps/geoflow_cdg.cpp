@@ -70,6 +70,7 @@ int main(int argc, char **argv)
 #if defined(_G_USE_GPTL)
     // Set GTPL options:
     GPTLsetoption (GPTLcpu, 1);
+    GPTLsetoption (GPTLsync_mpi, 1);
 #endif
     // Initialize timer:
     GTimerInit();
@@ -177,10 +178,8 @@ int main(int argc, char **argv)
     compare(ptree_, *grid_, pEqn_, t, utmp_, ub_, u_);
  
 #if defined(_G_USE_GPTL)
-//  GPTLpr(GComm::GetWorldRank(comm_));
     GPTLpr_file("timings.txt");
-    GPTLsetoption (GPTLcpu, 1);
-    GPTLsetoption (GPTLsync_mpi, 1);
+//  GPTLpr(GComm::WorldRank(comm_));
     GPTLpr_summary();
 #endif
     GTimerFinal();
