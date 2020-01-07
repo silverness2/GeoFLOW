@@ -181,7 +181,7 @@ int main(int argc, char **argv)
     GPTLpr_file("timings.txt");
     GPTLsetoption (GPTLcpu, 1);
     GPTLsetoption (GPTLsync_mpi, 1);
-    GPTLpr_summary(comm_);
+    GPTLpr_summary();
 #endif
     GTimerFinal();
 
