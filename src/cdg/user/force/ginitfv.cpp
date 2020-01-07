@@ -121,7 +121,7 @@ GBOOL impl_abc_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Ti
   GINT         kdn, kup, p, pdef;
   GSIZET       nn ;
   GFTYPE       A, B, C, E0, x, y, z;
-  GFTYPE       alat, along, r;
+  GFTYPE       alat, along, r, kn;
   PropertyTree vtree ;
   GTVector<GTVector<GFTYPE>*>
                usph(GDIM);
