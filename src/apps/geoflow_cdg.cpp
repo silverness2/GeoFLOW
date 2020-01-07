@@ -180,7 +180,8 @@ int main(int argc, char **argv)
 #if defined(_G_USE_GPTL)
     GPTLpr_file("timings.txt");
 //  GPTLpr(GComm::WorldRank(comm_));
-    GPTLpr_summary();
+//  GPTLpr(0);
+//  GPTLpr_summary();
 #endif
     GTimerFinal();
 
