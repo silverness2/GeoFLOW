@@ -28,7 +28,7 @@ int main(int argc, char **argv)
     size_t n=100000;
     size_t lsz[2];
     size_t gsz[2];
-    double         ti, tmin, tmax, tsum;
+    double         ngb=1.0, ti, tmin, tmax, tsum;
 
     tmax=numeric_limits<double>::min(), 
     tmin=numeric_limits<double>::max();
@@ -41,8 +41,8 @@ int main(int argc, char **argv)
       case 'i': // get iteration count
           nrpt = atoi(optarg);
           break;
-      case 'n': // get array/vector size 
-          n = (size_t)atof(optarg);
+      case 'n': // get no. GB per task
+          ngb = (double)atof(optarg);
           break;
       case 's': // scale input data size by no. MPP tasks
           bscale = 1;
@@ -72,12 +72,12 @@ int main(int argc, char **argv)
 
     if ( bscale == 1 )
     {
-      n = ((double)n ) / ((double)ntasks);
+      ngb = ((double)n ) / ((double)ntasks);
     }
 
-    if ( n <= 0 ) 
+    if ( ngb <= 0 ) 
     {
-      cout << irank << ": main: illegal data size : n=" << n << endl;
+      cout << irank << ": main: illegal data size : ngb=" << n << endl;
       cout << irank << ": main: number of tasks is: " << ntasks << endl;
       exit(1);
     }
@@ -92,8 +92,15 @@ int main(int argc, char **argv)
     // Initialize GPTL:
     GPTLinitialize();
 
+    // Convert # GB per task to vec size, n:
+    n = ngb/nv/((double)sizeof(double)) * 1024e6;
+
+    cout << "n = " << n << endl;
+
     // Initialize vectors:
     vector<double> gsend[nv];
+
+    // 
 
     for ( auto j=0; j<nv; j++ ) gsend[j].resize(n);
 
@@ -128,10 +135,10 @@ int main(int argc, char **argv)
       os.open(fn.c_str(),ios::out|ios::app);
       if ( bnew )
       {
-        os << "#Tasks" << "  " << "Size (bytes)"  << "  " << "#Iter" << "  " << "Tmean" << "  " << "Tmin" << "  " << "Tmax"  << endl;
+        os << "#Tasks" << "  " << "Size (GB)"  << "  " << "#Iter" << "  " << "Tmean" << "  " << "Tmin" << "  " << "Tmax"  << endl;
       }
     
-      os << ntasks << "  " << nv*n*sizeof(double) << "  " << nrpt << "  " << tsum/nrpt << "  " << tmin << "  " << tmax << endl;
+      os << ntasks << "  " << ngb << "  " << nrpt << "  " << tsum/nrpt << "  " << tmin << "  " << tmax << endl;
       os.close();
     }
 
