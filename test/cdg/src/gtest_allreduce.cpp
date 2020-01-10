@@ -128,10 +128,10 @@ int main(int argc, char **argv)
       os.open(fn.c_str(),ios::out|ios::app);
       if ( bnew )
       {
-        os << "#Tasks" << "  " << "Size"  << "  " << "#Iter" << "  " << "Tmean" << "  " << "Tmin" << "  " << "Tmax"  << endl;
+        os << "#Tasks" << "  " << "Size (bytes)"  << "  " << "#Iter" << "  " << "Tmean" << "  " << "Tmin" << "  " << "Tmax"  << endl;
       }
     
-      os << ntasks << "  " << n << "  " << nrpt << "  " << tsum/nrpt << "  " << tmin << "  " << tmax << endl;
+      os << ntasks << "  " << nv*n*sizeof(double) << "  " << nrpt << "  " << tsum/nrpt << "  " << tmin << "  " << tmax << endl;
       os.close();
     }
 
