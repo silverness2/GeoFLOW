@@ -24,5 +24,6 @@ done: 13.  Generalize the application of initial conditions.
 22. I/O restarts and re-decomposition + MPI I/O
 32.convective PDE
 33. mat-mat when computing derivatives--assuming that p doesn't change between elements
-34 test flux formalism
-35 terrain-following coordinates
+34. test flux formalism
+35. terrain-following coordinates
+36.
