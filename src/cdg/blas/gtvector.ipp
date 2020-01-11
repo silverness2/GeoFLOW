@@ -2279,19 +2279,26 @@ GTVector<T>::sortdecreasing()
   GLLONG   i, j;
   T       tmp;
 
-  // Perhaps a more efficient algorithm (e.g., heapsort) 
-  // would be better, but for now...
-  for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    for ( i=j; i<=this->gindex_.end(); i+=this->gindex_.stride() ) {
-      if ( this->data_[i] > this->data_[j] ) {
-        tmp      = this->data_[j];
-        this->data_[j] = this->data_[i];
-        this->data_[i] = tmp;
+  if ( gindex_.stride() > 1 ) {
+    // Perhaps a more efficient algorithm (e.g., quick sort) 
+    // would be better, but for now...
+    for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      for ( i=j; i<=this->gindex_.end(); i+=this->gindex_.stride() ) {
+        if ( this->data_[i] > this->data_[j] ) {
+          tmp      = this->data_[j];
+          this->data_[j] = this->data_[i];
+          this->data_[i] = tmp;
+        }
       }
     }
+
+  }
+  else {
+    quicksortl2s(this->data_, this->gindex_.beg(), this->gindex_.end());
   }
 
 } // sortdecreasing (1)
+
 
 //**********************************************************************************
 //**********************************************************************************
@@ -2317,7 +2324,7 @@ GTVector<T>::sortdecreasing(GTVector<GSIZET> &isort)
     isort[j] = j;
   }
 
-  // Perhaps a more efficient algorithm (e.g., heapsort) 
+  // Perhaps a more efficient algorithm (e.g., quick sort) 
   // would be better, but for now...
   for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
     for ( i=j; i<=this->gindex_.end(); i+=this->gindex_.stride() ) {
@@ -2350,16 +2357,22 @@ GTVector<T>::sortincreasing()
   GLLONG   i, j;
   T       tmp;
 
-  // Perhaps a more efficient algorithm (e.g., heapsort) 
-  // would be better, but for now...
-  for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    for ( i=j; i<=this->gindex_.end(); i+=this->gindex_.stride() ) {
-      if ( this->data_[i] < this->data_[j] ) {
-        tmp      = this->data_[j];
-        this->data_[j] = this->data_[i];
-        this->data_[i] = tmp;
+  if ( gindex_.stride() > 1 ) {
+    // Perhaps a more efficient algorithm (e.g., quick sort) 
+    // would be better, but for now...
+    for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      for ( i=j; i<=this->gindex_.end(); i+=this->gindex_.stride() ) {
+        if ( this->data_[i] < this->data_[j] ) {
+          tmp      = this->data_[j];
+          this->data_[j] = this->data_[i];
+          this->data_[i] = tmp;
+        }
       }
     }
+
+  }
+  else {
+    quicksorts2l(this->data_, this->gindex_.beg(), this->gindex_.end());
   }
 
 } // sortincreasing (1)
@@ -2391,7 +2404,7 @@ GTVector<T>::sortincreasing(GTVector<GSIZET> &isort)
     isort[j] = j;
   }
 
-  // Perhaps a more efficient algorithm (e.g., heapsort) 
+  // Perhaps a more efficient algorithm (e.g., quick sort) 
   // would be better, but for now...
   for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
     for ( i=j; i<=this->gindex_.end(); i+=this->gindex_.stride() ) {
@@ -2404,6 +2417,134 @@ GTVector<T>::sortincreasing(GTVector<GSIZET> &isort)
   }
 
 } // sortincreasing (2)
+
+
+//**********************************************************************************
+// METHOD : partitions2l
+// DESC   : partition function for sort small-to-large values
+// ARGS   :   
+// RETURNS: pivot value index
+//**********************************************************************************
+template<class T>
+GLLONG
+GTVector<T>::partitions2l(T *a, GLLONG start, GLLONG end)
+{
+  assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value || std::is_pointer<T>::value &&
+  "Invalid template type: partitions2l");
+
+  GLLONG P_index=start; // P-index indicates the pivot value index
+  GLLONG i;  
+  T pivot=a[end]; // pivot value
+  T t; //t is temporary variable
+    
+  // Check if array value is less than pivot
+  // then place it at left side by swapping 
+  for( i=start; i<end; i++ ) {
+    if ( a[i]<=pivot ) { 
+      t          = a[i];
+      a      [i] = a[P_index];
+      a[P_index] = t;
+      P_index++;
+    }   
+  } 
+  
+  // Exchange value of pivot and P-index
+  t          = a[end];
+  a[end]     = a[P_index];
+  a[P_index] = t;
+    
+  // Return the pivot value index
+  return P_index;
+  
+} // end, method partitions2l
+
+
+//**********************************************************************************
+// METHOD : partitionl2s
+// DESC   : partition function for sort large-to-small values
+// ARGS   :
+// RETURNS: pivot value index
+//**********************************************************************************
+template<class T>
+GLLONG
+GTVector<T>::partitionl2s(T *a, GLLONG start, GLLONG end)
+{
+  assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value || std::is_pointer<T>::value &&
+  "Invalid template type: partitionl2s");
+
+  GLLONG P_index=start; // P-index indicates the pivot value index
+  GLLONG i;
+  T pivot=a[end]; // pivot value
+  T t; //t is temporary variable
+
+  // Check if array value is greater than pivot
+  // then place it at left side by swapping
+  for( i=start; i<end; i++ ) {
+    if ( a[i]>=pivot ) {
+      t          = a[i];
+      a      [i] = a[P_index];
+      a[P_index] = t;
+      P_index++;
+    }
+  }
+
+  // Exchange value of pivot and P-index
+  t          = a[end];
+  a[end]     = a[P_index];
+  a[P_index] = t;
+
+  // Return the pivot value index
+  return P_index;
+
+} // end, method partitionl2s
+
+
+//**********************************************************************************
+// METHOD : quicksorts2l
+// DESC   : Do quick sort from small to large values
+// ARGS   :
+// RETURNS: none.
+//**********************************************************************************
+template<class T>
+void
+GTVector<T>::quicksorts2l(T *a, GLLONG start, GLLONG end)
+{
+  assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value || std::is_pointer<T>::value &&
+  "Invalid template type: quicksorts2l");
+
+  GLLONG P_index;
+
+  if( start < end ) {
+    P_index = partitions2l(a,start,end);
+    quicksorts2l(a,start,P_index-1);
+    quicksorts2l(a,P_index+1,end);
+  }
+
+} // end, method quicksorts2l
+
+
+//**********************************************************************************
+// METHOD : quicksortl2s
+// DESC   : Do quick sort from large to small values
+// ARGS   :
+// RETURNS: none.
+//**********************************************************************************
+template<class T>
+void
+GTVector<T>::quicksortl2s(T *a, GLLONG start, GLLONG end)
+{
+  assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value || std::is_pointer<T>::value &&
+  "Invalid template type: quicksortl2s");
+
+  GLLONG P_index;
+
+  if( start < end ) {
+    P_index = partitionl2s(a,start,end);
+    quicksortl2s(a,start,P_index-1);
+    quicksortl2s(a,P_index+1,end);
+  }
+
+} // end, method quicksortl2s
 
 
 //**********************************************************************************
