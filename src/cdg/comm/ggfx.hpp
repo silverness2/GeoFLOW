@@ -59,11 +59,11 @@ private:
                       GBOOL initSort(GNIDBuffer  &glob_index);
                       GBOOL binSort(GNIDBuffer &glob_index   , GIMatrix    &gBinMat, 
                                     GINT       &nlocfilledbins,
-                                    GINT       &maxfilledbins, GINT       &maxbinmem,
+                                    GINT       &maxfilledbins, GSIZET     &maxbinmem,
                                     GNIDMatrix &gBinBdy      , GNIDBuffer &locwork);
                       GBOOL doSendRecvWork(GNIDBuffer &, GNIDMatrix &, GIBuffer &, GNIDMatrix &, GIBuffer &, GNIDMatrix &);
                       GBOOL binWorkFill(GNIDBuffer &, GNIDMatrix &, GNIDMatrix &, GIBuffer &);
-                      GBOOL createWorkBuffs(GIMatrix &, GINT, GIBuffer &, GNIDMatrix &, GIBuffer &, GNIDMatrix &);
+                      GBOOL createWorkBuffs(GIMatrix &, GSIZET, GIBuffer &, GNIDMatrix &, GIBuffer &, GNIDMatrix &);
                       GBOOL doCommonNodeSort(GNIDBuffer &, GNIDMatrix &, GIBuffer &, GIBuffer &, GNIDMatrix &);
                       GBOOL extractOpData(GNIDBuffer &glob_index, GNIDMatrix &mySharedNodes);
  
