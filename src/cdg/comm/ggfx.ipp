@@ -866,7 +866,7 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
       iiitmp.resizem(mult);
       // Recall that matrices are stored col-major, so get matrix 
       // column/tasks where nid is located:
-      for ( auto i=0; i<mult; i++ ) icol[i] = iivals[ii] / irWork.dim(1); 
+      for ( auto i=0; i<mult; i++ ) icol[i] = iivals[i] / irWork.dim(1); 
       ikeep[nkeep] = ivals[j]; // keep indices for nodes with mult>1   
       nnd = icol.distinctrng(0,mult,1,vvals,ijvals,njvals,iitmp.data(),iiitmp.data()); // find # tasks that own nid
       itasks[nkeep].resize(nnd);
