@@ -25,6 +25,7 @@ template<class T>
 GTVector<T>::GTVector():
 data_    (NULLPTR),
 n_             (0),
+bsorted_   (FALSE),
 bdatalocal_ (TRUE)
 {
   gindex_(n_, n_, 0, n_-1, 1,  0);
@@ -47,6 +48,7 @@ template<class T>
 GTVector<T>::GTVector(GSIZET n):
 data_    (NULLPTR),
 n_             (n),
+bsorted_   (FALSE),
 bdatalocal_ (TRUE)
 {
   data_ = new T [n_];
@@ -69,6 +71,7 @@ bdatalocal_ (TRUE)
 template<class T>
 GTVector<T>::GTVector(GIndex &gi):
 data_    (NULLPTR),
+bsorted_   (FALSE),
 bdatalocal_ (TRUE)
 {
   gindex_ = gi;
@@ -95,6 +98,7 @@ template<class T>
 GTVector<T>::GTVector(GTVector<T> &obj):
 data_      (NULLPTR),
 n_      (obj.size()),
+bsorted_     (FALSE),
 bdatalocal_   (TRUE)
 {
   data_ = new T [n_];
@@ -126,6 +130,7 @@ template<class T>
 GTVector<T>::GTVector(T *indata, GSIZET n, GSIZET istride):
 data_     (NULLPTR),
 n_      (n/istride),
+bsorted_    (FALSE),
 bdatalocal_  (TRUE)
 {
   data_ = new T [n_];
@@ -160,6 +165,7 @@ template<class T>
 GTVector<T>::GTVector(T *indata, GSIZET n, GSIZET istride, GBOOL blocmgd):
 data_     (NULLPTR),
 n_      (n/istride),
+bsorted_    (FALSE),
 bdatalocal_  (TRUE)
 {
   if ( bdatalocal_ ) {
@@ -195,6 +201,7 @@ template<class T>
 GTVector<T>::GTVector(const GTVector<T> &obj):
 data_      (NULLPTR),
 n_      (obj.size()),
+bsorted_    (FALSE),
 bdatalocal_   (TRUE)
 {
   data_ = new T [n_];
@@ -1545,11 +1552,29 @@ GTVector<T>::multiplicity(T val)
 //assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value || std::is_pointer<T>::value &&
 //  "Invalid template type: multiplicity(T)");
 
+  GLLONG i;
   GSIZET mult=0;
-  for ( GLLONG i=this->gindex_.beg(); i<=this->gindex_.end(); i+=this->gindex_.stride() ) {
-    if ( this->data_[i] == val ) {
-      mult++;
+
+  if ( !bsorted_ ) {
+
+    for ( i=this->gindex_.beg(); i<=this->gindex_.end(); i+=this->gindex_.stride() ) {
+      if ( this->data_[i] == val ) {
+        mult++;
+      }
     }
+
+  }
+  else {
+    
+    i = this->gindex_.beg();
+    while ( val !=  this->data_[i] && i <= this->gindex_.end() ) {
+      i += this->gindex_.stride();
+    }
+    while ( val ==  this->data_[i] && i <= this->gindex_.end() ) {
+      mult++;
+      i += this->gindex_.stride();
+    }
+    
   }
   
   return mult;
@@ -2296,6 +2321,8 @@ GTVector<T>::sortdecreasing()
     quicksortl2s(this->data_, this->gindex_.beg(), this->gindex_.end());
   }
 
+  bsorted_ = TRUE;
+
 } // sortdecreasing (1)
 
 
@@ -2344,6 +2371,7 @@ GTVector<T>::sortdecreasing(GTVector<GSIZET> &isort)
   else {
     quicksortl2s(this->data_, isort.data(), this->gindex_.beg(), this->gindex_.end());
   }
+  bsorted_ = TRUE;
 
 } // sortdecreasing(2)
 
@@ -2383,6 +2411,7 @@ GTVector<T>::sortincreasing()
   else {
     quicksorts2l(this->data_, this->gindex_.beg(), this->gindex_.end());
   }
+  bsorted_ = TRUE;
 
 } // sortincreasing (1)
 
@@ -2434,6 +2463,7 @@ GTVector<T>::sortincreasing(GTVector<GSIZET> &isort)
   else {
     quicksorts2l(this->data_, isort.data(), this->gindex_.beg(), this->gindex_.end());
   }
+  bsorted_ = TRUE;
 
 } // sortincreasing (2)
 

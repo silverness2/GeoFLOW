@@ -220,6 +220,7 @@ inline GSIZET multiplicity_floor(T val, GSIZET *&index, GSIZET &n, T floor);
 
   private:
 
+    GBOOL  bsorted_; // useful for multiplicity computations
     GIndex gindex_; // gen. index object, changeable
     GIndex gindex_keep_; // gen. index object, stored
     T     *data_;
