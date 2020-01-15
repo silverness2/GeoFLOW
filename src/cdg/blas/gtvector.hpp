@@ -198,7 +198,11 @@ inline GSIZET distinct_floor(GSIZET *&index, GSIZET  &n_distinct, T floor, T * c
     #pragma acc routine vector
 inline GSIZET multiplicity(T val);
     #pragma acc routine vector
+inline GSIZET multiplicity_s(T val, GSIZET istart, GSIZET &ifound);
+    #pragma acc routine vector
 inline GSIZET multiplicity(T val, GSIZET *&index, GSIZET &n);
+    #pragma acc routine vector
+inline GSIZET multiplicity_s(T val, GSIZET istart, GSIZET *&index, GSIZET &n, GSIZET &ifound);
     #pragma acc routine vector
 inline GSIZET multiplicity_floor(T val, T floor);
     #pragma acc routine vector
@@ -220,7 +224,6 @@ inline GSIZET multiplicity_floor(T val, GSIZET *&index, GSIZET &n, T floor);
 
   private:
 
-    GBOOL  bsorted_; // useful for multiplicity computations
     GIndex gindex_; // gen. index object, changeable
     GIndex gindex_keep_; // gen. index object, stored
     T     *data_;
