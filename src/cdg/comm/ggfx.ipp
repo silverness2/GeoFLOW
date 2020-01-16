@@ -920,6 +920,8 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
 
 //GComm::Synch(comm_);
   
+  GTimerStart("ggfx_cNS_fill_send_buff");
+
   sendShNodeWrk.resize(gsz[0],1);
 
   // mySharedData column length must be at least 
@@ -939,7 +941,6 @@ itasks.range_reset();
 #if defined(GGFX_TRACE_OUTPUT)
   EH_MESSAGE("GGFX::doCommonNodeSort: Fill send_buff...");
 #endif
-  GTimerStart("ggfx_cNS_fill_send_buff");
 
 
   // Last, fill send buffer with sorted work data:
@@ -964,6 +965,8 @@ itasks.range_reset();
   GPP(comm_, serr << "sendShNodeWrk=" << sendShNodeWrk);
 #endif
 
+  GTimerStart("ggfx_cNS_find_send_back");
+
   mySharedData.set(-1);
   GCommDatatype dtype = T2GCDatatype<GNODEID>();
 
@@ -978,7 +981,6 @@ itasks.range_reset();
 
 //GComm::Synch(comm_);
 
-  GTimerStart("ggfx_cNS_find_send_back");
   // Find tasks to send back to (not including rank_):
   for ( j=0, ns=0; j<iRecvWorkTaskID.size(); j++ ) {
      itask = iRecvWorkTaskID[j];
@@ -988,6 +990,8 @@ itasks.range_reset();
      } 
   }
   GTimerStop("ggfx_cNS_find_send_back");
+
+  GTimerStart("ggfx_cNS_find_recv_from");
 
   GIBuffer isbuff(ns);   // indirection buffer for sends
   GIBuffer itsend(nttmp.data(),ns);
@@ -999,7 +1003,6 @@ itasks.range_reset();
 #if defined(GGFX_TRACE_OUTPUT)
   EH_MESSAGE("GGFX::doCommonNodeSort: Find tasks to receive from...");
 #endif
-  GTimerStart("ggfx_cNS_find_recv_from");
   // Find tasks to recv from (not including rank_):
   for ( j=0, nr=0; j<iSendWorkTaskID.size(); j++ ) {
      itask = iSendWorkTaskID[j];
@@ -1010,6 +1013,7 @@ itasks.range_reset();
   }
   GTimerStop("ggfx_cNS_find_recv_from");
 
+  GTimerStart("ggfx_cNS_find_indirection");
   GIBuffer irbuff(nr);   // indirection buffer for recvs
   GIBuffer itrecv(nttmp.data(),nr);
 
@@ -1020,7 +1024,6 @@ itasks.range_reset();
 
 //GComm::Synch(comm_);
 
-  GTimerStart("ggfx_cNS_find_indirection");
   // Find indirection array for recv buffers:
   for ( j=0, nr=0; j<(nl=iSendWorkTaskID.size()); j++ ) {
      if ( iSendWorkTaskID[j] != rank_ ) {
