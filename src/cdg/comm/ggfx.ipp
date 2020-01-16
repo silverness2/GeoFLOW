@@ -838,7 +838,9 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   ifound = mult = 0;
   nkeep  = npos = 0;
   j             = 0;
+#if defined(GGFX_TRACE_OUTPUT)
   EH_MESSAGE("GGFX::doCommonNodeSort: start size work...");
+#endif
   while ( j < nd ) {
     nid = (*niddata)[ivals[j]];
 #if defined(GGFX_NEW_DOCOMMON)
@@ -880,18 +882,20 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
     j++; 
 #endif
   }
+#if defined(GGFX_TRACE_OUTPUT)
   EH_MESSAGE("GGFX::doCommonNodeSort: size work done.");
+#endif 
 
   GTimerStop("ggfx_cNS_init_work");
 
   GTimerStop("ggfx_cNS_sizes");
 
+#if defined(GGFX_TRACE_OUTPUT)
   EH_MESSAGE("GGFX::doCommonNodeSort: Doing reduction...");
-
+#endif
 
   lsz[0] = npos;
   lsz[1] = iSendWorkTaskID.size();
-
 
 #if 1
   GComm::Synch(comm_);
@@ -910,7 +914,9 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
 
   GTimerStop("ggfx_cNS_sizes_reduction");
 
+#if defined(GGFX_TRACE_OUTPUT)
   EH_MESSAGE("GGFX::doCommonNodeSort: Reduction done.");
+#endif
 
 //GComm::Synch(comm_);
   
