@@ -16,7 +16,8 @@
 
 using namespace std;
 
-#define GGFX_TRACE_OUTPUT
+#undef GGFX_TRACE_OUTPUT
+#define GGFX_NEW_DOCOMMON
 
 //************************************************************************************
 //************************************************************************************
@@ -821,7 +822,7 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   // NOTE: this matrix should not be used any longer
   // as a matrix, since its internal data has been
   // corrupted:
-#if GGFX_NEW_DOCOMMON
+#if defined(GGFX_NEW_DOCOMMON)
   GTimerStart("ggfx_cNS_sort");
   niddata->sortincreasing(isort);
   GTimerStop("ggfx_cNS_sort");
@@ -840,7 +841,7 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   EH_MESSAGE("GGFX::doCommonNodeSort: start size work...");
   while ( j < nd ) {
     nid = (*niddata)[ivals[j]];
-#if GGFX_NEW_DOCOMMON
+#if defined(GGFX_NEW_DOCOMMON)
     istart = ifound + mult;
     mult = niddata->multiplicity_s(nid, j, ifound); // find linear indices for nid
     if ( mult > 1 ) {
