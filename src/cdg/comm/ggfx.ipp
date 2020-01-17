@@ -105,12 +105,18 @@ GBOOL GGFX<T>::init(GNIDBuffer &glob_index)
   GString   serr = "GGFX<T>::init: ";
 
   nglob_index_ = glob_index.size();
+#if defined(GGFX_TRACE_OUTPUT)
+    EH_MESSAGE("GGFX::init: initialize data...");
+#endif
 
 #if defined(_G_DEBUG) || defined(_KEEP_INDICES)
   glob_index_.resize(nglob_index_);
   glob_index_ = glob_index;
 #endif
 
+#if defined(GGFX_TRACE_OUTPUT)
+    EH_MESSAGE("GGFX::init: get dynamic range...");
+#endif
   // Get node id dynamic range:
   GNODEID loc = glob_index.max();
   GComm::Allreduce(&loc, &maxNodeVal_, 1, T2GCDatatype<GNODEID>(), GC_OP_MAX, comm_);
@@ -192,7 +198,7 @@ GBOOL GGFX<T>::initSort(GNIDBuffer  &glob_index)
   GIMatrix    gBinMat;              // For each task, its filled bins and the # nodes in each
   GNIDBuffer  locWork;
 
-#if defined(GGFX_TRACE_OUTPUT)
+#if  1 //defined(GGFX_TRACE_OUTPUT)
   EH_MESSAGE("GGFX::initSort: calling binSort...");
 #endif
 
@@ -752,7 +758,7 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   GSIZET     gsz[2];
   GSIZET     npos, iwhich, nd, nnd, nkeep, nvals=0, nivals, njvals;
   GSIZET     mult, *vvals=0, *ivals=0, *iivals=0, *ijvals=0;
-  GSIZET     ifound, istart;
+  GSIZET     ifound;
   GNODEID    nid;
   GSZBuffer  irow; // holds distinct val row indices
   GSZBuffer  icol ;// holds distinct val col indices
@@ -809,9 +815,11 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   ijvals = new GSIZET [10]; njvals = 10; // largest multiplicity possible (will be resized later)
   vvals  = new GSIZET [10]; 
 
+#if 0
   GTimerStart("ggfx_cNS_distinct_floor");
   nd = irWork.data().distinct_floor(ivals, nvals, -1, nidtmp.data(), itmp.data()); // find distinct node ids
   GTimerStop("ggfx_cNS_distinct_floor");
+
 
 #if 1
   GSIZET nunbal;
@@ -832,6 +840,7 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   }
   EH_MESSAGE("GGFX::doCommonNodeSort: work size extrema done.");
 #endif
+#endif
   
   // Sort irWork data; needed to compute column index 
   // in original matrix.
@@ -839,7 +848,7 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   // NOTE: this matrix should not be used any longer
   // as a matrix, since its internal data has been
   // corrupted:
-#if defined(GGFX_NEW_DOCOMMON)
+#if 1 //defined(GGFX_NEW_DOCOMMON)
   GTimerStart("ggfx_cNS_sort");
   niddata->sortincreasing(isort);
   GTimerStop("ggfx_cNS_sort");
@@ -848,27 +857,26 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
 
   GTimerStart("ggfx_cNS_init_work");
 
-  ikeep.resize(nd);
-  itasks.resize(nd);
-  wmult.resize(nd); // work multiplicity
+  ikeep .resize(irWork.size(1)*irWork.size(2));
+  itasks.resize(irWork.size(1)*irWork.size(2));
+  wmult .resize(irWork.size(1)*irWork.size(2));
   ifound = mult = 0;
   nkeep  = npos = 0;
   j             = 0;
 #if defined(GGFX_TRACE_OUTPUT)
   EH_MESSAGE("GGFX::doCommonNodeSort: start size work...");
 #endif
-  while ( j < nd ) {
-    nid = (*niddata)[ivals[j]];
-#if defined(GGFX_NEW_DOCOMMON)
-    istart = ifound + mult;
-    mult = niddata->multiplicity_s(nid, j, ifound); // find linear indices for nid
+  while ( j < ikeep.size() ) {
+    nid = (*niddata)[j];
+#if  1 // defined(GGFX_NEW_DOCOMMON)
+    
     if ( mult > 1 ) {
       icol.resizem(mult);
       iiitmp.resizem(mult);
       // Recall that matrices are stored col-major, so get matrix 
       // column/tasks where nid is located:
       for ( auto i=0; i<mult; i++ ) icol[i] = isort[ifound+i] / irWork.dim(1); 
-      ikeep[nkeep] = ivals[j]; // keep indices for nodes with mult>1   
+      ikeep[nkeep] = nid; // keep indices for nodes with mult>1   
       nnd = icol.distinctrng(0,mult,1,vvals,ijvals,njvals,iitmp.data(),iiitmp.data()); // find # tasks that own nid
       itasks[nkeep].resize(nnd);
       for ( auto k=0; k<nnd; k++ ) itasks[nkeep][k] = vvals[k];
@@ -886,7 +894,7 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
       // Recall that matrices are stored col-major, so get matrix 
       // column/tasks where nid is located:
       for ( auto i=0; i<mult; i++ ) icol[i] = iivals[i] / irWork.dim(1); 
-      ikeep[nkeep] = ivals[j]; // keep indices for nodes with mult>1   
+      ikeep[nkeep] = nid; // keep indices for nodes with mult>1   
       nnd = icol.distinctrng(0,mult,1,vvals,ijvals,njvals,iitmp.data(),iiitmp.data()); // find # tasks that own nid
       itasks[nkeep].resize(nnd);
       for ( auto k=0; k<nnd; k++ ) itasks[nkeep][k] = vvals[k];
@@ -1084,6 +1092,7 @@ itasks.range_reset();
   if ( vvals  != NULLPTR ) delete [] vvals;
   if ( ivals  != NULLPTR ) delete [] ivals;
   if ( iivals != NULLPTR ) delete [] iivals;
+  if ( ijvals != NULLPTR ) delete [] ijvals;
  
 #if defined(GGFX_TRACE_OUTPUT)
   EH_MESSAGE("GGFX::doCommonNodeSort: done.");

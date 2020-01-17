@@ -16,7 +16,8 @@
 #include "gtmatrix.hpp"
 #include "gcomm.hpp"
 
-#undef GGFX_TRACE_OUTPUT
+
+
 #define _KEEP_INDICES
 
 // GGFX reduction operation defs:
