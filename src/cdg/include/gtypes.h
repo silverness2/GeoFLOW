@@ -225,8 +225,8 @@ const char * const sGStateCompType [] ={"GSC_KINETIC"  ,"GSC_MAGNETIC","GSC_ACTI
   #if defined(_G_USE_GPTL)
     #define GTimerInit(a)   GPTLinitialize()
     #define GTimerFinal(a)  GPTLfinalize()
-    #define GTimerStart(a)  GPTLstart(a)
-    #define GTimerStop(a)   GPTLstop(a)
+    #define GTimerStart(a)  GComm::Synch();GPTLstart(a)
+    #define GTimerStop(a)   GComm::Synch();GPTLstop(a)
     #define GTimerReset(a)  GPTLreset()
   #else
     #define GTimerInit(a) 

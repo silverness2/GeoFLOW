@@ -79,6 +79,7 @@ private:
 
 // Private data:
 GBOOL              bBinSorted_   ;  // have local nodes been bin-sorted?      
+GBOOL              bdologbins_   ;  // do log binning (else, linear)?
 GBOOL              bInit_        ;  // has operator initialization occurred?
 GBOOL              bMultReq_     ;  // is (inverse) multiplicity required (e.g. for smoothing)?
 GC_COMM            comm_         ;  // communicator
