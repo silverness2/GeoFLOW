@@ -232,21 +232,21 @@ inline GSIZET multiplicity_floor(T val, GSIZET *&index, GSIZET &n, T floor);
 
 
   #pragma acc routine vector 
-   GLLONG partitions2l(T *a, GLLONG start, GLLONG end);
+inline GLLONG partitions2l(T *a, GLLONG start, GLLONG end);
   #pragma acc routine vector 
-   GLLONG partitions2l(T *a, GSIZET *isort, GLLONG start, GLLONG end);
+inline GLLONG partitions2l(T *a, GSIZET *isort, GLLONG start, GLLONG end);
   #pragma acc routine vector 
-   GLLONG partitionl2s(T *a, GLLONG start, GLLONG end);
+inline GLLONG partitionl2s(T *a, GLLONG start, GLLONG end);
   #pragma acc routine vector 
-   GLLONG partitionl2s(T *a, GSIZET *isort, GLLONG start, GLLONG end);
+inline GLLONG partitionl2s(T *a, GSIZET *isort, GLLONG start, GLLONG end);
   #pragma acc routine vector 
-   void   quicksortl2s(T *a, GLLONG start, GLLONG end);
+inline void   quicksortl2s(T *a, GLLONG start, GLLONG end);
   #pragma acc routine vector 
-   void   quicksortl2s(T *a, GSIZET *isort, GLLONG start, GLLONG end);
+inline void   quicksortl2s(T *a, GSIZET *isort, GLLONG start, GLLONG end);
   #pragma acc routine vector 
-   void   quicksorts2l(T *a, GLLONG start, GLLONG end);
+inline void   quicksorts2l(T *a, GLLONG start, GLLONG end);
   #pragma acc routine vector 
-   void   quicksorts2l(T *a, GSIZET *isort, GLLONG start, GLLONG end);
+inline void   quicksorts2l(T *a, GSIZET *isort, GLLONG start, GLLONG end);
 
   #pragma acc routine vector 
    GTVector add_impl_(const GTVector &b, std::true_type);
