@@ -2498,38 +2498,29 @@ GTVector<T>::partitions2l(T *a, GLLONG start, GLLONG end)
   assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value || std::is_pointer<T>::value &&
   "Invalid template type: partitions2l");
 
-  GLLONG P_index=start; // P-index indicates the pivot value index
-  GLLONG i;  
-  T pivot=a[end]; // pivot value
-  T t; //t is temporary variable
+        GLLONG i, j;  
+  const GLLONG P_index= start + (end - start)/2; // P-index indicates the pivot value index
+  const T      pivot=a[P_index]; // pivot value
     
+  // Move the mid-point value to the front:
+  std::swap(a[P_index], a[start]);
+
   // Check if array value is less than pivot
   // then place it at left side by swapping 
-  for( i=start; i<end; i++ ) {
-    if ( a[i]<=pivot ) { 
-#if 0
-      t          = a[i];
-      a      [i] = a[P_index];
-      a[P_index] = t;
-#else
-      std::swap(a[i], a[P_index]);
-#endif
-      P_index++;
-    }   
+  i = start + 1;
+  j = end;
+  while ( i <= j ) {
+    while ( i <= j && a[i] <= pivot ) i++;
+    while ( i <= j && a[j] >  pivot ) j--;
+    if ( i < j ) {   
+      std::swap(a    [i], a    [j]);
+    }
   } 
-  
-  // Exchange value of pivot and P-index
-#if 0
-  t          = a[end];
-  a[end]     = a[P_index];
-  a[P_index] = t;
-#else
-  std::swap(a[end], a[P_index]);
-#endif
-    
+  std::swap(a[i-1], a[start]);
+
   // Return the pivot value index
-  return P_index;
-  
+  return i - 1;
+
 } // end, method partitions2l (1)
 
 
@@ -2552,48 +2543,31 @@ GTVector<T>::partitions2l(T *a, GSIZET *isort,  GLLONG start, GLLONG end)
   assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value || std::is_pointer<T>::value &&
   "Invalid template type: partitions2l");
 
-  GLLONG P_index=start; // P-index indicates the pivot value index
-  GLLONG i;  
-  GSIZET it;
-  T pivot=a[end]; // pivot value
-  T t; //t is temporary variable
+        GLLONG i, j;  
+  const GLLONG P_index= start + (end - start)/2; // P-index indicates the pivot value index
+  const T      pivot=a[P_index]; // pivot value
     
+  // Move the mid-point value to the front:
+  std::swap(a    [P_index], a    [start]);
+  std::swap(isort[P_index], isort[start]);
+
   // Check if array value is less than pivot
   // then place it at left side by swapping 
-  for( i=start; i<end; i++ ) {
-    if ( a[i]<=pivot ) { 
-#if 0
-      t               = a[i];
-      a           [i] = a[P_index];
-      a     [P_index] = t;
-
-      it              = isort[i];
-      isort       [i] = isort[P_index];
-      isort [P_index] = it;
-#else
-      std::swap(a    [i], a     [P_index]);
-      std::swap(isort[i], isort[P_index]);
-#endif
-      P_index++;
-    }   
+  i = start + 1;
+  j = end;
+  while ( i <= j ) {
+    while ( i <= j && a[i] <= pivot ) i++;
+    while ( i <= j && a[j] >  pivot ) j--;
+    if ( i < j ) {
+      std::swap(a    [i], a    [j]);
+      std::swap(isort[i], isort[j]);
+    }
   } 
+  std::swap(a    [i-1], a    [start]);
+  std::swap(isort[i-1], isort[start]);
   
-  // Exchange value of pivot and P-index
-#if 0
-  t              = a[end];
-  a        [end] = a[P_index];
-  a    [P_index] = t;
-
-  it             = isort[end];
-  isort    [end] = isort[P_index];
-  isort[P_index] = it;
-#else
-  std::swap(a    [end], a     [P_index]);
-  std::swap(isort[end], isort[P_index]);
-#endif
-    
   // Return the pivot value index
-  return P_index;
+  return i - 1;
   
 } // end, method partitions2l (2)
 
@@ -2614,37 +2588,28 @@ GTVector<T>::partitionl2s(T *a, GLLONG start, GLLONG end)
   assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value || std::is_pointer<T>::value &&
   "Invalid template type: partitionl2s");
 
-  GLLONG P_index=start; // P-index indicates the pivot value index
-  GLLONG i;
-  T pivot=a[end]; // pivot value
-  T t; //t is temporary variable
+        GLLONG i, j;  
+  const GLLONG P_index= start + (end - start)/2; // P-index indicates the pivot value index
+  const T      pivot=a[P_index]; // pivot value
 
-  // Check if array value is greater than pivot
-  // then place it at left side by swapping
-  for( i=start; i<end; i++ ) {
-    if ( a[i]>=pivot ) {
-#if 0
-      t          = a[i];
-      a      [i] = a[P_index];
-      a[P_index] = t;
-#else
-      std::swap(a    [i], a     [P_index]);
-#endif
-      P_index++;
+  // Move the mid-point value to the front:
+  std::swap(a[P_index], a[start]);
+    
+  // Check if array value is less than pivot
+  // then place it at left side by swapping 
+  i = start + 1;
+  j = end;
+  while ( i <= j ) {
+    while ( i <= j && a[i] >= pivot ) i++;
+    while ( i <= j && a[j] <  pivot ) j--;
+    if ( i < j ) {
+      std::swap(a    [i], a    [j]);
     }
-  }
-
-  // Exchange value of pivot and P-index
-#if 0
-  t          = a[end];
-  a[end]     = a[P_index];
-  a[P_index] = t;
-#else
-  std::swap(a[end], a[P_index]);
-#endif
-
+  } 
+  std::swap(a[i-1], a[start]);
+  
   // Return the pivot value index
-  return P_index;
+  return i - 1;
 
 } // end, method partitionl2s (1)
 
@@ -2668,48 +2633,31 @@ GTVector<T>::partitionl2s(T *a, GSIZET *isort, GLLONG start, GLLONG end)
   assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value || std::is_pointer<T>::value &&
   "Invalid template type: partitionl2s");
 
-  GLLONG P_index=start; // P-index indicates the pivot value index
-  GLLONG i;
-  GSIZET it;
-  T pivot=a[end]; // pivot value
-  T t; //t is temporary variable
+        GLLONG i, j;  
+  const GLLONG P_index= start + (end - start)/2; // P-index indicates the pivot value index
+  const T      pivot=a[P_index]; // pivot value
 
-  // Check if array value is greater than pivot
-  // then place it at left side by swapping
-  for( i=start; i<end; i++ ) {
-    if ( a[i]>=pivot ) {
-#if 0
-      t              = a[i];
-      a          [i] = a[P_index];
-      a    [P_index] = t;
-
-      it             = isort[i];
-      isort      [i] = isort[P_index];
-      isort[P_index] = it;
-#else
-      std::swap(a    [i], a     [P_index]);
-      std::swap(isort[i], isort[P_index]);
-#endif
-      P_index++;
+  // Move the mid-point value to the front:
+  std::swap(a    [P_index], a    [start]);
+  std::swap(isort[P_index], isort[start]);
+    
+  // Check if array value is less than pivot
+  // then place it at left side by swapping 
+  i = start + 1;
+  j = end;
+  while ( i <= j ) {
+    while ( i <= j && a[i] >= pivot ) i++;
+    while ( i <= j && a[j] <  pivot ) j--;
+    if ( i < j ) {
+      std::swap(a    [i], a    [j]);
+      std::swap(isort[i], isort[j]);
     }
-  }
-
-  // Exchange value of pivot and P-index
-#if 0
-  t              = a[end];
-  a        [end] = a[P_index];
-  a    [P_index] = t;
-
-  it             = isort[end];
-  isort    [end] = isort[P_index];
-  isort[P_index] = it;
-#else
-  std::swap(a    [end], a     [P_index]);
-  std::swap(isort[end], isort[P_index]);
-#endif
-
+  } 
+  std::swap(a    [i-1], a    [start]);
+  std::swap(isort[i-1], isort[start]);
+  
   // Return the pivot value index
-  return P_index;
+  return i - 1;
 
 } // end, method partitionl2s (2)
 
@@ -2732,11 +2680,11 @@ GTVector<T>::quicksorts2l(T *a, GLLONG start, GLLONG end)
 
   GLLONG P_index;
 
-  if( start < end ) {
-    P_index = partitions2l(a,start,end);
-    quicksorts2l(a,start,P_index-1);
-    quicksorts2l(a,P_index+1,end);
-  }
+  if ( start >= end ) return;
+
+  P_index = partitions2l(a,start,end);
+  quicksorts2l(a,start,P_index-1);
+  quicksorts2l(a,P_index+1,end);
 
 } // end, method quicksorts2l (1)
 
@@ -2763,11 +2711,11 @@ GTVector<T>::quicksorts2l(T *a, GSIZET *isort,  GLLONG start, GLLONG end)
 
   GLLONG P_index;
 
-  if( start < end ) {
-    P_index = partitions2l(a,isort,start,end);
-    quicksorts2l(a,isort,start,P_index-1);
-    quicksorts2l(a,isort,P_index+1,end);
-  }
+  if ( start >= end ) return;
+
+  P_index = partitions2l(a,isort,start,end);
+  quicksorts2l(a,isort,start,P_index-1);
+  quicksorts2l(a,isort,P_index+1,end);
 
 } // end, method quicksorts2l (2)
 
@@ -2791,11 +2739,11 @@ GTVector<T>::quicksortl2s(T *a, GLLONG start, GLLONG end)
 
   GLLONG P_index;
 
-  if( start < end ) {
-    P_index = partitionl2s(a,start,end);
-    quicksortl2s(a,start,P_index-1);
-    quicksortl2s(a,P_index+1,end);
-  }
+  if ( start >= end ) return;
+
+  P_index = partitionl2s(a,start,end);
+  quicksortl2s(a,start,P_index-1);
+  quicksortl2s(a,P_index+1,end);
 
 } // end, method quicksortl2s (1)
 
@@ -2821,11 +2769,11 @@ GTVector<T>::quicksortl2s(T *a, GSIZET *isort, GLLONG start, GLLONG end)
 
   GLLONG P_index;
 
-  if( start < end ) {
-    P_index = partitionl2s(a,isort,start,end);
-    quicksortl2s(a,isort,start,P_index-1);
-    quicksortl2s(a,isort,P_index+1,end);
-  }
+  if ( start >= end ) return;
+
+  P_index = partitionl2s(a,isort,start,end);
+  quicksortl2s(a,isort,start,P_index-1);
+  quicksortl2s(a,isort,P_index+1,end);
 
 } // end, method quicksortl2s (2)
 
