@@ -11,6 +11,7 @@
 
 #include "gmtk.hpp"
 
+#include <algorithm>
 #include <cassert>
 
 
@@ -2506,17 +2507,25 @@ GTVector<T>::partitions2l(T *a, GLLONG start, GLLONG end)
   // then place it at left side by swapping 
   for( i=start; i<end; i++ ) {
     if ( a[i]<=pivot ) { 
+#if 0
       t          = a[i];
       a      [i] = a[P_index];
       a[P_index] = t;
+#else
+      std::swap(a[i], a[P_index]);
+#endif
       P_index++;
     }   
   } 
   
   // Exchange value of pivot and P-index
+#if 0
   t          = a[end];
   a[end]     = a[P_index];
   a[P_index] = t;
+#else
+  std::swap(a[end], a[P_index]);
+#endif
     
   // Return the pivot value index
   return P_index;
@@ -2553,6 +2562,7 @@ GTVector<T>::partitions2l(T *a, GSIZET *isort,  GLLONG start, GLLONG end)
   // then place it at left side by swapping 
   for( i=start; i<end; i++ ) {
     if ( a[i]<=pivot ) { 
+#if 0
       t               = a[i];
       a           [i] = a[P_index];
       a     [P_index] = t;
@@ -2560,11 +2570,16 @@ GTVector<T>::partitions2l(T *a, GSIZET *isort,  GLLONG start, GLLONG end)
       it              = isort[i];
       isort       [i] = isort[P_index];
       isort [P_index] = it;
+#else
+      std::swap(a    [i], a     [P_index]);
+      std::swap(isort[i], isort[P_index]);
+#endif
       P_index++;
     }   
   } 
   
   // Exchange value of pivot and P-index
+#if 0
   t              = a[end];
   a        [end] = a[P_index];
   a    [P_index] = t;
@@ -2572,6 +2587,10 @@ GTVector<T>::partitions2l(T *a, GSIZET *isort,  GLLONG start, GLLONG end)
   it             = isort[end];
   isort    [end] = isort[P_index];
   isort[P_index] = it;
+#else
+  std::swap(a    [end], a     [P_index]);
+  std::swap(isort[end], isort[P_index]);
+#endif
     
   // Return the pivot value index
   return P_index;
@@ -2604,17 +2623,25 @@ GTVector<T>::partitionl2s(T *a, GLLONG start, GLLONG end)
   // then place it at left side by swapping
   for( i=start; i<end; i++ ) {
     if ( a[i]>=pivot ) {
+#if 0
       t          = a[i];
       a      [i] = a[P_index];
       a[P_index] = t;
+#else
+      std::swap(a    [i], a     [P_index]);
+#endif
       P_index++;
     }
   }
 
   // Exchange value of pivot and P-index
+#if 0
   t          = a[end];
   a[end]     = a[P_index];
   a[P_index] = t;
+#else
+  std::swap(a[end], a[P_index]);
+#endif
 
   // Return the pivot value index
   return P_index;
@@ -2651,6 +2678,7 @@ GTVector<T>::partitionl2s(T *a, GSIZET *isort, GLLONG start, GLLONG end)
   // then place it at left side by swapping
   for( i=start; i<end; i++ ) {
     if ( a[i]>=pivot ) {
+#if 0
       t              = a[i];
       a          [i] = a[P_index];
       a    [P_index] = t;
@@ -2658,11 +2686,16 @@ GTVector<T>::partitionl2s(T *a, GSIZET *isort, GLLONG start, GLLONG end)
       it             = isort[i];
       isort      [i] = isort[P_index];
       isort[P_index] = it;
+#else
+      std::swap(a    [i], a     [P_index]);
+      std::swap(isort[i], isort[P_index]);
+#endif
       P_index++;
     }
   }
 
   // Exchange value of pivot and P-index
+#if 0
   t              = a[end];
   a        [end] = a[P_index];
   a    [P_index] = t;
@@ -2670,6 +2703,10 @@ GTVector<T>::partitionl2s(T *a, GSIZET *isort, GLLONG start, GLLONG end)
   it             = isort[end];
   isort    [end] = isort[P_index];
   isort[P_index] = it;
+#else
+  std::swap(a    [end], a     [P_index]);
+  std::swap(isort[end], isort[P_index]);
+#endif
 
   // Return the pivot value index
   return P_index;
