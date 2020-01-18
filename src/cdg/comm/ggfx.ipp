@@ -850,7 +850,7 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   // corrupted:
 #if 1 //defined(GGFX_NEW_DOCOMMON)
   GTimerStart("ggfx_cNS_sort");
-  niddata->sortincreasing(isort);
+  niddata->sortdecreasing(isort);
   GTimerStop("ggfx_cNS_sort");
 #endif
 
@@ -866,7 +866,7 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
 #if defined(GGFX_TRACE_OUTPUT)
   EH_MESSAGE("GGFX::doCommonNodeSort: start size work...");
 #endif
-  while ( j < ikeep.size() ) {
+  while ( j < ikeep.size() && (*niddata)[j] > -1 ) {
     nid = (*niddata)[j];
 #if  1 // defined(GGFX_NEW_DOCOMMON)
     
