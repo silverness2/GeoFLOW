@@ -181,7 +181,7 @@ int main(int argc, char **argv)
     GPTLpr_file("timings.txt");
 //  GPTLpr(GComm::WorldRank(comm_));
 //  GPTLpr(0);
-//  GPTLpr_summary();
+    GPTLpr_summary();
 #endif
     GTimerFinal();
 
@@ -668,6 +668,7 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
   std::vector<GFTYPE>            pstd;
   PropertyTree                   gtree;
 
+
   sgrid = ptree.getValue<GString>("grid_type");
   gtree = ptree.getPropertyTree(sgrid);
 
@@ -680,6 +681,7 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
   delta.resize(GDIM);
   xnodes = &grid.xNodes();
   glob_indices.resize(grid_->ndof());
+
 
   // If (x, y, z) < epsilon, set to 0:
   GMTK::zero(*xnodes);
@@ -711,7 +713,7 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
     delta[0] = 0.5*grid.minlength()/(rad*pmax*pmax);
     delta[1] = grid.minlength()/(rad*pmax*pmax);
     for ( auto j=0; j<dX.size(); j++ ) dX[j] = 0.025 *delta[j];
-    gmorton.setType(GMORTON_STACKED);
+//  gmorton.setType(GMORTON_STACKED);
 //  gmorton.setType(GMORTON_INTERLEAVE);
 #else
     P0.resize(GDIM+1);
@@ -759,7 +761,7 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
   // Integralize *all* internal nodes
   // using Morton indices:
 //gmorton.setDoLog(TRUE);
-//gmorton.setType(GMORTON_STACKED);
+  gmorton.setType(GMORTON_STACKED);
 //gmorton.setType(GMORTON_INTERLEAVE);
   gmorton.setIntegralLen(P0,dX);
   gmorton.key(glob_indices, xkey);
