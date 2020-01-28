@@ -1,10 +1,9 @@
 //==================================================================================
-// Module       : gposixio_observer.ipp
-// Date         : 3/18/19 (DLR)
-// Description  : Observer object for carrying out simple POSIX-based  
-//                binary output.
-// Copyright    : Copyright 2019. Colorado State University. All rights reserved
-// Derived From : IOBaseType.
+// Module       : gio.hpp
+// Date         : 1/20/20 (DLR)
+// Description  : GIO object encapsulating methods for POSIX and collective IO
+// Copyright    : Copyright 2020. Colorado State University. All rights reserved.
+// Derived From : IOBase.
 //==================================================================================
 
 //**********************************************************************************
@@ -27,7 +26,26 @@ nfname_                        (0)
 { 
   traits_  = &traits;
   grid_    = &grid;
+#if !defined(_G_USE_MPI)
+  assert(trants_->io_type == GIO_COLL && "Collective IO only allowed if MPI is used");
+#endif
+
 } // end of constructor (1) method
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : Destructor method 
+// DESC   :
+// ARGS   : none.
+//**********************************************************************************
+template<typename IOType>
+GIO<IOType>::~GIO()
+{ 
+#if defined(_G_USE_MPI)
+  MPI_Type_free( &mpi_state_type_);
+#endif
+} // end of destructor method
 
 
 //**********************************************************************************
@@ -45,8 +63,18 @@ template<typename IOType>
 void GIO<IOType>::write_state_impl(std::string filename, StateInfo &info, State &u)
 {
 
+  switch ( traits_->io_type ) {
 
-  
+    case GIO_POSIX:
+      write_state_posix(info, u);
+      break;
+    case GIO_COLL:
+      write_state_coll(info, u);
+      break;
+    default :
+      assert(FALSE);
+  }
+
 } // end of method write_state_impl
 
 
@@ -65,6 +93,17 @@ template<typename IOType>
 void GIO<IOType>::read_state_impl(std::string filename, StateInfo &info, State &u)
 {
 
+  switch ( traits_->io_type ) {
+
+    case GIO_POSIX:
+      read_state_posix(info, u);
+      break;
+    case GIO_COLL:
+      read_state_coll(info, u);
+      break;
+    default :
+      assert(FALSE);
+  }
 
 
 } // end of method read_state_impl
@@ -82,11 +121,139 @@ template<typename IOType>
 void GIO<IOType>::init()
 {
 
-  if ( bInit_ ) return;
+  if ( traits_->io_type != GIO_COLL ) {
+    bInit_ = TRUE;
+    return; // nothing to do
+  }
 
-  bInit_ = TRUE;
+  GSIZET           ndof  =grid_->ndof();
+  GSIZET           nelems=grid_->nelems();
+  GTVector<GSIZET> extent;
+
+  extent.resize(GComm::WorldSize(comm_));
+ 
+#if defined(_G_USE_MPI)
+
+
+  GComm::Allgather(&ndof, 1, T2GCDatatype<GSIZET>, extent.data(), 1, T2GCDatatype<GSIZET>, comm_);
+
+  GINT myrank = GComm::WorldRank(comm_);
+  if ( myrank == 0 ) {
+    state_disp_ = 0;
+    state_extent_ = extent[myrank];
+  }
+  else {
+    state_disp_   = extent.sum(0,myrank)*sizeof(GFTYPE);
+    state_extent_ = extent[myrank]*sizeof(GFTYPE);
+  }
+
+  MPI_Aint lowerbnd=0;
+  MPI_Type_create_resized(T2GCDatatype<GFTYPE>, lowerbnd, state_extent_, &mpi_state_type_);
+  MPI_Type_commit(&mpi_state_type_);
+
+#endif
+
 
 } // end of method init
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : write_state_coll
+// DESC   : Do simple GIO collective output of state. If traits::multivar=TRUE,
+//          then all state components are writtent to the same file. If
+//          traits::multivar=FALSE, then each state component is
+//          written to its own file. Each file is tagged s.t.:
+//             svar.TTTTTT.out,
+//          where TTTTTT is the time tag. When traits::multivar=FALSE,
+//          info::svar constains the file name prefix for each component, and
+//          if traits::multivar=TRUE, then info::svar[0] contains the filename
+//          prefix. If there is an insufficient number of svar, then 
+//          defaults are used.
+//          Note: if info.sttype > 0, then we assume we are printing a 
+//          grid.
+// ARGS   : info: StateInfo structure
+//          u     : state
+// RETURNS: none
+//**********************************************************************************
+template<typename IOType>
+void GIO<IOType>::write_state_coll(StateInfo &info, const State &u)
+{
+#if defined(_G_USE_MPI)
+
+    GString        serr = "write_state_coll: ";
+    GINT           myrank = GComm::WorldRank(comm_);
+    GSIZET         nb, nc, nd;
+    std::vector<GString> 
+                   gpref = {"x","y","z"};
+    GTVector<GTVector<GFTYPE>>
+                  *xnodes = &grid_->xNodes();
+    GElemList     *elems  = &grid_->elems();
+    std::stringstream 
+                   format;
+
+    MPI_Offset     disp;
+    MPI_File       fh;
+    MPI_Status     status
+
+    // Required number of coord vectors:
+    nc = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
+
+    traits.dim  = GDIM;
+    info.nelems = grid_->nelems(); // local nelems for this task
+
+    info.gtype    = grid_->gtype();
+
+    assert(nc ==  xnodes->size()
+        && "Incompatible grid or coord  dimensions");
+
+    // Build format string:
+    resize(traits.wfile);
+    if ( info.sttype ==0 ) { // is a physical state
+      format    << "%s/%s.%0" << traits.wtime << "d.%0" << traits.wtask << "d.out";
+    }
+    else {                   // is a grid file
+      format    << "%s/%s.%0" << traits.wtask << "d.out";
+    }
+
+    // Set porder vector depending on version:
+    info.porder.resize(traits.ivers == 0 ? 1 : traits.nelems, GDIM);
+    for ( auto i=0; i<info.porder.size(1); i++ )  { // for each element
+      for ( auto j=0; j<info.porder.size(2); j++ ) info.porder(i,j) = (*elems)[i]->order(j);
+    }
+
+    nbheader_ = sz_header(info, *traits_);
+
+    // Cycle over all fields, and write:
+    svarname_.str("");
+    svarname_.clear();
+    if ( !traits_->multivar ) { // print each comp to sep. file
+      for ( auto j=0; j<u.size(); j++ ) {
+        assert(u[j].size() > 0 && "Invalid state component");
+        if ( info.svars.size() < u.size() ||  into.svars[j].length() <= 0 ) {
+          if ( info.sttype ==0 ) { // is a physical state
+            svarname_ << default_state_name_pref_ << j;
+          }
+          else {
+            svarname_ << gpref[j] << default_grid_name_pref_;
+          }
+        }
+        sprintf(cfname_, format.str().c_str(), info.odir.c_str(),
+                svarname_.str().c_str(), traits.index, myrank);
+        fname_.assign(cfname_);
+        MPI_File_open(comm_, fname_.c_str(), MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
+        disp = nbheader_ + state_disp_;
+        MPI_File_set_view(fh, disp, T2GCDatatype<GFTYPE>, mpi_state_type_, NULL, MPI_INFO_NULL);
+        MPI_File_write(fh, u[j]->data(), 1, mpi_state_type_, MPI_STATUS_IGNORE);
+        MPI_File_close(&fh);
+      }
+    }
+    else {                       // print each comp to same file
+    } 
+
+#endif
+
+} // end, write_state_coll
 
 
 //**********************************************************************************
@@ -98,6 +265,9 @@ void GIO<IOType>::init()
 //          where TTTTTT is the time tag, and PPPPP is the task number. 
 //          svar is the name of each state field, provided in info structre. 
 //          If there aren't enough svar specified, then defaults are used.
+//          Note: if info.sttype > 0, then we assume we are printing a 
+//          grid, and the format is the same as above but without the time 
+//          index tag.
 // ARGS   : info: StateInfo structure
 //          u     : state
 // RETURNS: none
@@ -108,6 +278,8 @@ void GIO<IOType>::write_state_posix(StateInfo &info, const State &u)
     GString        serr = "write_state_posix: ";
     GINT           myrank = GComm::WorldRank(comm_);
     GSIZET         nb, nc, nd;
+    std::vector<GString> 
+                   gpref = {"x","y","z"};
     GTVector<GTVector<GFTYPE>>
                   *xnodes = &grid_->xNodes();
     GElemList     *elems  = &grid_->elems();
@@ -116,23 +288,25 @@ void GIO<IOType>::write_state_posix(StateInfo &info, const State &u)
 
     // Required number of coord vectors:
     nc = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
-
-    // Do some checks:
-    assert(svars.size() >=  iu.size()
-        && "Insufficient number of state variable names specified");
-
+    if ( info.sttype !=0 ) { // is a grid file 
+      assert(nc ==  xnodes->size()
+          && "Incompatible grid or coord  dimensions");
+    }
     
     traits.dim  = GDIM;
     info.nelems = grid_->nelems(); // local nelems for this task
 
     info.gtype    = grid_->gtype();
 
-    assert(nc ==  xnodes->size()
-        && "Incompatible grid or coord  dimensions");
 
     // Build format string:
     resize(traits.wfile);
-    format    << "%s/%s.%0" << traits.wtime << "d.%0" << traits.wtask << "d.out";
+    if ( info.sttype ==0 ) { // is a physical state
+      format    << "%s/%s.%0" << traits.wtime << "d.%0" << traits.wtask << "d.out";
+    }
+    else {                   // is a grid file
+      format    << "%s/%s.%0" << traits.wtask << "d.out";
+    }
 
     // Set porder vector depending on version:
     info.porder.resize(traits.ivers == 0 ? 1 : traits.nelems, GDIM);
@@ -144,100 +318,22 @@ void GIO<IOType>::write_state_posix(StateInfo &info, const State &u)
     svarname_.str("");
     svarname_.clear();
     for ( auto j=0; j<u.size(); j++ ) {
+      assert(u[j].size() > 0 && "Invalid state component");
       if ( info.svars.size() < u.size() ||  into.svars[j].length() <= 0 ) {
-        svarname_ = default_state_name_pref_ << j;
+        if ( info.sttype ==0 ) { // is a physical state
+          svarname_ << default_state_name_pref_ << j;
+        }
+        else {
+          svarname_ << gpref[j] << default_grid_name_pref_;
+        }
       }
       sprintf(cfname_, format.str().c_str(), info.odir.c_str(),
               svarname_.str().c_str(), traits.index, myrank);
-      assert(u[j].size() > 0 && "Invalid state component index");
       fname_.assign(cfname_);
       write_posix<Value>(fname_, traits, *u[j]);
     }
 
 } // end, write_state_posix
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : write_grid_posix
-// DESC   : Do simple GIO POSIX output of grid. Each grid component is
-//          taken to be a 'state' compoment, and is written to its own 
-//          file
-//             svar.PPPPP.out,
-//          where PPPPP is the task number. Note: there is no time tag, as
-//          grid is assumed not to change.  svar is the name of each 
-//          grid component field, provided in info structre. 
-//          If there aren't enough svar specified, then defaults are used.
-// ARGS   : info : StateInfo structure
-// RETURNS: none
-//**********************************************************************************
-template<typename IOType>
-void GIO<IOType>::write_grid_posix(StateInfo &info) 
-{
-    GString serr ="write_grid_posix: ";
-    GINT           myrank = GComm::WorldRank(comm_);
-    GSIZET         nb, nc, nd;
-    std::vector<GString> 
-                   gpref = {"x","y","z"};
-    GTVector<GTVector<GFTYPE>>
-                  *xnodes = &grid_->xNodes();
-    GElemList     *elems  = &grid_->elems();
-    std::stringstream format;
-
-    // Required number of coord vectors:
-    nc = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
-
-    // Do some checks:
-    assert(nc ==  xnodes->size()
-        && "Incompatible grid or coord  dimensions");
-
-    traits.dim    = GDIM;
-    info  .nelems = grid.nelems();
-    info  .gtype  = grid_->gtype();
-
-
-    // Build format string:
-    resize(traits.wfile);
-    format    << "%s/%s.%0" << traits.wtask << "d.out";
-    // Set porder vector depending on version:
-    traits.porder.resize(traits.ivers == 0 ? 1: info.nelems, GDIM);
-    for ( auto i=0; i<traits.porder.size(1); i++ )  { // for each element
-      for ( auto j=0; j<traits.porder.size(2); j++ ) traits.porder(i,j) = (*elems)[i]->order(j);
-    }
-
-    // Cycle over all coords, and write:
-    sgridname_.str("");
-    sgridname_.clear();
-    for ( auto j=0; j<xnodes->size(); j++ ) {
-      if ( info.svars.size() < u.size() ||  into.svars[j].length() <= 0 ) {
-        sgridname_ = gpref[j] << default_grid_name_pref_;
-      }
-      sprintf(cfname_, format.str().c_str(), info.odir.c_str(), svars[j].c_str(),  myrank);
-      fname_.assign(cfname_);
-      write_posix<GFTYPE>(fname_, info, (*xnodes)[j]);
-    }
-
-#if defined(_G_DEBUG) 
-    // Write multiplicity:
-    sprintf(cfname_, format.str().c_str(), info.odir.c_str(), "mult",  myrank);
-    fname_.assign(cfname_);
-    write_posix<GFTYPE>(fname_, info, grid.get_ggfx().get_mult());
- 
-    GPP(comm_,
-                "mult_min="  << grid.get_ggfx().get_mult().min() 
-             << " mult_max=" << grid.get_ggfx().get_mult().max() );   
-    if ( GComm::WorldRank(comm_) == 0 ) {
-      cout << "write: mult=" << grid.get_ggfx().get_mult() << endl;
-    }
-
-    // Write glob indices:
-    sprintf(cfname_, format.str().c_str(), info.odir.c_str(), "glob_index",  myrank);
-    fname_.assign(cfname_);
-    write_posix<GNODEID>(fname, info, grid.get_ggfx().glob_index_);
-    
-#endif
-
-} // end, write_grid_posix
 
 
 //**********************************************************************************
@@ -454,6 +550,32 @@ GSIZET GIO<IOType>::read_header(GString filename, StateInfo &info, Traits &trait
     return nb;
 
 } // end, read_header
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : sz_header
+// DESC   : Get header size in bytes
+// ARGS   : 
+//          info     : StateInfo structure, filled with what header provides
+//          traits   : object's traits
+// RETURNS: no. header bytes 
+//**********************************************************************************
+template<typename IOType>
+GSIZET GIO<IOType>::sz_header(StateInfo &info, Traits &traits)
+{
+
+    GString serr ="sz_header: ";
+    GSIZET nd, numr;
+  
+    // Get no. bytes in header (should agree with read_posx, write_posix):
+    numr = traits.ivers == 0 ? 1 : info.nelems;
+    numr *= traits.dim;
+    nd = (numr+3)*sizeof(GINT) + 2*sizeof(GSIZET) + sizeof(GFTYPE);
+
+    return nd;
+
+} // end, sz_header
 
 
 //**********************************************************************************

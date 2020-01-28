@@ -44,9 +44,9 @@ public:
           GINT        dim     = GDIM;     // problem dimension
         }; 
 
-        struct GIOStateTraits {
-          GINT        gtype   = 0;        // check src/cdg/include/gtypes.h
+        struct GIOStateInfo {
           GINT        sttype  = 1;        // state type index (grid=0 or state=1)
+          GINT        gtype   = 0;        // check src/cdg/include/gtypes.h
           GSIZET      index   = 0;        // time index
           GSIZET      nelems  = 0;        // num elems
           GSIZET      cycle   = 0;        // continuous time cycle
@@ -70,7 +70,7 @@ public:
 
                            GIO() = delete;
                            GIO(Grid &grid, Traits &traits, GC_COMM comm);
-                          ~GIO() = default;
+                          ~GIO(); 
                            GIO(const GIO &a) = default;
                            GIO &operator=(const GIO &bu) = default;
 
@@ -82,21 +82,29 @@ private:
         void               init(const Time &t, const State &u);
         void               write_state_posix(StateInfo &info, const State  &u);
         void               read_state_posix (StateInfo &info,       State  &u);
-        void               write_grid_posix (StateInfo &info);
+        void               write_state_coll (StateInfo &info, const State  &u);
+        void               read_state_coll  (StateInfo &info,       State  &u);
         GSIZET             write_posix(GString filename, StateInfo &info, const GTVector<Value> &u);
         GSIZET             read_posix (GString filename, StateInfo &info,       GTVector<Value> &u);
         GSIZET             read_header(GString filename, StateInfo &info, Traits &traits);
+        GSIZET             sz_header(StateInfo &info, Traits &traits);
         void               resize(GINT n);
 
 
 // Private data:
         GBOOL              bInit_;      // is initialized?
         GINT               nfname_;
+        GSIZET             nbheader_;   // # bytes in header
+        GSIZET             nbfield_;    // # bytes in each state component
+        #if defined(_G_USE_MPI)
+          MPI_Datatype     mpi_state_type_;
+          MPI_Offset       state_disp_;
+          MPI_Aint         state_extent_;
+        #endif
         GC_COMM            comm_;
         GString            default_state_name_pref_;
         GString            default_grid_name_pref_;
         std::stringstream  svarname_;
-        std::stringstream  sgridname_;
         GString            fname_;
         char              *cfname_;
         Traits            *traits_;
