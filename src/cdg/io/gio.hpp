@@ -87,7 +87,7 @@ private:
         GSIZET             write_posix(GString filename, StateInfo &info, const GTVector<Value> &u);
         GSIZET             read_posix (GString filename, StateInfo &info,       GTVector<Value> &u);
         GSIZET             read_header_posix(GString filename, StateInfo &info, Traits &traits);
-        GSIZET             write_header_posix(GString filename, StateInfo &info, Traits &traits);
+        GSIZET             write_header_posix(FILE*, StateInfo &info, Traits &traits);
         GSIZET             sz_header(StateInfo &info, Traits &traits);
         void               resize(GINT n);
 
