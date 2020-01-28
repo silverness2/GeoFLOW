@@ -1422,6 +1422,7 @@ while(1){};
 
 } // end, pointProd
 
+
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : sum 
@@ -1431,12 +1432,34 @@ while(1){};
 //**********************************************************************************
 template<class T>
 T
-GTVector<T>::sum() 
+GTVector<T>::sum()
 {
   T      sum=static_cast<T>(0);
   GLLONG j;
 
   for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+    sum +=  this->data_[j];
+  }
+
+  return sum;
+} // end, sum
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : sum 
+// DESC   : Sum vector contents and return
+// ARGS   : ibeg, iend: starting and stopping index
+// RETURNS: T sum
+//**********************************************************************************
+template<class T>
+T
+GTVector<T>::sum(GLLONG ibeg, GLLONG iend) 
+{
+  T      sum=static_cast<T>(0);
+  GLLONG j;
+  assert(ibeg >= this->gindex_.beg() && iend <= this->gindex_.end());
+  for ( j=ibeg; j<=iend; j+=this->gindex_.stride() ) {
     sum +=  this->data_[j]; 
   }
 

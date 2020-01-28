@@ -162,6 +162,8 @@ template <class T> class GTVector
     #pragma acc routine vector
         T sum();
     #pragma acc routine vector
+        T sum(GSIZET ibeg, GSIZET iend);
+    #pragma acc routine vector
         T infnorm();
     #pragma acc routine vector
         T Eucnorm();
