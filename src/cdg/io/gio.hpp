@@ -17,6 +17,11 @@
 using namespace geoflow::pdeint;
 using namespace std;
 
+#if defined(_G_USE_MPI)
+  typedef MPI_File* GFPTR;
+#else
+  typedef FILE* GFPTR;
+#endif
 
 template<typename IOType>
 class GIO : public IOBase<IOType>
@@ -86,8 +91,8 @@ private:
         void               read_state_coll  (StateInfo &info,       State  &u);
         GSIZET             write_posix(GString filename, StateInfo &info, const GTVector<Value> &u);
         GSIZET             read_posix (GString filename, StateInfo &info,       GTVector<Value> &u);
-        GSIZET             read_header_posix(GString filename, StateInfo &info, Traits &traits);
-        GSIZET             write_header_posix(FILE*, StateInfo &info, Traits &traits);
+        GSIZET             read_header(GString filename, StateInfo &info, Traits &traits);
+        GSIZET             write_header(GFPTR, StateInfo &info, Traits &traits);
         GSIZET             sz_header(StateInfo &info, Traits &traits);
         void               resize(GINT n);
 

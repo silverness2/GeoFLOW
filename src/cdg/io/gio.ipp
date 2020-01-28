@@ -319,7 +319,7 @@ GSIZET GIO<IOType>::write_posix(GString filename, StateInfo &info, const GTVecto
     }
 
     // Write header: dim, numelems, poly_order:
-    nb = write_header_posix(fp, info);
+    nb = write_header<FILE*>(fp, info);
  
     assert(nb == sz_header(info,*traits_));
 
@@ -351,7 +351,7 @@ GSIZET GIO<IOType>::read_posix(GString filename, StateInfo &info, GTVector<T> &u
     GSIZET    nb, nd, nh, nt;
     Traits    objtraits;
     
-    nh  = read_header_posix(filename, info, objtraits);
+    nh  = read_header(filename, info, objtraits);
 
     assert(objtraits.ivers == traits_->ivers
                                            && "Incompatible file version number");
@@ -400,24 +400,27 @@ GSIZET GIO<IOType>::read_posix(GString filename, StateInfo &info, GTVector<T> &u
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : write_header_posix
-// DESC   : Write GIO file header
+// METHOD : write_header
+// DESC   : Write GIO file header. Note file pointer position 
+//          may be changed on exit.
 // ARGS   : 
 //          fp       : file pointer (must be opened). Not closed here.
 //          info     : StateInfo structure, filled with what header provides
 // RETURNS: no. header bytes written
 //**********************************************************************************
 template<typename IOType>
-GSIZET GIO<IOType>::write_header_posix(FILE *fp, StateInfo &info)
+template<typename GFPTR>
+GSIZET GIO<IOType>::write_header(GFPTR fp, StateInfo &info)
 {
-
-    GString serr ="write_header_posix: ";
+    GString serr ="write_header: ";
     GSIZET nb, nd, nh;
   
     assert(fp != NULLPTR && "error opening file");
 
     nb = 0;
   
+    if ( traits_->io_type == GIO_POSIX ) {
+    fseek(fp, 0, SEEK_SET);
     // Write header: dim, numelems, poly_order:
     nh=fwrite(&traits_->ivers     , sizeof(GINT)  ,    1, fp); // GIO version number
       nb += nh*sizeof(GINT);
@@ -435,15 +438,36 @@ GSIZET GIO<IOType>::write_header_posix(FILE *fp, StateInfo &info)
       nb += nh*sizeof(GSIZET);
     nh=fwrite(&info.time          , sizeof(GFTYPE),    1, fp); // time stamp
       nb += nh*sizeof(GFTYPE);
+  }
+  else {
+
+#if defined(_G_USE_MPI)
+      MPI_Status     status
+      MPI_File_seek(fh, 0, MPI_SEEK_SET); // set to 0-displacement
+      
+      nh = MPI_file_write(fh, &traits.ivers     , 1   , T2GCDatatype  <GINT>(), &status); nb += nh*sizeof(GINT);
+      nh = MPI_file_write(fh, &traits.dim       , 1   , T2GCDatatype  <GINT>(), &status); nb += nh*sizeof(GINT);
+      nh = MPI_file_write(fh, &info.nelems      , 1   , T2GCDatatype<GSIZET>(), &status); nb += nh*sizeof(GSIZET);
+      numr = traits.ivers == 0 ? 1 : info.nelems;
+      info.porder.resize(numr,traits.dim);
+      numr = info.porder.size(1)*info.porder.size(2);
+      nh = MPI_file_write(fh, info.porder.data().data()
+                                               , numr, T2GCDatatype   <GINT>(), &status); nb += nh*sizeof(GINT);
+      nh = MPI_file_write(fh, &info.gtype       , 1   , T2GCDatatype  <GINT>(), &status); nb += nh*sizeof(GINT);
+      nh = MPI_file_write(fh, &info.cycle       , 1   , T2GCDatatype<GSIZET>(), &status); nb += nh*sizeof(GSIZET);
+      nh = MPI_file_write(fh, &info.time        , 1   , T2GCDatatype<GFTYPE>(), &status); nb += nh*sizeof(GFTYPE);
+
+#endif
+  }
   
     return nb;
 
-} // end, write_header_posix
+} // end, write_header
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : read_header_posix
+// METHOD : read_header
 // DESC   : Read GIO file header
 // ARGS   : 
 //          filename : file name (fully resolved)
@@ -452,36 +476,62 @@ GSIZET GIO<IOType>::write_header_posix(FILE *fp, StateInfo &info)
 // RETURNS: no. header bytes read
 //**********************************************************************************
 template<typename IOType>
-GSIZET GIO<IOType>::read_header_posix(GString filename, StateInfo &info, Traits &traits)
+GSIZET GIO<IOType>::read_header(GString filename, StateInfo &info, Traits &traits)
 {
 
-    GString serr ="read_header_posix: ";
+    GString serr ="read_header: ";
     GSIZET nb, nd, nh, numr;
   
-    // Read field data:
-    FILE *fp;
     nb = 0;
-    fp = fopen(filename.c_str(),"rb");
-    assert(fp != NULLPTR && "gio.cpp: error opening file");
+    if ( traits_->io_type == GIO_POSIX ) {
+      // Read field data:
+      FILE *fp;
+      fp = fopen(filename.c_str(),"rb");
+      assert(fp != NULLPTR && "gio.cpp: error opening file");
+    
+      // Read header: 
+      nh = fread(&traits.ivers     , sizeof(GINT)  ,    1, fp); nb += nh*sizeof(GINT);
+      nh = fread(&traits.dim       , sizeof(GINT)  ,    1, fp); nb += nh*sizeof(GINT);
+      nh = fread(&info.nelems      , sizeof(GSIZET),    1, fp); nb += nh*sizeof(GSIZET);
+      numr = traits.ivers == 0 ? 1 : info.nelems;
+      info.porder.resize(numr,traits.dim);
+      numr = info.porder.size(1)*info.porder.size(2);
+      nh = fread(info.porder.data().data()
+                                   , sizeof(GINT)  , numr, fp); nb += nh*sizeof(GINT);
+      nh = fread(&info.gtype       , sizeof(GINT)  ,    1, fp); nb += nh*sizeof(GINT);
+      nh = fread(&info.cycle       , sizeof(GSIZET),    1, fp); nb += nh*sizeof(GSIZET);
+      nh = fread(&info.time        , sizeof(GFTYPE),    1, fp); nb += nh*sizeof(GFTYPE);
+    
+      fclose(fp);
   
-    // Read header: 
-    nh = fread(&traits.ivers       , sizeof(GINT)  ,    1, fp); nb += nh*sizeof(GINT);
-    nh = fread(&traits.dim         , sizeof(GINT)  ,    1, fp); nb += nh*sizeof(GINT);
-    nh = fread(&info.nelems        , sizeof(GSIZET),    1, fp); nb += nh*sizeof(GSIZET);
-    numr = traits.ivers == 0 ? 1 : info.nelems;
-    info.porder.resize(numr,traits.dim);
-    numr = info.porder.size(1)*info.porder.size(2);
-    nh = fread(info.porder.data().data()
-                                 , sizeof(GINT)  , numr, fp); nb += nh*sizeof(GINT);
-    nh = fread(&info.gtype       , sizeof(GINT)  ,    1, fp); nb += nh*sizeof(GINT);
-    nh = fread(&info.cycle       , sizeof(GSIZET),    1, fp); nb += nh*sizeof(GSIZET);
-    nh = fread(&info.time        , sizeof(GFTYPE),    1, fp); nb += nh*sizeof(GFTYPE);
-  
-    fclose(fp);
-  
-    // Get no. bytest that should have been read:
+    }
+    else {
+#if defined(_G_USE_MPI)
+      MPI_File       fh;
+      MPI_Status     status
+      MPI_File_open(comm_, fname_.c_str(), MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
+//    MPI_File_seek(fh, 0, MPI_SEEK_SET); // set to 0-displacement
+      
+      // Read header: 
+      nh = MPI_file_read(fh, &traits.ivers     , 1   , T2GCDatatype<GINT>  (), &status); nb += nh*sizeof(GINT);
+      nh = MPI_file_read(fh, &traits.dim       , 1   , T2GCDatatype<GINT>  (), &status); nb += nh*sizeof(GINT);
+      nh = MPI_file_read(fh, &info.nelems      , 1   , T2GCDatatype<GSIZET>(), &status); nb += nh*sizeof(GSIZET);
+      numr = traits.ivers == 0 ? 1 : info.nelems;
+      info.porder.resize(numr,traits.dim);
+      numr = info.porder.size(1)*info.porder.size(2);
+      nh = MPI_file_read(fh, info.porder.data().data()
+                                               , numr, T2GCDatatype  <GINT>(), &status); nb += nh*sizeof(GINT);
+      nh = MPI_file_read(fh, &info.gtype       , 1   , T2GCDatatype<GINT>  (), &status); nb += nh*sizeof(GINT);
+      nh = MPI_file_read(fh, &info.cycle       , 1   , T2GCDatatype<GSIZET>(), &status); nb += nh*sizeof(GSIZET);
+      nh = MPI_file_read(fh, &info.time        , 1   , T2GCDatatype<GFTYPE>(), &status); nb += nh*sizeof(GFTYPE);
+
+      MPI_File_close(fh); 
+#endif
+
+    } 
+
+    // Check number read vs expected value:
     nd = (numr+3)*sizeof(GINT) + 2*sizeof(GSIZET) + sizeof(GFTYPE);
-  
     if ( nb != nd ) {
       cout << serr << "Incorrect amount of data read from file: " << fname << endl;
       exit(1);
@@ -489,7 +539,7 @@ GSIZET GIO<IOType>::read_header_posix(GString filename, StateInfo &info, Traits 
 
     return nb;
 
-} // end, read_header_posix
+} // end, read_header
 
 
 //**********************************************************************************
