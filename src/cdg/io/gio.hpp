@@ -86,7 +86,8 @@ private:
         void               read_state_coll  (StateInfo &info,       State  &u);
         GSIZET             write_posix(GString filename, StateInfo &info, const GTVector<Value> &u);
         GSIZET             read_posix (GString filename, StateInfo &info,       GTVector<Value> &u);
-        GSIZET             read_header(GString filename, StateInfo &info, Traits &traits);
+        GSIZET             read_header_posix(GString filename, StateInfo &info, Traits &traits);
+        GSIZET             write_header_posix(GString filename, StateInfo &info, Traits &traits);
         GSIZET             sz_header(StateInfo &info, Traits &traits);
         void               resize(GINT n);
 
@@ -96,6 +97,7 @@ private:
         GINT               nfname_;
         GSIZET             nbheader_;   // # bytes in header
         GSIZET             nbfield_;    // # bytes in each state component
+        GSIZET             nbgdof_;     // total # global dof bytes
         #if defined(_G_USE_MPI)
           MPI_Datatype     mpi_state_type_;
           MPI_Offset       state_disp_;
