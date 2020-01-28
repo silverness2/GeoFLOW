@@ -43,7 +43,7 @@ template<typename IOType>
 GIO<IOType>::~GIO()
 { 
 #if defined(_G_USE_MPI)
-  MPI_Type_free( &mpi_state_type_);
+  MPI::Type::free( &mpi_state_type_);
 #endif
 } // end of destructor method
 
@@ -148,9 +148,9 @@ void GIO<IOType>::init()
   }
   nbgdof_ = extent.sum();
 
-  MPI_Aint lowerbnd=0;
-  MPI_Type_create_resized(T2GCDatatype<GFTYPE>, lowerbnd, state_extent_, &mpi_state_type_);
-  MPI_Type_commit(&mpi_state_type_);
+  MPI::Aint lowerbnd=0;
+  MPI::Type::create_resized(T2GCDatatype<GFTYPE>, lowerbnd, state_extent_, &mpi_state_type_);
+  MPI::Type::commit(&mpi_state_type_);
 
 #endif
 
@@ -318,7 +318,7 @@ GSIZET GIO<IOType>::write_posix(GString filename, StateInfo &info, const GTVecto
       exit(1);
     }
 
-    // Write header: dim, numelems, poly_order:
+    // Write header: dim, numelems, poly_order, etc:
     nb = write_header<FILE*>(fp, info);
  
     assert(nb == sz_header(info,*traits_));
@@ -442,20 +442,20 @@ GSIZET GIO<IOType>::write_header(GFPTR fp, StateInfo &info)
   else {
 
 #if defined(_G_USE_MPI)
-      MPI_Status     status
-      MPI_File_seek(fh, 0, MPI_SEEK_SET); // set to 0-displacement
+      MPI::Status     status
+      MPI::File::seek(fh, 0, MPI::SEEK_SET); // set to 0-displacement
       
-      nh = MPI_file_write(fh, &traits.ivers     , 1   , T2GCDatatype  <GINT>(), &status); nb += nh*sizeof(GINT);
-      nh = MPI_file_write(fh, &traits.dim       , 1   , T2GCDatatype  <GINT>(), &status); nb += nh*sizeof(GINT);
-      nh = MPI_file_write(fh, &info.nelems      , 1   , T2GCDatatype<GSIZET>(), &status); nb += nh*sizeof(GSIZET);
+      nh = MPI::File::write(fh, &traits.ivers     , 1   , T2GCDatatype  <GINT>(), &status); nb += nh*sizeof(GINT);
+      nh = MPI::File::write(fh, &traits.dim       , 1   , T2GCDatatype  <GINT>(), &status); nb += nh*sizeof(GINT);
+      nh = MPI::File::write(fh, &info.nelems      , 1   , T2GCDatatype<GSIZET>(), &status); nb += nh*sizeof(GSIZET);
       numr = traits.ivers == 0 ? 1 : info.nelems;
       info.porder.resize(numr,traits.dim);
       numr = info.porder.size(1)*info.porder.size(2);
-      nh = MPI_file_write(fh, info.porder.data().data()
+      nh = MPI::File::write(fh, info.porder.data().data()
                                                , numr, T2GCDatatype   <GINT>(), &status); nb += nh*sizeof(GINT);
-      nh = MPI_file_write(fh, &info.gtype       , 1   , T2GCDatatype  <GINT>(), &status); nb += nh*sizeof(GINT);
-      nh = MPI_file_write(fh, &info.cycle       , 1   , T2GCDatatype<GSIZET>(), &status); nb += nh*sizeof(GSIZET);
-      nh = MPI_file_write(fh, &info.time        , 1   , T2GCDatatype<GFTYPE>(), &status); nb += nh*sizeof(GFTYPE);
+      nh = MPI::File::write(fh, &info.gtype       , 1   , T2GCDatatype  <GINT>(), &status); nb += nh*sizeof(GINT);
+      nh = MPI::File::write(fh, &info.cycle       , 1   , T2GCDatatype<GSIZET>(), &status); nb += nh*sizeof(GSIZET);
+      nh = MPI::File::write(fh, &info.time        , 1   , T2GCDatatype<GFTYPE>(), &status); nb += nh*sizeof(GFTYPE);
 
 #endif
   }
@@ -507,25 +507,25 @@ GSIZET GIO<IOType>::read_header(GString filename, StateInfo &info, Traits &trait
     }
     else {
 #if defined(_G_USE_MPI)
-      MPI_File       fh;
-      MPI_Status     status
-      MPI_File_open(comm_, fname_.c_str(), MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
-//    MPI_File_seek(fh, 0, MPI_SEEK_SET); // set to 0-displacement
+      MPI::File       fh;
+      MPI::Status     status
+      MPI::File::open(comm_, fname_.c_str(), MPI::MODE_RDWR, MPI::INFO_NULL, &fh);
+//    MPI::File::seek(fh, 0, MPI::SEEK_SET); // set to 0-displacement
       
       // Read header: 
-      nh = MPI_file_read(fh, &traits.ivers     , 1   , T2GCDatatype<GINT>  (), &status); nb += nh*sizeof(GINT);
-      nh = MPI_file_read(fh, &traits.dim       , 1   , T2GCDatatype<GINT>  (), &status); nb += nh*sizeof(GINT);
-      nh = MPI_file_read(fh, &info.nelems      , 1   , T2GCDatatype<GSIZET>(), &status); nb += nh*sizeof(GSIZET);
+      nh = MPI::File::read(fh, &traits.ivers     , 1   , T2GCDatatype<GINT>  (), &status); nb += nh*sizeof(GINT);
+      nh = MPI::File::read(fh, &traits.dim       , 1   , T2GCDatatype<GINT>  (), &status); nb += nh*sizeof(GINT);
+      nh = MPI::File::read(fh, &info.nelems      , 1   , T2GCDatatype<GSIZET>(), &status); nb += nh*sizeof(GSIZET);
       numr = traits.ivers == 0 ? 1 : info.nelems;
       info.porder.resize(numr,traits.dim);
       numr = info.porder.size(1)*info.porder.size(2);
-      nh = MPI_file_read(fh, info.porder.data().data()
+      nh = MPI::File::read(fh, info.porder.data().data()
                                                , numr, T2GCDatatype  <GINT>(), &status); nb += nh*sizeof(GINT);
-      nh = MPI_file_read(fh, &info.gtype       , 1   , T2GCDatatype<GINT>  (), &status); nb += nh*sizeof(GINT);
-      nh = MPI_file_read(fh, &info.cycle       , 1   , T2GCDatatype<GSIZET>(), &status); nb += nh*sizeof(GSIZET);
-      nh = MPI_file_read(fh, &info.time        , 1   , T2GCDatatype<GFTYPE>(), &status); nb += nh*sizeof(GFTYPE);
+      nh = MPI::File::read(fh, &info.gtype       , 1   , T2GCDatatype<GINT>  (), &status); nb += nh*sizeof(GINT);
+      nh = MPI::File::read(fh, &info.cycle       , 1   , T2GCDatatype<GSIZET>(), &status); nb += nh*sizeof(GSIZET);
+      nh = MPI::File::read(fh, &info.time        , 1   , T2GCDatatype<GFTYPE>(), &status); nb += nh*sizeof(GFTYPE);
 
-      MPI_File_close(fh); 
+      MPI::File::close(fh); 
 #endif
 
     } 
@@ -592,7 +592,7 @@ void GIO<IOType>::resize(GINT n)
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : write_coll
-// DESC   : 
+// DESC   : Collective write of state components
 // ARGS   : filename: filename
 //          info    : StateInfo structure
 //          u       : state
@@ -603,38 +603,95 @@ void GIO<IOType>::write_coll(GString filename, StateInfo &info, const State &u)
 {
 #if defined(_G_USE_MPI)
 
-    GString        serr = "write_state_coll: ";
+    GString        serr = "write_coll: ";
     GINT           myrank = GComm::WorldRank(comm_);
-    GSIZET         nb, nc, nd;
+    GSIZET         nb, nh;
 
-    MPI_Offset     disp;
-    MPI_File       fh;
-    MPI_Status     status
+    MPI::Offset    disp;
+    MPI::File      fh;
+    MPI::Status    status
 
     // Required number of coord vectors:
     nc = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
 
 
-    MPI_File_open(comm_, fname_.c_str(), MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
+    MPI::File::open(comm_, fname_.c_str(), MPI::MODE_CREATE|MPI::MODE_WRONLY, MPI::INFO_NULL, &fh);
     nbheader_ = sz_header(info, *traits_);
+
+    nh = write_header<MPI::File>(fh, info);
+    assert(nh == nbheader_ && "Expected header size not written");
 
     // Cycle over all fields, and write:
     if ( !traits_->multivar ) { // print each comp to sep. file
       for ( auto j=0; j<u.size(); j++ ) {
         assert(u[j].size() > 0 && "Invalid state component");
         disp = nbheader_ + j*nbgdof_ + state_disp_;
-        MPI_File_set_view(fh, disp, T2GCDatatype<GFTYPE>, mpi_state_type_, NULL, MPI_INFO_NULL);
-        MPI_File_write(fh, u[j]->data(), 1, mpi_state_type_, MPI_STATUS_IGNORE);
+        MPI::File::set_view(fh, disp, T2GCDatatype<GFTYPE>, mpi_state_type_, NULL, MPI::INFO_NULL);
+        MPI::File::write(fh, u[j]->data(), 1, mpi_state_type_, &status);
       }
     }
     else {                       // print each comp to same file
       disp = nbheader_ + state_disp_;
-      MPI_File_set_view(fh, disp, T2GCDatatype<GFTYPE>, mpi_state_type_, NULL, MPI_INFO_NULL);
-      MPI_File_write(fh, u[j]->data(), 1, mpi_state_type_, MPI_STATUS_IGNORE);
+      MPI::File::set_view(fh, disp, T2GCDatatype<GFTYPE>, mpi_state_type_, NULL, MPI::INFO_NULL);
+      MPI::File::write(fh, u[j]->data(), 1, mpi_state_type_, &status);
     } 
 
-    MPI_File_close(&fh);
+    MPI::File::close(&fh);
 #endif
 
-} // end, write_state_coll
+} // end, write_coll
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : read_coll
+// DESC   : Collective read of state components
+// ARGS   : filename: filename
+//          info    : StateInfo structure
+//          u       : state
+// RETURNS: none
+//**********************************************************************************
+template<typename IOType>
+void GIO<IOType>::read_coll(GString filename, StateInfo &info, const State &u)
+{
+#if defined(_G_USE_MPI)
+
+    GString        serr = "read_coll: ";
+    GINT           myrank = GComm::WorldRank(comm_);
+    GSIZET         nb, nh;
+
+    MPI::Offset    disp;
+    MPI::File      fh;
+    MPI::Status    status
+
+    // Required number of coord vectors:
+    nc = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
+
+
+    MPI::File::open(comm_, fname_.c_str(), MPI::MODE_RDONLY, MPI::INFO_NULL, &fh);
+    nbheader_ = sz_header(info, *traits_);
+
+    nh = read_header<MPI::FILE>(fh, info);
+    assert(nh == nbheader_ && "Expected header size not written");
+
+
+    // Cycle over all fields, and write:
+    if ( !traits_->multivar ) { // print each comp to sep. file
+      for ( auto j=0; j<u.size(); j++ ) {
+        assert(u[j].size() > 0 && "Invalid state component");
+        disp = nbheader_ + j*nbgdof_ + state_disp_;
+        MPI::File::set_view(fh, disp, T2GCDatatype<GFTYPE>, mpi_state_type_, NULL, MPI::INFO_NULL);
+        MPI::File::read(fh, u[j]->data(), 1, mpi_state_type_, &status);
+      }
+    }
+    else {                       // print each comp to same file
+      disp = nbheader_ + state_disp_;
+      MPI::File::set_view(fh, disp, T2GCDatatype<GFTYPE>, mpi_state_type_, NULL, MPI::INFO_NULL);
+      MPI::File::read(fh, u[j]->data(), 1, mpi_state_type_, &status);
+    } 
+
+    MPI::File::close(&fh);
+#endif
+
+} // end, read_coll
 
