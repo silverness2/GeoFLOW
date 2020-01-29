@@ -50,67 +50,6 @@ GIO<IOType>::~GIO()
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD     : write_state_impl
-// DESCRIPTION: Write state to file
-//
-// ARGUMENTS  : filename: file to write to
-//              info    : state info structure
-//              u       : state to write
-//               
-// RETURNS    : none.
-//**********************************************************************************
-template<typename IOType>
-void GIO<IOType>::write_state_impl(std::string filename, StateInfo &info, State &u)
-{
-
-  switch ( traits_->io_type ) {
-
-    case GIO_POSIX:
-      write_state_posix(info, u);
-      break;
-    case GIO_COLL:
-      write_state_coll(info, u);
-      break;
-    default :
-      assert(FALSE);
-  }
-
-} // end of method write_state_impl
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD     : read_state_impl
-// DESCRIPTION: Read state from file
-//
-// ARGUMENTS  : filename: file to read from to
-//              info    : state info structure
-//              u       : storage for state
-//               
-// RETURNS    : none.
-//**********************************************************************************
-template<typename IOType>
-void GIO<IOType>::read_state_impl(std::string filename, StateInfo &info, State &u)
-{
-
-  switch ( traits_->io_type ) {
-
-    case GIO_POSIX:
-      read_state_posix(info, u);
-      break;
-    case GIO_COLL:
-      read_state_coll(info, u);
-      break;
-    default :
-      assert(FALSE);
-  }
-
-
-} // end of method read_state_impl
-
-
-//**********************************************************************************
-//**********************************************************************************
 // METHOD     : init
 // DESCRIPTION: Initialize object
 // ARGUMENTS  : t  : state time
@@ -161,12 +100,12 @@ void GIO<IOType>::init()
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : write_state_posix
-// DESC   : Do simple GIO POSIX output of state. Each state member is
-//          written to its own file. Each file is tagged s.t.:
+// METHOD : write_state_impl
+// DESC   : Do GIO POSIX or collective output of state. Each state member is
+//          written to its own file. For POSIX writes, each file is tagged s.t.:
 //             svar.TTTTTT.PPPPP.out,
 //          where TTTTTT is the time tag, and PPPPP is the task number. 
-//          svar is the name of each state field, provided in info structre. 
+//          Collective writes omit the task id tag. If 
 //          If there aren't enough svar specified, then defaults are used.
 //          Note: if info.sttype > 0, then we assume we are printing a 
 //          grid, and the format is the same as above but without the time 
@@ -176,18 +115,19 @@ void GIO<IOType>::init()
 // RETURNS: none
 //**********************************************************************************
 template<typename IOType>
-void GIO<IOType>::write_state_posix(StateInfo &info, const State &u)
+void GIO<IOType>::write_state_impl(StateInfo &info, const State &u)
 {
-    GString        serr = "write_state_posix: ";
+    GString        serr = "write_state_impl: ";
     GINT           myrank = GComm::WorldRank(comm_);
     GSIZET         nb, nc, nd;
     std::vector<GString> 
                    gpref = {"x","y","z"};
     GTVector<GTVector<GFTYPE>>
                   *xnodes = &grid_->xNodes();
+    State         state(1);
     GElemList     *elems  = &grid_->elems();
     std::stringstream 
-                   format;
+                   format, cformat;
 
     // Required number of coord vectors:
     nc = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
@@ -202,14 +142,17 @@ void GIO<IOType>::write_state_posix(StateInfo &info, const State &u)
     info.gtype    = grid_->gtype();
 
 
-    // Build format string:
+    // Build format strings:
     resize(traits.wfile);
+    format .str(""); format .clear();
+    cformat.str(""); cformat.clear();
     if ( info.sttype ==0 ) { // is a physical state
       format    << "%s/%s.%0" << traits.wtime << "d.%0" << traits.wtask << "d.out";
     }
     else {                   // is a grid file
       format    << "%s/%s.%0" << traits.wtask << "d.out";
     }
+    cformat    << "%s/%s.%0" << traits.wtime << "d.out";
 
     // Set porder vector depending on version:
     info.porder.resize(traits.ivers == 0 ? 1 : traits.nelems, GDIM);
@@ -218,30 +161,52 @@ void GIO<IOType>::write_state_posix(StateInfo &info, const State &u)
     }
 
     // Cycle over all fields, and write:
-    svarname_.str("");
-    svarname_.clear();
-    for ( auto j=0; j<u.size(); j++ ) {
-      assert(u[j].size() > 0 && "Invalid state component");
-      if ( info.svars.size() < u.size() ||  into.svars[j].length() <= 0 ) {
-        if ( info.sttype ==0 ) { // is a physical state
-          svarname_ << default_state_name_pref_ << j;
+    if ( !traits_->multivar ) { // one state comp per file
+      for ( auto j=0; j<u.size(); j++ ) {
+        svarname_.str(""); svarname_.clear();
+        assert(u[j].size() > 0 && "Invalid state component");
+        if ( info.svars.size() < u.size() ||  into.svars[j].length() <= 0 ) {
+          if ( info.sttype ==0 ) { // is a physical state
+            svarname_ << default_state_name_pref_ << j;
+          }
+          else {
+            svarname_ << gpref[j] << default_grid_name_pref_;
+          }
+        }
+        sprintf(cfname_, format.str().c_str(), info.odir.c_str(),
+                svarname_.str().c_str(), info.index, myrank);
+        fname_.assign(cfname_);
+        if ( traits_->io_type == GIO_POSIX ) {
+          write_posix<Value>(fname_, info, *u[j]);
         }
         else {
-          svarname_ << gpref[j] << default_grid_name_pref_;
+          state[0] = u[j];
+          write_coll<Value>(fname_, info, state);
         }
       }
-      sprintf(cfname_, format.str().c_str(), info.odir.c_str(),
-              svarname_.str().c_str(), traits.index, myrank);
-      fname_.assign(cfname_);
-      write_posix<Value>(fname_, traits, *u[j]);
+    }
+    else {                      // multiple components per file
+      assert(traits_->io_type == GIO_COLL && "Invalid io_type");
+      svarname_.str(""); svarname_.clear();
+      if ( info.svars.size() <= 0 ||  into.svars[j].length() <= 0 ) {
+        if ( info.sttype ==0 ) { // is a physical state
+          svarname_ << default_state_name_pref_ ;
+        }
+        else {
+          svarname_ << default_grid_name_pref_;
+        }
+      }
+      sprintf(cfname_, cformat.str().c_str(), info.odir.c_str(),
+              svarname_.str().c_str(), info.index, myrank);
+      write_coll<Value>(fname_, info, u);
     }
 
-} // end, write_state_posix
+} // end, write_state_impl
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : read_state_posix
+// METHOD : read_state_impl
 // DESC   : Read restart files for entire state, based on StateInfo. Since
 //          the state components reside in different files, each state element
 //          is read using as file name  prefixes from the StateInfo.svars labels. 
@@ -254,9 +219,9 @@ void GIO<IOType>::write_state_posix(StateInfo &info, const State &u)
 // RETURNS: none
 //**********************************************************************************
 template<typename IOType>
-void GIO<IOType>::read_state_posix(StateInfo &info, State  &u)
+void GIO<IOType>::read_state_impl(StateInfo &info, State  &u)
 {
-  GString              serr ="read_state_posix: ";
+  GString              serr ="read_state_impl: ";
   GINT                 myrank = GComm::WorldRank(comm_);
   GINT                 ivers, nc, nr, nt;
   GElemType            igtype;
@@ -281,10 +246,15 @@ void GIO<IOType>::read_state_posix(StateInfo &info, State  &u)
     }
     sprintf(cfname_, format.str().c_str(), info.idir.c_str(), svars[j].c_str(),  myrank);
     fname_.assign(cfname_);
-    nr = read_posix<GFTYPE>(info.svars[j], info, *u[j]);
+    if ( traits_->io_type == GIO_POSIX ) {
+      nr = read_posix<GFTYPE>(info.svars[j], info, *u[j]);
+    }
+    else {
+      nr = read_coll<GFTYPE>(info.svars[j], info, *u[j]);
+    }
   }
 
-} // end, read_state_posix method
+} // end, read_state_impl method
 
 
 //**********************************************************************************
@@ -659,6 +629,8 @@ void GIO<IOType>::read_coll(GString filename, StateInfo &info, const State &u)
     GString        serr = "read_coll: ";
     GINT           myrank = GComm::WorldRank(comm_);
     GSIZET         nb, nh;
+    Traits         objtraits;
+    StateInfo      tinfo;
 
     MPI::Offset    disp;
     MPI::File      fh;
@@ -671,11 +643,20 @@ void GIO<IOType>::read_coll(GString filename, StateInfo &info, const State &u)
     MPI::File::open(comm_, fname_.c_str(), MPI::MODE_RDONLY, MPI::INFO_NULL, &fh);
     nbheader_ = sz_header(info, *traits_);
 
-    nh = read_header<MPI::FILE>(fh, info);
-    assert(nh == nbheader_ && "Expected header size not written");
+    // Read header and do some checks:
+    nh = read_header<MPI::FILE>(fh, tinfo, objtraits);
+    assert(nh == nbheader_ && "Expected header size not read");
+    assert(objtraits.ivers   == traits_->ivers && "Incompatible GIO version");   
+    assert(objtraits.dim     == traits_->dim   && "Incompatible problem dimension");
+    assert(tinfo.porder      == info.porder    && "Incompatible porder");
+    assert(tinfo.gtype       == info.gtype     && "Incompatible grid type");
 
 
-    // Cycle over all fields, and write:
+    // Cycle over all fields, and read:
+    //   Note: any variable order element-by-element
+    //         should be handled in ::init method via 
+    //         state_disp_ & mpi_state_type_. Currently,
+    //         variable order is not fully supported on read:
     if ( !traits_->multivar ) { // print each comp to sep. file
       for ( auto j=0; j<u.size(); j++ ) {
         assert(u[j].size() > 0 && "Invalid state component");

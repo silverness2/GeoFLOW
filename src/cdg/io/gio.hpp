@@ -50,8 +50,6 @@ public:
           GSIZET      nelems  = 0;        // num elems
           GSIZET      cycle   = 0;        // continuous time cycle
           GFTYPE      time    = 0.0;      // state time
-          std::vector<GINT> 
-                      indirect;           // which elements of state to do IO on
           std::vector<GString> 
                       svars;              // names of state members
           GTMatrix<GINT>
@@ -79,14 +77,12 @@ public:
 private:
 // Private methods:
         void               init(const Time &t, const State &u);
-        void               write_state_posix(StateInfo &info, const State  &u);
-        void               read_state_posix (StateInfo &info,       State  &u);
-        void               write_state_coll (StateInfo &info, const State  &u);
-        void               read_state_coll  (StateInfo &info,       State  &u);
+//      void               read_state_posix (StateInfo &info,       State  &u);
+//      void               read_state_coll  (StateInfo &info,       State  &u);
         GSIZET             write_posix(GString filename, StateInfo &info, const GTVector<Value> &u);
         GSIZET             read_posix (GString filename, StateInfo &info,       GTVector<Value> &u);
-        GSIZET             write_coll (GString filename, StateInfo &info, const GTVector<Value> &u);
-        GSIZET             read_coll  (GString filename, StateInfo &info,       GTVector<Value> &u);
+        GSIZET             write_coll (GString filename, StateInfo &info, const State           &u);
+        GSIZET             read_coll  (GString filename, StateInfo &info,       State           &u);
         GSIZET             read_header(GString filename, StateInfo &info, Traits &traits);
         GSIZET             write_header(GFPTR, StateInfo &info, Traits &traits);
         GSIZET             sz_header(StateInfo &info, Traits &traits);
