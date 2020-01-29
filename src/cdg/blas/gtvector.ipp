@@ -580,18 +580,39 @@ const T *GTVector<T>::data() const
 
 //**********************************************************************************
 //**********************************************************************************
+// METHOD : operator ==
+// DESC   : Equivalence with another GTVector
+// ARGS   : GTVector<T> & right-hand side arg 
+// RETURNS: TRUE or FALSE
+//**********************************************************************************
+template<class T> 
+GBOOL GTVector<T>::operator==(const GTVector<T> &obj) 
+{
+  if ( !(this->gindex_ == obj.gindex_) ) return FALSE;
+
+  GBOOL bret = TRUE;
+  for ( GLLONG j=gindex_.beg(); j<=gindex_.end() && bret; j++ ) {
+    bret = bret && data_[j] == obj[j];
+  }
+
+  return bret;
+} // end, operator==(GTVector &)
+
+
+//**********************************************************************************
+//**********************************************************************************
 // METHOD : assignment operator= GTVector
 // DESC   : Equate to another GTVector
 // ARGS   : GTVector<T> & right-hand side arg 
 // RETURNS: GTVector & 
 //**********************************************************************************
-template<class T> 
-GTVector<T> &GTVector<T>::operator=(const GTVector<T> &obj) 
+template<class T>
+GTVector<T> &GTVector<T>::operator=(const GTVector<T> &obj)
 {
   if ( this == &obj) {
     return *this;
   }
-  
+
   if ( n_ > 0 ) { // If not allocated, allocate; else it's an error
     assert( (this->n_ < obj.capacity() || this->data_ != NULLPTR) && "L-vector has insufficient size");
   }
@@ -611,7 +632,7 @@ GTVector<T> &GTVector<T>::operator=(const GTVector<T> &obj)
   #if defined(_G_AUTO_UPDATE_DEV)
   updatedev();
   #endif
-  
+
   return *this;
 } // end, operator=(GTVector &)
 
