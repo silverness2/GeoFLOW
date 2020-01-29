@@ -124,7 +124,7 @@ void GIO<IOType>::write_state_impl(StateInfo &info, const State &u)
                    gpref = {"x","y","z"};
     GTVector<GTVector<GFTYPE>>
                   *xnodes = &grid_->xNodes();
-    State         state(1);
+    State         ostate(1);
     GElemList     *elems  = &grid_->elems();
     std::stringstream 
                    format, cformat;
@@ -136,14 +136,14 @@ void GIO<IOType>::write_state_impl(StateInfo &info, const State &u)
           && "Incompatible grid or coord  dimensions");
     }
     
-    traits.dim  = GDIM;
+    traits_->dim  = GDIM;
     info.nelems = grid_->nelems(); // local nelems for this task
 
     info.gtype    = grid_->gtype();
 
 
     // Build format strings:
-    resize(traits.wfile);
+    resize(traits_->wfile);
     format .str(""); format .clear();
     cformat.str(""); cformat.clear();
     if ( info.sttype ==0 ) { // is a physical state
@@ -155,7 +155,7 @@ void GIO<IOType>::write_state_impl(StateInfo &info, const State &u)
     cformat    << "%s/%s.%0" << traits.wtime << "d.out";
 
     // Set porder vector depending on version:
-    info.porder.resize(traits.ivers == 0 ? 1 : traits.nelems, GDIM);
+    info.porder.resize(traits_->ivers == 0 ? 1 : traits_->nelems, GDIM);
     for ( auto i=0; i<info.porder.size(1); i++ )  { // for each element
       for ( auto j=0; j<info.porder.size(2); j++ ) info.porder(i,j) = (*elems)[i]->order(j);
     }
@@ -163,8 +163,8 @@ void GIO<IOType>::write_state_impl(StateInfo &info, const State &u)
     // Cycle over all fields, and write:
     if ( !traits_->multivar ) { // one state comp per file
       for ( auto j=0; j<u.size(); j++ ) {
-        svarname_.str(""); svarname_.clear();
         assert(u[j].size() > 0 && "Invalid state component");
+        svarname_.str(""); svarname_.clear();
         if ( info.svars.size() < u.size() ||  into.svars[j].length() <= 0 ) {
           if ( info.sttype ==0 ) { // is a physical state
             svarname_ << default_state_name_pref_ << j;
@@ -177,11 +177,11 @@ void GIO<IOType>::write_state_impl(StateInfo &info, const State &u)
                 svarname_.str().c_str(), info.index, myrank);
         fname_.assign(cfname_);
         if ( traits_->io_type == GIO_POSIX ) {
-          write_posix<Value>(fname_, info, *u[j]);
+          write_posix(fname_, info, *u[j]);
         }
         else {
-          state[0] = u[j];
-          write_coll<Value>(fname_, info, state);
+          ostate[0] = u[j];
+          write_coll(fname_, info, ostate);
         }
       }
     }
@@ -228,7 +228,7 @@ void GIO<IOType>::read_state_impl(StateInfo &info, State  &u)
   GSIZET               itindex;
   GString              sgtype;
   std::stringstream    format;
-  Traits               objtraits;
+  Traits               ttraits;
   StateInfo            info;
 
   nc = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM; 
@@ -237,20 +237,22 @@ void GIO<IOType>::read_state_impl(StateInfo &info, State  &u)
     assert(u.size() == nc && "Incorrect number of grid components");
   }
 
-  resize(traits.wfile);
+  resize(traits_->wfile);
+  
+  format .str(""); format .clear();
   format    << "%s/%s.%0" << traits_->wtask << "d.out";
   for ( GSIZET j=0; j<u.size(); j++ ) { // Retrieve all state/grid components
-    if ( into.svars[j].length() <= 0 ) {
+    if ( info.svars[j].length() <= 0 ) {
       cout << serr << "empty filename for component " << j << endl; 
       exit(1);
     }
     sprintf(cfname_, format.str().c_str(), info.idir.c_str(), svars[j].c_str(),  myrank);
     fname_.assign(cfname_);
     if ( traits_->io_type == GIO_POSIX ) {
-      nr = read_posix<GFTYPE>(info.svars[j], info, *u[j]);
+      nr = read_posix(fname_, info, *u[j]);
     }
     else {
-      nr = read_coll<GFTYPE>(info.svars[j], info, *u[j]);
+      nr = read_coll (fname_, info, *u[j]);
     }
   }
 
@@ -319,13 +321,13 @@ GSIZET GIO<IOType>::read_posix(GString filename, StateInfo &info, GTVector<T> &u
     GString serr = "read_posix: ";
     FILE     *fp;
     GSIZET    nb, nd, nh, nt;
-    Traits    objtraits;
+    Traits    ttraits;
     
-    nh  = read_header(filename, info, objtraits);
+    nh  = read_header(filename, info, ttraits);
 
-    assert(objtraits.ivers == traits_->ivers
-                                           && "Incompatible file version number");
-    assert(objtraits.dim   == GDIM         && "File dimension incompatible with GDIM");
+    assert(ttraits.ivers == traits_->ivers
+                                         && "Incompatible file version number");
+    assert(ttraits.dim   == GDIM         && "File dimension incompatible with GDIM");
     assert(info     .gtype == grid_->gtype() 
                                            && "File grid type incompatible with grid");
 
@@ -340,7 +342,7 @@ GSIZET GIO<IOType>::read_posix(GString filename, StateInfo &info, GTVector<T> &u
 
     // Compute field data size from header data:
     nd = 0;
-    if ( objtraits.ivers == 0 ) { // expansion order is constant
+    if ( ttraits.ivers == 0 ) { // expansion order is constant
       nt = 1; 
       for ( GSIZET j=0; j<GDIM; j++ ) nt *= (info.porder(0,j) + 1);
       nd += nt * info.nelems;
@@ -415,11 +417,11 @@ GSIZET GIO<IOType>::write_header(GFPTR fp, StateInfo &info)
       MPI::Status     status
       MPI::File::seek(fh, 0, MPI::SEEK_SET); // set to 0-displacement
       
-      nh = MPI::File::write(fh, &traits.ivers     , 1   , T2GCDatatype  <GINT>(), &status); nb += nh*sizeof(GINT);
-      nh = MPI::File::write(fh, &traits.dim       , 1   , T2GCDatatype  <GINT>(), &status); nb += nh*sizeof(GINT);
+      nh = MPI::File::write(fh, &traits_->ivers   , 1   , T2GCDatatype  <GINT>(), &status); nb += nh*sizeof(GINT);
+      nh = MPI::File::write(fh, &traits_->dim     , 1   , T2GCDatatype  <GINT>(), &status); nb += nh*sizeof(GINT);
       nh = MPI::File::write(fh, &info.nelems      , 1   , T2GCDatatype<GSIZET>(), &status); nb += nh*sizeof(GSIZET);
-      numr = traits.ivers == 0 ? 1 : info.nelems;
-      info.porder.resize(numr,traits.dim);
+      numr = traits_->ivers == 0 ? 1 : info.nelems;
+      info.porder.resize(numr,traits_->dim);
       numr = info.porder.size(1)*info.porder.size(2);
       nh = MPI::File::write(fh, info.porder.data().data()
                                                , numr, T2GCDatatype   <GINT>(), &status); nb += nh*sizeof(GINT);
@@ -453,7 +455,7 @@ GSIZET GIO<IOType>::read_header(GString filename, StateInfo &info, Traits &trait
     GSIZET nb, nd, nh, numr;
   
     nb = 0;
-    if ( traits_->io_type == GIO_POSIX ) {
+    if ( traits.io_type == GIO_POSIX ) {
       // Read field data:
       FILE *fp;
       fp = fopen(filename.c_str(),"rb");
@@ -629,7 +631,7 @@ void GIO<IOType>::read_coll(GString filename, StateInfo &info, const State &u)
     GString        serr = "read_coll: ";
     GINT           myrank = GComm::WorldRank(comm_);
     GSIZET         nb, nh;
-    Traits         objtraits;
+    Traits         ttraits;
     StateInfo      tinfo;
 
     MPI::Offset    disp;
@@ -644,10 +646,10 @@ void GIO<IOType>::read_coll(GString filename, StateInfo &info, const State &u)
     nbheader_ = sz_header(info, *traits_);
 
     // Read header and do some checks:
-    nh = read_header<MPI::FILE>(fh, tinfo, objtraits);
+    nh = read_header<MPI::FILE>(fh, tinfo, ttraits);
     assert(nh == nbheader_ && "Expected header size not read");
-    assert(objtraits.ivers   == traits_->ivers && "Incompatible GIO version");   
-    assert(objtraits.dim     == traits_->dim   && "Incompatible problem dimension");
+    assert(ttraits.ivers   == traits_->ivers && "Incompatible GIO version");   
+    assert(ttraits.dim     == traits_->dim   && "Incompatible problem dimension");
     assert(tinfo.porder      == info.porder    && "Incompatible porder");
     assert(tinfo.gtype       == info.gtype     && "Incompatible grid type");
 
