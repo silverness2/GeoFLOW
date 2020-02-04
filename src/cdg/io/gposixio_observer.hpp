@@ -43,7 +43,10 @@ public:
         using Equation    = EquationType;
         using EqnBase     = EquationBase<EquationType>;
         using EqnBasePtr  = std::shared_ptr<EqnBase>;
+        using IOBaseType  = IOBase<EquationType>;
+        using IOBasePtr   = std::shared_ptr<IOBaseType>;
         using State       = typename Equation::State;
+        using StateInfo   = typename Equation::StateInfo;
         using Grid        = typename Equation::Grid;
         using Value       = typename Equation::Value;
         using Derivative  = typename Equation::Derivative;
@@ -63,7 +66,8 @@ public:
                "Grid is of incorrect type");
 
                            GPosixIOObserver() = delete;
-                           GPosixIOObserver(const EqnBasePtr &equation, Grid &grid, typename ObserverBase<EquationType>::Traits &traits);
+                           GPosixIOObserver(const EqnBasePtr &equation, const IOBasePtr &io_base_ptr,
+                                            Grid &grid, typename ObserverBase<EquationType>::Traits &traits);
                           ~GPosixIOObserver() = default;
                            GPosixIOObserver(const GPosixIOObserver &a) = default;
                            GPosixIOObserver &operator=(const GPosixIOObserver &bu) = default;
@@ -77,10 +81,6 @@ private:
 // Private data:
         GBOOL              bprgrid_;    // print grid flag
         GBOOL              bInit_;      // is initialized?
-        GINT               ivers_;      // output version number
-        GINT               wtime_;      // width of time field
-        GINT               wtask_;      // width of task field
-        GINT               wfile_;      // filename max
         GSIZET             cycle_last_; // most recent output cycle
         GSIZET             cycle_;      // continuously-running cycle
         GSIZET             ocycle_;     // output cycle number
@@ -88,6 +88,7 @@ private:
         GTVector<GINT>     state_index_;// list of state indices to print
         GTVector<GString>  state_names_;// list of names of state files
         GTVector<GString>  grid_names_ ;// list of names of grid comp files
+        IOBasePtr         *io_ptr_;     // ptr to IO object
         GString            sidir_;     ;// directory from which to read (e.g., for restart)
         GString            sodir_;     ;// directory in which to write
     

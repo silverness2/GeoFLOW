@@ -10,8 +10,10 @@
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : Constructor method (1)
-// DESC   : Instantiate with Traits
-// ARGS   : traits: Traits sturcture
+// DESC   : Instantiate with EqnBasePtr, Grid, and Traits
+// ARGS   : equation: EqnBasePtr
+//          grid    : Grid object
+//          traits  : Traits sturcture
 //**********************************************************************************
 template<typename EquationType>
 GPosixIOObserver<EquationType>::GPosixIOObserver(const EqnBasePtr &equation, Grid &grid,  typename ObserverBase<EquationType>::Traits &traits):
@@ -59,13 +61,6 @@ void GPosixIOObserver<EquationType>::observe_impl(const Time &t, const State &u,
     || (this->traits_.itype == ObserverBase<EquationType>::OBS_TIME  
         &&  t-time_last_ >= this->traits_.time_interval) 
     ||  cycle_ == 0 ) {
-    traits.prgrid = bprgrid_;
-    traits.wtime  = wtime_;
-    traits.wtask  = wtask_;
-    traits.wfile  = wfile_;
-    traits.ivers  = ivers_;
-    traits.dim    = GDIM;
-    traits.gtype  = this->grid_->gtype();
     traits.index  = ocycle_;
     traits.cycle  = cycle_;
     traits.time   = t;

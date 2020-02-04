@@ -17,21 +17,21 @@
 using namespace geoflow::pdeint;
 using namespace std;
 
-template<typename IOType>
-class GIO : public IOBase<IOType>
+template<typename TypePack>
+class GIO : public IOBase<TypePack>
 {
 
 public:
-        enum GIOType       {GIO_POSIX=0, GIO_COLL}; // POSIX or collective
-        using Types       = IOType;
-        using IOBaseType  = IOBase<IOType>;
+        enum GIOType        {GIO_POSIX=0, GIO_COLL}; // POSIX or collective
+        using Interface   = EquationBase<TypePack>;
+        using IOBaseType  = IOBase<TypePack>;
         using IOBasePtr   = std::shared_ptr<IOBaseType>;
-        using State       = typename Types::State;
-        using Grid        = typename Types::Grid;
-        using Value       = typename Types::Value;
-        using Time        = typename Types::Time;
-        using Size        = typename Types::Size;
-        using StateInfo   = typename Types::StateInfo; // May contain time, time index, IO dir
+        using State       = typename Interface::State;
+        using Grid        = typename Interface::Grid;
+        using Value       = typename Interface::Value;
+        using Time        = typename Interface::Time;
+        using Size        = typename Interface::Size;
+        using StateInfo   = typename Interface::StateInfo; // May contain time, time index, IO dir
 
         struct Traits {
           GIOType     io_type = GIO_COLL; // default to collective IO
