@@ -31,7 +31,7 @@ public:
         using Value       = typename Interface::Value;
         using Time        = typename Interface::Time;
         using Size        = typename Interface::Size;
-        using StateInfo   = typename Interface::StateInfo; // May contain time, time index, IO dir
+        using StateInfo   = typename Interface::StateInfo; 
 
         struct Traits {
           GIOType     io_type = GIO_COLL; // default to collective IO
@@ -41,21 +41,6 @@ public:
           GINT        wtask   = 5;        // task-field width (only for POSIX types)
           GINT        wfile   = 2048;     // file name max
           GINT        dim     = GDIM;     // problem dimension
-        }; 
-
-        struct GIOStateInfo {
-          GINT        sttype  = 1;        // state type index (grid=0 or state=1)
-          GINT        gtype   = 0;        // check src/cdg/include/gtypes.h
-          GSIZET      index   = 0;        // time index
-          GSIZET      nelems  = 0;        // num elems
-          GSIZET      cycle   = 0;        // continuous time cycle
-          GFTYPE      time    = 0.0;      // state time
-          std::vector<GString> 
-                      svars;              // names of state members
-          GTMatrix<GINT>
-                      porder;             // if ivers=0, is 1 X GDIM; else nelems X GDIM;
-          GString     idir    = ".";      // input directory
-          GString     odir    = ".";      // output directory
         }; 
 
         static_assert(std::is_same<Value,GFTYPE>::value,
@@ -73,6 +58,7 @@ public:
 
         void               write_state_impl(std::string filename, StateInfo &info, State &u);
         void               read_state_impl(std::string filename, StateInfo &info, State &u);
+        Traits            &get_traits() { return *traits_; }
 
 private:
 // Private methods:

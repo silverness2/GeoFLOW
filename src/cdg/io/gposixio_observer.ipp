@@ -16,17 +16,19 @@
 //          traits  : Traits sturcture
 //**********************************************************************************
 template<typename EquationType>
-GPosixIOObserver<EquationType>::GPosixIOObserver(const EqnBasePtr &equation, Grid &grid,  typename ObserverBase<EquationType>::Traits &traits):
+GPosixIOObserver<EquationType>::GPosixIOObserver(const EqnBasePtr &equation, const IOBasePtr &io_base_ptr, Grid &grid,  typename ObserverBase<EquationType>::Traits &traits):
 ObserverBase<EquationType>(equation, grid, traits),
 bprgrid_         (TRUE),
 bInit_          (FALSE),
 cycle_              (0),
 ocycle_             (0),
 cycle_last_         (0),
-time_last_        (0.0)
+time_last_        (0.0),
+io_ptr_  (&io_base_ptr),
 { 
-  this->traits_ = traits;
-  this->grid_   = &grid;
+  this->traits_    = traits;
+  this->grid_      = &grid;
+  this->stateinfo_ = equation.stateinfo(); 
 } // end of constructor (1) method
 
 
@@ -54,19 +56,18 @@ void GPosixIOObserver<EquationType>::observe_impl(const Time &t, const State &u,
 
   mpixx::communicator comm;
 
-  GIOTraits traits;
+  IOBaseTraits iotraits=;
    
   if ( (this->traits_.itype == ObserverBase<EquationType>::OBS_CYCLE 
         && (cycle_-cycle_last_+1) >= this->traits_.cycle_interval)
     || (this->traits_.itype == ObserverBase<EquationType>::OBS_TIME  
         &&  t-time_last_ >= this->traits_.time_interval) 
     ||  cycle_ == 0 ) {
-    traits.index  = ocycle_;
-    traits.cycle  = cycle_;
-    traits.time   = t;
-    traits.dir    = sodir_;
-    gio_write_state(traits, *(this->grid_), u, state_index_, state_names_,  comm);
-    gio_write_grid (traits, *(this->grid_), grid_names_,  comm);
+    stateinfo_.index  = ocycle_;
+    stateinfo_.cycle  = cycle_;
+    stateinfo_.time   = t;
+//  gio_write_state(traits, *(this->grid_), u, state_index_, state_names_,  comm);
+//  gio_write_grid (traits, *(this->grid_), grid_names_,  comm);
 
     // Cycle through derived quantities, and write:
     print_derived(t, u, traits, comm);
@@ -98,13 +99,6 @@ void GPosixIOObserver<EquationType>::init(const Time &t, const State &u)
    char    stmp[1024];
    std::vector<GString> spref = {"x", "y", "z"};
 
-   sidir_ = this->traits_.idir;
-   sodir_ = this->traits_.odir;
-   ivers_ = this->traits_.imisc;
-   wtime_ = this->traits_.itag1;
-   wtask_ = this->traits_.itag2;
-   wfile_ = this->traits_.itag3;
- 
    time_last_  = this->traits_.start_time ;
    ocycle_     = this->traits_.start_ocycle;
  

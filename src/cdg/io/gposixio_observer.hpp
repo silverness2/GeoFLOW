@@ -21,20 +21,6 @@ using namespace geoflow::pdeint;
 using namespace std;
 
 
-#if 0
-extern GIOTraits;
-void gio_write_state(GIOTraits &, GGrid &grid, 
-                     const GTVector<GTVector<GFTYPE>*> &u,
-                     const GTVector<GINT> &iu, 
-                     const GTVector<GString> &svars,
-                     GC_COMM comm);
-
-void gio_write_grid (GIOTraits &, GGrid &grid,
-                     const GTVector<GString> &svars,
-                     GC_COMM comm);
-#endif
-
-
 template<typename EquationType>
 class GPosixIOObserver : public ObserverBase<EquationType>
 {
@@ -44,6 +30,7 @@ public:
         using EqnBase     = EquationBase<EquationType>;
         using EqnBasePtr  = std::shared_ptr<EqnBase>;
         using IOBaseType  = IOBase<EquationType>;
+        using IOBaseTraits= IOBase<EquationType>::Traits;
         using IOBasePtr   = std::shared_ptr<IOBaseType>;
         using State       = typename Equation::State;
         using StateInfo   = typename Equation::StateInfo;
@@ -89,6 +76,7 @@ private:
         GTVector<GString>  state_names_;// list of names of state files
         GTVector<GString>  grid_names_ ;// list of names of grid comp files
         IOBasePtr         *io_ptr_;     // ptr to IO object
+        IOBaseTraits       iobase_traits_; // IOBase traits pointer
         GString            sidir_;     ;// directory from which to read (e.g., for restart)
         GString            sodir_;     ;// directory in which to write
     
