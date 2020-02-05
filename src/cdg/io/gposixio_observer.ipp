@@ -1,9 +1,8 @@
 //==================================================================================
-// Module       : gposixio_observer.ipp
+// Module       : gio_observer.ipp
 // Date         : 3/18/19 (DLR)
-// Description  : Observer object for carrying out simple POSIX-based  
-//                binary output.
-// Copyright    : Copyright 2019. Colorado State University. All rights reserved
+// Description  : Observer object for carrying out binary output of state.
+// Copyright    : Copyright 2019. Colorado State University. All rights reserved.
 // Derived From : ObserverBase.
 //==================================================================================
 
@@ -17,7 +16,7 @@
 //          traits  : Traits sturcture
 //**********************************************************************************
 template<typename EquationType>
-GPosixIOObserver<EquationType>::GPosixIOObserver(const EqnBasePtr &equation, const IOBasePtr &io_obj, Grid &grid,  typename ObserverBase<EquationType>::Traits &traits):
+GIOObserver<EquationType>::GIOObserver(const EqnBasePtr &equation, const IOBasePtr &io_obj, Grid &grid,  typename ObserverBase<EquationType>::Traits &traits):
 ObserverBase<EquationType>(equation, grid, traits),
 bprgrid_         (TRUE),
 bInit_          (FALSE),
@@ -27,10 +26,9 @@ cycle_last_         (0),
 time_last_        (0.0),
 io_ptr_       (&io_obj),
 { 
-  this->traits_    = traits;
-  this->grid_      = &grid;
-  this->iotraits_  = &io_obj.get_traits(); 
-  this->info_      = equation.stateinfo(); 
+  this->grid_  = &grid;
+  stateinfo_   = equation.stateinfo(); 
+//this->iotraits_  = &io_obj.get_traits(); 
 } // end of constructor (1) method
 
 
@@ -49,12 +47,15 @@ io_ptr_       (&io_obj),
 // RETURNS    : none.
 //**********************************************************************************
 template<typename EquationType>
-void GPosixIOObserver<EquationType>::observe_impl(const Time &t, const State &u, const State &uf)
+void GIOObserver<EquationType>::observe_impl(const Time &t, const State &u, const State &uf)
 {
-  init(t,u);
+
+  assert(bInit_ && "Object not initialized");
 
   mpixx::communicator comm;
-
+  GINT                nstate=0;
+  GTVector<GTVector<GFTYPE>>
+                     *xnodes = &grid_->xNodes();
   if ( (this->traits_.itype == ObserverBase<EquationType>::OBS_CYCLE 
         && (cycle_-cycle_last_+1) >= this->traits_.cycle_interval)
     || (this->traits_.itype == ObserverBase<EquationType>::OBS_TIME  
@@ -65,11 +66,23 @@ void GPosixIOObserver<EquationType>::observe_impl(const Time &t, const State &u,
     stateinfo_.time   = t;
 //  gio_write_state(traits, *(this->grid_), u, state_index_, state_names_,  comm);
 //  gio_write_grid (traits, *(this->grid_), grid_names_,  comm);
+    for ( auto j=0; j<u.size(); j++ ) nstate += (stateinfo_.icomptype[j] != GSC_PRESCRIBED 
+                                             &&  stateinfo_.icomptype[j] != GSC_NONE);
+    up_.resize(nstate);
+    for ( auto j=0; j<u.size(); j++ ) {
+      if ( stateinfo_.icomptype[j] != GSC_PRESCRIBED
+        && stateinfo_.icomptype[j] != GSC_NONE ) up_[j] = u[j];
+    }
+
+    if ( bprgrid_ ) {
+      for ( auto j=0; j<gp_.size(); j++ ) gp_[j] = &(*xnodes)[j];
+      io_ptr_->write_state(grstateinfo_, gp_);
+      bprgrid_ = FALSE;
+    }
 
     // Cycle through derived quantities, and write:
     print_derived(t, u, traits, comm);
 
-    bprgrid_      = FALSE;
     cycle_last_   = cycle_;
     time_last_    = t;
     ocycle_++; // ouput cycle index
@@ -82,13 +95,12 @@ void GPosixIOObserver<EquationType>::observe_impl(const Time &t, const State &u,
 //**********************************************************************************
 //**********************************************************************************
 // METHOD     : init
-// DESCRIPTION: Fill member index and name data based on traits
-// ARGUMENTS  : t  : state time
-//              u  : state variable
+// DESCRIPTION: Set member data based on state info
+// ARGUMENTS  : info : state info
 // RETURNS    : none.
 //**********************************************************************************
 template<typename EquationType>
-void GPosixIOObserver<EquationType>::init(StateInfo &info)
+void GIOObserver<EquationType>::init(StateInfo &info)
 {
 
    char    stmp[1024];
@@ -127,7 +139,7 @@ void GPosixIOObserver<EquationType>::init(StateInfo &info)
 // RETURNS    : none.
 //**********************************************************************************
 template<typename EquationType>
-void GPosixIOObserver<EquationType>::print_derived(const Time &t, const State &u, GIOTraits &traits, const GC_COMM &comm)
+void GIOObserver<EquationType>::print_derived(const Time &t, const State &u, GIOTraits &traits, const GC_COMM &comm)
 {
 
   GINT               ntmp;

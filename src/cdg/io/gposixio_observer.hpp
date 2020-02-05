@@ -1,9 +1,8 @@
 //==================================================================================
 // Module       : gposixio_observer.hpp
 // Date         : 3/18/19 (DLR)
-// Description  : Observer object for carrying out simple POSIX-based 
-//                binary output.
-// Copyright    : Copyright 2019. Colorado State University. All rights reserved
+// Description  : Observer object for carrying out binary output of state.
+// Copyright    : Copyright 2019. Colorado State University. All rights reserved.
 // Derived From : ObserverBase.
 //==================================================================================
 #if !defined(_GPOSIXIO_OBSERVER_HPP)
@@ -22,7 +21,7 @@ using namespace std;
 
 
 template<typename EquationType>
-class GPosixIOObserver : public ObserverBase<EquationType>
+class GIOObserver : public ObserverBase<EquationType>
 {
 
 public:
@@ -52,34 +51,35 @@ public:
         static_assert(std::is_same<Grid,GGrid>::value,
                "Grid is of incorrect type");
 
-                           GPosixIOObserver() = delete;
-                           GPosixIOObserver(const EqnBasePtr &equation, const IOBasePtr &io_base_ptr,
+                           GIOObserver() = delete;
+                           GIOObserver(const EqnBasePtr &equation, const IOBasePtr &io_base_ptr,
                                             Grid &grid, typename ObserverBase<EquationType>::Traits &traits);
-                          ~GPosixIOObserver() = default;
-                           GPosixIOObserver(const GPosixIOObserver &a) = default;
-                           GPosixIOObserver &operator=(const GPosixIOObserver &bu) = default;
+                          ~GIOObserver() = default;
+                           GIOObserver(const GIOObserver &a) = default;
+                           GIOObserver &operator=(const GIOObserver &bu) = default;
 
         void               observe_impl(const Time &t, const State &u, const State &uf);
 
+        void               init(StateInfo &info);
 private:
 // Private methods:
-        void               init(StateInfo &info);
         void               print_derived(const Time &t, const State &u, GIOTraits &traits, const GC_COMM &comm);
 // Private data:
-        GBOOL              bprgrid_       ;// print grid flag
-        GBOOL              bInit_         ;// is initialized?
-        GSIZET             cycle_last_    ;// most recent output cycle
-        GSIZET             cycle_         ;// continuously-running cycle
-        GSIZET             ocycle_        ;// output cycle number
-        GFTYPE             time_last_     ;// most recent output time
-        GTVector<GINT>     def_stateindex_;// list of state indices to print
-        GTVector<GString>  def_statenames_;// list of names of state files
-        GTVector<GString>  def_gridnames_ ;// list of names of grid comp files
-        State              up_            ;// print-state
-        State              gp_            ;// print-grid 
-        IOBasePtr         *io_ptr_        ;// ptr to IO object
-        IOBaseTraits      *iotraits_      ;// IOBase traits pointer
-    
+        GBOOL                bprgrid_       ;// print grid flag
+        GBOOL                bInit_         ;// is initialized?
+        GSIZET               cycle_last_    ;// most recent output cycle
+        GSIZET               cycle_         ;// continuously-running cycle
+        GSIZET               ocycle_        ;// output cycle number
+        GFTYPE               time_last_     ;// most recent output time
+        std::vector<GINT>    def_stateindex_;// list of state indices to print
+        std::vector<GString> def_statenames_;// list of names of state files
+        std::vector<GString> def_gridnames_ ;// list of names of grid comp files
+        State                up_            ;// print-state
+        State                gp_            ;// print-grid 
+        IOBasePtr           *io_ptr_        ;// ptr to IO object
+//      IOBaseTraits        *iotraits_      ;// IOBase traits pointer
+        StateInfo            stateinfo_     ;// info structure
+        StateInfo            grstateinfo_   ;// info structure
 
 };
 
