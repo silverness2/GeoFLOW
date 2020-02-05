@@ -24,7 +24,7 @@ default_grid_name_pref_   ("grid"),
 cfname_                  (NULLPTR),
 nfname_                        (0)
 { 
-  traits_  = &traits;
+  traits_  =  traits;
   grid_    = &grid;
 #if !defined(_G_USE_MPI)
   assert(trants_->io_type == GIO_COLL && "Collective IO only allowed if MPI is used");

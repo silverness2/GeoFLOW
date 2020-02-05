@@ -12,11 +12,12 @@
 // METHOD : Constructor method (1)
 // DESC   : Instantiate with EqnBasePtr, Grid, and Traits
 // ARGS   : equation: EqnBasePtr
+//          io_obj  : IO object
 //          grid    : Grid object
 //          traits  : Traits sturcture
 //**********************************************************************************
 template<typename EquationType>
-GPosixIOObserver<EquationType>::GPosixIOObserver(const EqnBasePtr &equation, const IOBasePtr &io_base_ptr, Grid &grid,  typename ObserverBase<EquationType>::Traits &traits):
+GPosixIOObserver<EquationType>::GPosixIOObserver(const EqnBasePtr &equation, const IOBasePtr &io_obj, Grid &grid,  typename ObserverBase<EquationType>::Traits &traits):
 ObserverBase<EquationType>(equation, grid, traits),
 bprgrid_         (TRUE),
 bInit_          (FALSE),
@@ -24,21 +25,19 @@ cycle_              (0),
 ocycle_             (0),
 cycle_last_         (0),
 time_last_        (0.0),
-io_ptr_  (&io_base_ptr),
+io_ptr_       (&io_obj),
 { 
   this->traits_    = traits;
   this->grid_      = &grid;
-  this->stateinfo_ = equation.stateinfo(); 
+  this->iotraits_  = &io_obj.get_traits(); 
+  this->info_      = equation.stateinfo(); 
 } // end of constructor (1) method
 
 
 //**********************************************************************************
 //**********************************************************************************
 // METHOD     : observe_impl
-// DESCRIPTION: Prints state to files specified by traits. Format is:
-//                  var1.CCCCCC.TTTTT.out,
-//              where CCCCCC represents a cycle number, and TTTTT represents
-//              the mpi task doing the writing.
+// DESCRIPTION: Prints state to files specified configured IO object.
 //              NOTE: an internal cycle counter is maintained, as this 
 //                    observer, like all others,  should be called at 
 //                    each time step.
@@ -56,8 +55,6 @@ void GPosixIOObserver<EquationType>::observe_impl(const Time &t, const State &u,
 
   mpixx::communicator comm;
 
-  IOBaseTraits iotraits=;
-   
   if ( (this->traits_.itype == ObserverBase<EquationType>::OBS_CYCLE 
         && (cycle_-cycle_last_+1) >= this->traits_.cycle_interval)
     || (this->traits_.itype == ObserverBase<EquationType>::OBS_TIME  
@@ -91,63 +88,30 @@ void GPosixIOObserver<EquationType>::observe_impl(const Time &t, const State &u,
 // RETURNS    : none.
 //**********************************************************************************
 template<typename EquationType>
-void GPosixIOObserver<EquationType>::init(const Time &t, const State &u)
+void GPosixIOObserver<EquationType>::init(StateInfo &info)
 {
-
-   if ( bInit_ ) return;
 
    char    stmp[1024];
    std::vector<GString> spref = {"x", "y", "z"};
 
-   time_last_  = this->traits_.start_time ;
-   ocycle_     = this->traits_.start_ocycle;
+   time_last_  = info.time ;
+   ocycle_     = info.cycle;
  
-   // Set state index member data, if not already set:
-   if ( state_index_.size()  <= 0 ) {
-     if ( this->traits_.state_index.size() == 0 ) {
-       for ( auto j=0; j<state_names_.size(); j++ ) {
-         state_index_.push_back(j); 
-       } 
-     } 
-     else {
-       for ( auto j=0; j<this->traits_.state_index.size(); j++ ) {
-         state_index_.push_back(this->traits_.state_index[j]); 
-       } 
-     }
-   }
+   // Set default state names member data:
+   for ( auto j=0; j<state_index_.size(); j++ ) {
+     sprintf(stmp, "%s%d", "u", state_index_[j]+1);
+     def_statenames_.push_back(stmp); 
+   } 
 
-   // Set state names member data, if not already set:
-   if ( state_names_.size()  <= 0 ) {
-     if ( this->traits_.state_names.size() == 0 ) {
-       for ( auto j=0; j<state_index_.size(); j++ ) {
-         sprintf(stmp, "%s%d", "u", state_index_[j]+1);
-         state_names_.push_back(stmp); 
-       } 
-     } 
-     else {
-       for ( auto j=0; j<state_index_.size(); j++ ) {
-         state_names_.push_back(this->traits_.state_names[state_index_[j]].data()); 
-       } 
-     }
-   }
-
-   // Set grid names member data, if not already set:
+   // Set default grid names member data:
    GINT ng = this->grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
-   if ( grid_names_.size()  <= 0 ) {
-     if ( this->traits_.grid_names.size() == 0 ) {
-       for ( auto j=0; j<ng; j++ ) {
-         sprintf(stmp, "%sgrid", spref[j].c_str());
-         grid_names_.push_back(stmp); 
-       } 
-     } 
-     else {
-       for ( auto j=0; j<ng; j++ ) {
-         grid_names_.push_back(this->traits_.grid_names[j].data()); 
-       } 
-     }
+   for ( auto j=0; j<ng; j++ ) {
+     sprintf(stmp, "%sgrid", spref[j].c_str());
+     def_gridnames_.push_back(stmp); 
    }
+   gu_.resize(ng);
 
-  bInit_ = TRUE;
+   bInit_ = TRUE;
 
 } // end of method init
 

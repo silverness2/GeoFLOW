@@ -63,22 +63,22 @@ public:
 
 private:
 // Private methods:
-        void               init(const Time &t, const State &u);
+        void               init(StateInfo &info);
         void               print_derived(const Time &t, const State &u, GIOTraits &traits, const GC_COMM &comm);
 // Private data:
-        GBOOL              bprgrid_;    // print grid flag
-        GBOOL              bInit_;      // is initialized?
-        GSIZET             cycle_last_; // most recent output cycle
-        GSIZET             cycle_;      // continuously-running cycle
-        GSIZET             ocycle_;     // output cycle number
-        GFTYPE             time_last_;  // most recent output time
-        GTVector<GINT>     state_index_;// list of state indices to print
-        GTVector<GString>  state_names_;// list of names of state files
-        GTVector<GString>  grid_names_ ;// list of names of grid comp files
-        IOBasePtr         *io_ptr_;     // ptr to IO object
-        IOBaseTraits       iobase_traits_; // IOBase traits pointer
-        GString            sidir_;     ;// directory from which to read (e.g., for restart)
-        GString            sodir_;     ;// directory in which to write
+        GBOOL              bprgrid_       ;// print grid flag
+        GBOOL              bInit_         ;// is initialized?
+        GSIZET             cycle_last_    ;// most recent output cycle
+        GSIZET             cycle_         ;// continuously-running cycle
+        GSIZET             ocycle_        ;// output cycle number
+        GFTYPE             time_last_     ;// most recent output time
+        GTVector<GINT>     def_stateindex_;// list of state indices to print
+        GTVector<GString>  def_statenames_;// list of names of state files
+        GTVector<GString>  def_gridnames_ ;// list of names of grid comp files
+        State              up_            ;// print-state
+        State              gp_            ;// print-grid 
+        IOBasePtr         *io_ptr_        ;// ptr to IO object
+        IOBaseTraits      *iotraits_      ;// IOBase traits pointer
     
 
 };

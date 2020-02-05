@@ -41,6 +41,8 @@ public:
           GINT        wtask   = 5;        // task-field width (only for POSIX types)
           GINT        wfile   = 2048;     // file name max
           GINT        dim     = GDIM;     // problem dimension
+          GString     idir    = ".";      // input directory
+          GString     odir    = ".";      // output directory
         }; 
 
         static_assert(std::is_same<Value,GFTYPE>::value,
@@ -58,7 +60,7 @@ public:
 
         void               write_state_impl(std::string filename, StateInfo &info, State &u);
         void               read_state_impl(std::string filename, StateInfo &info, State &u);
-        Traits            &get_traits() { return *traits_; }
+        Traits            &get_traits() { return traits_; }
 
 private:
 // Private methods:
@@ -92,7 +94,7 @@ private:
         std::stringstream  svarname_;
         GString            fname_;
         char              *cfname_;
-        Traits            *traits_;
+        Traits             traits_;
         Grid              *grid_;
         GTVector<GINT>     state_index_;// list of state indices to print
         GTVector<GString>  state_names_;// list of names of state files
