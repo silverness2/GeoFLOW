@@ -32,7 +32,28 @@ public:
 	using Time       = typename TypePack::Time;
 	using CompDesc   = typename TypePack::CompDesc;
 	using Jacobian   = typename TypePack::Jacobian;
+        using StateInfo  = typename EquationBase::GStateInfo;
 	using Size       = typename TypePack::Size;
+
+        struct GStateInfo {
+          GINT        sttype  = 1;        // state type index (grid=0 or state=1)
+          GINT        gtype   = 0;        // check src/cdg/include/gtypes.h
+          GSIZET      index   = 0;        // time index
+          GSIZET      nelems  = 0;        // num elems
+          GSIZET      cycle   = 0;        // continuous time cycle
+          GFTYPE      time    = 0.0;      // state time
+          std::vector<GString>
+                      svars;              // names of state members
+          CompDesc    icomptype;          // encoding of state component types    
+          GTMatrix<GINT>
+                      porder;             // if ivers=0, is 1 X GDIM; else nelems X GDIM;
+          GString     idir    = ".";      // input directory
+          GString     odir    = ".";      // output directory
+        };
+`:w
+        static_assert(std::is_same<StateInfo,GStateInfo>::value,
+               "StateInfo is of incorrect type");
+
 
 
 	EquationBase() { update_bdy_callback_ = nullptr; }
@@ -112,11 +133,11 @@ public:
 		this->step_impl(t,uin,uf,ub,dt,uout);
 	}
 
-	/** Return State component description data
+	/** Return StateInfo data
          * 
          */
-        CompDesc& comptype() {
-                return icomptype_;
+        StateInfo& stateinfo() {
+                return stateinfo_;
         }
 
 
@@ -160,7 +181,7 @@ protected:
                  update_bdy_callback_;
 
 private:
-        CompDesc icomptype_;
+        StateInfo stateinfo_;
 };
 
 
