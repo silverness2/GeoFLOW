@@ -19,8 +19,6 @@ GIO<IOType>::GIO(Grid &grid,  Traits &traits, GC_COMM comm):
 IOBase<IOType>(),
 bInit_                     (FALSE),
 comm_                       (comm),
-default_state_name_pref_ ("state"),
-default_grid_name_pref_   ("grid"),
 cfname_                  (NULLPTR),
 nfname_                        (0)
 { 
@@ -101,27 +99,25 @@ void GIO<IOType>::init()
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : write_state_impl
-// DESC   : Do GIO POSIX or collective output of state. Each state member is
-//          written to its own file. For POSIX writes, each file is tagged s.t.:
-//             svar.TTTTTT.PPPPP.out,
-//          where TTTTTT is the time tag, and PPPPP is the task number. 
-//          Collective writes omit the task id tag. If 
-//          If there aren't enough svar specified, then defaults are used.
+// DESC   : Do GIO POSIX or collective output of state. 
+//          If there aren't enough svar specified, or if filename isn't specified,
+//          when needed, then it's an error.
 //          Note: if info.sttype > 0, then we assume we are printing a 
-//          grid, and the format is the same as above but without the time 
-//          index tag.
-// ARGS   : info: StateInfo structure
-//          u     : state
+//          grid, and the filename is created without the time index tag.
+// ARGS   : filename: used if info.multivar > 0 to specify file name for
+//                    all state variables. This works onlt if we GIOType is GIO_COLL.
+//                    If info.multivar ==0, individual filename refixes are provided 
+//                    in info.svar
+//          info    : StateInfo structure
+//          u       : state
 // RETURNS: none
 //**********************************************************************************
 template<typename IOType>
-void GIO<IOType>::write_state_impl(StateInfo &info, const State &u)
+void GIO<IOType>::write_state_impl(std::string filename, StateInfo &info, const State &u)
 {
     GString        serr = "write_state_impl: ";
     GINT           myrank = GComm::WorldRank(comm_);
     GSIZET         nb, nc, nd;
-    std::vector<GString> 
-                   gpref = {"x","y","z"};
     GTVector<GTVector<GFTYPE>>
                   *xnodes = &grid_->xNodes();
     State         ostate(1);
@@ -160,24 +156,19 @@ void GIO<IOType>::write_state_impl(StateInfo &info, const State &u)
       for ( auto j=0; j<info.porder.size(2); j++ ) info.porder(i,j) = (*elems)[i]->order(j);
     }
 
-    // Cycle over all fields, and write:
     if ( !traits_->multivar ) { // one state comp per file
+      assert(info.svars.size() >= u.size());
+      // Cycle over all fields, and write:
       for ( auto j=0; j<u.size(); j++ ) {
         assert(u[j].size() > 0 && "Invalid state component");
         svarname_.str(""); svarname_.clear();
-        if ( info.svars.size() < u.size() ||  into.svars[j].length() <= 0 ) {
-          if ( info.sttype ==0 ) { // is a physical state
-            svarname_ << default_state_name_pref_ << j;
-          }
-          else {
-            svarname_ << gpref[j] << default_grid_name_pref_;
-          }
-        }
+        assert(info.svars[j].length() > 0);
+        svarname_ << info.svars[j];
         sprintf(cfname_, format.str().c_str(), info.odir.c_str(),
                 svarname_.str().c_str(), info.index, myrank);
         fname_.assign(cfname_);
         if ( traits_->io_type == GIO_POSIX ) {
-          write_posix(fname_, info, *u[j]);
+          write_posix(fname_, info, *u[j]); // only writes one variable per file
         }
         else {
           ostate[0] = u[j];
@@ -188,16 +179,10 @@ void GIO<IOType>::write_state_impl(StateInfo &info, const State &u)
     else {                      // multiple components per file
       assert(traits_->io_type == GIO_COLL && "Invalid io_type");
       svarname_.str(""); svarname_.clear();
-      if ( info.svars.size() <= 0 ||  into.svars[j].length() <= 0 ) {
-        if ( info.sttype ==0 ) { // is a physical state
-          svarname_ << default_state_name_pref_ ;
-        }
-        else {
-          svarname_ << default_grid_name_pref_;
-        }
-      }
+      assert(filename.length() > 0);
+      svarname_ << filename;
       sprintf(cfname_, cformat.str().c_str(), info.odir.c_str(),
-              svarname_.str().c_str(), info.index, myrank);
+              svarname_.str().c_str(), info.index);
       write_coll<Value>(fname_, info, u);
     }
 
@@ -207,19 +192,16 @@ void GIO<IOType>::write_state_impl(StateInfo &info, const State &u)
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : read_state_impl
-// DESC   : Read restart files for entire state, based on StateInfo. Since
-//          the state components reside in different files, each state element
-//          is read using as file name  prefixes from the StateInfo.svars labels. 
-//          The fully-resolved path is created by prepending the info.idir, and 
-//          appending the task index.         
+// DESC   : Read files for entire state, based on StateInfo. 
 //          
-// ARGS   : 
-//          info  : StateInfo structure
-//          u     : state object. Method will attempt to fill all components of u.
+// ARGS   : filename: filename to read from, if info.multivar > 0; else
+//                    info.svars are used to read from 
+//          info    : StateInfo structure
+//          u       : state object. Method will attempt to fill all components of u.
 // RETURNS: none
 //**********************************************************************************
 template<typename IOType>
-void GIO<IOType>::read_state_impl(StateInfo &info, State  &u)
+void GIO<IOType>::read_state_impl(std::string filename, StateInfo &info, State  &u)
 {
   GString              serr ="read_state_impl: ";
   GINT                 myrank = GComm::WorldRank(comm_);
@@ -228,6 +210,7 @@ void GIO<IOType>::read_state_impl(StateInfo &info, State  &u)
   GSIZET               itindex;
   GString              sgtype;
   std::stringstream    format;
+  State                istate(1);
   Traits               ttraits;
   StateInfo            info;
 
@@ -240,20 +223,43 @@ void GIO<IOType>::read_state_impl(StateInfo &info, State  &u)
   resize(traits_->wfile);
   
   format .str(""); format .clear();
-  format    << "%s/%s.%0" << traits_->wtask << "d.out";
-  for ( GSIZET j=0; j<u.size(); j++ ) { // Retrieve all state/grid components
-    if ( info.svars[j].length() <= 0 ) {
-      cout << serr << "empty filename for component " << j << endl; 
-      exit(1);
+  if ( traits_->io_type == GIO_POSIX ) {
+    format    << "%s/%s.%0" << traits_->wtask << "d.out";
+  }
+  else {
+    format    << "%s/%s";
+  }
+
+  if ( !traits_->multivar ) { // one state comp per file
+
+    assert(info.svars.size() >= u.size());
+    for ( GSIZET j=0; j<u.size(); j++ ) { // Retrieve all state/grid components
+      assert(info.svars[j].length() > 0 );
+      sprintf(cfname_, format.str().c_str(), info.idir.c_str(), svars[j].c_str(),  myrank);
+      fname_.assign(cfname_);
+      if ( traits_->io_type == GIO_POSIX ) {
+        nr = read_posix(fname_, info, *u[j]);
+      }
+      else {
+        istate[0] = u[j];
+        nr = read_coll (fname_, info, istate);
+      }
     }
+
+  }
+  else {                      // multiple state components in file
+
+    assert(info.svars[j].length() > 0 );
     sprintf(cfname_, format.str().c_str(), info.idir.c_str(), svars[j].c_str(),  myrank);
     fname_.assign(cfname_);
     if ( traits_->io_type == GIO_POSIX ) {
       nr = read_posix(fname_, info, *u[j]);
     }
     else {
-      nr = read_coll (fname_, info, *u[j]);
+      istate[0] = u[j];
+      nr = read_coll (fname_, info, istate);
     }
+
   }
 
 } // end, read_state_impl method

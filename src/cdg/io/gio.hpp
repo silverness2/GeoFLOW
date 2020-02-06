@@ -89,8 +89,6 @@ private:
           MPI_Aint         state_extent_;
         #endif
         GC_COMM            comm_;
-        GString            default_state_name_pref_;
-        GString            default_grid_name_pref_;
         std::stringstream  svarname_;
         GString            fname_;
         char              *cfname_;

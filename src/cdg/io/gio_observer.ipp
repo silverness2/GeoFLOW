@@ -1,8 +1,8 @@
 //==================================================================================
 // Module       : gio_observer.ipp
-// Date         : 1/28/20 (DLR)
-// Description  : Observer object for carrying out binary output
-// Copyright    : Copyright 2020. Colorado State University. All rights reserved.
+// Date         : 3/18/19 (DLR)
+// Description  : Observer object for carrying out binary output of state.
+// Copyright    : Copyright 2019. Colorado State University. All rights reserved.
 // Derived From : ObserverBase.
 //==================================================================================
 
@@ -11,12 +11,12 @@
 // METHOD : Constructor method (1)
 // DESC   : Instantiate with EqnBasePtr, Grid, and Traits
 // ARGS   : equation: EqnBasePtr
+//          io_obj  : IO object
 //          grid    : Grid object
 //          traits  : Traits sturcture
 //**********************************************************************************
 template<typename EquationType>
-GIOObserver<EquationType>::GIOObserver(const EqnBasePtr &equation, const IOBasePtr &io_base_ptr,
-                                       Grid &grid, typename ObserverBase<EquationType>::Traits &traits):
+GIOObserver<EquationType>::GIOObserver(const EqnBasePtr &equation, const IOBasePtr &io_obj, Grid &grid,  typename ObserverBase<EquationType>::Traits &traits):
 ObserverBase<EquationType>(equation, grid, traits),
 bprgrid_         (TRUE),
 bInit_          (FALSE),
@@ -24,20 +24,18 @@ cycle_              (0),
 ocycle_             (0),
 cycle_last_         (0),
 time_last_        (0.0),
-pio_obj_ (&io_base_ptr),
+io_ptr_       (&io_obj),
 { 
-  this->traits_ = traits;
-  this->grid_   = &grid;
+  this->grid_  = &grid;
+  stateinfo_   = equation.stateinfo(); 
+//this->iotraits_  = &io_obj.get_traits(); 
 } // end of constructor (1) method
 
 
 //**********************************************************************************
 //**********************************************************************************
 // METHOD     : observe_impl
-// DESCRIPTION: Prints state to files specified by traits. Format is:
-//                  var1.CCCCCC.TTTTT.out,
-//              where CCCCCC represents a cycle number, and TTTTT represents
-//              the mpi task doing the writing.
+// DESCRIPTION: Prints state to files specified configured IO object.
 //              NOTE: an internal cycle counter is maintained, as this 
 //                    observer, like all others,  should be called at 
 //                    each time step.
@@ -51,31 +49,50 @@ pio_obj_ (&io_base_ptr),
 template<typename EquationType>
 void GIOObserver<EquationType>::observe_impl(const Time &t, const State &u, const State &uf)
 {
-  init(t,u);
+
+  assert(bInit_ && "Object not initialized");
 
   mpixx::communicator comm;
-
-  StateInfo info;
-   
+  GINT                nstate=0;
+  GTVector<GTVector<GFTYPE>>
+                     *xnodes = &grid_->xNodes();
   if ( (this->traits_.itype == ObserverBase<EquationType>::OBS_CYCLE 
         && (cycle_-cycle_last_+1) >= this->traits_.cycle_interval)
     || (this->traits_.itype == ObserverBase<EquationType>::OBS_TIME  
         &&  t-time_last_ >= this->traits_.time_interval) 
     ||  cycle_ == 0 ) {
-    traits.prgrid = bprgrid_;
-    traits.dim    = GDIM;
-    traits.gtype  = this->grid_->gtype();
-    traits.index  = ocycle_;
-    traits.cycle  = cycle_;
-    traits.time   = t;
-    traits.dir    = sodir_;
-    gio_write_state(traits, *(this->grid_), u, state_index_, state_names_,  comm);
-    gio_write_grid (traits, *(this->grid_), grid_names_,  comm);
+    stateinfo_.sttype = 1; // 'state' state
+    stateinfo_.gtype  = grid_->gtype();
+    stateinfo_.nelems = grid_->nelems();
+    stateinfo_.index  = ocycle_;
+    stateinfo_.cycle  = cycle_;
+    stateinfo_.time   = t;
+
+    for ( auto j=0; j<u.size(); j++ ) nstate += (stateinfo_.icomptype[j] != GSC_PRESCRIBED 
+                                             &&  stateinfo_.icomptype[j] != GSC_NONE);
+    up_.resize(nstate);
+    for ( auto j=0; j<u.size(); j++ ) {
+      if ( stateinfo_.icomptype[j] != GSC_PRESCRIBED
+        && stateinfo_.icomptype[j] != GSC_NONE ) up_[j] = u[j];
+    }
+    pio_obj_->write_state(stateinfo_, up_);
+
+    if ( bprgrid_ ) {
+      gridinfo_.sttype = 0; // grid 'state'
+      gridinfo_.nelems = stateinfo_.nelems;
+      gridinfo_.gtype  = stateinfo_.gtype;
+      gridinfo_.svars  = 0;
+      gridinfo_.porder.resize(stateinfo_.porder.dim(1),stateinfo_.porder.dim(2))  
+      gridinfo_.porder = stateinfo_porder;
+      
+      for ( auto j=0; j<gp_.size(); j++ ) gp_[j] = &(*xnodes)[j];
+      pio_obj_->write_state(grstateinfo_, gp_);
+      bprgrid_ = FALSE;
+    }
 
     // Cycle through derived quantities, and write:
     print_derived(t, u, traits, comm);
 
-    bprgrid_      = FALSE;
     cycle_last_   = cycle_;
     time_last_    = t;
     ocycle_++; // ouput cycle index
@@ -88,76 +105,35 @@ void GIOObserver<EquationType>::observe_impl(const Time &t, const State &u, cons
 //**********************************************************************************
 //**********************************************************************************
 // METHOD     : init
-// DESCRIPTION: Fill member index and name data based on traits
-// ARGUMENTS  : t  : state time
-//              u  : state variable
+// DESCRIPTION: Set member data based on state info
+// ARGUMENTS  : info : state info
 // RETURNS    : none.
 //**********************************************************************************
 template<typename EquationType>
-void GIOObserver<EquationType>::init(const Time &t, const State &u)
+void GIOObserver<EquationType>::init(StateInfo &info)
 {
-
-   if ( bInit_ ) return;
 
    char    stmp[1024];
    std::vector<GString> spref = {"x", "y", "z"};
 
-   sidir_ = this->traits_.idir;
-   sodir_ = this->traits_.odir;
-   ivers_ = this->traits_.imisc;
-   wtime_ = this->traits_.itag1;
-   wtask_ = this->traits_.itag2;
-   wfile_ = this->traits_.itag3;
+   time_last_  = info.time ;
+   ocycle_     = info.cycle;
  
-   time_last_  = this->traits_.start_time ;
-   ocycle_     = this->traits_.start_ocycle;
- 
-   // Set state index member data, if not already set:
-   if ( state_index_.size()  <= 0 ) {
-     if ( this->traits_.state_index.size() == 0 ) {
-       for ( auto j=0; j<state_names_.size(); j++ ) {
-         state_index_.push_back(j); 
-       } 
-     } 
-     else {
-       for ( auto j=0; j<this->traits_.state_index.size(); j++ ) {
-         state_index_.push_back(this->traits_.state_index[j]); 
-       } 
-     }
-   }
+   // Set default state names member data:
+   for ( auto j=0; j<state_index_.size(); j++ ) {
+     sprintf(stmp, "%s%d", "u", state_index_[j]+1);
+     def_statenames_.push_back(stmp); 
+   } 
 
-   // Set state names member data, if not already set:
-   if ( state_names_.size()  <= 0 ) {
-     if ( this->traits_.state_names.size() == 0 ) {
-       for ( auto j=0; j<state_index_.size(); j++ ) {
-         sprintf(stmp, "%s%d", "u", state_index_[j]+1);
-         state_names_.push_back(stmp); 
-       } 
-     } 
-     else {
-       for ( auto j=0; j<state_index_.size(); j++ ) {
-         state_names_.push_back(this->traits_.state_names[state_index_[j]].data()); 
-       } 
-     }
-   }
-
-   // Set grid names member data, if not already set:
+   // Set default grid names member data:
    GINT ng = this->grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
-   if ( grid_names_.size()  <= 0 ) {
-     if ( this->traits_.grid_names.size() == 0 ) {
-       for ( auto j=0; j<ng; j++ ) {
-         sprintf(stmp, "%sgrid", spref[j].c_str());
-         grid_names_.push_back(stmp); 
-       } 
-     } 
-     else {
-       for ( auto j=0; j<ng; j++ ) {
-         grid_names_.push_back(this->traits_.grid_names[j].data()); 
-       } 
-     }
+   for ( auto j=0; j<ng; j++ ) {
+     sprintf(stmp, "%sgrid", spref[j].c_str());
+     def_gridnames_.push_back(stmp); 
    }
+   gu_.resize(ng);
 
-  bInit_ = TRUE;
+   bInit_ = TRUE;
 
 } // end of method init
 

@@ -59,10 +59,10 @@ public:
                            GIOObserver &operator=(const GIOObserver &bu) = default;
 
         void               observe_impl(const Time &t, const State &u, const State &uf);
+        void               init(StateInfo &);
 
 private:
 // Private methods:
-        void               init(const Time &t, const State &u);
         void               print_derived(const Time &t, const State &u, GIOTraits &traits, const GC_COMM &comm);
 // Private data:
         GBOOL              bprgrid_    ;// print grid flag
@@ -75,8 +75,8 @@ private:
         GTVector<GString>  state_names_;// list of names of state files
         GTVector<GString>  grid_names_ ;// list of names of grid comp files
         IOBasePtr         *pio_obj_    ;// ptr to IO object
-        GString            sidir_      ;// directory from which to read (e.g., for restart)
-        GString            sodir_      ;// directory in which to write
+        StateInfo          stateinfo_  ;// info struct for state
+        StateInfo          gridinfo_   ;// info struct for grid
     
 
 };
