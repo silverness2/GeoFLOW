@@ -56,17 +56,19 @@ void GIOObserver<EquationType>::observe_impl(const Time &t, const State &u, cons
   GINT                nstate=0;
   GTVector<GTVector<GFTYPE>>
                      *xnodes = &grid_->xNodes();
+
   if ( (this->traits_.itype == ObserverBase<EquationType>::OBS_CYCLE 
         && (cycle_-cycle_last_+1) >= this->traits_.cycle_interval)
     || (this->traits_.itype == ObserverBase<EquationType>::OBS_TIME  
         &&  t-time_last_ >= this->traits_.time_interval) 
     ||  cycle_ == 0 ) {
     stateinfo_.sttype = 1; // 'state' state
-    stateinfo_.gtype  = grid_->gtype();
     stateinfo_.nelems = grid_->nelems();
+    stateinfo_.gtype  = grid_->gtype();
     stateinfo_.index  = ocycle_;
     stateinfo_.cycle  = cycle_;
     stateinfo_.time   = t;
+    stateinfo_.svars  = this->traits_.state_names;
 
     for ( auto j=0; j<u.size(); j++ ) nstate += (stateinfo_.icomptype[j] != GSC_PRESCRIBED 
                                              &&  stateinfo_.icomptype[j] != GSC_NONE);
@@ -75,23 +77,26 @@ void GIOObserver<EquationType>::observe_impl(const Time &t, const State &u, cons
       if ( stateinfo_.icomptype[j] != GSC_PRESCRIBED
         && stateinfo_.icomptype[j] != GSC_NONE ) up_[j] = u[j];
     }
-    pio_obj_->write_state(stateinfo_, up_);
+    pio_obj_->write_state(this->traits_.agg_state_name, stateinfo_, up_);
 
     if ( bprgrid_ ) {
       gridinfo_.sttype = 0; // grid 'state'
       gridinfo_.nelems = stateinfo_.nelems;
       gridinfo_.gtype  = stateinfo_.gtype;
-      gridinfo_.svars  = 0;
+      gridinfo_.index  = ocycle_;
+      gridinfo_.cycle  = cycle_;
+      gridinfo_.time   = t;
+      gridinfo_.svars  = this->traits_.grid_names;
       gridinfo_.porder.resize(stateinfo_.porder.dim(1),stateinfo_.porder.dim(2))  
       gridinfo_.porder = stateinfo_porder;
       
       for ( auto j=0; j<gp_.size(); j++ ) gp_[j] = &(*xnodes)[j];
-      pio_obj_->write_state(grstateinfo_, gp_);
+      pio_obj_->write_state(this->traits_.agg_grid_name, grstateinfo_, gp_);
       bprgrid_ = FALSE;
     }
 
     // Cycle through derived quantities, and write:
-    print_derived(t, u, traits, comm);
+    print_derived(t, u);
 
     cycle_last_   = cycle_;
     time_last_    = t;
@@ -149,23 +154,25 @@ void GIOObserver<EquationType>::init(StateInfo &info)
 // RETURNS    : none.
 //**********************************************************************************
 template<typename EquationType>
-void GIOObserver<EquationType>::print_derived(const Time &t, const State &u, GIOTraits &traits, const GC_COMM &comm)
+void GIOObserver<EquationType>::print_derived(const Time &t, const State &u)
 {
 
-  GINT               ntmp;
+  GINT               ntmp, nstate;
   GString            sop;   // math operation
   GTVector<GString>  sdqnames;
   GTVector<GINT>     iuin(3), iuout(3);
   State              tmp(3), uu(3), uout(3);
+  GString            agg_derived;
   char               stmp[1024];
 
     // Cycle through derived quantities, and write:
     for ( auto j=0; j<this->traits_.derived_quantities.size(); j++ ) {
       iuin    .resize(this->traits_.derived_quantities[j].icomponents.size());
       sdqnames.resize(this->traits_.derived_quantities[j].snames    .size());
-      iuin     = this->traits_.derived_quantities[j].icomponents;
-      sdqnames = this->traits_.derived_quantities[j].snames;
-      sop      = this->traits_.derived_quantities[j].smath_op;
+      iuin       = this->traits_.derived_quantities[j].icomponents;
+      sdqnames   = this->traits_.derived_quantities[j].snames;
+      aggderived = this->traits_.derived_quantities[j].agg_sname;
+      sop        = this->traits_.derived_quantities[j].smath_op;
 
       assert( iuin.size() > 0 && "Derived quantities require state component(s)");
       assert( iuin.min() >= 0 && iuin.max()< u.size()  && "Invalid component indices");
@@ -179,16 +186,17 @@ void GIOObserver<EquationType>::print_derived(const Time &t, const State &u, GIO
       for ( auto i=0; i<3          ; i++ ) tmp [i] = (*(this->utmp_))[i+3];
    
       GMTK::domathop(*(this->grid_), uu, sop, tmp, uout, iuout);
-      if ( sdqnames.size() < iuout.size() ) { // set default names
-        sdqnames.resize(iuout.size());
-        for ( auto i=0; i<iuout.size(); i++ ) {
-          sprintf(stmp, "derived%d_c%d", j+1, i+1);
-          sdqnames[j] = stmp; 
-          this->grid_->get_ggfx().doOp(*uout[i], GGFX_OP_SMOOTH);
-        }
+      assert(sdqnames.size() >= iuout.size());
+      for ( auto i=0; i<iuout.size(); i++ ) {
+        this->grid_->get_ggfx().doOp(*uout[i], GGFX_OP_SMOOTH);
       }
-
-      gio_write_state(traits, *(this->grid_), uout, iuout, sdqnames,  comm);
+      // Rest of stateinfo_ shoule have been set before call:
+      stateinfo_.svars  = this->traits_.state_names;
+      up_.resize(iuout.size());
+      for ( auto j=0; j<up_.size(); j++ ) {
+        up_[j] = uout[iuout[j]];
+      }
+      pio_obj_->write_state(aggderived, stateinfo_, up_);
     }
 
 

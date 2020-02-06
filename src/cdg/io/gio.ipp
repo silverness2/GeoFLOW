@@ -223,6 +223,7 @@ void GIO<IOType>::read_state_impl(std::string filename, StateInfo &info, State  
   resize(traits_->wfile);
   
   format .str(""); format .clear();
+  cformat.str(""); cformat.clear();
   if ( traits_->io_type == GIO_POSIX ) {
     format    << "%s/%s.%0" << traits_->wtask << "d.out";
   }
@@ -249,16 +250,13 @@ void GIO<IOType>::read_state_impl(std::string filename, StateInfo &info, State  
   }
   else {                      // multiple state components in file
 
-    assert(info.svars[j].length() > 0 );
-    sprintf(cfname_, format.str().c_str(), info.idir.c_str(), svars[j].c_str(),  myrank);
-    fname_.assign(cfname_);
-    if ( traits_->io_type == GIO_POSIX ) {
-      nr = read_posix(fname_, info, *u[j]);
-    }
-    else {
-      istate[0] = u[j];
-      nr = read_coll (fname_, info, istate);
-    }
+    assert(traits_->io_type == GIO_COLL && "Invalid io_type");
+    svarname_.str(""); svarname_.clear();
+    assert(filename.length() > 0);
+    svarname_ << filename;
+    sprintf(cfname_, format.str().c_str(), info.odir.c_str(),
+            svarname_.str().c_str(), info.index);
+    read_coll<Value>(fname_, info, u);
 
   }
 
