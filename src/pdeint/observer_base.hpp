@@ -46,6 +46,7 @@ public:
                 std::vector<int>    icomponents;      // which state components to use     
                 std::vector<std::string>   
                                     snames;           // names for computed components
+                std::string         agg_sname;        // accumulated derived quantity filename
                 std::string         smath_op;         // which math op to use to compute
         };
 
