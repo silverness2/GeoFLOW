@@ -126,7 +126,7 @@ int main(int argc, char **argv)
     //***************************************************
     EH_MESSAGE("geoflow: create observers...");
     std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> pObservers(new std::vector<std::shared_ptr<ObserverBase<MyTypes>>>());
-    create_observers(pEqn_, ptree_, icycle, t, pObservers);
+    create_observers(pEqn_, ptree_, icycle, t, pIO_, pObservers);
 
     //***************************************************
     // Create integrator:
@@ -147,7 +147,8 @@ int main(int argc, char **argv)
       init_force(ptree_, *grid_, pEqn_, t, utmp_, u_, uf_);
     }
     else {                // restart run
-      gio_restart(ptree_, 0, u_, p, icycle, t, comm_);
+      do_restart(ptree, *grid_, u_, p, icycle, t);
+//    gio_restart(ptree_, 0, u_, p, icycle, t, comm_);
     }
 
     //***************************************************
@@ -275,10 +276,11 @@ void create_mixer(PropertyTree &ptree, MixBasePtr &pMixer)
 // ARGS  : grid      : GGrid object
 //         icycle    : initial icycle
 //         time      : initial time
-//         pObservers: gather/scatter op, GGFX
+//         pIO       : IOBasePtr object, returned
+//         pObservers: observer list, returned
 //**********************************************************************************
 void create_observers(EqnBasePtr &pEqn, PropertyTree &ptree, GSIZET icycle, Time time,
-std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers)
+IOBasePtr *pIO, std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers)
 {
     GINT    ivers;
     GSIZET  rest_ocycle;       // restart output cycle
@@ -939,4 +941,29 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
   for ( GINT j=0; j<ua.size(); j++ ) delete ua[j];
 
 } // end method compare
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : do_restart
+// DESC   : Set state for restart
+// ARGS   : 
+//          ptree: main prop tree
+//          grid : grid object
+//          u    : read-in state
+//          cycle: time cycle from restart
+//          t    : time from restart
+// RETURNS: none.
+//**********************************************************************************
+void do_restart(const PropertyTree &ptree, GGrid &, State &u, 
+                GTMatrix<GINT>&p,  GSIZET &cycle, Time &t)
+{
+  GBOOL  bret;
+  GFTYPE tt = t;
+
+  bret = GUpdateBdyFactory<MyTypes>::update(ptree_, *grid_, pEqn_, tt, utmp_, u, ub);
+  
+  
+} // end of method do_restart
+
 
