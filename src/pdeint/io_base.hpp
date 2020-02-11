@@ -25,11 +25,11 @@ class IOBase {
 public:
         using Types        = TypePack;
 	using State        = typename TypePack::State;
+	using StateInfo    = typename TypePack::StateInfo; // May contain time, time index, var name etc
 	using Grid         = typename TypePack::Grid;
 	using Value        = typename TypePack::Value;
         using Time         = typename TypePack::Time;
 	using Size         = typename TypePack::Size;
-	using StateInfo    = typename TypePack::StateInfo; // May contain time, time index, var name etc
       
 	IOBase() = delete;
 
