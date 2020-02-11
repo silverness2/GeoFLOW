@@ -32,9 +32,10 @@ public:
 	using Time       = typename TypePack::Time;
 	using CompDesc   = typename TypePack::CompDesc;
 	using Jacobian   = typename TypePack::Jacobian;
-        using StateInfo  = typename EquationBase::GStateInfo;
+        using StateInfo  = typename TypePack::StateInfo
 	using Size       = typename TypePack::Size;
 
+#if 0
         struct GStateInfo {
           GINT        sttype  = 1;        // state type index (grid=0 or state=1)
           GINT        gtype   = 0;        // check src/cdg/include/gtypes.h
@@ -51,9 +52,10 @@ public:
 //        GString     idir    = ".";      // input directory
 //        GString     odir    = ".";      // output directory
         };
-`:w
         static_assert(std::is_same<StateInfo,GStateInfo>::value,
                "StateInfo is of incorrect type");
+#endif
+
 
 
 
