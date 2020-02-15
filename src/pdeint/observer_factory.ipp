@@ -55,8 +55,8 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
         traits.cycle_interval= obstree.getValue<size_t>     ("cycle_interval", 10);       // cadence for cycle type
         traits.time_interval = obstree.getValue<double>     ("time_interval", 1.0);       // cadence for time type
         traits.freq_fact     = obstree.getValue<double>     ("interval_freq_fact", 1.0);  // freq factor relative to, say restart
-        traits.idir          = obstree.getValue<std::string>("indirectory",".");          // input directory
-        traits.odir          = obstree.getValue<std::string>("outdirectory",".");         // outputdirectory
+        traits.idir          = obstree.getValue<std::string>("idir",".");          // input directory
+        traits.odir          = obstree.getValue<std::string>("odir",".");         // outputdirectory
         traits.start_ocycle  = obstree.getValue<size_t>     ("start_ocycle",0);           // starting output cycle 
 //      traits.start_cycle   = obstree.getValue<size_t>     ("start_cycle",0);            // start evol cycle
         traits.start_time    = obstree.getValue<double>     ("start_time",0.0);           // start evol time
@@ -75,12 +75,8 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
 		// Set back to base type
 		base_ptr = obs_impl;
 	}
-        else if( "posixio_observer" == observer_name ) {
+        else if( "gio_observer" == observer_name ) {
 		using ObsImpl = GPosixIOObserver<ET>;
-
-                traits.itag1  = obstree.getValue <GINT>("time_field_width",6);  
-                traits.itag2  = obstree.getValue <GINT>("task_field_width",5);  
-                traits.itag3  = obstree.getValue <GINT>("filename_size",2048);  
 
                 // Fill derived quantities strutures, if any:
                 dqnames       = obstree.getArray<std::string> ("derived_quantities",defq);  // list of derived quantities to output
@@ -92,7 +88,6 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
                   traits.derived_quantities[j].smath_op    = dqtree.getValue<std::string>("mathop" ,"");
                 }
                 
-
 		// Allocate observer Implementation
 		std::shared_ptr<ObsImpl> obs_impl(new ObsImpl(equation, grid, traits));
 
