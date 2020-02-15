@@ -272,7 +272,7 @@ void create_mixer(PropertyTree &ptree, MixBasePtr &pMixer)
 //**********************************************************************************
 //**********************************************************************************
 // METHOD: create_observers
-// DESC  : Create observer list from main ptree
+// DESC  : Create IO object and observer list from main ptree. 
 // ARGS  : grid      : GGrid object
 //         icycle    : initial icycle
 //         time      : initial time
@@ -292,15 +292,19 @@ IOBasePtr *pIO, std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes
     GString ptype;
     GString ctype;
 
-    if ( bench_ ) return;
+    if ( bench_ ) return; // don't need IO
 
     std::vector<GString> default_obslist; default_obslist.push_back(dstr);
     std::vector<GString> obslist = ptree.getArray<GString>("observer_list",default_obslist);
     dstr = "constant";
     ptype = ptree.getValue<GString>("exp_order_type",dstr);
 
+    // Create IO obect to attach to observer:
+    pIO_ = IOFactory<MyTypes>::build(ptree, *grid_, comm_);
+    
+
     // Tie cadence_type to restart type:
-    obsptree = ptree.getPropertyTree("posixio_observer");
+    obsptree = ptree.getPropertyTree("gio_observer");
     ctype    = obsptree.getValue<GString>("cadence_type");
    
     // If doing a restart, set observer output
@@ -313,7 +317,7 @@ IOBasePtr *pIO, std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes
     // other observer cadences to it:
     for ( GSIZET j=0; j<obslist.size(); j++ ) {
       obsptree = ptree.getPropertyTree(obslist[j]);
-      if ( "posixio_observer" == obslist[j]  ) {
+      if ( "gio_observer" == obslist[j]  ) {
         delt_ref      = obsptree.getValue<GDOUBLE>("time_interval",0.01);
         cyc_ref       = obsptree.getValue <GSIZET>("cycle_interval",1);
       }
@@ -324,19 +328,19 @@ IOBasePtr *pIO, std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes
         obsptree = ptree.getPropertyTree(obslist[j]);
         // Set output version based on exp_order_type:
         if ( "constant" == ptype 
-         && "posixio_observer" == obslist[j]  ) obsptree.setValue<GINT>("misc",ivers);
+         && "gio_observer" == obslist[j]  ) obsptree.setValue<GINT>("misc",ivers);
 
         ofact       = obsptree.getValue<GDOUBLE>("interval_freq_fact",1.0);
         deltat      = obsptree.getValue<GDOUBLE>("time_interval",0.01);
         deltac      = obsptree.getValue <GSIZET>("cycle_interval",1);
         // Set current time and output cycle so that observer can initialize itself
         // These could/should be hidden from the config file:
-        if ( "posixio_observer" == obslist[j]  ) ofact = 1.0;
+        if ( "gio_observer" == obslist[j]  ) ofact = 1.0;
         obsptree.setValue <GSIZET>("start_ocycle",MAX(0.0,rest_ocycle*ofact));
         obsptree.setValue <GFTYPE>("start_time"  ,time);
 
         // Link each observer cadence to I/O cadence:
-        if ( "posixio_observer" != obslist[j]  ) {
+        if ( "gio_observer" != obslist[j]  ) {
           obsptree.setValue <GFTYPE>("time_interval", MAX(0.0,delt_ref/ofact));
           deltac = (GSIZET)( ((GDOUBLE)cyc_ref)/ofact );
           obsptree.setValue <GSIZET>("cycle_interval",MAX(1  ,deltac));
