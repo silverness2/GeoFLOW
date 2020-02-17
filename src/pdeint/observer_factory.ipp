@@ -12,7 +12,7 @@ namespace pdeint {
 
 template<typename ET>
 typename ObserverFactory<ET>::ObsBasePtr
-ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string obsname, EqnBasePtr& equation, Grid& grid){
+ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string obsname, EqnBasePtr& equation, Grid& grid, IOBasePtr pIO){
 
         // Note: the entry ptree is the main property tree!
 
@@ -62,6 +62,8 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
         traits.start_time    = obstree.getValue<double>     ("start_time",0.0);           // start evol time
      
 	// Create the observer and cast to base type
+
+        mpixx::communicator world;        
 	ObsBasePtr base_ptr;
 	if( "none" == observer_name ){
 		using ObsImpl = NullObserver<ET>;
@@ -87,9 +89,11 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
                   traits.derived_quantities[j].snames      = dqtree.getArray<std::string>("names"  ,defq);
                   traits.derived_quantities[j].smath_op    = dqtree.getValue<std::string>("mathop" ,"");
                 }
-                
+                if ( pIO != nullptr ) delete pIO;
+                pIO = IOFactory<MyTypes>::build(ptree, grid, world);
 		// Allocate observer Implementation
 		std::shared_ptr<ObsImpl> obs_impl(new ObsImpl(equation, grid, traits));
+                obs_impl->setIO(pIO);
 
 		// Set back to base type
 		base_ptr = obs_impl;

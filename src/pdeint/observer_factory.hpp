@@ -14,7 +14,8 @@
 #include "pdeint/observer_base.hpp"
 #include "tbox/property_tree.hpp"
 #include "pdeint/null_observer.hpp"
-#include "gposixio_observer.hpp"
+#include "pdeint/iobase.hpp"
+#include "gio_observer.hpp"
 #include "gglobaldiag_basic.hpp"
 
 
@@ -27,11 +28,13 @@ struct ObserverFactory {
 	using Equation    = EquationType;
         using EqnBase     = EquationBase<EquationType>;
         using EqnBasePtr  = std::shared_ptr<EqnBase>;
+        using IOBaseType  = IOBase<EquationType>;
+        using IOBasePtr   = std::shared_ptr<IOBaseType>;
 	using ObsBase     = ObserverBase<Equation>;
 	using ObsBasePtr  = std::shared_ptr<ObsBase>;
 	using Grid        = typename EquationType::Grid;
 
-	static ObsBasePtr build(const tbox::PropertyTree& ptree, std::string obsname,  EqnBasePtr& equation, Grid& grid);
+	static ObsBasePtr build(const tbox::PropertyTree& ptree, std::string obsname,  EqnBasePtr& equation, Grid& grid, IOBasePtr pIO);
 
 };
 
