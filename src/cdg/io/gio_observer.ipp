@@ -16,7 +16,7 @@
 //          traits  : Traits sturcture
 //**********************************************************************************
 template<typename EquationType>
-GIOObserver<EquationType>::GIOObserver(const EqnBasePtr &equation, const IOBasePtr &io_obj, Grid &grid,  typename ObserverBase<EquationType>::Traits &traits):
+GIOObserver<EquationType>::GIOObserver(const EqnBasePtr &equation, Grid &grid,  typename ObserverBase<EquationType>::Traits &traits):
 ObserverBase<EquationType>(equation, grid, traits),
 bprgrid_         (TRUE),
 bInit_          (FALSE),
@@ -24,7 +24,7 @@ cycle_              (0),
 ocycle_             (0),
 cycle_last_         (0),
 time_last_        (0.0),
-io_ptr_       (&io_obj),
+pIO_          (NULLPTR)
 { 
   this->grid_  = &grid;
   stateinfo_   = equation.stateinfo(); 
@@ -77,7 +77,7 @@ void GIOObserver<EquationType>::observe_impl(const Time &t, const State &u, cons
       if ( stateinfo_.icomptype[j] != GSC_PRESCRIBED
         && stateinfo_.icomptype[j] != GSC_NONE ) up_[j] = u[j];
     }
-    pio_obj_->write_state(this->traits_.agg_state_name, stateinfo_, up_);
+    pIO_->write_state(this->traits_.agg_state_name, stateinfo_, up_);
 
     if ( bprgrid_ ) {
       gridinfo_.sttype = 0; // grid 'state'
@@ -91,7 +91,7 @@ void GIOObserver<EquationType>::observe_impl(const Time &t, const State &u, cons
       gridinfo_.porder = stateinfo_porder;
       
       for ( auto j=0; j<gp_.size(); j++ ) gp_[j] = &(*xnodes)[j];
-      pio_obj_->write_state(this->traits_.agg_grid_name, grstateinfo_, gp_);
+      pIO_->write_state(this->traits_.agg_grid_name, grstateinfo_, gp_);
       bprgrid_ = FALSE;
     }
 
@@ -196,7 +196,7 @@ void GIOObserver<EquationType>::print_derived(const Time &t, const State &u)
       for ( auto j=0; j<up_.size(); j++ ) {
         up_[j] = uout[iuout[j]];
       }
-      pio_obj_->write_state(aggderived, stateinfo_, up_);
+      pIO_->write_state(aggderived, stateinfo_, up_);
     }
 
 

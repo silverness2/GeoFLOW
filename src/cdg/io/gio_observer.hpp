@@ -60,6 +60,7 @@ public:
 
         void               observe_impl(const Time &t, const State &u, const State &uf);
         void               init(StateInfo &);
+        void               setIO(IOBasePtr ioobj) { pIO_ = ioobj; }
 
 private:
 // Private methods:
@@ -74,14 +75,15 @@ private:
         GTVector<GINT>     state_index_;// list of state indices to print
         GTVector<GString>  state_names_;// list of names of state files
         GTVector<GString>  grid_names_ ;// list of names of grid comp files
-        IOBasePtr         *pio_obj_    ;// ptr to IO object
+        IOBasePtr          pIO_        ;// ptr to IO object
         StateInfo          stateinfo_  ;// info struct for state
         StateInfo          gridinfo_   ;// info struct for grid
+        IOBase<OBSType>   *pIO_;       ;// IO object
     
 
 };
 
-#include "gposixio_observer.ipp"
+#include "gio_observer.ipp"
 
 #endif
 
