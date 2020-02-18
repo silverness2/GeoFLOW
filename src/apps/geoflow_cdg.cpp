@@ -969,40 +969,25 @@ void do_restart(const PropertyTree &ptree, GGrid &, State &u,
   ObserverBase<MyTypes>
                      binobstraits=pObservers_[irestobs_]->get_traits();
   StateInfo          stateinfo;
-  StateInfo          gridinfo;
-  geoflow::tbox::PropertyTree 
-                     inputptree;
 
 
-  itindex = ptree.getValue<GSIZET>   ("restart_index", 0);
+  itindex            = ptree.getValue<GSIZET>("restart_index", 0);
+  stateinfo.sttype   = 1; // state variable type
+  stateinfo.aggfile  = binobjtraits.agg_state_name;
+  stateinfo.vars.resize(binobjtraits.istate_names.size());
+  stateinfo.vars     = binobjtraits.istate_names;
+  stateinfo.idir     = binobjtraits.idir;
+  stateinfo.odir     = binobjtraits.odir;
+  stateinfo.index    = itindex;
 
-     // Get data:
-    if ( igrid )  // use grid format
-      format    << "%s/%s.%0" << piotraits.wtask << "d.out";
-    else          // use state format
-      format    << "%s/%s.%0" << piotraits.wtime << "d.%0" << piotraits.wtask << "d.out";
-
-    for ( GSIZET j=0; j<nc; j++ ) { // Retrieve all grid coord vectors
-      if ( igrid )  // use grid format
-        sprintf(cfname_, format.str().c_str(), piotraits.dir.c_str(), stdlist[j].c_str(), myrank);
-      else          // use state format
-        sprintf(cfname_, format.str().c_str(), piotraits.dir.c_str(), stdlist[j].c_str(), itindex, myrank);
-      fname_.assign(cfname_);
-      nr = gio_read<GFTYPE>(piotraits, fname_, *u[j]);
-    }
-
-    if ( igrid ) { // needed for grid restart
-      p = piotraits.porder;
-      p.resize(piotraits.porder.size(1),piotraits.porder.size(2));
-    }
-    if ( piotraits.ivers > 0 ) piotraits.ivers = 1;
-    assert(piotraits.ivers == ivers  && "Incompatible version identifier");
-    assert(piotraits.dim   == GDIM   && "Incompatible problem dimension");
-    assert(piotraits.gtype == igtype && "Incompatible grid type");
+  // Get data:
+  pIO_->read_state(stateinfo.aggfile, stateinfo, u);
+  p.resize(stateinfo.porder.size(1),stateinfo.porder.size(2));
+  p = stateinfo.porder;
  
-    // Assign time and cycle from traits, for return:
-    cycle = stateinfo.cycle;
-    t     = stateinfo.time;
+  // Assign time and cycle from traits, for return:
+  cycle = stateinfo.cycle;
+  t     = stateinfo.time;
 
   
 } // end of method do_restart
