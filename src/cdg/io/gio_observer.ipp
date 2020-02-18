@@ -91,7 +91,7 @@ void GIOObserver<EquationType>::observe_impl(const Time &t, const State &u, cons
       gridinfo_.porder = stateinfo_porder;
       
       for ( auto j=0; j<gp_.size(); j++ ) gp_[j] = &(*xnodes)[j];
-      pIO_->write_state(this->traits_.agg_grid_name, grstateinfo_, gp_);
+      pIO_->write_state(this->traits_.agg_grid_name, gridinfo_, gp_);
       bprgrid_ = FALSE;
     }
 

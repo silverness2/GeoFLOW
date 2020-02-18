@@ -105,7 +105,7 @@ void GIO<IOType>::init()
 //          Note: if info.sttype > 0, then we assume we are printing a 
 //          grid, and the filename is created without the time index tag.
 // ARGS   : filename: used if info.multivar > 0 to specify file name for
-//                    all state variables. This works onlt if we GIOType is GIO_COLL.
+//                    all state variables. This works only if we GIOType is GIO_COLL.
 //                    If info.multivar ==0, individual filename refixes are provided 
 //                    in info.svar
 //          info    : StateInfo structure
