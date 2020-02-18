@@ -125,14 +125,13 @@ int main(int argc, char **argv)
     // Create observers: 
     //***************************************************
     EH_MESSAGE("geoflow: create observers...");
-    std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> pObservers(new std::vector<std::shared_ptr<ObserverBase<MyTypes>>>());
-    create_observers(pEqn_, ptree_, icycle, t, pObservers);
+    create_observers(pEqn_, ptree_, icycle, t, pObservers_);
 
     //***************************************************
     // Create integrator:
     //***************************************************
     EH_MESSAGE("geoflow: create integrator...");
-    pIntegrator_ = IntegratorFactory<MyTypes>::build(ptree_, pEqn_, pMixer, pObservers, *grid_);
+    pIntegrator_ = IntegratorFactory<MyTypes>::build(ptree_, pEqn_, pMixer, pObservers_, *grid_);
     pIntegrator_->get_traits().cycle = icycle;
 
     //***************************************************
@@ -346,7 +345,7 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
         // Create pIO object in return from some factory calls:
         pio = ObserverFactory<MyTypes>::build(ptree, obslist[j], pEqn, *grid_);
         pObservers->push_back(ObserverFactory<MyTypes>::build(ptree, obslist[j], pEqn, *grid_, pIO_));
-
+        irestobs_ = j;
       }
     }
 
@@ -967,6 +966,8 @@ void do_restart(const PropertyTree &ptree, GGrid &, State &u,
   GFTYPE             tt = t;
   std::stringstream  format;
   IOBase<MyTypes>    piotraits=pIO_->get_traits();
+  ObserverBase<MyTypes>
+                     binobstraits=pObservers_[irestobs_]->get_traits();
   StateInfo          stateinfo;
   StateInfo          gridinfo;
   geoflow::tbox::PropertyTree 

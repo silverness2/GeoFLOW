@@ -61,12 +61,12 @@ struct GStateInfo {
   GFTYPE      time    = 0.0;      // state time
   std::vector<GString>
               svars;              // names of state members
-   GString     file_;          // collective file name
-   CompDesc    icomptype;          // encoding of state component types    
+   GString    aggfile;            // collective aggregate file name
+   CompDesc   icomptype;          // encoding of state component types    
    GTMatrix<GINT>
-               porder;             // if ivers=0, is 1 X GDIM; else nelems X GDIM;
-// GString     idir    = ".";      // input directory
-// GString     odir    = ".";      // output directory
+              porder;             // if ivers=0, is 1 X GDIM; else nelems X GDIM;
+   GString    idir    = ".";      // input directory
+   GString    odir    = ".";      // output directory
 };
 
 
@@ -113,6 +113,7 @@ GBOOL            bench_=FALSE;
 GINT             nsolve_;      // number *solved* 'state' arrays
 GINT             nstate_;      // number 'state' arrays
 GINT             ntmp_  ;      // number tmp arrays
+GINT             irestobs_;    // index in pObservers_ that writes restarts
 GGrid           *grid_=NULLPTR;// grid object
 State            u_;           // state array
 State            c_;           // advection velocity, if used
@@ -126,6 +127,8 @@ IntegratorPtr    pIntegrator_; // integrator pointer
 PropertyTree     ptree_;       // main prop tree
 GGFX<GFTYPE>    *ggfx_=NULLPTR;// DSS operator
 IOBasePtr        pIO_;         // ptr to IOBase operator
+std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>>
+                 pObservers_(new std::vector<std::shared_ptr<ObserverBase<MyTypes>>>()); // observer array
 GC_COMM          comm_ ;       // communicator
 
 
