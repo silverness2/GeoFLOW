@@ -12,19 +12,26 @@
 #include "gcomm.hpp"
 #include "gtvector.hpp"
 #include "ggrid.hpp"
+#include "ggrid.hpp"
 
 typedef GFTYPE                      Time;
 typedef GTVector<GTVector<GFTYPE>*> State;
 
+template<typename TypePack>
 class GGridFactory
 {
   public:
 
-	static GGrid *build(const geoflow::tbox::PropertyTree& ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> gbasis, GC_COMM &comm);
+        using StateInfo   = typename TypePack::StateInfo
+        using IOBaseType  = IOBase<TypePack>;
+        using IOBasePtr   = std::shared_ptr<IOBaseType>;
+        using Grid        = typename TypePack::Grid;
+
+	static GGrid *build(const geoflow::tbox::PropertyTree& ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> gbasis, IOBasePtr pIO, GC_COMM &comm);
 
 
   private:
-        static void   read_grid(const geoflow::tbox::PropertyTree& ptree, GC_COMM comm,  GTMatrix<GINT> &p, GTVector<GTVector<GFTYPE>> &xnodes);
+        static void   read_grid(const geoflow::tbox::PropertyTree& ptree, GC_COMM comm,  GTMatrix<GINT> &p, GTVector<GTVector<GFTYPE>> &xnodes, IOBasePtr pIO);
 
 
 }; // class GGridFactory

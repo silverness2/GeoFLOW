@@ -17,10 +17,12 @@
 // DESC   : Do build and return of GGrid object
 // ARGS   : ptree : main property tree
 //          gbasis: basis object
+//          pIO   : IO object
 //          comm  : GC_Comm object
 // RETURNS: GGrid object ptr
 //**********************************************************************************
-GGrid *GGridFactory::build(const geoflow::tbox::PropertyTree& ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> gbasis, GC_COMM &comm)
+template<typename TypePack>
+GGrid *GGridFactory<TypePack>::build(const geoflow::tbox::PropertyTree& ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> gbasis, IOBasePtr pIO, GC_COMM &comm)
 {
   GSIZET  itindex = ptree.getValue<GSIZET>   ("restart_index", 0);
   GString sdef    = "grid_box";
@@ -63,7 +65,7 @@ GGrid *GGridFactory::build(const geoflow::tbox::PropertyTree& ptree, GTVector<GN
     // In this case, gbasis is interpreted as a 'pool' of 
     // basis functions with various orders. It is an error
     // if correct order is not found on restart:
-    read_grid(ptree, comm, p, xnodes);
+    read_grid(ptree, comm, p, xnodes, pIO);
     if      ( "grid_icos"   == gname   // 2d or 3d Icos grid
         ||    "grid_sphere" == gname ) {
       grid = new GGridIcos(ptree, gbasis, comm);
@@ -93,10 +95,12 @@ GGrid *GGridFactory::build(const geoflow::tbox::PropertyTree& ptree, GTVector<GN
 //          xnodes: node positions from file. Returned quantity is a vector
 //                  of 2 or 3 vectors representing x, y, ... coordinates. 
 //                  Is resized according to the input data.
+//          pIO   : IO object
 // RETURNS: GGrid object ptr
 //**********************************************************************************
+template<typename TypePack>
 void GGridFactory::read_grid(const geoflow::tbox::PropertyTree& ptree, GC_COMM comm,  GTMatrix<GINT> &p, 
-                             GTVector<GTVector<GFTYPE>> &xnodes)
+                             GTVector<GTVector<GFTYPE>> &xnodes, IOBasePtr pIO)
 {
   GINT                        nc=GDIM;
   GElemType                   igtype;
@@ -105,6 +109,7 @@ void GGridFactory::read_grid(const geoflow::tbox::PropertyTree& ptree, GC_COMM c
   GString                     sgtype;
   GTVector<GTVector<GFTYPE>*> u;
 
+  assert(pIO != NULLPTR && "IO object not set");
 
   // Resize xnodes based on configuration file:
   sgtype = ptree.getValue<GString>("grid_type");
