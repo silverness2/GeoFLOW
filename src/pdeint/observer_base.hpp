@@ -70,8 +70,6 @@ public:
                           grid_names;                 // file/ref names for each grid comp
                 std::string 
                           agg_grid_name  = "grid";   // accumulated grid filename
-                std::string         idir = ".";      // input directory
-                std::string         odir = ".";      // output directory
                 std::vector<dqTraits>
                           derived_quantities;         // derived types: [ [type, function, output name],..]
                 size_t    start_ocycle   = 0;         // starting output cycle 
