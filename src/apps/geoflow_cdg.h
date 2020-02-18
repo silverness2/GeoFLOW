@@ -61,7 +61,6 @@ struct GStateInfo {
   GFTYPE      time    = 0.0;      // state time
   std::vector<GString>
               svars;              // names of state members
-   GString    aggfile;            // collective aggregate file name
    CompDesc   icomptype;          // encoding of state component types    
    GTMatrix<GINT>
               porder;             // if ivers=0, is 1 X GDIM; else nelems X GDIM;

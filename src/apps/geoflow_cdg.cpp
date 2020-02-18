@@ -16,6 +16,8 @@ int main(int argc, char **argv)
     GSIZET  icycle=0;       // curr time cycle
     std::vector<GINT> pstd(GDIM);  // order in each direction
     GTMatrix<GINT> p; // needed for restart, but is dummy
+    ObserverBase<MyTypes>::Traits
+                 *binobstraits;
 
     typename MyTypes::Time  t  = 0;
     typename MyTypes::Time  dt = 0.1;
@@ -87,7 +89,8 @@ int main(int argc, char **argv)
     EH_MESSAGE("geoflow: build grid...");
     GTimerStart("gen_grid");
 
-    grid_ = GGridFactory<MyTypes>::build(ptree_, gbasis_, pIO_, comm_);
+    binobstraits = &pObservers_[irestobs_]->get_traits();
+    grid_ = GGridFactory<MyTypes>::build(ptree_, gbasis_, pIO_, *binobstraits, comm_);
     GTimerStop("gen_grid");
 
     //***************************************************
@@ -965,23 +968,21 @@ void do_restart(const PropertyTree &ptree, GGrid &, State &u,
   GBOOL              bret;
   GFTYPE             tt = t;
   std::stringstream  format;
-  IOBase<MyTypes>    piotraits=pIO_->get_traits();
-  ObserverBase<MyTypes>
+  ObserverBase<MyTypes>::Traits
                      binobstraits=pObservers_[irestobs_]->get_traits();
   StateInfo          stateinfo;
 
 
   itindex            = ptree.getValue<GSIZET>("restart_index", 0);
   stateinfo.sttype   = 1; // state variable type
-  stateinfo.aggfile  = binobjtraits.agg_state_name;
-  stateinfo.vars.resize(binobjtraits.istate_names.size());
-  stateinfo.vars     = binobjtraits.istate_names;
+  stateinfo.vars.resize(binobjtraits.state_names.size());
+  stateinfo.vars     = binobjtraits.state_names;
   stateinfo.idir     = binobjtraits.idir;
   stateinfo.odir     = binobjtraits.odir;
   stateinfo.index    = itindex;
 
   // Get data:
-  pIO_->read_state(stateinfo.aggfile, stateinfo, u);
+  pIO_->read_state(binobjtraits.agg_state_name, stateinfo, u);
   p.resize(stateinfo.porder.size(1),stateinfo.porder.size(2));
   p = stateinfo.porder;
  
