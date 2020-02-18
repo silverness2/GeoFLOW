@@ -51,7 +51,9 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
         traits.treat_as_1d   = obstree.getValue<bool>       ("treat_as_1d",false);        // treat-as-1d flag
         traits.state_index   = obstree.getArray<int>        ("state_index",defi);         // state ids to 'observe' [0, 1, 2...]
         traits.state_names   = obstree.getArray<std::string>("state_names",defst_names);  // state names 
+        traits.agg_state_name= obstree.getValue<std::string>("agg_state_name","state");  // state names 
         traits.grid_names    = obstree.getArray<std::string>("grid_names",defgr_names);   // grid comp names 
+        traits.agg_grid_name = obstree.getValue<std::string>("agg_grid_name","grid");   // grid comp names 
         traits.cycle_interval= obstree.getValue<size_t>     ("cycle_interval", 10);       // cadence for cycle type
         traits.time_interval = obstree.getValue<double>     ("time_interval", 1.0);       // cadence for time type
         traits.freq_fact     = obstree.getValue<double>     ("interval_freq_fact", 1.0);  // freq factor relative to, say restart
@@ -93,6 +95,9 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
                 pIO = IOFactory<MyTypes>::build(ptree, grid, world);
 		// Allocate observer Implementation
 		std::shared_ptr<ObsImpl> obs_impl(new ObsImpl(equation, grid, traits));
+                // Set some pIO traits from obserer:
+                pIO->get_traits().idir = traits.idir;
+                pIO->get_traits().odir = traits.odir;
                 obs_impl->setIO(pIO);
 
 		// Set back to base type
