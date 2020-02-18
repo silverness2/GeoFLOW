@@ -49,7 +49,7 @@ public:
 
                          ~GTMatrix();
 
-         GBOOL              operator=(const GTMatrix<T> &) ;
+         GBOOL              operator==(const GTMatrix<T> &) ;
          GTMatrix<T>       &operator=(const GTMatrix<T> &) ;
          void               operator=(T);
          void               operator=(const GTVector<T> &);

@@ -1475,7 +1475,7 @@ GTVector<T>::sum()
 //**********************************************************************************
 template<class T>
 T
-GTVector<T>::sum(GLLONG ibeg, GLLONG iend) 
+GTVector<T>::sum(GSIZET ibeg, GSIZET iend) 
 {
   T      sum=static_cast<T>(0);
   GLLONG j;
