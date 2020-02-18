@@ -126,7 +126,7 @@ int main(int argc, char **argv)
     //***************************************************
     EH_MESSAGE("geoflow: create observers...");
     std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> pObservers(new std::vector<std::shared_ptr<ObserverBase<MyTypes>>>());
-    create_observers(pEqn_, ptree_, icycle, t, pIO_, pObservers);
+    create_observers(pEqn_, ptree_, icycle, t, pObservers);
 
     //***************************************************
     // Create integrator:
@@ -276,11 +276,10 @@ void create_mixer(PropertyTree &ptree, MixBasePtr &pMixer)
 // ARGS  : grid      : GGrid object
 //         icycle    : initial icycle
 //         time      : initial time
-//         pIO       : IOBasePtr object, returned
 //         pObservers: observer list, returned
 //**********************************************************************************
 void create_observers(EqnBasePtr &pEqn, PropertyTree &ptree, GSIZET icycle, Time time,
-IOBasePtr *pIO, std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers)
+std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers)
 {
     GINT    ivers;
     GSIZET  rest_ocycle;       // restart output cycle
@@ -298,10 +297,6 @@ IOBasePtr *pIO, std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes
     std::vector<GString> obslist = ptree.getArray<GString>("observer_list",default_obslist);
     dstr = "constant";
     ptype = ptree.getValue<GString>("exp_order_type",dstr);
-
-    // Create IO obect to attach to observer:
-    pIO_ = IOFactory<MyTypes>::build(ptree, *grid_, comm_);
-    
 
     // Tie cadence_type to restart type:
     obsptree = ptree.getPropertyTree("gio_observer");
@@ -348,7 +343,10 @@ IOBasePtr *pIO, std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes
         }
         ptree.setPropertyTree(obslist[j],obsptree); // set obs tree with new values
 
-        pObservers->push_back(ObserverFactory<MyTypes>::build(ptree, obslist[j], pEqn, *grid_));
+        // Create pIO object in return from some factory calls:
+        pio = ObserverFactory<MyTypes>::build(ptree, obslist[j], pEqn, *grid_);
+        pObservers->push_back(ObserverFactory<MyTypes>::build(ptree, obslist[j], pEqn, *grid_, pIO_));
+
       }
     }
 
@@ -962,11 +960,49 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
 void do_restart(const PropertyTree &ptree, GGrid &, State &u, 
                 GTMatrix<GINT>&p,  GSIZET &cycle, Time &t)
 {
-  GBOOL  bret;
-  GFTYPE tt = t;
 
-  bret = GUpdateBdyFactory<MyTypes>::update(ptree_, *grid_, pEqn_, tt, utmp_, u, ub);
-  
+  assert(pIO_ != NULLPTR && "IO operator not set!");
+
+  GBOOL              bret;
+  GFTYPE             tt = t;
+  std::stringstream  format;
+  IOBase<MyTypes>    piotraits=pIO_->get_traits();
+  StateInfo          stateinfo;
+  StateInfo          gridinfo;
+  geoflow::tbox::PropertyTree 
+                     inputptree;
+
+
+  itindex = ptree.getValue<GSIZET>   ("restart_index", 0);
+
+     // Get data:
+    if ( igrid )  // use grid format
+      format    << "%s/%s.%0" << piotraits.wtask << "d.out";
+    else          // use state format
+      format    << "%s/%s.%0" << piotraits.wtime << "d.%0" << piotraits.wtask << "d.out";
+
+    for ( GSIZET j=0; j<nc; j++ ) { // Retrieve all grid coord vectors
+      if ( igrid )  // use grid format
+        sprintf(cfname_, format.str().c_str(), piotraits.dir.c_str(), stdlist[j].c_str(), myrank);
+      else          // use state format
+        sprintf(cfname_, format.str().c_str(), piotraits.dir.c_str(), stdlist[j].c_str(), itindex, myrank);
+      fname_.assign(cfname_);
+      nr = gio_read<GFTYPE>(piotraits, fname_, *u[j]);
+    }
+
+    if ( igrid ) { // needed for grid restart
+      p = piotraits.porder;
+      p.resize(piotraits.porder.size(1),piotraits.porder.size(2));
+    }
+    if ( piotraits.ivers > 0 ) piotraits.ivers = 1;
+    assert(piotraits.ivers == ivers  && "Incompatible version identifier");
+    assert(piotraits.dim   == GDIM   && "Incompatible problem dimension");
+    assert(piotraits.gtype == igtype && "Incompatible grid type");
+ 
+    // Assign time and cycle from traits, for return:
+    cycle = stateinfo.cycle;
+    t     = stateinfo.time;
+
   
 } // end of method do_restart
 

@@ -140,7 +140,7 @@ void init_force       (const PropertyTree &ptree, GGrid &, EqnBasePtr &pEqn, Tim
 void init_bdy         (const PropertyTree &ptree, GGrid &, EqnBasePtr &pEqn, Time &t, State &utmp, State &u, State &ub);
 void allocate         (const PropertyTree &ptree);
 void deallocate       ();
-void create_observers (EqnBasePtr &eqn_ptr, PropertyTree &ptree, GSIZET icycle, Time time,     IOBasePtr  &pIO, std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers);
+void create_observers (EqnBasePtr &eqn_ptr, PropertyTree &ptree, GSIZET icycle, Time time, std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers);
 void create_equation  (const PropertyTree &ptree, EqnBasePtr &pEqn);
 void create_mixer     (PropertyTree &ptree, MixBasePtr &pMixer);
 void create_basis_pool(PropertyTree &ptree, BasisBase &gbasis);
