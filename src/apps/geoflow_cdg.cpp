@@ -87,7 +87,7 @@ int main(int argc, char **argv)
     EH_MESSAGE("geoflow: build grid...");
     GTimerStart("gen_grid");
 
-    grid_ = GGridFactory::build(ptree_, gbasis_, comm_);
+    grid_ = GGridFactory<MyTypes>::build(ptree_, gbasis_, pIO_, comm_);
     GTimerStop("gen_grid");
 
     //***************************************************
