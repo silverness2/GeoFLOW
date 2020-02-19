@@ -5,15 +5,11 @@
  *      Author: bflynt
  */
 
-#include <algorithm>
-#include <limits>
-
-#include "integrator.hpp"
-#include "tbox/assert.hpp"
-#include "tbox/error_handler.hpp"
+#include "pdeint/integrator.hpp"
 
 namespace geoflow {
 namespace pdeint {
+
 
 template<typename EquationType>
 Integrator<EquationType>::Integrator(const EqnBasePtr&   equation,
@@ -192,7 +188,6 @@ void Integrator<EquationType>::init_dt(const Time& t, State& u, Time& dt) const{
 	}
 
 }
-
 
 
 } // namespace pdeint

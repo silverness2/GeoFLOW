@@ -32,7 +32,7 @@ public:
 	using Time       = typename TypePack::Time;
 	using CompDesc   = typename TypePack::CompDesc;
 	using Jacobian   = typename TypePack::Jacobian;
-        using StateInfo  = typename TypePack::StateInfo
+        using StateInfo  = typename TypePack::StateInfo;
 	using Size       = typename TypePack::Size;
 
 #if 0

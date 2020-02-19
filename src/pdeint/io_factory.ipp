@@ -36,7 +36,7 @@ IOFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid, GC_COMM comm){
 		using IOImpl = GIO<ET>;
 
                 gtraits.ivers     = ioobj_ptree.getValue <int>        ("ivers",0);
-                siotype           = ioobj_ptree.getValue <int>        ("io_type","collective");
+                siotype           = ioobj_ptree.getValue <std::string>("io_type","collective");
                 gtraits.multivar  = ioobj_ptree.getValue <bool>       ("multivar",false);
                 gtraits.prgrid    = ioobj_ptree.getValue <bool>       ("prgrid",false);
                 gtraits.wtime     = ioobj_ptree.getValue <int>        ("wtime",6);
@@ -51,7 +51,7 @@ IOFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid, GC_COMM comm){
                 else assert(false); 
 
 		// Allocate IO object implementation
-		std::shared_ptr<IOImpl> io_impl(new GIO(grid, gtraits, comm));
+		std::shared_ptr<IOImpl> io_impl(new GIO<ET>(grid, gtraits, comm));
 
 		// Set back to base type
 		base_ptr = io_impl;

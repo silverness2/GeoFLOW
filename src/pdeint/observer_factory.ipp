@@ -80,7 +80,7 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
 		base_ptr = obs_impl;
 	}
         else if( "gio_observer" == observer_name ) {
-		using ObsImpl = GPosixIOObserver<ET>;
+		using ObsImpl = GIOObserver<ET>;
 
                 // Fill derived quantities strutures, if any:
                 dqnames       = obstree.getArray<std::string> ("derived_quantities",defq);  // list of derived quantities to output
@@ -92,7 +92,7 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
                   traits.derived_quantities[j].smath_op    = dqtree.getValue<std::string>("mathop" ,"");
                 }
                 if ( pIO != nullptr ) delete pIO;
-                pIO = IOFactory<MyTypes>::build(ptree, grid, world);
+                pIO = IOFactory<ET>::build(ptree, grid, world);
 		// Allocate observer Implementation
 		std::shared_ptr<ObsImpl> obs_impl(new ObsImpl(equation, grid, traits));
                 // Set some pIO traits from obserer:

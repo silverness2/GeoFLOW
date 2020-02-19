@@ -11,6 +11,11 @@
 
 #include <memory>
 #include <vector>
+#include <algorithm>
+#include <limits>
+
+#include "tbox/assert.hpp"
+#include "tbox/error_handler.hpp"
 
 #include "pdeint/null_observer.hpp"
 #include "pdeint/mixer_base.hpp"
@@ -197,6 +202,6 @@ protected:
 } // namespace geoflow
 
 
-#include "pdeint/integrator.ipp"
+//#include "pdeint/integrator.ipp"
 
 #endif /* SRC_PDEINT_INTEGRATOR_HPP_ */

@@ -13,6 +13,7 @@
 #include "tbox/error_handler.hpp"
 #include "pdeint/io_base.hpp"
 #include "tbox/property_tree.hpp"
+#include "gio.hpp"
 
 
 namespace geoflow {
@@ -22,12 +23,12 @@ namespace pdeint {
 template<typename IOType>
 struct IOFactory {
 	using IO          = IOType;
-	using IOBaseType  = IOBase<Equation>;
-	using IOBasePtr   = std::shared_ptr<IOBase>;
+	using IOBaseType  = IOBase<IO>;
+	using IOBasePtr   = std::shared_ptr<IOBaseType>;
         using State       = typename IOType::State;
 	using Grid        = typename IOType::Grid;
 
-	static IOBasePtr build(const tbox::PropertyTree& ptree, Grid& grid, State& utmp);
+	static IOBasePtr build(const tbox::PropertyTree& ptree, Grid& grid, GC_COMM comm);
 
 };
 

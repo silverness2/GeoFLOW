@@ -14,8 +14,9 @@
 #include "pdeint/observer_base.hpp"
 #include "tbox/property_tree.hpp"
 #include "pdeint/null_observer.hpp"
-#include "pdeint/iobase.hpp"
+#include "pdeint/io_base.hpp"
 #include "gio_observer.hpp"
+#include "io_factory.hpp"
 #include "gglobaldiag_basic.hpp"
 
 

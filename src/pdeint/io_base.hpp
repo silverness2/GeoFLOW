@@ -37,7 +37,6 @@ public:
 	 * Constructor to initialize everything needed to do IO
 	 *
 	 */
-	IOBase(){}
 	IOBase(const IOBase& I) = default;
 	~IOBase() = default;
 	IOBase& operator=(const IOBase& I) = default;
@@ -50,7 +49,7 @@ public:
 	 */
 	void write_state( std::string  filename,
                           StateInfo&   info,
-                          State&       u){
+                          const State&       u){
                return this->read_state_impl(filename, info, u);
              }
         /**
@@ -62,13 +61,13 @@ public:
 	void read_state ( std::string  filename,
                           StateInfo&   info,
                           State&       u ){
-               return this->write_state_impl(filename, info, u);
+               return this->read_state_impl(filename, info, u);
              }
 
 protected:
         virtual void write_state_impl(std::string filename,
                                       StateInfo&  info,
-                                      State&      u ) = 0;
+                                      const State&      u ) = 0;
         virtual void read_state_impl (std::string  filename,
                                       StateInfo&   info,
                                       State&       u ) = 0;
