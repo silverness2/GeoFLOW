@@ -18,7 +18,6 @@
  set(CDG_GRID_SRC   ${GHOME}/grid/ggrid.cpp
                     ${GHOME}/grid/ggrid_icos.cpp
                     ${GHOME}/grid/ggrid_box.cpp
-##                  ${GHOME}/grid/ggrid_factory.cpp
     )
 
  set(CDG_INIT_SRC   ${GHOME}/init/gspecbdy_factory.cpp 
