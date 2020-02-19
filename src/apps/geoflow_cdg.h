@@ -53,19 +53,20 @@ using namespace geoflow::tbox;
 using namespace std;
 
 struct GStateInfo {
-  GINT        sttype  = 1;        // state type index (grid=0 or state=1)
-  GINT        gtype   = 0;        // check src/cdg/include/gtypes.h
-  GSIZET      index   = 0;        // time index
-  GSIZET      nelems  = 0;        // num elems
-  GSIZET      cycle   = 0;        // continuous time cycle
-  GFTYPE      time    = 0.0;      // state time
+  GINT        sttype  = 1;       // state type index (grid=0 or state=1)
+  GINT        gtype   = 0;       // check src/cdg/include/gtypes.h
+  GSIZET      index   = 0;       // time index
+  GSIZET      nelems  = 0;       // num elems
+  GSIZET      cycle   = 0;       // continuous time cycle
+  GFTYPE      time    = 0.0;     // state time
   std::vector<GString>
-              svars;              // names of state members
-   CompDesc   icomptype;          // encoding of state component types    
-   GTMatrix<GINT>
-              porder;             // if ivers=0, is 1 X GDIM; else nelems X GDIM;
-   GString    idir    = ".";      // input directory
-   GString    odir    = ".";      // output directory
+              svars;             // names of state members
+  GTVector<GStateCompType>
+              icomptype;         // encoding of state component types    
+  GTMatrix<GINT>
+              porder;            // if ivers=0, is 1 X GDIM; else nelems X GDIM;
+  GString    idir    = ".";      // input directory
+  GString    odir    = ".";      // output directory
 };
 
 
@@ -95,8 +96,8 @@ struct EquationTypes {
 using MyTypes       = EquationTypes<>;           // Define types used
 using EqnBase       = EquationBase<MyTypes>;     // Equation Base type
 using EqnBasePtr    = std::shared_ptr<EqnBase>;  // Equation Base ptr
-using IOBase        = IOBase<MyTypes>;           // IO Base type
-using IOBasePtr     = std::shared_ptr<IOBase>;   // IO Base ptr
+using IOBaseType    = IOBase<MyTypes>;           // IO Base type
+using IOBasePtr     = std::shared_ptr<IOBaseType>;// IO Base ptr
 using MixBase       = MixerBase<MyTypes>;        // Stirring/mixing Base type
 using MixBasePtr    = std::shared_ptr<MixBase>;  // Stirring/mixing Base ptr
 using IntegratorPtr = std::shared_ptr<Integrator<MyTypes>>;

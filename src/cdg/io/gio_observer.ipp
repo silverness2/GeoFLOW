@@ -16,7 +16,7 @@
 //          traits  : Traits sturcture
 //**********************************************************************************
 template<typename EquationType>
-GIOObserver<EquationType>::GIOObserver(const EqnBasePtr &equation, Grid &grid,  typename ObserverBase<EquationType>::Traits &traits):
+GIOObserver<EquationType>::GIOObserver(const EqnBasePtr &equation, Grid &grid,  const IOBasePtr &io_ptr, typename ObserverBase<EquationType>::Traits &traits):
 ObserverBase<EquationType>(equation, grid, traits),
 bprgrid_         (TRUE),
 bInit_          (FALSE),
@@ -24,7 +24,7 @@ cycle_              (0),
 ocycle_             (0),
 cycle_last_         (0),
 time_last_        (0.0),
-pIO_          (NULLPTR)
+pIO_           (io_ptr)
 { 
   this->grid_  = &grid;
   stateinfo_   = equation.stateinfo(); 
@@ -55,7 +55,7 @@ void GIOObserver<EquationType>::observe_impl(const Time &t, const State &u, cons
   mpixx::communicator comm;
   GINT                nstate=0;
   GTVector<GTVector<GFTYPE>>
-                     *xnodes = &grid_->xNodes();
+                     *xnodes = &(this->grid_->xNodes());
 
   if ( (this->traits_.itype == ObserverBase<EquationType>::OBS_CYCLE 
         && (cycle_-cycle_last_+1) >= this->traits_.cycle_interval)
@@ -63,8 +63,8 @@ void GIOObserver<EquationType>::observe_impl(const Time &t, const State &u, cons
         &&  t-time_last_ >= this->traits_.time_interval) 
     ||  cycle_ == 0 ) {
     stateinfo_.sttype = 1; // 'state' state
-    stateinfo_.nelems = grid_->nelems();
-    stateinfo_.gtype  = grid_->gtype();
+    stateinfo_.nelems = this->grid_->nelems();
+    stateinfo_.gtype  = this->grid_->gtype();
     stateinfo_.index  = ocycle_;
     stateinfo_.cycle  = cycle_;
     stateinfo_.time   = t;
@@ -87,8 +87,8 @@ void GIOObserver<EquationType>::observe_impl(const Time &t, const State &u, cons
       gridinfo_.cycle  = cycle_;
       gridinfo_.time   = t;
       gridinfo_.svars  = this->traits_.grid_names;
-      gridinfo_.porder.resize(stateinfo_.porder.dim(1),stateinfo_.porder.dim(2))  
-      gridinfo_.porder = stateinfo_porder;
+      gridinfo_.porder.resize(stateinfo_.porder.dim(1),stateinfo_.porder.dim(2)); 
+      gridinfo_.porder = stateinfo_.porder;
       
       for ( auto j=0; j<gp_.size(); j++ ) gp_[j] = &(*xnodes)[j];
       pIO_->write_state(this->traits_.agg_grid_name, gridinfo_, gp_);
@@ -124,20 +124,6 @@ void GIOObserver<EquationType>::init(StateInfo &info)
    time_last_  = info.time ;
    ocycle_     = info.cycle;
  
-   // Set default state names member data:
-   for ( auto j=0; j<state_index_.size(); j++ ) {
-     sprintf(stmp, "%s%d", "u", state_index_[j]+1);
-     def_statenames_.push_back(stmp); 
-   } 
-
-   // Set default grid names member data:
-   GINT ng = this->grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
-   for ( auto j=0; j<ng; j++ ) {
-     sprintf(stmp, "%sgrid", spref[j].c_str());
-     def_gridnames_.push_back(stmp); 
-   }
-   gu_.resize(ng);
-
    bInit_ = TRUE;
 
 } // end of method init
@@ -171,7 +157,7 @@ void GIOObserver<EquationType>::print_derived(const Time &t, const State &u)
       sdqnames.resize(this->traits_.derived_quantities[j].snames    .size());
       iuin       = this->traits_.derived_quantities[j].icomponents;
       sdqnames   = this->traits_.derived_quantities[j].snames;
-      aggderived = this->traits_.derived_quantities[j].agg_sname;
+      agg_derived= this->traits_.derived_quantities[j].agg_sname;
       sop        = this->traits_.derived_quantities[j].smath_op;
 
       assert( iuin.size() > 0 && "Derived quantities require state component(s)");
@@ -196,7 +182,7 @@ void GIOObserver<EquationType>::print_derived(const Time &t, const State &u)
       for ( auto j=0; j<up_.size(); j++ ) {
         up_[j] = uout[iuout[j]];
       }
-      pIO_->write_state(aggderived, stateinfo_, up_);
+      pIO_->write_state(agg_derived, stateinfo_, up_);
     }
 
 

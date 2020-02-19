@@ -49,8 +49,8 @@ public:
                "Value is of incorrect type");
         static_assert(std::is_same<State,GTVector<GTVector<GFTYPE>*>>::value,
                "State is of incorrect type");
-        static_assert(std::is_same<StateInfo,GStateIOTraits>::value,
-               "StateInfo is of incorrect type");
+//      static_assert(std::is_same<StateInfo,GStateIOTraits>::value,
+//             "StateInfo is of incorrect type");
 
                            GIO() = delete;
                            GIO(Grid &grid, Traits &traits, GC_COMM comm);
@@ -58,13 +58,13 @@ public:
                            GIO(const GIO &a) = default;
                            GIO &operator=(const GIO &bu) = default;
 
-        void               write_state_impl(std::string filename, StateInfo &info, State &u);
+        void               write_state_impl(std::string filename, StateInfo &info, const State &u);
         void               read_state_impl(std::string filename, StateInfo &info, State &u);
         Traits            &get_traits() { return traits_; }
 
 private:
 // Private methods:
-        void               init(const Time &t, const State &u);
+        void               init();
 //      void               read_state_posix (StateInfo &info,       State  &u);
 //      void               read_state_coll  (StateInfo &info,       State  &u);
         GSIZET             write_posix(GString filename, StateInfo &info, const GTVector<Value> &u);
@@ -72,6 +72,7 @@ private:
         GSIZET             write_coll (GString filename, StateInfo &info, const State           &u);
         GSIZET             read_coll  (GString filename, StateInfo &info,       State           &u);
         GSIZET             read_header(GString filename, StateInfo &info, Traits &traits);
+        template<typename GFPTR>
         GSIZET             write_header(GFPTR, StateInfo &info, Traits &traits);
         GSIZET             sz_header(StateInfo &info, Traits &traits);
         void               resize(GINT n);

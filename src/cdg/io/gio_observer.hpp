@@ -12,21 +12,21 @@
 #include "ggrid.hpp"
 #include "pdeint/equation_base.hpp"
 #include "pdeint/observer_base.hpp"
+#include "pdeint/io_base.hpp"
 #include "tbox/property_tree.hpp"
 #include "tbox/mpixx.hpp"
-#include "gio.h"
 
 using namespace geoflow::pdeint;
 using namespace std;
 
 
-template<typename OBSType>
-class GIOObserver : public ObserverBase<OBSType>
+template<typename EquationType>
+class GIOObserver : public ObserverBase<EquationType>
 {
 
 public:
-        using Equation    = OBSType;
-        using EqnBase     = EquationBase<OBSType>;
+        using Equation    = EquationType;
+        using EqnBase     = EquationBase<EquationType>;
         using EqnBasePtr  = std::shared_ptr<EqnBase>;
         using IOBaseType  = IOBase<EquationType>;
         using IOBasePtr   = std::shared_ptr<IOBaseType>;
@@ -39,9 +39,9 @@ public:
         using Jacobian    = typename Equation::Jacobian;
         using Size        = typename Equation::Size;
 
-//      using ObserverBase<OBSType>::ObsType;
-//      using OBS_CYCLE = typename ObserverBase<OBSType>::ObsType::OBS_CYCLE;
-//      using OBS_TIME  = typename ObserverBase<OBSType>::OBS_TIME;
+//      using ObserverBase<EquationType>::ObsType;
+//      using OBS_CYCLE = typename ObserverBase<EquationType>::ObsType::OBS_CYCLE;
+//      using OBS_TIME  = typename ObserverBase<EquationType>::OBS_TIME;
 
         static_assert(std::is_same<State,GTVector<GTVector<GFTYPE>*>>::value,
                "State is of incorrect type");
@@ -51,8 +51,8 @@ public:
                "Grid is of incorrect type");
 
                            GIOObserver() = delete;
-                           GIOObserver(const EqnBasePtr &equation, const IOBasePtr &io_base_ptr,
-                                       Grid &grid, typename ObserverBase<EquationType>::Traits &traits);
+                           GIOObserver(const EqnBasePtr &equation, Grid &grid, const IOBasePtr &io_ptr,
+                                       typename ObserverBase<EquationType>::Traits &traits);
 
                           ~GIOObserver() = default;
                            GIOObserver(const GIOObserver &a) = default;
@@ -76,10 +76,10 @@ private:
         GTVector<GString>  state_names_;// list of names of state files
         GTVector<GString>  grid_names_ ;// list of names of grid comp files
         IOBasePtr          pIO_        ;// ptr to IO object
+        State              up_         ;// current state array
+        State              gp_         ;// current grid 'state' array
         StateInfo          stateinfo_  ;// info struct for state
         StateInfo          gridinfo_   ;// info struct for grid
-        IOBase<OBSType>   *pIO_;       ;// IO object
-    
 
 };
 
