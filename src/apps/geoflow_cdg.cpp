@@ -149,7 +149,7 @@ int main(int argc, char **argv)
       init_force(ptree_, *grid_, pEqn_, t, utmp_, u_, uf_);
     }
     else {                // restart run
-      do_restart(ptree, *grid_, u_, p, icycle, t);
+      do_restart(ptree_, *grid_, u_, p, icycle, t);
 //    gio_restart(ptree_, 0, u_, p, icycle, t, comm_);
     }
 
@@ -346,9 +346,9 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
         ptree.setPropertyTree(obslist[j],obsptree); // set obs tree with new values
 
         // Create pIO object in return from some factory calls:
-        pio = ObserverFactory<MyTypes>::build(ptree, obslist[j], pEqn, *grid_);
+        pIO_ = IOFactory<MyTypes>::build(ptree, *grid_, comm_);
         pObservers->push_back(ObserverFactory<MyTypes>::build(ptree, obslist[j], pEqn, *grid_, pIO_));
-        irestobs_ = j;
+        if ( "gio_observer" == obslist[j] ) irestobs_ = j;
       }
     }
 
@@ -871,18 +871,44 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
   // Set up and output the analytic solution
   // and difference solution as well as
   // advection velocity if one exists:
-  GIOTraits iot;
-  iot.nelems = grid.nelems();
-  iot.gtype  = grid.gtype();
-  iot.porder.resize(1,GDIM);
-  for ( GINT j=0; j<GDIM; j++ ) iot.porder(0,j) = pstd[j];
-  gio_write_state(iot, grid, ua, istate, savars, comm_);
-  for ( GINT j=0; j<c_.size(); j++ ) 
-  gio_write_state(iot, grid, c_, cstate, scvars, comm_);
+  std::stringstream format;
+  ObserverBase<MyTypes>::Traits
+                     binobstraits=pObservers_[irestobs_]->get_traits();
+  StateInfoType      stateinfo;
+
+  stateinfo.sttype   = 1; // state variable type
+  stateinfo.vars.resize(binobjtraits.state_names.size());
+  stateinfo.vars     = binobjtraits.state_names;
+  stateinfo.idir     = binobjtraits.idir;
+  stateinfo.odir     = binobjtraits.odir;
+  stateinfo.index    = 0;
+  stateinfo.cycle    = 0;
+  stateinfo.time     = t;
+
+  // Get data:
+  stateinfo.svars.resize(nsolve_);
+  for ( GINT j=0; j<nsolve_; j++ ) { 
+    format .str(""); format .clear();
+    format << "u" << j+1 << "a";
+    stateinfo.svars[j] = format.str();
+  }
+  pIO_->write_state("ua", stateinfo, ua);
+
   for ( GINT j=0; j<nsolve_; j++ ) { 
     *utmp[j] = *u[j] - *ua[j];
+    format .str(""); format .clear();
+    format << "diff" << j+1;
+    stateinfo.svars[j] = format.str();
   }
-  gio_write_state(iot, grid, utmp, istate, sdvars, comm_);
+  pIO_->write_state("diff", stateinfo, utmp);
+  
+  stateinfo.svars.resize(c_.size());
+  for ( GINT j=0; j<c_.size(); j++ ) { 
+    format .str(""); format .clear();
+    format << "c" << j+1;
+    stateinfo.svars[j] = format.str();
+  }
+  pIO_->write_state("c", stateinfo, c_);
 #endif
 
   // Compute error norms:
@@ -970,7 +996,7 @@ void do_restart(const PropertyTree &ptree, GGrid &, State &u,
   std::stringstream  format;
   ObserverBase<MyTypes>::Traits
                      binobstraits=pObservers_[irestobs_]->get_traits();
-  StateInfo          stateinfo;
+  StateInfoType      stateinfo;
 
 
   itindex            = ptree.getValue<GSIZET>("restart_index", 0);
