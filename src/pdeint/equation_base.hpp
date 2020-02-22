@@ -35,7 +35,7 @@ public:
         using StateInfo  = typename TypePack::StateInfo;
 	using Size       = typename TypePack::Size;
 
-#if 0
+/*
         struct GStateInfo {
           GINT        sttype  = 1;        // state type index (grid=0 or state=1)
           GINT        gtype   = 0;        // check src/cdg/include/gtypes.h
@@ -45,19 +45,15 @@ public:
           GFTYPE      time    = 0.0;      // state time
           std::vector<GString>
                       svars;              // names of state members
-          GString     file_;          // collective file name
           CompDesc    icomptype;          // encoding of state component types    
           GTMatrix<GINT>
                       porder;             // if ivers=0, is 1 X GDIM; else nelems X GDIM;
-//        GString     idir    = ".";      // input directory
-//        GString     odir    = ".";      // output directory
+          GString     idir    = ".";      // input directory
+          GString     odir    = ".";      // output directory
         };
         static_assert(std::is_same<StateInfo,GStateInfo>::value,
                "StateInfo is of incorrect type");
-#endif
-
-
-
+*/
 
 	EquationBase() { update_bdy_callback_ = nullptr; }
 	EquationBase(const EquationBase& eb) = default;
