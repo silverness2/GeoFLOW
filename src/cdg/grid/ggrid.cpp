@@ -34,6 +34,7 @@ GGrid::GGrid(const geoflow::tbox::PropertyTree &ptree, GTVector<GNBasis<GCTYPE,G
 bInitialized_                   (FALSE),
 do_face_normals_                (FALSE),
 nprocs_        (GComm::WorldSize(comm)),
+ngelems_                            (0),
 irank_         (GComm::WorldRank(comm)),
 minnodedist_   (std::numeric_limits<GFTYPE>::max()),
 volume_                           (0.0),
@@ -449,8 +450,12 @@ void GGrid::grid_init()
   }
   GTimerStop("GGrid::grid_init: reg_geom_init");
 
+  // Get global number of elements:
+  GSIZET nelems = gelems_.size();
+  GComm::Allreduce(&nelems, &ngelems_, 1, T2GCDatatype<GSIZET>() , GC_OP_SUM, comm_);
 
   bInitialized_ = TRUE;
+
   mass_ = new GMass(*this);
   
   GTimerStart("GGrid::grid_init: find_min_dist");
