@@ -11,6 +11,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include "pdeint/equation_base.hpp"
 
 namespace geoflow {
 namespace pdeint {
@@ -23,21 +24,21 @@ namespace pdeint {
  * every time step and can extract any user requested information,
  * display, save states, etc.
  */
-template<typename EquationType>
+template<typename TypePack>
 class ObserverBase {
 
 public:
         enum ObsType     {OBS_CYCLE=0, OBS_TIME};
-	using Equation    = EquationType;
-        using EqnBase     = EquationBase<EquationType>;
+	using Types       = TypePack;
+        using EqnBase     = EquationBase<TypePack>;
         using EqnBasePtr  = std::shared_ptr<EqnBase>;
-	using State       = typename Equation::State;
-	using Grid        = typename Equation::Grid;
-	using Value       = typename Equation::Value;
-	using Derivative  = typename Equation::Derivative;
-	using Time        = typename Equation::Time;
-	using Jacobian    = typename Equation::Jacobian;
-	using Size        = typename Equation::Size;
+	using State       = typename Types::State;
+	using Grid        = typename Types::Grid;
+	using Value       = typename Types::Value;
+	using Derivative  = typename Types::Derivative;
+	using Time        = typename Types::Time;
+	using Jacobian    = typename Types::Jacobian;
+	using Size        = typename Types::Size;
 
         /**
          * Data structure to describe quantities derived from state data
