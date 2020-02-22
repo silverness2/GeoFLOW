@@ -114,7 +114,7 @@ GBOOL GInitForceFactory<EquationType>::set_by_comp(const PropertyTree& ptree, GG
   GStateCompType  itype;
   PropertyTree    vtree   = ptree.getPropertyTree(sblk);
   State           comp;
-  CompDesc       *icomptype = &peqn->comptype();
+  CompDesc       *icomptype = &peqn->stateinfo().icomptype;
   GStateCompType *pct;
   GTVector<GStateCompType> cdesc;
   GTVector<GSIZET>   itmp;
