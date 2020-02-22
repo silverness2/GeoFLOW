@@ -415,7 +415,7 @@ void GBurgers<TypePack>::init(GBurgers::Traits &traits)
   GSIZET     n, nsolve = bpureadv_ || doheat_ ? 1 : GDIM;
   GSIZET     nc = grid_->gtype() == GE_2DEMBEDDED ? 3 : GDIM;
   GINT       nop;
-  CompDesc *icomptype = &this->comptype();
+  CompDesc *icomptype = &this->stateinfo().icomptype;
 
   if ( !bpureadv_ &&  !doheat_ ) {
     nsolve = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;

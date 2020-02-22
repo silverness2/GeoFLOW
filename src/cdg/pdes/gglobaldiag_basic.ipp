@@ -94,7 +94,7 @@ void GGlobalDiag_basic<EquationType>::init(const Time t, const State &u)
 
    GSIZET   *iwhere=NULLPTR;
    GSIZET    nwhere=0;
-   CompDesc *icomptype = &(this->eqn_ptr_->comptype());
+   CompDesc *icomptype = &(this->eqn_ptr_->stateinfo().icomptype);
    icomptype->contains(GSC_KINETIC, iwhere, nwhere);
    for ( GSIZET j=0; j<nwhere; j++ ) ikinetic_.push_back(iwhere[j]);
 
