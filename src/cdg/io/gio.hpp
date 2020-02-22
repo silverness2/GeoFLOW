@@ -37,12 +37,13 @@ public:
           GIOType     io_type = GIO_COLL; // default to collective IO
           GINT        ivers   = 0;        // IO version tag
           GBOOL       multivar= false;    // multiple vars in file (only of COLL types)?
+          GBOOL       prgrid  = false;    // flag to print grid
           GINT        wtime   = 6;        // time-field width
           GINT        wtask   = 5;        // task-field width (only for POSIX types)
           GINT        wfile   = 2048;     // file name max
           GINT        dim     = GDIM;     // problem dimension
-          GString     idir    = ".";      // input directory
-          GString     odir    = ".";      // output directory
+          GString     idir         ;      // input directory
+          GString     odir         ;      // output directory
         }; 
 
         static_assert(std::is_same<Value,GFTYPE>::value,

@@ -35,7 +35,8 @@ struct ObserverFactory {
 	using ObsBasePtr  = std::shared_ptr<ObsBase>;
 	using Grid        = typename EquationType::Grid;
 
-	static ObsBasePtr build(const tbox::PropertyTree& ptree, std::string obsname,  EqnBasePtr& equation, Grid& grid, IOBasePtr pIO);
+	static ObsBasePtr build(const tbox::PropertyTree& ptree, std::string obsname,  EqnBasePtr& equation, Grid& grid, IOBasePtr &pIO);
+	static void       get_traits(const tbox::PropertyTree& ptree, std::string obsname,  typename ObserverBase<EquationType>::Traits& traits);
 
 };
 

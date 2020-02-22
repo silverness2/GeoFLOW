@@ -65,11 +65,11 @@ public:
                 std::vector<std::string>
                           state_names;                // file/ref names for each state member
                 std::string 
-                          agg_state_name = "state";   // accumulated state filename
+                          agg_state_name          ;   // accumulated state filename
                 std::vector<std::string>
                           grid_names;                 // file/ref names for each grid comp
                 std::string 
-                          agg_grid_name  = "grid";   // accumulated grid filename
+                          agg_grid_name          ;   // accumulated grid filename
                 std::vector<dqTraits>
                           derived_quantities;         // derived types: [ [type, function, output name],..]
                 size_t    start_ocycle   = 0;         // starting output cycle 

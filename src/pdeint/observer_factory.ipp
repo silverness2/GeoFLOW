@@ -12,7 +12,7 @@ namespace pdeint {
 
 template<typename ET>
 typename ObserverFactory<ET>::ObsBasePtr
-ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string obsname, EqnBasePtr& equation, Grid& grid, IOBasePtr pIO){
+ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string obsname, EqnBasePtr& equation, Grid& grid, IOBasePtr &pIO){
 
         // Note: the entry ptree is the main property tree!
 
@@ -27,8 +27,72 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
 	const std::string observer_name = obstree.getValue("observer_name", default_observer);
 
         // Set traits from prop tree:
-        typename ObserverBase<ET>::Traits traits;
+        typename ObserverBase<ET>::Traits obstraits;
     
+        // Set default derived quantity info:
+        get_traits(ptree, obsname, obstraits);
+
+
+        mpixx::communicator world;        
+	ObsBasePtr base_ptr;
+        GIO<ET> *giochild;       
+	if( "none" == observer_name ){
+		using ObsImpl = NullObserver<ET>;
+
+		// Allocate observer Implementation
+		std::shared_ptr<ObsImpl> obs_impl(new ObsImpl(equation, grid));
+
+		// Set back to base type
+		base_ptr = obs_impl;
+	}
+        else if( "gio_observer" == observer_name ) {
+		using ObsImpl = GIOObserver<ET>;
+
+                pIO->reset(IOFactory<ET>::build(ptree, grid, world));
+                giochild = dynamic_cast<GIO<ET>*>(pIO);
+		// Allocate observer Implementation
+		std::shared_ptr<ObsImpl> obs_impl(new ObsImpl(equation, grid, pIO, obstraits));
+
+                // Set some pIO traits from observer:
+                giochild->get_traits().idir = obstraits.idir;
+                giochild->get_traits().odir = obstraits.odir;
+//              obs_impl->setIO(pIO);
+
+		// Set back to base type
+		base_ptr = obs_impl;
+        }
+        else if( "global_diag_basic" == observer_name ) {
+		using ObsImpl = GGlobalDiag_basic<Equation>;
+
+		// Allocate observer Implementation
+		std::shared_ptr<ObsImpl> obs_impl(new ObsImpl(equation, grid, obstraits));
+
+		// Set back to base type
+		base_ptr = obs_impl;
+        }
+	else {
+		EH_ERROR("Requested observer not found: " << observer_name);
+	}
+
+	return base_ptr;
+}
+
+
+template<typename ET>
+void ObserverFactory<ET>::get_traits(const tbox::PropertyTree& ptree, const std::string obsname, typename ObserverBase<ET>::Traits& traits){
+
+        // Note: the entry ptree is the main property tree!
+
+
+	// Get the prop tree specified by obsname:
+        PropertyTree obstree = ptree.getPropertyTree(obsname);
+
+	// Set the default observer type
+	const std::string default_observer = "none";
+
+	// Get the type of observer
+	const std::string observer_name = obstree.getValue("observer_name", default_observer);
+
         // Set default derived quantity info:
         PropertyTree dqtree;
         std::vector<int>         defi;
@@ -63,23 +127,8 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
 //      traits.start_cycle   = obstree.getValue<size_t>     ("start_cycle",0);            // start evol cycle
         traits.start_time    = obstree.getValue<double>     ("start_time",0.0);           // start evol time
      
-	// Create the observer and cast to base type
-
-        mpixx::communicator world;        
-	ObsBasePtr base_ptr;
-	if( "none" == observer_name ){
-		using ObsImpl = NullObserver<ET>;
-
-		// Allocate observer Implementation
-		std::shared_ptr<ObsImpl> obs_impl(new ObsImpl(equation, grid));
-
-		// Set any parameters we need to set
-		// NA
-
-		// Set back to base type
-		base_ptr = obs_impl;
-	}
-        else if( "gio_observer" == observer_name ) {
+	// Set traits that depend on observer type:
+        if( "gio_observer" == observer_name ) {
 		using ObsImpl = GIOObserver<ET>;
 
                 // Fill derived quantities strutures, if any:
@@ -91,32 +140,8 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
                   traits.derived_quantities[j].snames      = dqtree.getArray<std::string>("names"  ,defq);
                   traits.derived_quantities[j].smath_op    = dqtree.getValue<std::string>("mathop" ,"");
                 }
-                if ( pIO != nullptr ) delete pIO;
-                pIO = IOFactory<ET>::build(ptree, grid, world);
-		// Allocate observer Implementation
-		std::shared_ptr<ObsImpl> obs_impl(new ObsImpl(equation, grid, traits));
-                // Set some pIO traits from obserer:
-                pIO->get_traits().idir = traits.idir;
-                pIO->get_traits().odir = traits.odir;
-                obs_impl->setIO(pIO);
-
-		// Set back to base type
-		base_ptr = obs_impl;
         }
-        else if( "global_diag_basic" == observer_name ) {
-		using ObsImpl = GGlobalDiag_basic<Equation>;
 
-		// Allocate observer Implementation
-		std::shared_ptr<ObsImpl> obs_impl(new ObsImpl(equation, grid, traits));
-
-		// Set back to base type
-		base_ptr = obs_impl;
-        }
-	else {
-		EH_ERROR("Requested observer not found: " << observer_name);
-	}
-
-	return base_ptr;
 }
 
 

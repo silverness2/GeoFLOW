@@ -16,8 +16,8 @@ int main(int argc, char **argv)
     GSIZET  icycle=0;       // curr time cycle
     std::vector<GINT> pstd(GDIM);  // order in each direction
     GTMatrix<GINT> p; // needed for restart, but is dummy
-    ObserverBase<MyTypes>::Traits
-                 *binobstraits;
+    typename ObserverBase<MyTypes>::Traits
+                   binobstraits;
 
     typename MyTypes::Time  t  = 0;
     typename MyTypes::Time  dt = 0.1;
@@ -89,8 +89,8 @@ int main(int argc, char **argv)
     EH_MESSAGE("geoflow: build grid...");
     GTimerStart("gen_grid");
 
-    binobstraits = &pObservers_[irestobs_]->get_traits();
-    grid_ = GGridFactory<MyTypes>::build(ptree_, gbasis_, pIO_, *binobstraits, comm_);
+    ObserverFactory<MyTypes>::get_traits(ptree_, "gio_observer", binobstraits); 
+    grid_ = GGridFactory<MyTypes>::build(ptree_, gbasis_, pIO_, binobstraits, comm_);
     GTimerStop("gen_grid");
 
     //***************************************************
@@ -871,16 +871,16 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
   // Set up and output the analytic solution
   // and difference solution as well as
   // advection velocity if one exists:
-  std::stringstream format;
-  ObserverBase<MyTypes>::Traits
-                     binobstraits=pObservers_[irestobs_]->get_traits();
-  StateInfoType      stateinfo;
+  std::stringstream  format;
+  StateInfo          stateinfo;
+  typename ObserverBase<MyTypes>::Traits
+                     binobstraits = (*pObservers_)[irestobs_]->get_traits();
 
   stateinfo.sttype   = 1; // state variable type
-  stateinfo.vars.resize(binobjtraits.state_names.size());
-  stateinfo.vars     = binobjtraits.state_names;
-  stateinfo.idir     = binobjtraits.idir;
-  stateinfo.odir     = binobjtraits.odir;
+  stateinfo.svars.resize(binobstraits.state_names.size());
+  stateinfo.svars    = binobstraits.state_names;
+  stateinfo.idir     = binobstraits.idir;
+  stateinfo.odir     = binobstraits.odir;
   stateinfo.index    = 0;
   stateinfo.cycle    = 0;
   stateinfo.time     = t;
@@ -992,23 +992,24 @@ void do_restart(const PropertyTree &ptree, GGrid &, State &u,
   assert(pIO_ != NULLPTR && "IO operator not set!");
 
   GBOOL              bret;
+  GSIZET             itindex;
   GFTYPE             tt = t;
   std::stringstream  format;
-  ObserverBase<MyTypes>::Traits
-                     binobstraits=pObservers_[irestobs_]->get_traits();
-  StateInfoType      stateinfo;
+  StateInfo          stateinfo;
+  typename ObserverBase<MyTypes>::Traits
+                     binobstraits = (*pObservers_)[irestobs_]->get_traits();
 
 
   itindex            = ptree.getValue<GSIZET>("restart_index", 0);
   stateinfo.sttype   = 1; // state variable type
-  stateinfo.vars.resize(binobjtraits.state_names.size());
-  stateinfo.vars     = binobjtraits.state_names;
-  stateinfo.idir     = binobjtraits.idir;
-  stateinfo.odir     = binobjtraits.odir;
+  stateinfo.svars.resize(binobstraits.state_names.size());
+  stateinfo.svars    = binobstraits.state_names;
+  stateinfo.idir     = binobstraits.idir;
+  stateinfo.odir     = binobstraits.odir;
   stateinfo.index    = itindex;
 
   // Get data:
-  pIO_->read_state(binobjtraits.agg_state_name, stateinfo, u);
+  pIO_->read_state(binobstraits.agg_state_name, stateinfo, u);
   p.resize(stateinfo.porder.size(1),stateinfo.porder.size(2));
   p = stateinfo.porder;
  

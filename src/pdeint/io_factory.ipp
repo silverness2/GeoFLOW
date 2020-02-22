@@ -19,7 +19,7 @@ IOFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid, GC_COMM comm){
 
 	// Set the default IO type
 	const std::string default_io = "gio";
-	const std::string siotype;
+	std::string siotype;
 
 	// Get the IO object name
 	std::string ioobj_name = ptree.getValue("IO_implementation", default_io);

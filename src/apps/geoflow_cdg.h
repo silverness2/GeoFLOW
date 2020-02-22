@@ -28,6 +28,8 @@
 #include "gburgers.hpp"
 #include "ggrid_box.hpp"
 #include "ggrid_factory.hpp"
+#include "pdeint/observer_base.hpp"
+#include "pdeint/io_base.hpp"
 #include "gio_observer.hpp"
 #include "gio.hpp"
 #include "pdeint/equation_base.hpp"
@@ -52,7 +54,7 @@ using namespace geoflow::pdeint;
 using namespace geoflow::tbox;
 using namespace std;
 
-struct GStateInfo {
+struct stStateInfo {
   GINT        sttype  = 1;       // state type index (grid=0 or state=1)
   GINT        gtype   = 0;       // check src/cdg/include/gtypes.h
   GSIZET      index   = 0;       // time index
@@ -65,14 +67,14 @@ struct GStateInfo {
               icomptype;         // encoding of state component types    
   GTMatrix<GINT>
               porder;            // if ivers=0, is 1 X GDIM; else nelems X GDIM;
-  GString    idir    = ".";      // input directory
-  GString    odir    = ".";      // output directory
+  GString    idir         ;      // input directory
+  GString    odir         ;      // output directory
 };
 
 
 template< // default template arg types
 typename StateType     = GTVector<GTVector<GFTYPE>*>,
-typename StateInfoType = GStateInfo,
+typename StateInfoType = stStateInfo,
 typename GridType      = GGrid,
 typename ValueType     = GFTYPE,
 typename DerivType     = StateType,
@@ -106,6 +108,7 @@ using IntegratorPtr = std::shared_ptr<Integrator<MyTypes>>;
 using ObsBase       = ObserverBase<EqnBase>;     // Observer Base type
 using BasisBase     = GTVector<GNBasis<GCTYPE,GFTYPE>*>; 
                                                  // Basis pool type
+using StateInfo     = stStateInfo;
 
 
 // 'Member' data:
