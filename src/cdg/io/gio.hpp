@@ -22,7 +22,6 @@ class GIO : public IOBase<TypePack>
 {
 
 public:
-        enum GIOType        {GIO_POSIX=0, GIO_COLL}; // POSIX or collective
         using Interface   = EquationBase<TypePack>;
         using IOBaseType  = IOBase<TypePack>;
         using IOBasePtr   = std::shared_ptr<IOBaseType>;
@@ -33,18 +32,7 @@ public:
         using Size        = typename Interface::Size;
         using StateInfo   = typename Interface::StateInfo; 
 
-        struct Traits {
-          GIOType     io_type = GIO_COLL; // default to collective IO
-          GINT        ivers   = 0;        // IO version tag
-          GBOOL       multivar= false;    // multiple vars in file (only of COLL types)?
-          GBOOL       prgrid  = false;    // flag to print grid
-          GINT        wtime   = 6;        // time-field width
-          GINT        wtask   = 5;        // task-field width (only for POSIX types)
-          GINT        wfile   = 2048;     // file name max
-          GINT        dim     = GDIM;     // problem dimension
-          GString     idir         ;      // input directory
-          GString     odir         ;      // output directory
-        }; 
+        using Traits      = typename IOBaseType::Traits;
 
         static_assert(std::is_same<Value,GFTYPE>::value,
                "Value is of incorrect type");
@@ -61,7 +49,6 @@ public:
 
         void               write_state_impl(std::string filename, StateInfo &info, const State &u);
         void               read_state_impl(std::string filename, StateInfo &info, State &u);
-        Traits            &get_traits() { return traits_; }
 
 private:
 // Private methods:
@@ -73,8 +60,10 @@ private:
         GSIZET             write_coll (GString filename, StateInfo &info, const State           &u);
         GSIZET             read_coll  (GString filename, StateInfo &info,       State           &u);
         GSIZET             read_header(GString filename, StateInfo &info, Traits &traits);
-        template<typename GFPTR>
-        GSIZET             write_header(GFPTR, StateInfo &info, Traits &traits);
+        GSIZET             write_header_posix(FILE*, StateInfo &info, Traits &traits);
+        #if defined(_G_USE_MPI)
+        GSIZET             write_header_coll(MPI_File, StateInfo &info, Traits &traits);
+        #endif
         GSIZET             sz_header(StateInfo &info, Traits &traits);
         void               resize(GINT n);
 
@@ -94,7 +83,6 @@ private:
         std::stringstream  svarname_;
         GString            fname_;
         char              *cfname_;
-        Traits             traits_;
         Grid              *grid_;
         GTVector<GINT>     state_index_;// list of state indices to print
         GTVector<GString>  state_names_;// list of names of state files

@@ -27,7 +27,7 @@ time_last_        (0.0),
 pIO_           (io_ptr)
 { 
   this->grid_  = &grid;
-  stateinfo_   = equation.stateinfo(); 
+  stateinfo_   = equation->stateinfo(); 
 //this->iotraits_  = &io_obj.get_traits(); 
 } // end of constructor (1) method
 
