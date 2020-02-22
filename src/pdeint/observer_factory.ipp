@@ -35,7 +35,6 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
 
         mpixx::communicator world;        
 	ObsBasePtr base_ptr;
-        GIO<ET> *giochild;       
 	if( "none" == observer_name ){
 		using ObsImpl = NullObserver<ET>;
 
@@ -48,14 +47,12 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
         else if( "gio_observer" == observer_name ) {
 		using ObsImpl = GIOObserver<ET>;
 
-                pIO->reset(IOFactory<ET>::build(ptree, grid, world));
-                giochild = dynamic_cast<GIO<ET>*>(pIO);
 		// Allocate observer Implementation
 		std::shared_ptr<ObsImpl> obs_impl(new ObsImpl(equation, grid, pIO, obstraits));
 
                 // Set some pIO traits from observer:
-                giochild->get_traits().idir = obstraits.idir;
-                giochild->get_traits().odir = obstraits.odir;
+                pIO->get_traits().idir = obstraits.idir;
+                pIO->get_traits().odir = obstraits.odir;
 //              obs_impl->setIO(pIO);
 
 		// Set back to base type
