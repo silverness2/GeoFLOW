@@ -22,28 +22,108 @@
 #include "ggrid_box.hpp"
 #include "gmass.hpp"
 #include "gmorton_keygen.hpp"
-#include "ggrid_factory.hpp"
 #include "gmtk.hpp"
+#include "ggrid_factory.hpp"
+#include "pdeint/io_base.hpp"
+#include "pdeint/observer_base.hpp"
 #include "tbox/property_tree.hpp"
 #include "tbox/mpixx.hpp"
 #include "tbox/global_manager.hpp"
 #include "tbox/input_manager.hpp"
 
+using namespace geoflow::pdeint;
 using namespace geoflow::tbox;
 using namespace std;
 
+struct stStateInfo {
+  GINT        sttype  = 1;       // state type index (grid=0 or state=1)
+  GINT        gtype   = 0;       // check src/cdg/include/gtypes.h
+  GSIZET      index   = 0;       // time index
+  GSIZET      nelems  = 0;       // num elems
+  GSIZET      cycle   = 0;       // continuous time cycle
+  GFTYPE      time    = 0.0;     // state time
+  std::vector<GString>
+              svars;             // names of state members
+  GTVector<GStateCompType>
+              icomptype;         // encoding of state component types    
+  GTMatrix<GINT>
+              porder;            // if ivers=0, is 1 X GDIM; else nelems X GDIM;
+  GString     idir;              // input directory
+  GString     odir;              // output directory
+};
 
-GGrid       *grid_;
+template< // default template arg types
+typename StateType     = GTVector<GTVector<GFTYPE>*>,
+typename StateInfoType = stStateInfo,
+typename GridType      = GGrid,
+typename ValueType     = GFTYPE,
+typename DerivType     = StateType,
+typename TimeType      = ValueType,
+typename CompType      = GTVector<GStateCompType>,
+typename JacoType      = StateType,
+typename SizeType      = GSIZET 
+>
+struct EquationTypes {
+        using State      = StateType;
+        using StateInfo  = StateInfoType;
+        using Grid       = GridType;
+        using Value      = ValueType;
+        using Derivative = DerivType;
+        using Time       = TimeType;
+        using CompDesc   = CompType;
+        using Jacobian   = JacoType;
+        using Size       = SizeType;
+};
+using MyTypes       = EquationTypes<>;           // Define types used
+using EqnBase       = EquationBase<MyTypes>;     // Equation Base type
+using EqnBasePtr    = std::shared_ptr<EqnBase>;  // Equation Base ptr
+using IOBaseType    = IOBase<MyTypes>;           // IO Base type
+using IOBasePtr     = std::shared_ptr<IOBaseType>;// IO Base ptr
+
+template< // default template arg types
+typename StateType     = GTVector<GTVector<GFTYPE>*>,
+typename StateInfoType = stStateInfo,
+typename GridType      = GGrid,
+typename ValueType     = GFTYPE,
+typename DerivType     = StateType,
+typename TimeType      = ValueType,
+typename CompType      = GTVector<GStateCompType>,
+typename JacoType      = StateType,
+typename SizeType      = GSIZET,
+typename IOType        = IOBase<MyTypes>,
+typename ObsTraitsType = ObserverBase<MyTypes>::Traits
+>
+struct GGridTypes {
+        using State         = StateType;
+        using StateInfo     = StateInfoType;
+        using Grid          = GridType;
+        using Value         = ValueType;
+        using Derivative    = DerivType;
+        using Time          = TimeType;
+        using CompDesc      = CompType;
+        using Jacobian      = JacoType;
+        using Size          = SizeType;
+        using IOObjType     = IOType;
+        using ObserverTraits= ObsTraitsType;
+};
+using MyGridTypes       = GGridTypes<>;           // Define grid types used
+
+Grid        *grid_;
 GC_COMM      comm_=GC_COMM_WORLD ;      // communicator
 
-void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> &ggfx);
+void init_ggfx(PropertyTree &ptree, Grid &grid, GGFX<GFTYPE> &ggfx);
 
 
 int main(int argc, char **argv)
 {
-    GString  serr ="main: ";
-    GINT     errcode, gerrcode;
-    GFTYPE   radiusi;
+    GString   serr ="main: ";
+    GINT      errcode, gerrcode;
+    GFTYPE    radiusi;
+    IOBasePtr pIO_;         // ptr to IOBase operator
+
+    typename ObserverBase<MyGridTypes>::Traits
+                   binobstraits;
+
 
     if ( argc > 1 ) {
       cout << "No arguments accepted" << endl;
@@ -91,7 +171,8 @@ int main(int argc, char **argv)
     GPTLstart("gen_grid");
 #endif
 
-    grid_ = GGridFactory::build(ptree, gbasis, comm_);
+    ObserverFactory<MyGridTypes>::get_traits(ptree_, "gio_observer", binobstraits);
+    grid_ = GGridFactory<MyGridTypes>::build(ptree, gbasis, pIO, binobstraits, comm_);
 
 #if defined(_G_USE_GPTL)
     GPTLstop("gen_grid");
@@ -208,10 +289,10 @@ term:
 // METHOD: init_ggfx
 // DESC  : Initialize gather/scatter operator
 // ARGS  : ptree   : main property tree
-//         grid    : GGrid object
+//         grid    : Grid object
 //         ggfx    : gather/scatter op, GGFX
 //**********************************************************************************
-void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> &ggfx)
+void init_ggfx(PropertyTree &ptree, Grid &grid, GGFX<GFTYPE> &ggfx)
 {
   GString                        serr = "init_ggfx: ";
   GFTYPE                         delta;
