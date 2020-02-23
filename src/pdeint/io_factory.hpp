@@ -20,13 +20,13 @@ namespace geoflow {
 namespace pdeint {
 
 
-template<typename IOType>
+template<typename TypePack>
 struct IOFactory {
-	using IO          = IOType;
+	using IO          = TypePack;
 	using IOBaseType  = IOBase<IO>;
 	using IOBasePtr   = std::shared_ptr<IOBaseType>;
-        using State       = typename IOType::State;
-	using Grid        = typename IOType::Grid;
+        using State       = typename TypePack::State;
+	using Grid        = typename TypePack::Grid;
 
 	static IOBasePtr build(const tbox::PropertyTree& ptree, Grid& grid, GC_COMM comm);
 

@@ -31,9 +31,9 @@ class GGridFactory
         using StateInfo   = typename Types::StateInfo;
         using Grid        = typename Types::Grid;
         using Time        = typename Types::Time;
-        using IOBaseType  = typename Types::IOObjType;
+        using IOBaseType  = IOBase<Types>;
         using IOBasePtr   = std::shared_ptr<IOBaseType>;
-        using ObsTraits   = typename Types::ObsTraits;
+        using ObsTraits   = typename ObserverBase<Types>::Traits;
 
 	static GGrid *build(const geoflow::tbox::PropertyTree& ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> gbasis, IOBasePtr pIO, ObsTraits &obstraits, GC_COMM &comm);
 

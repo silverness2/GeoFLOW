@@ -59,7 +59,7 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
 		base_ptr = obs_impl;
         }
         else if( "global_diag_basic" == observer_name ) {
-		using ObsImpl = GGlobalDiag_basic<Equation>;
+		using ObsImpl = GGlobalDiag_basic<ET>;
 
 		// Allocate observer Implementation
 		std::shared_ptr<ObsImpl> obs_impl(new ObsImpl(equation, grid, obstraits));

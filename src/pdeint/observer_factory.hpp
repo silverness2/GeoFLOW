@@ -26,14 +26,14 @@ namespace pdeint {
 
 template<typename TypePack>
 struct ObserverFactory {
-	using Equation      = TypePack;
+	using Types         = TypePack;
         using EqnBase       = EquationBase<TypePack>;
         using EqnBasePtr    = std::shared_ptr<EqnBase>;
         using IOBaseType    = IOBase<TypePack>;
         using IOBasePtr     = std::shared_ptr<IOBaseType>;
-	using ObsBase       = ObserverBase<Equation>;
+	using ObsBase       = ObserverBase<Types>;
 	using ObsBasePtr    = std::shared_ptr<ObsBase>;
-	using ObsTraitsType = typename TypePack::ObsTraits;
+	using ObsTraitsType = typename ObserverBase<Types>::Traits;
 	using Grid          = typename TypePack::Grid;
 
 	static ObsBasePtr build(const tbox::PropertyTree& ptree, std::string obsname,  EqnBasePtr& equation, Grid& grid, IOBasePtr &pIO);

@@ -11,7 +11,7 @@
   "restart_index"        : 0,
   "benchmark"            : false,
   "do_comparison"        : true,
-  "observer_list"        : ["posixio_observer", "global_diag_basic"],
+  "observer_list"        : ["gio_observer", "global_diag_basic"],
   "initvss": {
     "name"     : "simplesum",
     "kdn"      : 2,
@@ -181,8 +181,8 @@
     "names"       : ["du1dx2","du1dy2"],
     "mathop"      : "lapderivs"
   },
-  "posixio_observer": {
-    "observer_name"      : "posixio_observer",
+  "gio_observer": {
+    "observer_name"      : "gio_observer",
     "indirectory"        : "outs",
     "outdirectory"       : "outs",
     "cadence_type"       : "cycle",

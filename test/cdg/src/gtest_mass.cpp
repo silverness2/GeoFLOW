@@ -11,25 +11,27 @@
 #include <cstdio>
 #include <unistd.h>
 #include <iostream>
-#if defined(_G_USE_GPTL)
-#include "gptl.h"
-#endif
-#include <random>
-#include "gcomm.hpp"
-#include "ggfx.hpp"
-#include "gllbasis.hpp"
-#include "ggrid_icos.hpp"
-#include "ggrid_box.hpp"
-#include "gmass.hpp"
-#include "gmorton_keygen.hpp"
-#include "gmtk.hpp"
-#include "ggrid_factory.hpp"
-#include "pdeint/io_base.hpp"
 #include "pdeint/observer_base.hpp"
+#include "pdeint/io_base.hpp"
+#include "pdeint/observer_factory.hpp"
+#include "pdeint/null_observer.hpp"
 #include "tbox/property_tree.hpp"
 #include "tbox/mpixx.hpp"
 #include "tbox/global_manager.hpp"
 #include "tbox/input_manager.hpp"
+#include "gcomm.hpp"
+#include "gmass.hpp"
+#include "ggfx.hpp"
+#include "gllbasis.hpp"
+#include "gmorton_keygen.hpp"
+#include "ggrid_box.hpp"
+#include "ggrid_factory.hpp"
+#include "gio_observer.hpp"
+#include "gio.hpp"
+#if defined(_G_USE_GPTL)
+  #include "gptl.h"
+#endif
+
 
 using namespace geoflow::pdeint;
 using namespace geoflow::tbox;
@@ -79,36 +81,10 @@ using EqnBase       = EquationBase<MyTypes>;     // Equation Base type
 using EqnBasePtr    = std::shared_ptr<EqnBase>;  // Equation Base ptr
 using IOBaseType    = IOBase<MyTypes>;           // IO Base type
 using IOBasePtr     = std::shared_ptr<IOBaseType>;// IO Base ptr
+using Grid          = GGrid;
 
-template< // default template arg types
-typename StateType     = GTVector<GTVector<GFTYPE>*>,
-typename StateInfoType = stStateInfo,
-typename GridType      = GGrid,
-typename ValueType     = GFTYPE,
-typename DerivType     = StateType,
-typename TimeType      = ValueType,
-typename CompType      = GTVector<GStateCompType>,
-typename JacoType      = StateType,
-typename SizeType      = GSIZET,
-typename IOType        = IOBase<MyTypes>,
-typename ObsTraitsType = ObserverBase<MyTypes>::Traits
->
-struct GGridTypes {
-        using State         = StateType;
-        using StateInfo     = StateInfoType;
-        using Grid          = GridType;
-        using Value         = ValueType;
-        using Derivative    = DerivType;
-        using Time          = TimeType;
-        using CompDesc      = CompType;
-        using Jacobian      = JacoType;
-        using Size          = SizeType;
-        using IOObjType     = IOType;
-        using ObserverTraits= ObsTraitsType;
-};
-using MyGridTypes       = GGridTypes<>;           // Define grid types used
 
-Grid        *grid_;
+GGrid       *grid_;
 GC_COMM      comm_=GC_COMM_WORLD ;      // communicator
 
 void init_ggfx(PropertyTree &ptree, Grid &grid, GGFX<GFTYPE> &ggfx);
@@ -119,9 +95,9 @@ int main(int argc, char **argv)
     GString   serr ="main: ";
     GINT      errcode, gerrcode;
     GFTYPE    radiusi;
-    IOBasePtr pIO_;         // ptr to IOBase operator
+    IOBasePtr pIO;         // ptr to IOBase operator
 
-    typename ObserverBase<MyGridTypes>::Traits
+    typename ObserverBase<MyTypes>::Traits
                    binobstraits;
 
 
@@ -171,8 +147,8 @@ int main(int argc, char **argv)
     GPTLstart("gen_grid");
 #endif
 
-    ObserverFactory<MyGridTypes>::get_traits(ptree_, "gio_observer", binobstraits);
-    grid_ = GGridFactory<MyGridTypes>::build(ptree, gbasis, pIO, binobstraits, comm_);
+    ObserverFactory<MyTypes>::get_traits(ptree, "gio_observer", binobstraits);
+    grid_ = GGridFactory<MyTypes>::build(ptree, gbasis, pIO, binobstraits, comm_);
 
 #if defined(_G_USE_GPTL)
     GPTLstop("gen_grid");
@@ -191,7 +167,7 @@ int main(int argc, char **argv)
     GTVector<GFTYPE> *imult = &ggfx.get_imult();
 //  GTVector<GFTYPE> *jac = &(grid_->Jac());
     GTVector<GTVector<GFTYPE>*> utmp(1);
-    GMass massop(*grid_);
+    GMass massop(*grid_,FALSE);
 
     f = 1.0;
 #if 0
@@ -256,22 +232,22 @@ cout << serr << "imult=" << *imult << endl;
     GComm::Allreduce(&errcode, &gerrcode, 1, T2GCDatatype<GINT>() , GC_OP_MAX, comm_);
 
  
+    if ( gerrcode != 0 ) {
+      cout << serr << " Error: code=" << errcode << endl;
+    }
+    else {
+      cout << serr << " Success!" << endl;
+    }
+
 #if defined(_G_USE_GPTL)
     GPTLpr_file("timing.txt");
     GPTLfinalize();
 #endif
 
-
-term:
-    if ( gerrcode != 0 ) {
-      GPP(comm_,serr << " Error: code=" << errcode);
-    }
-    else {
-      GPP(comm_,serr << "     Success!");
-    }
-
     GComm::TermComm();
+
     return(gerrcode);
+
 } // end, main
 
 
