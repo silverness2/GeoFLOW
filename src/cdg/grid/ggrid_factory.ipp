@@ -5,7 +5,6 @@
 // Copyright    : Copyright 2019. Colorado State University. All rights reserved
 // Derived From : none.
 //==================================================================================
-#include "ggrid_factory.hpp"
 
 //**********************************************************************************
 //**********************************************************************************
@@ -19,7 +18,7 @@
 // RETURNS: GGrid object ptr
 //**********************************************************************************
 template<typename TypePack>
-GGrid *GGridFactory<TypePack>::build(const geoflow::tbox::PropertyTree& ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> gbasis, IOBasePtr pIO, typename ObserverBase<TypePack>::Traits &obstraits, GC_COMM &comm)
+GGrid *GGridFactory<TypePack>::build(const geoflow::tbox::PropertyTree& ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> gbasis, IOBasePtr pIO, ObsTraits &obstraits, GC_COMM &comm)
 {
   GSIZET  itindex = ptree.getValue<GSIZET>   ("restart_index", 0);
   GString sdef    = "grid_box";
@@ -99,7 +98,7 @@ GGrid *GGridFactory<TypePack>::build(const geoflow::tbox::PropertyTree& ptree, G
 //**********************************************************************************
 template<typename TypePack>
 void GGridFactory<TypePack>::read_grid(const geoflow::tbox::PropertyTree& ptree, GTMatrix<GINT> &p, 
-                         GTVector<GTVector<GFTYPE>> &xnodes, IOBasePtr pIO, typename ObserverBase<TypePack>::Traits &obstraits, GC_COMM &comm)
+                         GTVector<GTVector<GFTYPE>> &xnodes, IOBasePtr pIO, ObsTraits &obstraits, GC_COMM &comm)
 {
   GINT                        nc=GDIM;
   GElemType                   igtype;

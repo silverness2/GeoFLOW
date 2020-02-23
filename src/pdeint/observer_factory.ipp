@@ -27,7 +27,7 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
 	const std::string observer_name = obstree.getValue("observer_name", default_observer);
 
         // Set traits from prop tree:
-        typename ObserverBase<ET>::Traits obstraits;
+        ObsTraitsType obstraits;
     
         // Set default derived quantity info:
         get_traits(ptree, obsname, obstraits);
@@ -76,7 +76,7 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
 
 
 template<typename ET>
-void ObserverFactory<ET>::get_traits(const tbox::PropertyTree& ptree, const std::string obsname, typename ObserverBase<ET>::Traits& traits){
+void ObserverFactory<ET>::get_traits(const tbox::PropertyTree& ptree, const std::string obsname, ObsTraitsType& traits){
 
         // Note: the entry ptree is the main property tree!
 

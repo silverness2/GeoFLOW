@@ -16,8 +16,7 @@ int main(int argc, char **argv)
     GSIZET  icycle=0;       // curr time cycle
     std::vector<GINT> pstd(GDIM);  // order in each direction
     GTMatrix<GINT> p; // needed for restart, but is dummy
-    typename ObserverBase<MyTypes>::Traits
-                   binobstraits;
+    ObsTraitsType binobstraits;
 
     typename MyTypes::Time  t  = 0;
     typename MyTypes::Time  dt = 0.1;
@@ -873,8 +872,7 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
   // advection velocity if one exists:
   std::stringstream  format;
   StateInfo          stateinfo;
-  typename ObserverBase<MyTypes>::Traits
-                     binobstraits = (*pObservers_)[irestobs_]->get_traits();
+  ObsTraitsType      binobstraits = (*pObservers_)[irestobs_]->get_traits();
 
   stateinfo.sttype   = 1; // state variable type
   stateinfo.svars.resize(binobstraits.state_names.size());
@@ -996,8 +994,7 @@ void do_restart(const PropertyTree &ptree, GGrid &, State &u,
   GFTYPE             tt = t;
   std::stringstream  format;
   StateInfo          stateinfo;
-  typename ObserverBase<MyTypes>::Traits
-                     binobstraits = (*pObservers_)[irestobs_]->get_traits();
+  ObsTraitsType      binobstraits = (*pObservers_)[irestobs_]->get_traits();
 
 
   itindex            = ptree.getValue<GSIZET>("restart_index", 0);

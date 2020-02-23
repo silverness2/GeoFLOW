@@ -29,16 +29,17 @@ class ObserverBase {
 
 public:
         enum ObsType     {OBS_CYCLE=0, OBS_TIME};
-	using Types       = TypePack;
-        using EqnBase     = EquationBase<TypePack>;
-        using EqnBasePtr  = std::shared_ptr<EqnBase>;
-	using State       = typename Types::State;
-	using Grid        = typename Types::Grid;
-	using Value       = typename Types::Value;
-	using Derivative  = typename Types::Derivative;
-	using Time        = typename Types::Time;
-	using Jacobian    = typename Types::Jacobian;
-	using Size        = typename Types::Size;
+	using Types         = TypePack;
+        using EqnBase       = EquationBase<TypePack>;
+        using EqnBasePtr    = std::shared_ptr<EqnBase>;
+	using State         = typename Types::State;
+	using Grid          = typename Types::Grid;
+	using Value         = typename Types::Value;
+	using Derivative    = typename Types::Derivative;
+	using Time          = typename Types::Time;
+	using Jacobian      = typename Types::Jacobian;
+	using Size          = typename Types::Size;
+//      using ObsTraits     = typename Types::ObsTraits;
 
         /**
          * Data structure to describe quantities derived from state data

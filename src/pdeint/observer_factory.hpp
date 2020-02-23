@@ -24,19 +24,20 @@ namespace geoflow {
 namespace pdeint {
 
 
-template<typename EquationType>
+template<typename TypePack>
 struct ObserverFactory {
-	using Equation    = EquationType;
-        using EqnBase     = EquationBase<EquationType>;
-        using EqnBasePtr  = std::shared_ptr<EqnBase>;
-        using IOBaseType  = IOBase<EquationType>;
-        using IOBasePtr   = std::shared_ptr<IOBaseType>;
-	using ObsBase     = ObserverBase<Equation>;
-	using ObsBasePtr  = std::shared_ptr<ObsBase>;
-	using Grid        = typename EquationType::Grid;
+	using Equation      = TypePack;
+        using EqnBase       = EquationBase<TypePack>;
+        using EqnBasePtr    = std::shared_ptr<EqnBase>;
+        using IOBaseType    = IOBase<TypePack>;
+        using IOBasePtr     = std::shared_ptr<IOBaseType>;
+	using ObsBase       = ObserverBase<Equation>;
+	using ObsBasePtr    = std::shared_ptr<ObsBase>;
+	using ObsTraitsType = typename TypePack::ObsTraits;
+	using Grid          = typename TypePack::Grid;
 
 	static ObsBasePtr build(const tbox::PropertyTree& ptree, std::string obsname,  EqnBasePtr& equation, Grid& grid, IOBasePtr &pIO);
-	static void       get_traits(const tbox::PropertyTree& ptree, std::string obsname,  typename ObserverBase<EquationType>::Traits& traits);
+	static void       get_traits(const tbox::PropertyTree& ptree, std::string obsname,  ObsTraitsType& traits);
 
 };
 

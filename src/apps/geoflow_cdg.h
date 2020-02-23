@@ -72,7 +72,7 @@ struct stStateInfo {
 };
 
 
-template< // default template arg types
+template< // equation type pack
 typename StateType     = GTVector<GTVector<GFTYPE>*>,
 typename StateInfoType = stStateInfo,
 typename GridType      = GGrid,
@@ -95,21 +95,49 @@ struct EquationTypes {
         using Size       = SizeType;
 };
 
-using MyTypes       = EquationTypes<>;           // Define types used
-using EqnBase       = EquationBase<MyTypes>;     // Equation Base type
-using EqnBasePtr    = std::shared_ptr<EqnBase>;  // Equation Base ptr
-using IOBaseType    = IOBase<MyTypes>;           // IO Base type
-using IOBasePtr     = std::shared_ptr<IOBaseType>;// IO Base ptr
-using MixBase       = MixerBase<MyTypes>;        // Stirring/mixing Base type
-using MixBasePtr    = std::shared_ptr<MixBase>;  // Stirring/mixing Base ptr
-using IntegratorPtr = std::shared_ptr<Integrator<MyTypes>>;
-                                                 // Integrator ptr
 
-using ObsBase       = ObserverBase<EqnBase>;     // Observer Base type
+using MyEqTypes      = EquationTypes<>;           // Define types used
+using EqnBase       = EquationBase<MyEqTypes>;    // Equation Base type
+using EqnBasePtr    = std::shared_ptr<EqnBase>;   // Equation Base ptr
+using IOBaseType    = IOBase<MyEqTypes>;          // IO Base type
+using IOBasePtr     = std::shared_ptr<IOBaseType>;// IO Base ptr
+using MixBase       = MixerBase<MyEqTypes>;       // Stirring/mixing Base type
+using MixBasePtr    = std::shared_ptr<MixBase>;   // Stirring/mixing Base ptr
+using IntegratorPtr = std::shared_ptr<Integrator<MyEqTypes>>;
+                                                  // Integrator ptr
+using ObsBase       = ObserverBase<EqnBase>;      // Observer Base type
+using ObsTraitsType = ObserverBase<MyEqTypes>::Traits;
 using BasisBase     = GTVector<GNBasis<GCTYPE,GFTYPE>*>; 
-                                                 // Basis pool type
+                                                  // Basis pool type
 using StateInfo     = stStateInfo;
 
+template< // Complete typepack
+typename StateType     = GTVector<GTVector<GFTYPE>*>,
+typename StateInfoType = stStateInfo,
+typename GridType      = GGrid,
+typename ValueType     = GFTYPE,
+typename DerivType     = StateType,
+typename TimeType      = ValueType,
+typename CompType      = GTVector<GStateCompType>,
+typename JacoType      = StateType,
+typename SizeType      = GSIZET,
+typename IOType        = IOBase<MyEqTypes>,
+typename ObsTraitsType = ObserverBase<MyEqTypes>::Traits
+>
+struct AllTypes {
+        using State      = StateType;
+        using StateInfo  = StateInfoType;
+        using Grid       = GridType;
+        using Value      = ValueType;
+        using Derivative = DerivType;
+        using Time       = TimeType;
+        using CompDesc   = CompType;
+        using Jacobian   = JacoType;
+        using Size       = SizeType;
+        using IOObjType  = IOType;
+        using ObsTraits  = ObsTraitsType;
+};
+using MyTypes       = AllTypes<>;           // Define grid types used
 
 // 'Member' data:
 GBOOL            bench_=FALSE;

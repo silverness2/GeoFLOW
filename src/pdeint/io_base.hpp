@@ -25,12 +25,12 @@ class IOBase {
 public:
         enum GIOType        {GIO_POSIX=0, GIO_COLL}; // POSIX or collective
         using Types        = TypePack;
-	using State        = typename TypePack::State;
-	using StateInfo    = typename TypePack::StateInfo; // May contain time, time index, var name etc
-	using Grid         = typename TypePack::Grid;
-	using Value        = typename TypePack::Value;
-        using Time         = typename TypePack::Time;
-	using Size         = typename TypePack::Size;
+	using State        = typename Types::State;
+	using StateInfo    = typename Types::StateInfo; // May contain time, time index, var name etc
+	using Grid         = typename Types::Grid;
+	using Value        = typename Types::Value;
+        using Time         = typename Types::Time;
+	using Size         = typename Types::Size;
 
         struct Traits {
           GIOType      io_type = GIO_COLL; // default to collective IO
