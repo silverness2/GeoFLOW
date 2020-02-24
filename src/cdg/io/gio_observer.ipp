@@ -118,9 +118,6 @@ template<typename EquationType>
 void GIOObserver<EquationType>::init(StateInfo &info)
 {
 
-   char    stmp[1024];
-   std::vector<GString> spref = {"x", "y", "z"};
-
    time_last_  = info.time ;
    ocycle_     = info.cycle;
  
