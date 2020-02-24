@@ -82,7 +82,6 @@ typename TimeType      = ValueType,
 typename CompType      = GTVector<GStateCompType>,
 typename JacoType      = StateType,
 typename SizeType      = GSIZET
-//typename IOType        = IOBase<AllTypes>
 >
 struct AllTypes {
         using State      = StateType;
@@ -94,7 +93,6 @@ struct AllTypes {
         using CompDesc   = CompType;
         using Jacobian   = JacoType;
         using Size       = SizeType;
-//      using IOObjType  = IOType;
 };
 using MyTypes       = AllTypes<>;           // Define grid types used
 using EqnBase       = EquationBase<MyTypes>;    // Equation Base type
