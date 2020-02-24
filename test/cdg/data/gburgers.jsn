@@ -109,8 +109,8 @@
     "io_type"  : "POSIX",
     "wtime"    : 6,
     "wtask"    : 5,
-    "wfile"    : 2048,
-  }
+    "wfile"    : 2048
+  },
   "gio_observer": {
     "observer_name"      : "gio_observer",
     "idir"               : "outs",
