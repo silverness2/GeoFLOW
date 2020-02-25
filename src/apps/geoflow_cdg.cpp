@@ -355,8 +355,10 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
           pIO_ = IOFactory<MyTypes>::build(ptree, *grid_, comm_);
         }
         pObservers->push_back(ObserverFactory<MyTypes>::build(ptree, obslist[j], pEqn, *grid_, pIO_));
+        (*pObservers)[j]->set_tmp(utmp_);
+        (*pObservers)[j]->init(stateinfo);
         
-        if ( "gio_observer" != obslist[j]  ) {
+        if ( "gio_observer" == obslist[j]  ) {
           spref           = obsptree.getValue<std::string>("agg_state_name","state");
           stateinfo.cycle = icycle;
           stateinfo.time  = time;
@@ -365,13 +367,11 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
             obstraits = (*pObservers)[j]->get_traits();
             pIO_->read_state(spref, stateinfo, dummy, false);
           }
-          (*pObservers)[j]->init(stateinfo);
           irestobs_ = j;
         }
       }
     }
 
-    for ( GSIZET j=0; j<pObservers->size(); j++ ) (*pObservers)[j]->set_tmp(utmp_);
 
 } // end method create_observers
 

@@ -53,7 +53,7 @@ public:
 	 *
 	 */
 	IOBase(Grid& grid, Traits& traits):
-          grid_(&grid), traits_(traits) {}
+          grid_ (&grid), traits_ (traits) {}
 	IOBase(const IOBase& I) = default;
 	~IOBase() = default;
 	IOBase& operator=(const IOBase& I) = default;

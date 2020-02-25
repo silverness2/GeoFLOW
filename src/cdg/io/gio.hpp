@@ -84,7 +84,6 @@ private:
         std::stringstream  svarname_;
         GString            fname_;
         char              *cfname_;
-        Grid              *grid_;
         GTVector<GINT>     state_index_;// list of state indices to print
         GTVector<GString>  state_names_;// list of names of state files
         GTVector<GString>  grid_names_ ;// list of names of grid comp files

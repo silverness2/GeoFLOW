@@ -97,6 +97,7 @@ struct TypePack {
 };
 using StateInfo     = stStateInfo;
 using MyTypes       = TypePack<>;           // Define grid types used
+using Grid          = GGrid;           
 using EqnBase       = EquationBase<MyTypes>;    // Equation Base type
 using EqnBasePtr    = std::shared_ptr<EqnBase>;   // Equation Base ptr
 using IOBaseType    = IOBase<MyTypes>;          // IO Base type
@@ -117,7 +118,7 @@ GINT             nsolve_;      // number *solved* 'state' arrays
 GINT             nstate_;      // number 'state' arrays
 GINT             ntmp_  ;      // number tmp arrays
 GINT             irestobs_;    // index in pObservers_ that writes restarts
-GGrid           *grid_=NULLPTR;// grid object
+Grid            *grid_=NULLPTR;// grid object
 State            u_;           // state array
 State            c_;           // advection velocity, if used
 State            ub_;          // global bdy vector

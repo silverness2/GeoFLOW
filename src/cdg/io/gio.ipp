@@ -117,9 +117,9 @@ void GIO<IOType>::write_state_impl(std::string filename, StateInfo &info, const 
     GINT           myrank = GComm::WorldRank(comm_);
     GSIZET         nb, nc, nd;
     GTVector<GTVector<GFTYPE>>
-                  *xnodes = &this->grid_->xNodes();
+                  *xnodes = &(this->grid_->xNodes());
     State         ostate(1);
-    GElemList     *elems  = &this->grid_->elems();
+    GElemList     *elems  = &(this->grid_->elems());
     std::stringstream 
                    format, cformat;
 
@@ -149,7 +149,7 @@ void GIO<IOType>::write_state_impl(std::string filename, StateInfo &info, const 
     cformat    << "%s/%s.%0" << this->traits_.wtime << "d.out";
 
     // Set porder vector depending on version:
-    GSIZET ne = this->traits_.io_type == IOBase<IOType>::GIO_COLL ? grid_->ngelems(): grid_->nelems();
+    GSIZET ne = this->traits_.io_type == IOBase<IOType>::GIO_COLL ? this->grid_->ngelems(): this->grid_->nelems();
     info.porder.resize(this->traits_.ivers == 0 ? 1 : ne, GDIM);
     for ( auto i=0; i<info.porder.size(1); i++ )  { // for each element
       for ( auto j=0; j<info.porder.size(2); j++ ) info.porder(i,j) = (*elems)[i]->order(j);

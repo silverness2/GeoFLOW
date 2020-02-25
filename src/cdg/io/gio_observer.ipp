@@ -69,6 +69,8 @@ void GIOObserver<EquationType>::observe_impl(const Time &t, const State &u, cons
     stateinfo_.cycle  = cycle_;
     stateinfo_.time   = t;
     stateinfo_.svars  = this->traits_.state_names;
+    stateinfo_.idir   = this->traits_.idir;
+    stateinfo_.odir   = this->traits_.odir;
 
     for ( auto j=0; j<u.size(); j++ ) nstate += (stateinfo_.icomptype[j] != GSC_PRESCRIBED 
                                              &&  stateinfo_.icomptype[j] != GSC_NONE);
@@ -121,7 +123,7 @@ void GIOObserver<EquationType>::init_impl(StateInfo &info)
    time_last_  = info.time ;
    ocycle_     = info.cycle;
  
-   bInit_ = TRUE;
+   bInit_      = TRUE;
 
 } // end of method init_impl
 
