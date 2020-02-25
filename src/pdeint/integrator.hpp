@@ -17,9 +17,10 @@
 #include "tbox/assert.hpp"
 #include "tbox/error_handler.hpp"
 
-#include "pdeint/null_observer.hpp"
-#include "pdeint/mixer_base.hpp"
 #include "pdeint/equation_base.hpp"
+#include "pdeint/mixer_base.hpp"
+#include "pdeint/observer_base.hpp"
+#include "pdeint/null_observer.hpp"
 
 namespace geoflow {
 namespace pdeint {
@@ -203,6 +204,6 @@ protected:
 } // namespace geoflow
 
 
-//#include "pdeint/integrator.ipp"
+#include "pdeint/integrator.ipp"
 
 #endif /* SRC_PDEINT_INTEGRATOR_HPP_ */

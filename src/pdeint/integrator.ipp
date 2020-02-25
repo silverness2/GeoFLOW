@@ -5,14 +5,13 @@
  *      Author: bflynt
  */
 
-#include "pdeint/integrator.hpp"
 
 namespace geoflow {
 namespace pdeint {
 
 
-template<typename EquationType>
-Integrator<EquationType>::Integrator(const EqnBasePtr&   equation,
+template<typename ET>
+Integrator<ET>::Integrator(const EqnBasePtr&   equation,
 		                     const MixerBasePtr& mixer,
 		                     const ObsBasePtr&   observer,
                                      Grid&               grid,
@@ -23,8 +22,8 @@ Integrator<EquationType>::Integrator(const EqnBasePtr&   equation,
 	ASSERT(nullptr != obs_ptr_);
 }
 
-template<typename EquationType>
-void Integrator<EquationType>::time_integrate( Time&       t,
+template<typename ET>
+void Integrator<ET>::time_integrate( Time&       t,
                                                State&      uf,
                                                State&      ub,
 		                               State&      u ){
@@ -56,8 +55,8 @@ void Integrator<EquationType>::time_integrate( Time&       t,
 }
 
 
-template<typename EquationType>
-void Integrator<EquationType>::time( const Time& t0,
+template<typename ET>
+void Integrator<ET>::time( const Time& t0,
 		                     const Time& t1,
 		                     const Time& dt,
 		                     State&      uf,
@@ -103,8 +102,8 @@ void Integrator<EquationType>::time( const Time& t0,
 
 }
 
-template<typename EquationType>
-void Integrator<EquationType>::steps( const Time&  t0,
+template<typename ET>
+void Integrator<ET>::steps( const Time&  t0,
 		                      const Time&  dt,
 			              const Size&  n,
 		                      State&       uf,
@@ -145,8 +144,8 @@ void Integrator<EquationType>::steps( const Time&  t0,
 
 }
 
-template<typename EquationType>
-void Integrator<EquationType>::list( const std::vector<Time>& tlist,
+template<typename ET>
+void Integrator<ET>::list( const std::vector<Time>& tlist,
 		                     State&                   uf,
 		                     State&                   ub,
 	                             State&                   u ){
@@ -165,8 +164,8 @@ void Integrator<EquationType>::list( const std::vector<Time>& tlist,
 }
 
 
-template<typename EquationType>
-void Integrator<EquationType>::init_dt(const Time& t, State& u, Time& dt) const{
+template<typename ET>
+void Integrator<ET>::init_dt(const Time& t, State& u, Time& dt) const{
 	using std::max;
 	using std::min;
 
