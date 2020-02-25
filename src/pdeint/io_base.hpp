@@ -70,15 +70,28 @@ public:
                return this->write_state_impl(filename, info, u);
              }
         /**
-	 * Read state at t
+	 * Read state 
 	 *
-	 * @param[in,out] t  Initial time at start, and final time
-	 * @param[in,out] u  Current and final equation state values
+	 * @param[in    ] filename: filename if reading in aggregate
+	 * @param[in,out] info    : StateInfo structure
+	 * @param[in,out] u       : state values
+	 * @param[in    ] bstate  : flag to set to FALSE if not reading state
 	 */
 	void read_state ( std::string  filename,
                           StateInfo&   info,
-                          State&       u ){
-               return this->read_state_impl(filename, info, u);
+                          State&       u,
+                          bool         bstate=true){
+               return this->read_state_impl(filename, info, u, bstate);
+             }
+        /**
+	 * Read state info
+	 *
+	 * @param[in    ] filename: filename 
+	 * @param[in,out] info    : StateInfo structure
+	 */
+	void read_state_info ( std::string  filename,
+                          StateInfo&   info ){
+               return this->read_state_info_impl(filename, info);
              }
         /**
 	 * Get traits
@@ -89,12 +102,15 @@ public:
              }
 
 protected:
-        virtual void write_state_impl(std::string filename,
-                                      StateInfo&  info,
-                                      const State&      u ) = 0;
+        virtual void write_state_impl(std::string  filename,
+                                      StateInfo&   info,
+                                      const State& u) = 0;
         virtual void read_state_impl (std::string  filename,
                                       StateInfo&   info,
-                                      State&       u ) = 0;
+                                      State&       u,
+                                      bool         bstate) = 0;
+        virtual void read_state_info_impl (std::string  filename,
+                                           StateInfo&   info) = 0;
         Grid   *grid_;
         Traits  traits_;
 };
@@ -104,6 +120,5 @@ protected:
 } // namespace geoflow
 
 
-#include "pdeint/integrator.ipp"
 
-#endif /* SRC_PDEINT_INTEGRATOR_HPP_ */
+#endif /* SRC_PDEINT_IOBASE_HPP_ */

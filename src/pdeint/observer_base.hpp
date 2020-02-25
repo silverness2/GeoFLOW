@@ -33,13 +33,14 @@ public:
         using EqnBase       = EquationBase<TypePack>;
         using EqnBasePtr    = std::shared_ptr<EqnBase>;
 	using State         = typename Types::State;
+        using StateInfo     = typename Types::StateInfo;
 	using Grid          = typename Types::Grid;
 	using Value         = typename Types::Value;
 	using Derivative    = typename Types::Derivative;
 	using Time          = typename Types::Time;
 	using Jacobian      = typename Types::Jacobian;
 	using Size          = typename Types::Size;
-//      using ObsTraits     = typename Types::ObsTraits;
+//      using ObsTraits     = ObserverBase<Types>::Traits;
 
         /**
          * Data structure to describe quantities derived from state data
@@ -110,6 +111,13 @@ public:
 	}
 
 	/**
+	 * Do initialization
+	 *
+	 */
+	void init(StateInfo &info){
+		init_impl(info);
+        } 
+	/**
 	 * Set tmp space
 	 *
 	 * @param[in] State variable for tmp
@@ -133,6 +141,7 @@ protected:
 	 * Must be provided by implementation
 	 */
 	virtual void observe_impl(const Time& t, const State& u, const State& uf) = 0;
+	virtual void init_impl   (StateInfo &) = 0;
 
 };
 
