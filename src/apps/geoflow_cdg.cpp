@@ -287,10 +287,17 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
     GSIZET  deltac, cyc_ref;   // cycle interval
     GFTYPE  ofact ;            // output freq in terms of restart output
     Time    deltat, delt_ref;  // time interval
-    PropertyTree obsptree;     // observer props 
     GString dstr = "none";
-    GString ptype;
+    GString spref;
     GString ctype;
+    GString ptype;
+    ObserverBase<MyTypes>::Traits
+            obstraits;         // observer traits
+    PropertyTree 
+            obsptree;          // observer props 
+    StateInfo 
+            stateinfo;         // StateInfo structure
+    State   dummy(1);
 
     if ( bench_ ) return; // don't need IO
 
@@ -344,10 +351,24 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
         }
         ptree.setPropertyTree(obslist[j],obsptree); // set obs tree with new values
 
-        // Create pIO object in return from some factory calls:
-        pIO_ = IOFactory<MyTypes>::build(ptree, *grid_, comm_);
+        // Create pIO object factory call:
+        if ( pIO_ == NULLPTR ) {
+          pIO_ = IOFactory<MyTypes>::build(ptree, *grid_, comm_);
+        }
         pObservers->push_back(ObserverFactory<MyTypes>::build(ptree, obslist[j], pEqn, *grid_, pIO_));
-        if ( "gio_observer" == obslist[j] ) irestobs_ = j;
+        
+        if ( "gio_observer" != obslist[j]  ) {
+          spref           = obsptree.getValue<std::string>("agg_state_name","state");
+          stateinfo.cycle = icycle;
+          stateinfo.time  = time;
+          // If doing a restart, initialize observer with stateinfo data:
+          if ( rest_ocycle > 0 ) { 
+            obstraits = (*pObservers)[j]->get_traits();
+            pIO_->read_state(spref, stateinfo, dummy, false);
+          }
+          (*pObservers)[j]->init(stateinfo);
+          irestobs_ = j;
+        }
       }
     }
 

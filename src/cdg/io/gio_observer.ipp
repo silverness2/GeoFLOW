@@ -109,13 +109,13 @@ void GIOObserver<EquationType>::observe_impl(const Time &t, const State &u, cons
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD     : init
+// METHOD     : init_impl
 // DESCRIPTION: Set member data based on state info
 // ARGUMENTS  : info : state info
 // RETURNS    : none.
 //**********************************************************************************
 template<typename EquationType>
-void GIOObserver<EquationType>::init(StateInfo &info)
+void GIOObserver<EquationType>::init_impl(StateInfo &info)
 {
 
    time_last_  = info.time ;
@@ -123,7 +123,7 @@ void GIOObserver<EquationType>::init(StateInfo &info)
  
    bInit_ = TRUE;
 
-} // end of method init
+} // end of method init_impl
 
 
 //**********************************************************************************

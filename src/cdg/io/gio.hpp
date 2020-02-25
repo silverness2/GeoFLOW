@@ -48,7 +48,8 @@ public:
                            GIO &operator=(const GIO &bu) = default;
 
         void               write_state_impl(std::string filename, StateInfo &info, const State &u);
-        void               read_state_impl(std::string filename, StateInfo &info, State &u);
+        void               read_state_impl(std::string filename, StateInfo &info, State &u, bool bstate);
+        void               read_state_info_impl(std::string filename, StateInfo &info);
 
 private:
 // Private methods:
@@ -56,15 +57,15 @@ private:
 //      void               read_state_posix (StateInfo &info,       State  &u);
 //      void               read_state_coll  (StateInfo &info,       State  &u);
         GSIZET             write_posix(GString filename, StateInfo &info, const GTVector<Value> &u);
-        GSIZET             read_posix (GString filename, StateInfo &info,       GTVector<Value> &u);
+        GSIZET             read_posix (GString filename, StateInfo &info,       GTVector<Value> &u, bool bstate);
         GSIZET             write_coll (GString filename, StateInfo &info, const State           &u);
-        GSIZET             read_coll  (GString filename, StateInfo &info,       State           &u);
+        GSIZET             read_coll  (GString filename, StateInfo &info,       State           &u, bool bstate);
         GSIZET             read_header(GString filename, StateInfo &info, Traits &traits);
         GSIZET             write_header_posix(FILE*, StateInfo &info, Traits &traits);
         #if defined(_G_USE_MPI)
         GSIZET             write_header_coll(MPI_File, StateInfo &info, Traits &traits);
         #endif
-        GSIZET             sz_header(StateInfo &info, Traits &traits);
+        GSIZET             sz_header(const StateInfo &info, const Traits &traits);
         void               resize(GINT n);
 
 

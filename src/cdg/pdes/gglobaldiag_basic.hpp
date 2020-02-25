@@ -33,6 +33,7 @@ public:
         using EqnBase     = EquationBase<EquationType>;
         using EqnBasePtr  = std::shared_ptr<EqnBase>;
         using State       = typename Equation::State;
+        using StateInfo   = typename Equation::StateInfo;
         using Grid        = typename Equation::Grid;
         using Value       = typename Equation::Value;
         using Derivative  = typename Equation::Derivative;
@@ -63,9 +64,9 @@ public:
 
         void               observe_impl(const Time &t, const State &u, const State &uf);
 
+        void               init_impl(StateInfo &);
 private:
 // Private methods:
-        void               init(const Time t, const State &u);
         void               do_kinetic_L2 (const Time t, const State &u, const State &uf, const GString file);
         void               do_kinetic_max(const Time t, const State &u, const State &uf, const GString file);
 // Private data:

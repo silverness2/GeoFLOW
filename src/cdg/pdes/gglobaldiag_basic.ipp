@@ -45,7 +45,9 @@ grid_           (&grid)
 template<typename EquationType>
 void GGlobalDiag_basic<EquationType>::observe_impl(const Time &t, const State &u, const State &uf)
 {
-  init(t,u);
+  StateInfo info;
+
+  init_impl(info);
 
   mpixx::communicator comm;
 
@@ -68,14 +70,13 @@ void GGlobalDiag_basic<EquationType>::observe_impl(const Time &t, const State &u
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD     : init
+// METHOD     : init_impl
 // DESCRIPTION: Fill member index and name data based on traits
-// ARGUMENTS  : t  : state time
-//              u  : state variable
+// ARGUMENTS  : info: StateInfo structure
 // RETURNS    : none.
 //**********************************************************************************
 template<typename EquationType>
-void GGlobalDiag_basic<EquationType>::init(const Time t, const State &u)
+void GGlobalDiag_basic<EquationType>::init_impl(StateInfo &info)
 {
    assert(utmp_ != NULLPTR && this->utmp_->size() > 1
        && "tmp space not set, or is insufficient");
@@ -106,7 +107,7 @@ void GGlobalDiag_basic<EquationType>::init(const Time t, const State &u)
 
    bInit_ = TRUE;
  
-} // end of method init
+} // end of method init_impl
 
 
 //**********************************************************************************

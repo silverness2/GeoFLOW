@@ -193,20 +193,20 @@ void GIO<IOType>::write_state_impl(std::string filename, StateInfo &info, const 
 // METHOD : read_state_impl
 // DESC   : Read files for entire state, based on StateInfo. 
 //          
-// ARGS   : filename: filename to read from, if info.multivar > 0; else
-//                    info.svars are used to read from 
+// ARGS   : filepref: filename prefix, if info.multivar > 0; else
+//                    info.svars are used to form filenames
 //          info    : StateInfo structure
 //          u       : state object. Method will attempt to fill all components of u.
+//          bstate  : if == TRUE, read state; else read just stateinfo. Default is TRUE.
 // RETURNS: none
 //**********************************************************************************
 template<typename IOType>
-void GIO<IOType>::read_state_impl(std::string filename, StateInfo &info, State  &u)
+void GIO<IOType>::read_state_impl(std::string filepref, StateInfo &info, State  &u, bool bstate)
 {
   GString              serr ="read_state_impl: ";
   GINT                 myrank = GComm::WorldRank(comm_);
   GINT                 ivers, nc, nr, nt;
   GElemType            igtype;
-  GSIZET               itindex;
   GString              sgtype;
   std::stringstream    format;
   State                istate(1);
@@ -214,7 +214,7 @@ void GIO<IOType>::read_state_impl(std::string filename, StateInfo &info, State  
 
   nc = this->grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM; 
 
-  if ( info.sttype == 0 ) { // Check if reading grid components:
+  if ( bstate && info.sttype == 0 ) { // Check if reading grid components:
     assert(u.size() == nc && "Incorrect number of grid components");
   }
 
@@ -231,16 +231,18 @@ void GIO<IOType>::read_state_impl(std::string filename, StateInfo &info, State  
   if ( !this->traits_.multivar ) { // one state comp per file
 
     assert(info.svars.size() >= u.size());
-    for ( GSIZET j=0; j<u.size(); j++ ) { // Retrieve all state/grid components
-      assert(info.svars[j].length() > 0 );
-      sprintf(cfname_, format.str().c_str(), info.idir.c_str(), info.svars[j].c_str(),  myrank);
-      fname_.assign(cfname_);
+    for ( GSIZET j=0; j<bstate?u.size():1; j++ ) { // Retrieve all state/grid components
       if ( this->traits_.io_type == IOBase<IOType>::GIO_POSIX ) {
-        nr = read_posix(fname_, info, *u[j]);
+        assert(info.svars[j].length() > 0 );
+        sprintf(cfname_, format.str().c_str(), info.idir.c_str(), info.svars[j].c_str(), info.index,  myrank);
+        fname_.assign(cfname_);
+        nr = read_posix(fname_, info, *u[j], bstate);
       }
       else {
+        sprintf(cfname_, format.str().c_str(), info.idir.c_str(), info.svars[j].c_str(),  info.index);
+        fname_.assign(cfname_);
         istate[0] = u[j];
-        nr = read_coll (fname_, info, istate);
+        nr = read_coll (fname_, info, istate, bstate);
       }
     }
 
@@ -249,15 +251,39 @@ void GIO<IOType>::read_state_impl(std::string filename, StateInfo &info, State  
 
     assert(this->traits_.io_type == IOBase<IOType>::GIO_COLL && "Invalid io_type");
     svarname_.str(""); svarname_.clear();
-    assert(filename.length() > 0);
-    svarname_ << filename;
+    assert(filepref.length() > 0);
+    svarname_ << filepref;
     sprintf(cfname_, format.str().c_str(), info.odir.c_str(),
             svarname_.str().c_str(), info.index);
-    read_coll(fname_, info, u);
+    read_coll(fname_, info, u, bstate);
 
   }
 
 } // end, read_state_impl method
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : read_state_info_impl
+// DESC   : Read files for StateInfo.
+//          
+// ARGS   : filepref: filename prefix 
+//          info    : StateInfo structure, returned
+// RETURNS: none
+//**********************************************************************************
+template<typename IOType>
+void GIO<IOType>::read_state_info_impl(std::string filename, StateInfo &info)
+{
+  GString              serr ="read_state_info_impl: ";
+  GSIZET               nh;
+  Traits               ttraits;
+
+
+  nh  = read_header(filename, info, ttraits);
+
+  assert( nh == sz_header(info,this->traits_) );
+
+} // end, read_state_info_impl method
 
 
 //**********************************************************************************
@@ -281,7 +307,7 @@ GSIZET GIO<IOType>::write_posix(GString filename, StateInfo &info, const GTVecto
    
     fp = fopen(filename.c_str(),"wb");
     if ( fp == NULL ) {
-      cout << serr << "Error opening file: " << filename << endl;
+      cout << serr << "Error opening file: " << filename<< endl;
       exit(1);
     }
 
@@ -313,10 +339,11 @@ GSIZET GIO<IOType>::write_posix(GString filename, StateInfo &info, const GTVecto
 //          filename: filename, fully resolved
 //          info    : StateInfo structure, filled here
 //          u       : field to output; resized if required
+//          bstate  : if == TRUE, read state; else read just stateinfo. Default is TRUE.
 // RETURNS: none
 //**********************************************************************************
 template<typename IOType>
-GSIZET GIO<IOType>::read_posix(GString filename, StateInfo &info, GTVector<Value> &u)
+GSIZET GIO<IOType>::read_posix(GString filename, StateInfo &info, GTVector<Value> &u, bool bstate)
 {
 
     GString serr = "read_posix: ";
@@ -329,8 +356,9 @@ GSIZET GIO<IOType>::read_posix(GString filename, StateInfo &info, GTVector<Value
     assert(ttraits.ivers == this->traits_.ivers
                                          && "Incompatible file version number");
     assert(ttraits.dim   == GDIM         && "File dimension incompatible with GDIM");
-    assert(info     .gtype == this->grid_->gtype() 
+    assert(info   .gtype == this->grid_->gtype() 
                                            && "File grid type incompatible with grid");
+    if ( !bstate ) return nh;
 
     fp = fopen(filename.c_str(),"rb");
     if ( fp == NULL ) {
@@ -467,7 +495,7 @@ GSIZET GIO<IOType>::write_header_coll(MPI_File fp, StateInfo &info, Traits &trai
 // ARGS   : 
 //          filename : file name (fully resolved)
 //          info     : StateInfo structure, filled with what header provides
-//          traits   : object's traits
+//          traits   : this object's traits
 // RETURNS: no. header bytes read
 //**********************************************************************************
 template<typename IOType>
@@ -521,6 +549,8 @@ GSIZET GIO<IOType>::read_header(GString filename, StateInfo &info, Traits &trait
       nh = MPI_File_read(fh, &info.time        , 1   , T2GCDatatype<GFTYPE>(), &status); nb += nh*sizeof(GFTYPE);
 
       MPI_File_close(&fh); 
+#else
+# error "MPI not defined; cannot read GIO_COLL"
 #endif
 
     } 
@@ -547,7 +577,7 @@ GSIZET GIO<IOType>::read_header(GString filename, StateInfo &info, Traits &trait
 // RETURNS: no. header bytes 
 //**********************************************************************************
 template<typename IOType>
-GSIZET GIO<IOType>::sz_header(StateInfo &info, Traits &traits)
+GSIZET GIO<IOType>::sz_header(const StateInfo &info, const Traits &traits)
 {
 
     GString serr ="sz_header: ";
@@ -654,10 +684,11 @@ GSIZET GIO<IOType>::write_coll(GString filename, StateInfo &info, const State &u
 // ARGS   : filename: filename
 //          info    : StateInfo structure
 //          u       : state
+//          bstate  : if == TRUE, read state; else read just stateinfo. Default is TRUE.
 // RETURNS: none
 //**********************************************************************************
 template<typename IOType>
-GSIZET GIO<IOType>::read_coll(GString filename, StateInfo &info, State &u)
+GSIZET GIO<IOType>::read_coll(GString filename, StateInfo &info, State &u, bool bstate)
 {
 #if defined(_G_USE_MPI)
 
@@ -688,6 +719,8 @@ GSIZET GIO<IOType>::read_coll(GString filename, StateInfo &info, State &u)
     assert(tinfo.gtype       == info.gtype     && "Incompatible grid type");
 
     ntot = nh;
+
+    if ( !bstate ) return nh;
 
     // Cycle over all fields, and read:
     //   Note: any variable order element-by-element
