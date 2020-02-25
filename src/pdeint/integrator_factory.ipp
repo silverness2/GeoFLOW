@@ -5,9 +5,6 @@
  *      Author: bryan.flynt
  */
 
-#include <limits>
-
-#include "integrator_factory.hpp"
 
 namespace geoflow {
 namespace pdeint {

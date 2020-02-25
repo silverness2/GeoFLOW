@@ -9,7 +9,10 @@
 #define SRC_PDEINT_INTEGRATOR_FACTORY_HPP_
 
 
+#include "pdeint/equation_base.hpp"
 #include "pdeint/mixer_base.hpp"
+#include "pdeint/observer_base.hpp"
+#include "pdeint/null_observer.hpp"
 #include "pdeint/integrator.hpp"
 #include "tbox/property_tree.hpp"
 

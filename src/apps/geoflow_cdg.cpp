@@ -120,8 +120,7 @@ int main(int argc, char **argv)
     // Create the mixer (to update forcing)
     //***************************************************
     EH_MESSAGE("geoflow: create mixer...");
-    MixBasePtr pMixer;
-    create_mixer(ptree_, pMixer);
+    create_mixer(ptree_, pMixer_);
 
     //***************************************************
     // Create observers: 
@@ -133,7 +132,7 @@ int main(int argc, char **argv)
     // Create integrator:
     //***************************************************
     EH_MESSAGE("geoflow: create integrator...");
-    pIntegrator_ = IntegratorFactory<MyTypes>::build(ptree_, pEqn_, pMixer, pObservers_, *grid_);
+    pIntegrator_ = IntegratorFactory<MyTypes>::build(ptree_, pEqn_, pMixer_, pObservers_, *grid_);
     pIntegrator_->get_traits().cycle = icycle;
 
     //***************************************************

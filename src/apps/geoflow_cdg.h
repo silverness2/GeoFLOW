@@ -34,6 +34,7 @@
 #include "gio.hpp"
 #include "pdeint/equation_base.hpp"
 #include "pdeint/equation_factory.hpp"
+#include "pdeint/integrator.hpp"
 #include "pdeint/integrator_factory.hpp"
 #include "pdeint/mixer_factory.hpp"
 #include "pdeint/observer_factory.hpp"
@@ -102,7 +103,8 @@ using IOBaseType    = IOBase<MyTypes>;          // IO Base type
 using IOBasePtr     = std::shared_ptr<IOBaseType>;// IO Base ptr
 using MixBase       = MixerBase<MyTypes>;       // Stirring/mixing Base type
 using MixBasePtr    = std::shared_ptr<MixBase>;   // Stirring/mixing Base ptr
-using IntegratorPtr = std::shared_ptr<Integrator<MyTypes>>;
+using IntegratorBase= Integrator<MyTypes>;        // Integrator
+using IntegratorPtr = std::shared_ptr<IntegratorBase>; // Integrator ptr
                                                   // Integrator ptr
 using ObsBase       = ObserverBase<EqnBase>;      // Observer Base type
 using ObsTraitsType = ObserverBase<MyTypes>::Traits;
@@ -125,6 +127,7 @@ GTVector<GFTYPE> nu_(3);       // viscosity
 BasisBase        gbasis_(GDIM);// basis vector
 EqnBasePtr       pEqn_;        // equation pointer
 IntegratorPtr    pIntegrator_; // integrator pointer
+MixBasePtr       pMixer_;      // mixer object
 PropertyTree     ptree_;       // main prop tree
 GGFX<GFTYPE>    *ggfx_=NULLPTR;// DSS operator
 IOBasePtr        pIO_;         // ptr to IOBase operator
