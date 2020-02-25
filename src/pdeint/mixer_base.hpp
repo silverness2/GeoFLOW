@@ -1,5 +1,5 @@
 /*
- * mixrer_base.hpp
+ * mixer_base.hpp
  *
  *  Created on: Mar 27, 2019
  *      Author: bflynt, d.rosemnerg
@@ -11,6 +11,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include "equation_base.hpp"
 
 namespace geoflow {
 namespace pdeint {
@@ -23,20 +24,22 @@ namespace pdeint {
  * every time step and determine if it should 'randomized', and
  * how.
  */
-template<typename EquationType>
+template<typename TypePack>
 class MixerBase {
 
 public:
         enum MixType     {STIR_CYCLE=0, STIR_TIME};
-	using Equation    = EquationType;
-	using State       = typename Equation::State;
-	using Grid        = typename Equation::Grid;
-	using Value       = typename Equation::Value;
-	using Derivative  = typename Equation::Derivative;
-	using Time        = typename Equation::Time;
-	using Jacobian    = typename Equation::Jacobian;
-	using Size        = typename Equation::Size;
-	using EquationPtr = std::shared_ptr<Equation>;
+	using Types       = TypePack;
+        using EqnBase     = EquationBase<TypePack>;
+        using EqnBasePtr  = std::shared_ptr<EqnBase>;
+        using State       = typename Types::State;
+        using StateInfo   = typename Types::StateInfo;
+	using Grid        = typename Types::Grid;
+	using Value       = typename Types::Value;
+	using Derivative  = typename Types::Derivative;
+	using Time        = typename Types::Time;
+	using Jacobian    = typename Types::Jacobian;
+	using Size        = typename Types::Size;
 
         /**
          * Data structure to hold user selected parameters

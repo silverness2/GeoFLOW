@@ -30,26 +30,27 @@ namespace pdeint {
  * The Integrator class performs multiple time steps and observations
  * to a provided system of equations.
  *
- * @see EquationBase
+ * @see TypesBase
  * @see StepperBase
  */
-template<typename EquationType>
+template<typename TypePack>
 class Integrator {
 
 public:
         enum IntegType     {INTEG_CYCLE=0, INTEG_TIME};
-	using Equation     = EquationType;
-        using EqnBase      = EquationBase<EquationType>;
-	using State        = typename Equation::State;
-	using Grid         = typename Equation::Grid;
-	using Value        = typename Equation::Value;
-	using Derivative   = typename Equation::Derivative;
-	using Time         = typename Equation::Time;
-	using Jacobian     = typename Equation::Jacobian;
-	using Size         = typename Equation::Size;
-	using EqnBasePtr   = std::shared_ptr<EqnBase>;
-	using MixerBasePtr = std::shared_ptr<MixerBase<Equation>>;
-	using ObsBasePtr   = std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<Equation>>>>;
+	using Types        = TypePack;
+        using EqnBase      = EquationBase<TypePack>;
+        using EqnBasePtr   = std::shared_ptr<EqnBase>;
+	using State        = typename Types::State;
+	using StateInfo    = typename Types::StateInfo;
+	using Grid         = typename Types::Grid;
+	using Value        = typename Types::Value;
+	using Derivative   = typename Types::Derivative;
+	using Time         = typename Types::Time;
+	using Jacobian     = typename Types::Jacobian;
+	using Size         = typename Types::Size;
+	using MixerBasePtr = std::shared_ptr<MixerBase<Types>>;
+	using ObsBasePtr   = std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<Types>>>>;
       
 	/**
 	 * Data structure to hold user selected parameters

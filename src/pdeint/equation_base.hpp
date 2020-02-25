@@ -26,13 +26,13 @@ class EquationBase {
 public:
 	using Types      = TypePack;
 	using State      = typename Types::State;
+        using StateInfo  = typename Types::StateInfo;
 	using Grid       = typename Types::Grid;
 	using Value      = typename Types::Value;
 	using Derivative = typename Types::Derivative;
 	using Time       = typename Types::Time;
-	using CompDesc   = typename Types::CompDesc;
 	using Jacobian   = typename Types::Jacobian;
-        using StateInfo  = typename Types::StateInfo;
+	using CompDesc   = typename Types::CompDesc;
 	using Size       = typename Types::Size;
 
 

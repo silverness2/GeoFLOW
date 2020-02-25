@@ -83,7 +83,7 @@ typename CompType      = GTVector<GStateCompType>,
 typename JacoType      = StateType,
 typename SizeType      = GSIZET
 >
-struct AllTypes {
+struct TypePack {
         using State      = StateType;
         using StateInfo  = StateInfoType;
         using Grid       = GridType;
@@ -94,7 +94,8 @@ struct AllTypes {
         using Jacobian   = JacoType;
         using Size       = SizeType;
 };
-using MyTypes       = AllTypes<>;           // Define grid types used
+using StateInfo     = stStateInfo;
+using MyTypes       = TypePack<>;           // Define grid types used
 using EqnBase       = EquationBase<MyTypes>;    // Equation Base type
 using EqnBasePtr    = std::shared_ptr<EqnBase>;   // Equation Base ptr
 using IOBaseType    = IOBase<MyTypes>;          // IO Base type
@@ -107,7 +108,6 @@ using ObsBase       = ObserverBase<EqnBase>;      // Observer Base type
 using ObsTraitsType = ObserverBase<MyTypes>::Traits;
 using BasisBase     = GTVector<GNBasis<GCTYPE,GFTYPE>*>; 
                                                   // Basis pool type
-using StateInfo     = stStateInfo;
 
 // 'Member' data:
 GBOOL            bench_=FALSE;
