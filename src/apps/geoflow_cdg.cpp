@@ -148,7 +148,8 @@ int main(int argc, char **argv)
     }
     else {                // restart run
       do_restart(ptree_, *grid_, u_, p, icycle, t);
-//    gio_restart(ptree_, 0, u_, p, icycle, t, comm_);
+      init_bdy  (ptree_, *grid_, pEqn_, t, utmp_, u_, ub_);
+      init_force(ptree_, *grid_, pEqn_, t, utmp_, u_, uf_);
     }
 
     //***************************************************
