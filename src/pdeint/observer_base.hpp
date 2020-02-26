@@ -75,9 +75,9 @@ public:
                           agg_grid_name          ;   // accumulated grid filename
                 std::vector<dqTraits>
                           derived_quantities;         // derived types: [ [type, function, output name],..]
-                size_t    start_ocycle   = 0;         // starting output cycle 
-//              size_t    start_cycle    = 0;         // starting evol cycle 
-                size_t    cycle_interval = 10;        // cycle interval for observation
+                size_t    start_ocycle   = 0  ;       // starting output cycle 
+//              size_t    start_cycle    = 0  ;       // starting evol cycle 
+                size_t    cycle_interval = 10 ;       // cycle interval for observation
                 double    start_time     = 0.0;       // starting evol time
                 double    time_interval  = 1.0;       // time interval for observation
                 double    freq_fact      = 1.0;       // ties output freq to another observer (e.g., restart)
