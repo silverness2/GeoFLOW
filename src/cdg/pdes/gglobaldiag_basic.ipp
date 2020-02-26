@@ -115,7 +115,7 @@ void GGlobalDiag_basic<EquationType>::init_impl(StateInfo &info)
 // METHOD     : do_kinetic_L2
 // DESCRIPTION: Compute integrated diagnostic quantities, and output to file
 // ARGUMENTS  : t  : state time
-//              uu : state variable
+//              u  : state variable
 //              uf : forcing
 //              fname: file name
 // RETURNS    : none.
@@ -169,7 +169,7 @@ void GGlobalDiag_basic<EquationType>::do_kinetic_L2(const Time t, const State &u
   // Relative helicity = <u.omega/(|u|*|omega|)>
   lmax[4] = GMTK::relhelicity(*grid_, ku_, utmp, isreduced, ismax);
 
-  // Gather final max's:
+  // Gather final sums:
   GComm::Allreduce(lmax.data(), gmax.data(), 5, T2GCDatatype<GFTYPE>(), GC_OP_SUM, grid_->get_comm());
   ener = gmax[0]; enst = gmax[1]; fv = gmax[2]; hel = gmax[3]; rhel = gmax[4];
 
