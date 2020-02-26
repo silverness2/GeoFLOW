@@ -356,19 +356,21 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
         }
         pObservers->push_back(ObserverFactory<MyTypes>::build(ptree, obslist[j], pEqn, *grid_, pIO_));
         (*pObservers)[j]->set_tmp(utmp_);
-        (*pObservers)[j]->init(stateinfo);
         
         if ( "gio_observer" == obslist[j]  ) {
-          spref           = obsptree.getValue<std::string>("agg_state_name","state");
-          stateinfo.cycle = icycle;
-          stateinfo.time  = time;
+          spref            = obsptree.getValue<std::string>("agg_state_name","state");
+          stateinfo.sttype = 0; // grid type filename format
+          stateinfo.svars  = obsptree.getArray<std::string>("state_names");
+          stateinfo.idir   = obsptree.getValue<std::string>("idir");
+          stateinfo.index  = rest_ocycle;
           // If doing a restart, initialize observer with stateinfo data:
           if ( rest_ocycle > 0 ) { 
-            obstraits = (*pObservers)[j]->get_traits();
+//          obstraits = (*pObservers)[j]->get_traits();
             pIO_->read_state(spref, stateinfo, dummy, false);
           }
           irestobs_ = j;
         }
+        (*pObservers)[j]->init(stateinfo);
       }
     }
 
@@ -1018,7 +1020,7 @@ void do_restart(const PropertyTree &ptree, GGrid &, State &u,
 
 
   itindex            = ptree.getValue<GSIZET>("restart_index", 0);
-  stateinfo.sttype   = 1; // state variable type
+  stateinfo.sttype   = 0; // state variable type
   stateinfo.svars.resize(binobstraits.state_names.size());
   stateinfo.svars    = binobstraits.state_names;
   stateinfo.idir     = binobstraits.idir;
