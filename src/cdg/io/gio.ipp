@@ -208,7 +208,8 @@ void GIO<IOType>::read_state_impl(std::string filepref, StateInfo &info, State  
   GINT                 ivers, nc, nr, nt;
   GElemType            igtype;
   GString              sgtype;
-  std::stringstream    format;
+  std::stringstream    format;  // POSIX name format
+  std::stringstream    cformat; // collective name format
   State                istate(1);
   Traits               ttraits;
 
@@ -221,26 +222,30 @@ void GIO<IOType>::read_state_impl(std::string filepref, StateInfo &info, State  
   resize(this->traits_.wfile);
   
   format .str(""); format .clear();
-  if ( this->traits_.io_type == IOBase<IOType>::GIO_POSIX ) {
+  cformat.str(""); cformat.clear();
+  if ( info.sttype ==0 ) { // is a physical state
+    format    << "%s/%s.%0" << this->traits_.wtime << "d.%0" << this->traits_.wtask << "d.out";
+  }
+  else {                   // is a grid file
     format    << "%s/%s.%0" << this->traits_.wtask << "d.out";
   }
-  else {
-    format    << "%s/%s";
-  }
+  cformat    << "%s/%s.%0" << this->traits_.wtime << "d.out";
 
   if ( !this->traits_.multivar ) { // one state comp per file
 
-    assert(info.svars.size() >= u.size());
-    for ( GSIZET j=0; j<bstate?u.size():1; j++ ) { // Retrieve all state/grid components
-      if ( this->traits_.io_type == IOBase<IOType>::GIO_POSIX ) {
-        assert(info.svars[j].length() > 0 );
-        sprintf(cfname_, format.str().c_str(), info.idir.c_str(), info.svars[j].c_str(), info.index,  myrank);
-        fname_.assign(cfname_);
+    assert(info.svars.size() >= 1);
+    nt = bstate ? u.size() : 1;
+    for ( GSIZET j=0; j<nt; j++ ) { // Retrieve all state/grid components
+      svarname_.str(""); svarname_.clear();
+      assert(info.svars[j].length() > 0);
+      svarname_ << info.svars[j];
+      sprintf(cfname_, format.str().c_str(), info.idir.c_str(),
+              svarname_.str().c_str(), info.index, myrank);
+      fname_.assign(cfname_);
+      if ( this->traits_.io_type == IOBase<IOType>::GIO_POSIX ) { // POSIX
         nr = read_posix(fname_, info, *u[j], bstate);
       }
-      else {
-        sprintf(cfname_, format.str().c_str(), info.idir.c_str(), info.svars[j].c_str(),  info.index);
-        fname_.assign(cfname_);
+      else {  // collective
         istate[0] = u[j];
         nr = read_coll (fname_, info, istate, bstate);
       }
@@ -506,7 +511,7 @@ GSIZET GIO<IOType>::read_header(GString filename, StateInfo &info, Traits &trait
     GSIZET nb, nd, nh, numr;
   
     nb = 0;
-    if ( traits.io_type == IOBase<IOType>::GIO_POSIX ) {
+//  if ( traits.io_type == IOBase<IOType>::GIO_POSIX ) {
       // Read field data:
       FILE *fp;
       fp = fopen(filename.c_str(),"rb");
@@ -527,7 +532,8 @@ GSIZET GIO<IOType>::read_header(GString filename, StateInfo &info, Traits &trait
     
       fclose(fp);
   
-    }
+//  }
+/*
     else {
 #if defined(_G_USE_MPI)
       MPI_File        fh;
@@ -552,8 +558,8 @@ GSIZET GIO<IOType>::read_header(GString filename, StateInfo &info, Traits &trait
 #else
 # error "MPI not defined; cannot read GIO_COLL"
 #endif
-
-    } 
+*/
+//  } 
 
     // Check number read vs expected value:
     nd = (numr+3)*sizeof(GINT) + 2*sizeof(GSIZET) + sizeof(GFTYPE);
