@@ -17,7 +17,7 @@
 template<typename IOType>
 GIO<IOType>::GIO(Grid &grid,  Traits &traits, GC_COMM comm):
 IOBase<IOType>(grid, traits),
-nstates_                       (0),
+ncomps_                       (0),
 comm_                       (comm),
 cfname_                  (NULLPTR),
 nfname_                        (0)
@@ -30,7 +30,7 @@ nfname_                        (0)
   extent_.resize(GComm::WorldSize(comm_));
 
   // Get extents of a single state component on each task:
-  GCom::Allgather(&ndof, 1, T2GCDatatype<GSIZET>(), extent_.data(), 1, T2GCDatatype<GSIZET>(), comm_);
+  GComm::Allgather(&ndof, 1, T2GCDatatype<GSIZET>(), extent_.data(), 1, T2GCDatatype<GSIZET>(), comm_);
 
 } // end of constructor (1) method
 
@@ -54,31 +54,35 @@ GIO<IOType>::~GIO()
 //**********************************************************************************
 // METHOD     : init
 // DESCRIPTION: Initialize object
-// ARGUMENTS  : t  : state time
-//              u  : state variable
+// ARGUMENTS  : ncomps : number of state components in each file
 // RETURNS    : none.
 //**********************************************************************************
 template<typename IOType>
-void GIO<IOType>::init()
+void GIO<IOType>::init(GINT ncomps)
 {
 
   if ( this->traits_.io_type != IOBase<IOType>::GIO_COLL ) {
     return; // nothing to do
   }
+  assert(ncomps > 0);
 
+  if ( ncomps_ == ncomps ) return;
+
+  GSIZET           nfact = this->traits_.multivar ? ncomps : 1; 
   GSIZET           ndof  =this->grid_->ndof();
   GSIZET           nelems=this->grid_->nelems();
 
   GINT myrank = GComm::WorldRank(comm_);
   if ( myrank == 0 ) {
-    state_disp_ = 0; // in bytes
-    state_extent_ = extent[myrank]*sizeof(GFTYPE); // in bytes
+    state_disp_   = 0; // in bytes
+    state_extent_ = nfact*extent_[myrank]*sizeof(GFTYPE); // in bytes
   }
   else {
-    state_disp_   = extent.sum(0,myrank)*sizeof(GFTYPE); // in bytes
-    state_extent_ = extent[myrank]*sizeof(GFTYPE); // in bytes
+    state_disp_   = nfact*extent_.sum(0,myrank)*sizeof(GFTYPE); // in bytes
+    state_extent_ = nfact*extent_[myrank]*sizeof(GFTYPE); // in bytes
   }
-  nbgdof_ = extent.sum()*sizeof(GFTYPE); // no. bytes of state
+  nbgdof_ = nfact*extent_.sum()*sizeof(GFTYPE); // no. bytes of state in file
+  ncomps_ = ncomps;
 
 #if defined(_G_USE_MPI)
   MPI::Aint lowerbnd=0;
@@ -86,7 +90,6 @@ void GIO<IOType>::init()
   MPI_Type_commit(&mpi_state_type_);
 
 #endif
-  bInit_ = TRUE;
 
 
 } // end of method init
@@ -122,6 +125,7 @@ void GIO<IOType>::write_state_impl(std::string filename, StateInfo &info, const 
     std::stringstream 
                    cformat, scformat, spformat;
 
+    init(u.size());
 
     // Required number of coord vectors:
     nc = this->grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
@@ -133,11 +137,9 @@ void GIO<IOType>::write_state_impl(std::string filename, StateInfo &info, const 
     this->traits_.dim  = GDIM;
 
     if ( this->traits_.io_type == IOBase<IOType>::GIO_COLL ) {
-      init(u.size());
       info.nelems = this->grid_->ngelems(); // total no. elems among all tasks
     }
     else {
-      init(1);
       info.nelems = this->grid_->nelems(); // local nelems for this task
     }
     info.gtype    = this->grid_->gtype();
@@ -227,7 +229,7 @@ void GIO<IOType>::read_state_impl(std::string filepref, StateInfo &info, State  
   State                istate(1);
   Traits               ttraits;
 
-  if ( !bInit_ ) init();
+  init(u.size());
 
   nc = this->grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM; 
 
