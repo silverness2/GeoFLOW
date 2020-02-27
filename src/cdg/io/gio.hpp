@@ -53,7 +53,7 @@ public:
 
 private:
 // Private methods:
-        void               init();
+        void               init(GINT nstates);
 //      void               read_state_posix (StateInfo &info,       State  &u);
 //      void               read_state_coll  (StateInfo &info,       State  &u);
         GSIZET             write_posix(GString filename, StateInfo &info, const GTVector<Value> &u);
@@ -70,8 +70,8 @@ private:
 
 
 // Private data:
-        GBOOL              bInit_;      // is initialized?
         GINT               nfname_;
+        GINT               nstates_;
         GSIZET             nbheader_;   // # bytes in header
         GSIZET             nbfield_;    // # bytes in each state component
         GSIZET             nbgdof_;     // total # global dof bytes
@@ -84,6 +84,7 @@ private:
         std::stringstream  svarname_;
         GString            fname_;
         char              *cfname_;
+        GTVector<GSIZET>   extent_;
         GTVector<GINT>     state_index_;// list of state indices to print
         GTVector<GString>  state_names_;// list of names of state files
         GTVector<GString>  grid_names_ ;// list of names of grid comp files
