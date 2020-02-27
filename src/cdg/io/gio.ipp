@@ -122,7 +122,6 @@ void GIO<IOType>::write_state_impl(std::string filename, StateInfo &info, const 
     std::stringstream 
                    cformat, scformat, spformat;
 
-    if ( !bInit_ ) init();
 
     // Required number of coord vectors:
     nc = this->grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
@@ -134,9 +133,11 @@ void GIO<IOType>::write_state_impl(std::string filename, StateInfo &info, const 
     this->traits_.dim  = GDIM;
 
     if ( this->traits_.io_type == IOBase<IOType>::GIO_COLL ) {
+      init(u.size());
       info.nelems = this->grid_->ngelems(); // total no. elems among all tasks
     }
     else {
+      init(1);
       info.nelems = this->grid_->nelems(); // local nelems for this task
     }
     info.gtype    = this->grid_->gtype();
