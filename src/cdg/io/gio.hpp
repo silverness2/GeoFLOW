@@ -53,7 +53,7 @@ public:
 
 private:
 // Private methods:
-        void               init(GINT ncomps);
+        void               update_type(StateInfo &, GINT ncomps);
 //      void               read_state_posix (StateInfo &info,       State  &u);
 //      void               read_state_coll  (StateInfo &info,       State  &u);
         GSIZET             write_posix(GString filename, StateInfo &info, const GTVector<Value> &u);
@@ -88,6 +88,8 @@ private:
         GTVector<GINT>     state_index_;// list of state indices to print
         GTVector<GString>  state_names_;// list of names of state files
         GTVector<GString>  grid_names_ ;// list of names of grid comp files
+        std::stringstream  spformat_;   // POSIX format
+        std::stringstream  scformat_;   // collective format
 
 };
 
