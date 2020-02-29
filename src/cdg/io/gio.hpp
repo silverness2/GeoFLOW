@@ -70,6 +70,7 @@ private:
 
 
 // Private data:
+        GINT               myrank_;     // task's rank
         GINT               nfname_;
         GINT               ncomps_;
         GSIZET             nbheader_;   // # bytes in header
