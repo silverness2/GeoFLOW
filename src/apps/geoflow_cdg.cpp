@@ -143,14 +143,12 @@ int main(int argc, char **argv)
     if ( itindex == 0 ) { // start new run
       icycle = 0; t = 0.0; 
       init_state(ptree_, *grid_, pEqn_, t, utmp_, u_, ub_);
-      init_bdy  (ptree_, *grid_, pEqn_, t, utmp_, u_, ub_);
-      init_force(ptree_, *grid_, pEqn_, t, utmp_, u_, uf_);
     }
     else {                // restart run
       do_restart(ptree_, *grid_, u_, p, icycle, t);
-      init_bdy  (ptree_, *grid_, pEqn_, t, utmp_, u_, ub_);
-      init_force(ptree_, *grid_, pEqn_, t, utmp_, u_, uf_);
     }
+    init_bdy  (ptree_, *grid_, pEqn_, t, utmp_, u_, ub_);
+    init_force(ptree_, *grid_, pEqn_, t, utmp_, u_, uf_);
 
     //***************************************************
     // Do time integration (output included
