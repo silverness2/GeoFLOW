@@ -513,9 +513,9 @@ template<typename IOType>
 GSIZET GIO<IOType>::write_header_coll(MPI_File fp, StateInfo &info, Traits &traits)
 {
   GString serr ="write_header: ";
-  GINT   nh, imulti;
-  GSIZET nb, numr;
-  MPI_Status     status;
+  GINT       nh, imulti;
+  GSIZET     nb, numr;
+  MPI_Status status;
 
   
 
