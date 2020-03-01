@@ -53,7 +53,8 @@ public:
 
 private:
 // Private methods:
-        void               update_type(StateInfo &, GINT ncomps);
+        void               init();
+        void               update_type(StateInfo &);
 //      void               read_state_posix (StateInfo &info,       State  &u);
 //      void               read_state_coll  (StateInfo &info,       State  &u);
         GSIZET             write_posix(GString filename, StateInfo &info, const GTVector<Value> &u);
@@ -70,25 +71,17 @@ private:
 
 
 // Private data:
+        GBOOL              bInit_;      // object initialized?
         GINT               myrank_;     // task's rank
         GINT               nfname_;
-        GINT               ncomps_;
-        GSIZET             nbheader_;   // # bytes in header
-        GSIZET             nbfield_;    // # bytes in each state component
         GSIZET             nbgdof_;     // total # global dof bytes
         #if defined(_G_USE_MPI)
           MPI_Datatype     mpi_state_type_;
-          MPI_Offset       state_disp_;
-          MPI_Aint         state_extent_;
         #endif
         GC_COMM            comm_;
         std::stringstream  svarname_;
         GString            fname_;
         char              *cfname_;
-        GTVector<GSIZET>   extent_;
-        GTVector<GINT>     state_index_;// list of state indices to print
-        GTVector<GString>  state_names_;// list of names of state files
-        GTVector<GString>  grid_names_ ;// list of names of grid comp files
         std::stringstream  spformat_;   // POSIX format
         std::stringstream  scformat_;   // collective format
 
