@@ -61,9 +61,9 @@ private:
         GSIZET             write_coll (GString filename, StateInfo &info, const State           &u);
         GSIZET             read_coll  (GString filename, StateInfo &info,       State           &u, bool bstate);
         GSIZET             read_header(GString filename, StateInfo &info, Traits &traits);
-        GSIZET             write_header_posix(FILE*, StateInfo &info, Traits &traits);
+        GSIZET             write_header_posix(GString fn, StateInfo &info, Traits &traits);
         #if defined(_G_USE_MPI)
-        GSIZET             write_header_coll(MPI_File, StateInfo &info, Traits &traits);
+        GSIZET             write_header_coll(GString fn, StateInfo &info, Traits &traits);
         #endif
         GSIZET             sz_header(const StateInfo &info, const Traits &traits);
         void               resize(GINT n);
