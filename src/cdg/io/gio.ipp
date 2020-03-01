@@ -99,8 +99,6 @@ void GIO<IOType>::update_type(StateInfo &info, GINT ncomps)
   nbgdof_ = extent_.sum()*sizeof(Value); // no. bytes of single state comp
   ncomps_ = ncomps;
 
-GPP(comm_,"myrank=" << myrank_ << ": update_type: state_disp=" << state_disp_ << " state_extent=" << state_extent_);
-GPP(comm_,"extent_=" << extent_);
 
 #if defined(_G_USE_MPI)
   MPI_Type_free(&mpi_state_type_);
@@ -197,7 +195,6 @@ void GIO<IOType>::write_state_impl(std::string filepref, StateInfo &info, const 
           fname_.assign(cfname_);
           ostate[0] = u[j];
           nb = write_coll(fname_, info, ostate);
-GPP(comm_,"write: u[" << j << "]=" << *ostate[0]);
         }
         nd = sz_header(info,this->traits_) + u[j]->size()*sizeof(Value);
         assert(nb == nd && "Incorrect number of bytes written");
@@ -270,7 +267,6 @@ void GIO<IOType>::read_state_impl(std::string filepref, StateInfo &info, State  
         fname_.assign(cfname_);
         istate[0] = u[j];
         nr = read_coll (fname_, info, istate, bstate);
-if ( bstate ) GPP(comm_,"read: u[" << j << "]=" << *u[j]);
       }
     }
   }
