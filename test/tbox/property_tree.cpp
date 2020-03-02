@@ -18,7 +18,7 @@ int main() {
 
 	PropertyTree pt;
 
-	pt.load_file("data/input.jsn");
+	pt.load_file("input.jsn");
 
 	auto keys = pt.getKeys();
 	assert( keys.size() == 9 );
@@ -106,6 +106,13 @@ int main() {
 	assert( string_array[3] == "array" );
 	assert( string_array[4] == "work");
 
+	//
+	// Missing Keys
+	//
+	assert( pt.keyExists("missing_key")      == false  );
+	assert( pt.isValue<int>("missing_key")   == false  );
+	assert( pt.isArray<int>("missing_key")   == false  );
+	assert( pt.isPropertyTree("missing_key") == false  );
 
 
 	return 0;

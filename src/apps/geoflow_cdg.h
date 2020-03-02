@@ -9,7 +9,10 @@
 #if !defined(GEOFLOW_CDG_MAIN_H)
 #define GEOFLOW_CDG_MAIN_H
 
-#include <omp.h>
+#if defined(_OPENMP)
+   #include <omp.h>
+#endif
+
 #include "gexec.h"
 #include "gtypes.h"
 #include <stdio.h>
@@ -43,6 +46,7 @@
 #include "ginitforce_factory.hpp"
 #include "ginitbdy_factory.hpp"
 #include "gupdatebdy_factory.hpp"
+#include "tbox/command_line.hpp"
 #include "tbox/property_tree.hpp"
 #include "tbox/mpixx.hpp"
 #include "tbox/global_manager.hpp"
@@ -130,6 +134,7 @@ EqnBasePtr       pEqn_;        // equation pointer
 IntegratorPtr    pIntegrator_; // integrator pointer
 MixBasePtr       pMixer_;      // mixer object
 PropertyTree     ptree_;       // main prop tree
+
 GGFX<GFTYPE>    *ggfx_=NULLPTR;// DSS operator
 IOBasePtr        pIO_;         // ptr to IOBase operator
 std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>>

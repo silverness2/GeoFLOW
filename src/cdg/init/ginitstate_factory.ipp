@@ -124,6 +124,7 @@ GBOOL GInitStateFactory<EquationType>::set_by_comp(const PropertyTree& ptree, GG
   GStateCompType *pct;
   CompDesc       *icomptype = &peqn->stateinfo().icomptype;
   CompDesc        cdesc;
+
   GTVector<GSIZET>   itmp;
 
   cdesc.resize(icomptype->size());

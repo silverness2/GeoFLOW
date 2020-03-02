@@ -17,7 +17,9 @@
 using namespace std;
 
 #define GGFX_TRACE_OUTPUT
+
 #define GGFX_NEW_DOCOMMON
+
 
 //************************************************************************************
 //************************************************************************************
@@ -198,10 +200,11 @@ GBOOL GGFX<T>::initSort(GNIDBuffer  &glob_index)
   GIMatrix    gBinMat;              // For each task, its filled bins and the # nodes in each
   GNIDBuffer  locWork;
 
-#if  1 //defined(GGFX_TRACE_OUTPUT)
+#if defined(GGFX_TRACE_OUTPUT)
   EH_MESSAGE("GGFX::initSort: calling binSort...");
 #endif
 
+  GComm::Synch(comm_);
   GTimerStart("ggfx_binSort");
   bret = binSort(glob_index, gBinMat, numlocfilledbins,
                  max_numlocfilledbins, max_numlocbinmem, gBinBdy_, locWork);
@@ -224,6 +227,7 @@ GBOOL GGFX<T>::initSort(GNIDBuffer  &glob_index)
   EH_MESSAGE("GGFX::initSort: Calling createWorkBuffs...");
 #endif
 
+  GComm::Synch(comm_);
   GTimerStart("ggfx_workBuffs");
   GNIDMatrix isWork;         // Wrk send buff: iSendWorkTaskID.size x max_numlocbinmem
   bret = createWorkBuffs(gBinMat, max_numlocbinmem, iRecvWorkTaskID, irWork, iSendWorkTaskID, isWork);
@@ -239,6 +243,7 @@ GBOOL GGFX<T>::initSort(GNIDBuffer  &glob_index)
 #endif
 
   // Fill bins with global nodes & send out, and receive work:
+  GComm::Synch(comm_);
   GTimerStart("ggfx_sendRcvWork");
   bret = doSendRecvWork(glob_index, gBinBdy_, iRecvWorkTaskID, irWork, iSendWorkTaskID, isWork);
   GTimerStop("ggfx_sendRcvWork");
@@ -257,6 +262,7 @@ GBOOL GGFX<T>::initSort(GNIDBuffer  &glob_index)
 #if defined(GGFX_TRACE_OUTPUT)
   EH_MESSAGE("GGFX::initSort: Calling doCommonNodeSort..."); 
 #endif
+  GComm::Synch(comm_);
   GTimerStart("ggfx_commonNodeSort");
   bret = doCommonNodeSort(glob_index, irWork, iRecvWorkTaskID, iSendWorkTaskID, mySharedData);
   GTimerStop("ggfx_commonNodeSort");
@@ -275,6 +281,7 @@ GBOOL GGFX<T>::initSort(GNIDBuffer  &glob_index)
 #if defined(GGFX_TRACE_OUTPUT)
   EH_MESSAGE("GGFX::initSort: Calling extractOpData..."); 
 #endif
+  GComm::Synch(comm_);
   GTimerStart("ggfx_extractOpData");
   bret = extractOpData(glob_index, mySharedData);
   GTimerStop("ggfx_extractOpData");
@@ -386,7 +393,6 @@ GBOOL GGFX<T>::binSort(GNIDBuffer &nodelist, GIMatrix &gBinMat,
 
   // Find max number of nodes in each bin among all ranks:
   GSIZET lmax = nInBin.max();
-
   GComm::Allreduce(&lmax, &max_numlocbinmem, 1, T2GCDatatype<GSIZET>() , GC_OP_MAX, comm_);
 
 #if defined(GGFX_TRACE_OUTPUT_LEV2)
@@ -753,7 +759,6 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   GINT       itask, myrank, nl;
 
   if ( !bBinSorted_ ) return FALSE;
-
   GSIZET     lsz[2];
   GSIZET     gsz[2];
   GSIZET     npos, iwhich, nd, nnd, nkeep, nvals=0, nivals, njvals;
@@ -767,6 +772,7 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   GSZBuffer  iitmp;
   GSZBuffer  iiitmp;
   GSZBuffer  wmult;
+
   GTVector<GTVector<GSIZET>> itasks;
   GNIDBuffer ikeep; // holds distinct across entire matrix
   GNIDBuffer nidtmp, *niddata; 
@@ -806,6 +812,7 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
 
   // First, get sizes required for 'shared node matrix':
   isort .resize(irWork.size(1)*irWork.size(2));
+
   itmp  .resize(irWork.size(1)*irWork.size(2));
   nidtmp.resize(irWork.size(1)*irWork.size(2));
   iitmp .resize(irWork.size(1));
@@ -894,7 +901,9 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
       // Recall that matrices are stored col-major, so get matrix 
       // column/tasks where nid is located:
       for ( auto i=0; i<mult; i++ ) icol[i] = iivals[i] / irWork.dim(1); 
+
       ikeep[nkeep] = nid; // keep indices for nodes with mult>1   
+
       nnd = icol.distinctrng(0,mult,1,vvals,ijvals,njvals,iitmp.data(),iiitmp.data()); // find # tasks that own nid
       itasks[nkeep].resize(nnd);
       for ( auto k=0; k<nnd; k++ ) itasks[nkeep][k] = vvals[k];
@@ -912,6 +921,7 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
 
   GTimerStop("ggfx_cNS_init_work");
 
+
   GTimerStop("ggfx_cNS_sizes");
 
 #if defined(GGFX_TRACE_OUTPUT)
@@ -926,8 +936,7 @@ GBOOL GGFX<T>::doCommonNodeSort(GNIDBuffer &glob_index, GNIDMatrix &irWork,
   GComm::Allreduce(lsz, gsz, 2, T2GCDatatype<GSIZET>() , GC_OP_MAX, comm_);
 #else
   GINT             ntasks = GComm::WorldSize();
-  GTVector<GSIZET> gszt(ntasks);
-  
+  GTVector<GSIZET> gszt(ntasks);  
   GComm::Allgather(&lsz[0], 1, T2GCDatatype<GSIZET>(), gszt.data(), 1, T2GCDatatype<GSIZET>(), comm_);
   gsz[0] = gszt.max();
   GComm::Allgather(&lsz[1], 1, T2GCDatatype<GSIZET>(), gszt.data(), 1, T2GCDatatype<GSIZET>(), comm_);
@@ -962,13 +971,13 @@ itasks.range_reset();
   EH_MESSAGE("GGFX::doCommonNodeSort: Fill send_buff...");
 #endif
 
-
   // Last, fill send buffer with sorted work data:
   sendShNodeWrk.set(-1);
   for ( j=0, npos=0; j<nkeep; j++ ) { // cycle over each node with mult>1
     nid = (*niddata)[ikeep[j]];
 //  mult = niddata->multiplicity(nid, iivals, nivals); // find linear indices for nid
     icol.resizem(wmult[j]);
+
     sendShNodeWrk(npos  ,0) = nid;
     sendShNodeWrk(npos+1,0) = itmp[j];
   
@@ -981,8 +990,8 @@ itasks.range_reset();
 
   GTimerStop("ggfx_cNS_fill_send_buff");
 
-
   GTimerStart("ggfx_cNS_find_send_back");
+
 
   mySharedData.set(-1);
   GCommDatatype dtype = T2GCDatatype<GNODEID>();
@@ -996,7 +1005,6 @@ itasks.range_reset();
   // Set indirection buffers for send & receive (don't include this rank):
   GIBuffer nttmp(MAX(iSendWorkTaskID.size(),iRecvWorkTaskID.size()));
 
-
   // Find tasks to send back to (not including rank_):
   for ( j=0, ns=0; j<iRecvWorkTaskID.size(); j++ ) {
      itask = iRecvWorkTaskID[j];
@@ -1008,7 +1016,6 @@ itasks.range_reset();
   GTimerStop("ggfx_cNS_find_send_back");
 
   GTimerStart("ggfx_cNS_find_recv_from");
-
   GIBuffer isbuff(ns);   // indirection buffer for sends
   GIBuffer itsend(nttmp.data(),ns);
 
@@ -1018,6 +1025,7 @@ itasks.range_reset();
 #if defined(GGFX_TRACE_OUTPUT)
   EH_MESSAGE("GGFX::doCommonNodeSort: Find tasks to receive from...");
 #endif
+  GTimerStart("ggfx_cNS_find_recv_from");
   // Find tasks to recv from (not including rank_):
   for ( j=0, nr=0; j<iSendWorkTaskID.size(); j++ ) {
      itask = iSendWorkTaskID[j];
@@ -1028,7 +1036,9 @@ itasks.range_reset();
   }
   GTimerStop("ggfx_cNS_find_recv_from");
 
+
   GTimerStart("ggfx_cNS_find_indirection");
+
   GIBuffer irbuff(nr);   // indirection buffer for recvs
   GIBuffer itrecv(nttmp.data(),nr);
 
@@ -1036,7 +1046,6 @@ itasks.range_reset();
 #if defined(GGFX_TRACE_OUTPUT)
   EH_MESSAGE("GGFX::doCommonNodeSort: Find indirection array for recv buffers...");
 #endif
-
 
   // Find indirection array for recv buffers:
   for ( j=0, nr=0; j<(nl=iSendWorkTaskID.size()); j++ ) {
@@ -1065,7 +1074,6 @@ itasks.range_reset();
   EH_MESSAGE("GGFX::doCommonNodeSort: Calling GComm::ASendRecv...");
 #endif
 
-
   GTimerStart("ggfx_cNS_do_send");
   // Send this work task's data back to tasks that we recvd data from,
   // and gather all works tasks' data in MySharedData:
@@ -1093,6 +1101,7 @@ itasks.range_reset();
   if ( ivals  != NULLPTR ) delete [] ivals;
   if ( iivals != NULLPTR ) delete [] iivals;
   if ( ijvals != NULLPTR ) delete [] ijvals;
+
  
 #if defined(GGFX_TRACE_OUTPUT)
   EH_MESSAGE("GGFX::doCommonNodeSort: done.");
@@ -1304,7 +1313,6 @@ GBOOL GGFX<T>::extractOpData(GNIDBuffer &glob_index, GNIDMatrix &mySharedData)
   nOpR2LMult_.resize(iOpL2RIndices_.size(1),iOpL2RIndices_.size(2)); 
   nOpR2LMult_.set(0);
 
-
 #if defined(GGFX_TRACE_OUTPUT_LEV2)
     GPP(comm_,serr << "..................After iOpR2LIndices_ matrix alloc" );
 #endif
@@ -1351,6 +1359,7 @@ GBOOL GGFX<T>::extractOpData(GNIDBuffer &glob_index, GNIDMatrix &mySharedData)
       i += mySharedData(i+1,j) + 2; // skip to next global node id
     } 
   }
+
 
   GTimerStop("ggfx_extractOpData_indirect");
 
