@@ -118,9 +118,9 @@ GBOOL impl_abc_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Ti
   GGridIcos *icos = dynamic_cast<GGridIcos*>(&grid);
   assert(icos != NULLPTR && "Icos grid required");
 
-  GINT         kdn, kn, kup, p, pdef;
+  GINT         kdn, kup, p, pdef;
   GSIZET       nn ;
-  GFTYPE       A, B, C, E0, x, y, z;
+  GFTYPE       A, B, C, E0, kn, x, y, z;
   GFTYPE       alat, along, r;
   PropertyTree vtree ;
   GTVector<GTVector<GFTYPE>*>
