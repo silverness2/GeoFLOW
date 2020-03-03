@@ -5,22 +5,20 @@
 // Copyright    : Copyright 2019. Colorado State University. All rights reserved
 // Derived From : none.
 //==================================================================================
-#include "ggrid_factory.hpp"
-#include "ggrid_icos.hpp"
-#include "ggrid_box.hpp"
-#include "gio.h"
-
 
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : build
 // DESC   : Do build and return of GGrid object
-// ARGS   : ptree : main property tree
-//          gbasis: basis object
-//          comm  : GC_Comm object
+// ARGS   : ptree    : main property tree
+//          gbasis   : basis object
+//          pIO      : IO object
+//          obstraits: observer traits governing read in of grid
+//          comm     : communicator
 // RETURNS: GGrid object ptr
 //**********************************************************************************
-GGrid *GGridFactory::build(const geoflow::tbox::PropertyTree& ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> gbasis, GC_COMM &comm)
+template<typename TypePack>
+GGrid *GGridFactory<TypePack>::build(const geoflow::tbox::PropertyTree& ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> gbasis, IOBasePtr pIO, ObsTraits &obstraits, GC_COMM &comm)
 {
   GSIZET  itindex = ptree.getValue<GSIZET>   ("restart_index", 0);
   GString sdef    = "grid_box";
@@ -63,7 +61,7 @@ GGrid *GGridFactory::build(const geoflow::tbox::PropertyTree& ptree, GTVector<GN
     // In this case, gbasis is interpreted as a 'pool' of 
     // basis functions with various orders. It is an error
     // if correct order is not found on restart:
-    read_grid(ptree, comm, p, xnodes);
+    read_grid(ptree, p, xnodes, pIO, obstraits, comm);
     if      ( "grid_icos"   == gname   // 2d or 3d Icos grid
         ||    "grid_sphere" == gname ) {
       grid = new GGridIcos(ptree, gbasis, comm);
@@ -87,26 +85,37 @@ GGrid *GGridFactory::build(const geoflow::tbox::PropertyTree& ptree, GTVector<GN
 //**********************************************************************************
 // METHOD : read_grid
 // DESC   : Read node positions from info provided in ptree
-// ARGS   : ptree : main property tree
-//          p     : matrix of poly exp. order in each direction for each element.
-//                  Returned quantity has dimensions NElems X GDIM
-//          xnodes: node positions from file. Returned quantity is a vector
-//                  of 2 or 3 vectors representing x, y, ... coordinates. 
-//                  Is resized according to the input data.
+// ARGS   : ptree    : main property tree
+//          p        : matrix of poly exp. order in each direction for each element.
+//                     Returned quantity has dimensions NElems X GDIM
+//          xnodes   : node positions from file. Returned quantity is a vector
+//                     of 2 or 3 vectors representing x, y, ... coordinates. 
+//                     Is resized according to the input data.
+//          pIO      : IO object
+//          obstraits: observer traits governing read of grid
+//          comm     : communicator
 // RETURNS: GGrid object ptr
 //**********************************************************************************
-void GGridFactory::read_grid(const geoflow::tbox::PropertyTree& ptree, GC_COMM comm,  GTMatrix<GINT> &p, 
-                             GTVector<GTVector<GFTYPE>> &xnodes)
+template<typename TypePack>
+void GGridFactory<TypePack>::read_grid(const geoflow::tbox::PropertyTree& ptree, GTMatrix<GINT> &p, 
+                         GTVector<GTVector<GFTYPE>> &xnodes, IOBasePtr pIO, ObsTraits &obstraits, GC_COMM &comm)
 {
   GINT                        nc=GDIM;
   GElemType                   igtype;
-  GSIZET                      cycle;
-  GFTYPE                      time;
   GString                     sgtype;
   GTVector<GTVector<GFTYPE>*> u;
+  StateInfo                   stateinfo;
 
+  assert(pIO != nullptr && "IO object not set!");
 
-  // Resize xnodes based on configuration file:
+  stateinfo.sttype   = 0; // grid variable type
+  stateinfo.svars.resize(obstraits.grid_names.size());
+  stateinfo.svars  = obstraits.grid_names;
+  stateinfo.idir     = obstraits.idir;
+  stateinfo.odir     = obstraits.odir;
+//stateinfo.index    = itindex; // not required for grid
+
+// Resize xnodes based on configuration file:
   sgtype = ptree.getValue<GString>("grid_type");
   igtype = GE_REGULAR;
   if ( sgtype == "grid_icos" && GDIM == 2 ) igtype = GE_2DEMBEDDED;
@@ -117,9 +126,8 @@ void GGridFactory::read_grid(const geoflow::tbox::PropertyTree& ptree, GC_COMM c
   u.resize(nc);
   for ( GSIZET j=0; j<nc; j++ ) u[j] = &xnodes[j];
 
-  // Read restart data; time and  cycle are dummy here:
-  gio_restart(ptree, 1, u, p, cycle, time, comm);
-
+  // Read restart data
+  pIO->read_state(obstraits.agg_grid_name, stateinfo, u);
 } // end, read_grid method
 
 

@@ -3,7 +3,7 @@
 // Date         : 10/18/18 (DLR)
 // Description  : Object defining a multidimensional Burgers (advection-diffusion) 
 //                PDE:
-//                     du/dt + u . Del u = nu Del^2 u
+//                     du/dt + c(u) . Del u = nu Del^2 u
 //                This solver can be built in 2D or 3D, and can be configured to
 //                remove the nonlinear terms so as to solve only the heat equation.
 //
@@ -11,17 +11,18 @@
 //                   GTVector<GTVector<GFTYPE>*>, but the elements rep-
 //                resent different things depending on whether
 //                the equation is doing nonlinear advection, heat only, or 
-//                pure linear advection. If solving with nonlinear advection or 
-//                the heat equation, the State consists of elements [*u1, *u2, ....]
+//                pure linear advection. If solving with nonlinear advection 
+//                equation, the State consists of elements [*u1, *u2, ....]
 //                which is a vector solution. If solving the pure advection equation,
 //                the State consists of [*u, *c1, *c2, *c3], where u is the solution
 //                desired (there is only one, and it's a scalar), and ci 
-//                are the constant-in-time Eulerian velocity components.
+//                are the unevolved Eulerian velocity components. If solving the 
+//                heat equation, the state consists of [*u] alone.
 // 
 // 
 //                The dissipation coefficient may also be provided as a spatial field.
 // 
-// Copyright    : Copyright 2019. Colorado State University. All rights reserved
+// Copyright    : Copyright 2019. Colorado State University. All rights reserved.
 // Derived From : EquationBase.
 //==================================================================================
 #if !defined(_GBURGERS_HPP)

@@ -1,13 +1,14 @@
 { 
-  "exp_order"      : [3, 3, 3],
-  "exp_order_type" : "constant",
-  "grid_type"      : "grid_icos",
-  "pde_name"       : "pde_burgers",
-  "init_block"     : "init_icosgauss",
-  "bdy_conditions" : "DIRICHLET",
-  "restart_index"  : 0,
-  "benchmark"      : false,
-  "observer_list"  : ["posixio_observer", "global_diag_basic"],
+  "exp_order"         : [3, 3, 3],
+  "exp_order_type"    : "constant",
+  "grid_type"         : "grid_icos",
+  "pde_name"          : "pde_burgers",
+  "init_block"        : "init_icosgauss",
+  "bdy_conditions"    : "DIRICHLET",
+  "restart_index"     : 0,
+  "benchmark"         : false,
+  "observer_list"     : ["gio_observer", "global_diag_basic"],
+  "IO_implementation" : "gio",
   "poly_test": {
     "xpoly" : 2,
     "ypoly" : 4,
@@ -102,25 +103,34 @@
     "nu"      : 5.0e-3,
     "nu_type" : "constant"
   },
-  "posixio_observer": {
-    "observer_name"   : "posixio_observer",
-    "indirectory"     : "outs",
-    "outdirectory"    : "outs",
-    "cadence_type"    : "cycle",
-    "cycle_interval"  : 1,
-    "time_interval"   : 0.01,
-    "state_index"     : [0],
-    "state_names"     : ["u1", "u2", "u3"],
-    "grid_names"      : ["xgrid", "ygrid", "zgrid"],
-    "time_field_width": 6,
-    "task_field_width": 5,
-    "filename_size"   : 2048
+  "gio": {
+    "ivers"   : 0,
+    "multivar" : false,
+    "io_type"  : "POSIX",
+    "wtime"    : 6,
+    "wtask"    : 5,
+    "wfile"    : 2048
+  },
+  "gio_observer": {
+    "observer_name"      : "gio_observer",
+    "idir"               : "outs",
+    "odir"               : "outs",
+    "cadence_type"       : "cycle",
+    "cycle_interval"     : 1,
+    "time_interval"      : 0.01,
+    "state_index"        : [0],
+    "state_names"        : ["u1", "u2", "u3"],
+    "grid_names"         : ["xgrid", "ygrid", "zgrid"],
+    "agg_state_name"     : "u",
+    "agg_grid_name "     : "grid",
+    "derived_quantities" : ["gradv","2derivs"]
   },
   "global_diag_basic": {
     "observer_name"      : "global_diag_basic",
-    "indirectory"        : ".",
-    "outdirectory"       : ".",
+    "idir"               : ".",
+    "odir"               : ".",
     "interval_freq_fact" : 10.0
+    "treat_as_1d"        : false
   },
   "time_integration": {
     "integ_type" : "cycle",

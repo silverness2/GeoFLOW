@@ -62,6 +62,7 @@ virtual void                 print(const GString &filename){}          // print 
         void                 do_typing(); // classify into types
         GElemList           &elems() { return gelems_; }              // get elem list
         GSIZET               nelems() { return gelems_.size(); }      // local num elems
+        GSIZET               ngelems() { return ngelems_; }           // global num elems
         GTVector<GSIZET> 
                             &ntype() { return ntype_; }               // no. elems of each type
         GTVector<GTVector<GSIZET>> 
@@ -143,6 +144,7 @@ protected:
         GElemType                   gtype_;         // element types comprising grid
         GINT                        irank_;         // MPI task id
         GINT                        nprocs_;        // number of MPI tasks
+        GSIZET                      ngelems_;       // global number of elements
         GC_COMM                     comm_;          // communicator
         GFTYPE                      minnodedist_;   // min node length array (for each elem)
 	GFTYPE                      volume_;        // grid volume

@@ -14,7 +14,9 @@
 #include "pdeint/observer_base.hpp"
 #include "tbox/property_tree.hpp"
 #include "pdeint/null_observer.hpp"
-#include "gposixio_observer.hpp"
+#include "pdeint/io_base.hpp"
+#include "gio_observer.hpp"
+#include "io_factory.hpp"
 #include "gglobaldiag_basic.hpp"
 
 
@@ -22,16 +24,20 @@ namespace geoflow {
 namespace pdeint {
 
 
-template<typename EquationType>
+template<typename TypePack>
 struct ObserverFactory {
-	using Equation    = EquationType;
-        using EqnBase     = EquationBase<EquationType>;
-        using EqnBasePtr  = std::shared_ptr<EqnBase>;
-	using ObsBase     = ObserverBase<Equation>;
-	using ObsBasePtr  = std::shared_ptr<ObsBase>;
-	using Grid        = typename EquationType::Grid;
+	using Types         = TypePack;
+        using EqnBase       = EquationBase<TypePack>;
+        using EqnBasePtr    = std::shared_ptr<EqnBase>;
+        using IOBaseType    = IOBase<TypePack>;
+        using IOBasePtr     = std::shared_ptr<IOBaseType>;
+	using ObsBase       = ObserverBase<Types>;
+	using ObsBasePtr    = std::shared_ptr<ObsBase>;
+	using ObsTraitsType = typename ObserverBase<Types>::Traits;
+	using Grid          = typename TypePack::Grid;
 
-	static ObsBasePtr build(const tbox::PropertyTree& ptree, std::string obsname,  EqnBasePtr& equation, Grid& grid);
+	static ObsBasePtr build(const tbox::PropertyTree& ptree, std::string obsname,  EqnBasePtr& equation, Grid& grid, IOBasePtr &pIO);
+	static void       get_traits(const tbox::PropertyTree& ptree, std::string obsname,  ObsTraitsType& traits);
 
 };
 

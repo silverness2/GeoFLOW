@@ -6,8 +6,9 @@
 # List of analysis tools to build
 #
 set(analysis_files
-        gcdg_pdf1d.cpp
-)
+#       gcdg_pdf1d.cpp
+   )
+
 
 #		       	
 # Include headers unique to analysis tools

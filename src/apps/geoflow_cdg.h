@@ -31,9 +31,13 @@
 #include "gburgers.hpp"
 #include "ggrid_box.hpp"
 #include "ggrid_factory.hpp"
-#include "gposixio_observer.hpp"
+#include "pdeint/observer_base.hpp"
+#include "pdeint/io_base.hpp"
+#include "gio_observer.hpp"
+#include "gio.hpp"
 #include "pdeint/equation_base.hpp"
 #include "pdeint/equation_factory.hpp"
+#include "pdeint/integrator.hpp"
 #include "pdeint/integrator_factory.hpp"
 #include "pdeint/mixer_factory.hpp"
 #include "pdeint/observer_factory.hpp"
@@ -55,18 +59,38 @@ using namespace geoflow::pdeint;
 using namespace geoflow::tbox;
 using namespace std;
 
-template< // default template arg types
-typename StateType  = GTVector<GTVector<GFTYPE>*>,
-typename GridType   = GGrid,
-typename ValueType  = GFTYPE,
-typename DerivType  = StateType,
-typename TimeType   = ValueType,
-typename CompType   = GTVector<GStateCompType>,
-typename JacoType   = StateType,
-typename SizeType   = GSIZET
+struct stStateInfo {
+  GINT        sttype  = 1;       // state type index (grid=0 or state=1)
+  GINT        gtype   = 0;       // check src/cdg/include/gtypes.h
+  GSIZET      index   = 0;       // time index
+  GSIZET      nelems  = 0;       // num elems
+  GSIZET      cycle   = 0;       // continuous time cycle
+  GFTYPE      time    = 0.0;     // state time
+  std::vector<GString>
+              svars;             // names of state members
+  GTVector<GStateCompType>
+              icomptype;         // encoding of state component types    
+  GTMatrix<GINT>
+              porder;            // if ivers=0, is 1 X GDIM; else nelems X GDIM;
+  GString     idir;              // input directory
+  GString     odir;              // output directory
+};
+
+
+template< // Complete typepack
+typename StateType     = GTVector<GTVector<GFTYPE>*>,
+typename StateInfoType = stStateInfo,
+typename GridType      = GGrid,
+typename ValueType     = GFTYPE,
+typename DerivType     = StateType,
+typename TimeType      = ValueType,
+typename CompType      = GTVector<GStateCompType>,
+typename JacoType      = StateType,
+typename SizeType      = GSIZET
 >
-struct EquationTypes {
+struct TypePack {
         using State      = StateType;
+        using StateInfo  = StateInfoType;
         using Grid       = GridType;
         using Value      = ValueType;
         using Derivative = DerivType;
@@ -75,26 +99,30 @@ struct EquationTypes {
         using Jacobian   = JacoType;
         using Size       = SizeType;
 };
-
-using MyTypes       = EquationTypes<>;           // Define types used
-using EqnBase       = EquationBase<MyTypes>;     // Equation Base type
-using EqnBasePtr    = std::shared_ptr<EqnBase>;  // Equation Base ptr
-using MixBase       = MixerBase<MyTypes>;        // Stirring/mixing Base type
-using MixBasePtr    = std::shared_ptr<MixBase>;  // Stirring/mixing Base ptr
-using IntegratorPtr = std::shared_ptr<Integrator<MyTypes>>;
-                                                 // Integrator ptr
-
-using ObsBase       = ObserverBase<EqnBase>;     // Observer Base type
+using StateInfo     = stStateInfo;
+using MyTypes       = TypePack<>;           // Define grid types used
+using Grid          = GGrid;           
+using EqnBase       = EquationBase<MyTypes>;    // Equation Base type
+using EqnBasePtr    = std::shared_ptr<EqnBase>;   // Equation Base ptr
+using IOBaseType    = IOBase<MyTypes>;          // IO Base type
+using IOBasePtr     = std::shared_ptr<IOBaseType>;// IO Base ptr
+using MixBase       = MixerBase<MyTypes>;       // Stirring/mixing Base type
+using MixBasePtr    = std::shared_ptr<MixBase>;   // Stirring/mixing Base ptr
+using IntegratorBase= Integrator<MyTypes>;        // Integrator
+using IntegratorPtr = std::shared_ptr<IntegratorBase>; // Integrator ptr
+                                                  // Integrator ptr
+using ObsBase       = ObserverBase<EqnBase>;      // Observer Base type
+using ObsTraitsType = ObserverBase<MyTypes>::Traits;
 using BasisBase     = GTVector<GNBasis<GCTYPE,GFTYPE>*>; 
-                                                 // Basis pool type
-
+                                                  // Basis pool type
 
 // 'Member' data:
 GBOOL            bench_=FALSE;
 GINT             nsolve_;      // number *solved* 'state' arrays
 GINT             nstate_;      // number 'state' arrays
 GINT             ntmp_  ;      // number tmp arrays
-GGrid           *grid_=NULLPTR;// grid object
+GINT             irestobs_;    // index in pObservers_ that writes restarts
+Grid            *grid_=NULLPTR;// grid object
 State            u_;           // state array
 State            c_;           // advection velocity, if used
 State            ub_;          // global bdy vector
@@ -104,9 +132,13 @@ GTVector<GFTYPE> nu_(3);       // viscosity
 BasisBase        gbasis_(GDIM);// basis vector
 EqnBasePtr       pEqn_;        // equation pointer
 IntegratorPtr    pIntegrator_; // integrator pointer
-PropertyTree     ptree_;       // main prop tree    (TODO: should never be passed)
-CommandLine      cline_;       // command line args (TODO: should never be passed)
+MixBasePtr       pMixer_;      // mixer object
+PropertyTree     ptree_;       // main prop tree
+
 GGFX<GFTYPE>    *ggfx_=NULLPTR;// DSS operator
+IOBasePtr        pIO_;         // ptr to IOBase operator
+std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>>
+                 pObservers_(new std::vector<std::shared_ptr<ObserverBase<MyTypes>>>()); // observer array
 GC_COMM          comm_ ;       // communicator
 
 
@@ -121,13 +153,14 @@ void init_force       (const PropertyTree &ptree, GGrid &, EqnBasePtr &pEqn, Tim
 void init_bdy         (const PropertyTree &ptree, GGrid &, EqnBasePtr &pEqn, Time &t, State &utmp, State &u, State &ub);
 void allocate         (const PropertyTree &ptree);
 void deallocate       ();
-void create_observers (EqnBasePtr &eqn_ptr, PropertyTree &ptree, GSIZET icycle, Time time,     std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers);
+void create_observers (EqnBasePtr &eqn_ptr, PropertyTree &ptree, GSIZET icycle, Time time, std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers);
 void create_equation  (const PropertyTree &ptree, EqnBasePtr &pEqn);
 void create_mixer     (PropertyTree &ptree, MixBasePtr &pMixer);
 void create_basis_pool(PropertyTree &ptree, BasisBase &gbasis);
 void init_ggfx        (PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx);
 void gresetart        (PropertyTree &ptree);
 void compare          (const PropertyTree &ptree, GGrid &, EqnBasePtr &pEqn, Time &t, State &utmp, State &ub, State &u);
+void do_restart       (const PropertyTree &ptree, GGrid &, State &u, GTMatrix<GINT>&p,  GSIZET &cycle, Time &t);
 void do_bench         (GString sbench, GSIZET ncyc);
 
 //#include "init_pde.h"

@@ -185,11 +185,11 @@ NOTE: global ids are labeled starting from left on bottom-most
       bret = ggfx.init(glob_indices);
       if ( !bret ) errcode = 2;
     }
-    if ( errcode == 0 ) GPP(comm, serr << " GGFX::Init done.");
+    GComm::Synch();
+    GPP(comm, serr << " GGFX::Init done.");
 #if defined(_G_USE_GPTL)
     GPTLstop("ggfx_init");
 #endif
-
 
     GPP(comm,serr << " doing GGFX::doOp...");
 #if defined(_G_USE_GPTL)

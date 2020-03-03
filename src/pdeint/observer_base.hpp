@@ -11,6 +11,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include "pdeint/equation_base.hpp"
 
 namespace geoflow {
 namespace pdeint {
@@ -23,21 +24,23 @@ namespace pdeint {
  * every time step and can extract any user requested information,
  * display, save states, etc.
  */
-template<typename EquationType>
+template<typename TypePack>
 class ObserverBase {
 
 public:
         enum ObsType     {OBS_CYCLE=0, OBS_TIME};
-	using Equation    = EquationType;
-        using EqnBase     = EquationBase<EquationType>;
-        using EqnBasePtr  = std::shared_ptr<EqnBase>;
-	using State       = typename Equation::State;
-	using Grid        = typename Equation::Grid;
-	using Value       = typename Equation::Value;
-	using Derivative  = typename Equation::Derivative;
-	using Time        = typename Equation::Time;
-	using Jacobian    = typename Equation::Jacobian;
-	using Size        = typename Equation::Size;
+	using Types         = TypePack;
+        using EqnBase       = EquationBase<TypePack>;
+        using EqnBasePtr    = std::shared_ptr<EqnBase>;
+	using State         = typename Types::State;
+        using StateInfo     = typename Types::StateInfo;
+	using Grid          = typename Types::Grid;
+	using Value         = typename Types::Value;
+	using Derivative    = typename Types::Derivative;
+	using Time          = typename Types::Time;
+	using Jacobian      = typename Types::Jacobian;
+	using Size          = typename Types::Size;
+//      using ObsTraits     = ObserverBase<Types>::Traits;
 
         /**
          * Data structure to describe quantities derived from state data
@@ -46,6 +49,7 @@ public:
                 std::vector<int>    icomponents;      // which state components to use     
                 std::vector<std::string>   
                                     snames;           // names for computed components
+                std::string         agg_sname;        // accumulated derived quantity filename
                 std::string         smath_op;         // which math op to use to compute
         };
 
@@ -63,13 +67,17 @@ public:
                           state_index;                // which state members to observe
                 std::vector<std::string>
                           state_names;                // file/ref names for each state member
+                std::string 
+                          agg_state_name          ;   // accumulated state filename
                 std::vector<std::string>
                           grid_names;                 // file/ref names for each grid comp
+                std::string 
+                          agg_grid_name          ;   // accumulated grid filename
                 std::vector<dqTraits>
                           derived_quantities;         // derived types: [ [type, function, output name],..]
-                size_t    start_ocycle   = 0;         // starting output cycle 
-//              size_t    start_cycle    = 0;         // starting evol cycle 
-                size_t    cycle_interval = 10;        // cycle interval for observation
+                size_t    start_ocycle   = 0  ;       // starting output cycle 
+//              size_t    start_cycle    = 0  ;       // starting evol cycle 
+                size_t    cycle_interval = 10 ;       // cycle interval for observation
                 double    start_time     = 0.0;       // starting evol time
                 double    time_interval  = 1.0;       // time interval for observation
                 double    freq_fact      = 1.0;       // ties output freq to another observer (e.g., restart)
@@ -103,6 +111,13 @@ public:
 	}
 
 	/**
+	 * Do initialization
+	 *
+	 */
+	void init(StateInfo &info){
+		init_impl(info);
+        } 
+	/**
 	 * Set tmp space
 	 *
 	 * @param[in] State variable for tmp
@@ -126,6 +141,7 @@ protected:
 	 * Must be provided by implementation
 	 */
 	virtual void observe_impl(const Time& t, const State& u, const State& uf) = 0;
+	virtual void init_impl   (StateInfo &) = 0;
 
 };
 

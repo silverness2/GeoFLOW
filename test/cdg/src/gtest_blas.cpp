@@ -17,6 +17,7 @@
 #if defined(_G_USE_GPTL)
     #include "gptl.h"
 #endif
+using namespace std;
 
 int main(int argc, char **argv)
 {
@@ -264,6 +265,66 @@ std::cout << "Transpose(A)=" << C << std::endl;
     }
 #endif
 
+    // Check sorting methods:
+    GTVector<GSIZET> isort(10); 
+    vector  <GFLOAT> ur(10); 
+    vector  <GFLOAT> ua(10); 
+    vector  <GFLOAT> ub(10); 
+    GTVector<GFLOAT> u3(10);
+    GTVector<GFLOAT> u4(10);
+    GTVector<GFLOAT> u5(10);
+    ur = { 0, 8, 3, 5, 4, 9, 7, 8, 1, 6};
+    ua = { 0, 1, 3, 4, 5, 6, 7, 8, 8, 9};
+    ub = { 9, 8, 8, 7, 6, 5, 4, 3, 1, 0};
+
+    // Check sortdecreasing:
+    u3 = ur;
+    u3.sortdecreasing(isort);
+    u4 = ub;
+    u4 -= u3;
+    if ( u4.Eucnorm() > 0.0 ) {
+      std::cout << "main: -------------------------------------sortdecreasing FAILED" << std::endl;
+      errcode = 10;
+    } else {
+      std::cout << "main: -------------------------------------sortdecreasing OK" << std::endl;
+    }
+
+    // Check isort:
+    u4 = ur;
+    for ( auto j=0; j<u3.size(); j++ ) u5[j] = u4[isort[j]];
+    u3 -= u5;
+    if ( u3.Eucnorm() > 0.0 ) {
+      u4 = ur;
+      std::cout << "main: -------------------------------------sortdecreasing isort FAILED" << std::endl;
+      errcode = 11;
+    } else {
+      std::cout << "main: -------------------------------------sortdecreasing isort OK" << std::endl;
+    }
+
+    // Check sortincreasing:
+    u3 = ur;
+    u3.sortincreasing(isort);
+    u4 = ua;
+    u4 -= u3;
+    if ( u4.Eucnorm() > 0.0 ) {
+      std::cout << "main: -------------------------------------sortincreasing FAILED" << std::endl;
+      errcode = 12;
+    } else {
+      std::cout << "main: -------------------------------------sortincreasing OK" << std::endl;
+    }
+
+    // Check isort:
+    u4 = ur;
+    for ( auto j=0; j<u3.size(); j++ ) u5[j] = u4[isort[j]];
+    u3 -= u5;
+    if ( u3.Eucnorm() > 0.0 ) {
+      std::cout << "main: -------------------------------------sortincreasing isort FAILED" << std::endl;
+      errcode = 13;
+    } else {
+      std::cout << "main: -------------------------------------sortincreasing isort OK" << std::endl;
+    }
+
+
 #if defined(_G_USE_GPTL)
     GPTLstop("blas_stuff");
 
@@ -281,4 +342,5 @@ term:
     }
 
     return(errcode);
+
 } // end, main

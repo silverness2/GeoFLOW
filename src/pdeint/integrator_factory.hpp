@@ -9,7 +9,10 @@
 #define SRC_PDEINT_INTEGRATOR_FACTORY_HPP_
 
 
+#include "pdeint/equation_base.hpp"
 #include "pdeint/mixer_base.hpp"
+#include "pdeint/observer_base.hpp"
+#include "pdeint/null_observer.hpp"
 #include "pdeint/integrator.hpp"
 #include "tbox/property_tree.hpp"
 
@@ -17,19 +20,22 @@ namespace geoflow {
 namespace pdeint {
 
 
-template<typename EquationType>
+template<typename TypePack>
 struct IntegratorFactory {
-	using Equation      = EquationType;
-//      using EqnBase       = typename Equation::Base;
-	using EqnBase       = EquationBase<EquationType>;
-	using ObsBase       = ObserverBase<Equation>;
-	using EqnBasePtr    = std::shared_ptr<EqnBase>;
-	using MixerBasePtr  = std::shared_ptr<MixerBase<Equation>>;
-	using ObsBasePtr    = std::shared_ptr<std::vector<std::shared_ptr<ObsBase>>>;
-	using IntegratorPtr = std::shared_ptr<Integrator<Equation>>;
-	using Grid          = typename Equation::Grid;
-	using Value         = typename Equation::Value;
-	using Time          = typename Equation::Time;
+        using Types        = TypePack;
+        using EqnBase      = EquationBase<TypePack>;
+        using EqnBasePtr   = std::shared_ptr<EqnBase>;
+        using State        = typename Types::State;
+        using StateInfo    = typename Types::StateInfo;
+        using Grid         = typename Types::Grid;
+        using Value        = typename Types::Value;
+        using Derivative   = typename Types::Derivative;
+        using Time         = typename Types::Time;
+        using Jacobian     = typename Types::Jacobian;
+        using Size         = typename Types::Size;
+        using MixerBasePtr = std::shared_ptr<MixerBase<Types>>;
+        using ObsBasePtr   = std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<Types>>>>;
+	using IntegratorPtr = std::shared_ptr<Integrator<Types>>;
 
 	static IntegratorPtr build(const tbox::PropertyTree& ptree, const EqnBasePtr& eqn, const MixerBasePtr& mixer, const ObsBasePtr& obs, Grid& grid);
 

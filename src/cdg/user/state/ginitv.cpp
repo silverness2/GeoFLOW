@@ -226,7 +226,9 @@ GBOOL impl_simpsum1d_box(const PropertyTree &ptree, GString &sconfig, GGrid &gri
   GINT         kdn, kup, pdef;
   GSIZET       nn ;
   GFTYPE       E0, kn, knh, L, p, x, y, z;
-  GFTYPE       phase1, phase2;
+  GFTYPE       knx, kny, knz, knxh, knyh, knzh;
+  GFTYPE       phase1, phase2, phase3;
+
   GTPoint<GFTYPE>
                G0(2), G1(2);
   PropertyTree vtree ;
@@ -270,11 +272,9 @@ GBOOL impl_simpsum1d_box(const PropertyTree &ptree, GString &sconfig, GGrid &gri
     for ( GSIZET j=0; j<nn; j++ ) {
       x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
 //    (*u[0])[j] +=  (cos(kn*x+phase1) + sin(kn*x+phase2)) / pow(kn,p);
-
       (*u[0])[j] +=  ( sin(kn*x+phase1) + 4.0*sin(knh*x+phase2) ) / pow(kn,p);
     }
   }
-  
 #elif defined(_G_IS3D)
   assert(FALSE && "method intended for 2d mimicking 1d only");
 #endif
@@ -283,16 +283,14 @@ GBOOL impl_simpsum1d_box(const PropertyTree &ptree, GString &sconfig, GGrid &gri
 
   delete distribution;
 
-  return TRUE;
-
 } // end, method impl_simpsum1d_box
 
-
+  
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : impl_simpsum_box
-// DESC   : Inititialize velocity with simple sum of waves,
-//          scaled by k^p. For box grids, 2d and 3d.
+// DESC   : Inititialize velocity with simple sum of waves in x-dir only,
+//          scaled by k^p. For box grids, 2d mimicking 1d
 // ARGS   : ptree  : main property tree
 //          sconfig: ptree block name containing variable config
 //          grid   : grid object
@@ -304,7 +302,6 @@ GBOOL impl_simpsum1d_box(const PropertyTree &ptree, GString &sconfig, GGrid &gri
 //**********************************************************************************
 GBOOL impl_simpsum_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
 {
-
   GGridBox *tgrid = dynamic_cast<GGridBox*>(&grid);
   assert(tgrid != NULLPTR && "Box grid required");
 
@@ -318,9 +315,10 @@ GBOOL impl_simpsum_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
   PropertyTree vtree ;
   GTVector<GTVector<GFTYPE>>
               *xnodes = &grid.xNodes();
-  std::default_random_engine 
+  std::default_random_engine
                generator;
-  std::normal_distribution<GFTYPE> 
+  std::normal_distribution<GFTYPE>
+
               *distribution;
 
 #if defined(_G_IS3D)
@@ -361,13 +359,13 @@ GBOOL impl_simpsum_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
       kn     = sqrt(knx*knx + kny*kny);
       phase1 = (*distribution)(generator);
       for ( GSIZET j=0; j<nn; j++ ) {
-        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
+        x = (*xnodes)[0][j]; y = (*xnodes)[1][j];
         (*u[0])[j] +=  ( sin(knx*x+phase1) + 4.0*sin(knxh*x+phase1) ) / pow(kn,p);
         (*u[1])[j] +=  ( sin(kny*y+phase2) + 4.0*sin(knyh*y+phase2) ) / pow(kn,p);
       }
     }
   }
-  
+
 #elif defined(_G_IS3D)
 
   L[0] = G1.x1 - G0.x1;
@@ -400,6 +398,7 @@ GBOOL impl_simpsum_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
   }
 
 #endif
+
 
   GMTK::normalizeL2(grid, u, utmp, E0);
 

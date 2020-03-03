@@ -45,7 +45,9 @@ grid_           (&grid)
 template<typename EquationType>
 void GGlobalDiag_basic<EquationType>::observe_impl(const Time &t, const State &u, const State &uf)
 {
-  init(t,u);
+  StateInfo info;
+
+  init_impl(info);
 
   mpixx::communicator comm;
 
@@ -68,14 +70,13 @@ void GGlobalDiag_basic<EquationType>::observe_impl(const Time &t, const State &u
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD     : init
+// METHOD     : init_impl
 // DESCRIPTION: Fill member index and name data based on traits
-// ARGUMENTS  : t  : state time
-//              u  : state variable
+// ARGUMENTS  : info: StateInfo structure
 // RETURNS    : none.
 //**********************************************************************************
 template<typename EquationType>
-void GGlobalDiag_basic<EquationType>::init(const Time t, const State &u)
+void GGlobalDiag_basic<EquationType>::init_impl(StateInfo &info)
 {
    assert(utmp_ != NULLPTR && this->utmp_->size() > 1
        && "tmp space not set, or is insufficient");
@@ -94,7 +95,7 @@ void GGlobalDiag_basic<EquationType>::init(const Time t, const State &u)
 
    GSIZET   *iwhere=NULLPTR;
    GSIZET    nwhere=0;
-   CompDesc *icomptype = &(this->eqn_ptr_->comptype());
+   CompDesc *icomptype = &(this->eqn_ptr_->stateinfo().icomptype);
    icomptype->contains(GSC_KINETIC, iwhere, nwhere);
    for ( GSIZET j=0; j<nwhere; j++ ) ikinetic_.push_back(iwhere[j]);
 
@@ -106,7 +107,7 @@ void GGlobalDiag_basic<EquationType>::init(const Time t, const State &u)
 
    bInit_ = TRUE;
  
-} // end of method init
+} // end of method init_impl
 
 
 //**********************************************************************************
@@ -114,7 +115,7 @@ void GGlobalDiag_basic<EquationType>::init(const Time t, const State &u)
 // METHOD     : do_kinetic_L2
 // DESCRIPTION: Compute integrated diagnostic quantities, and output to file
 // ARGUMENTS  : t  : state time
-//              uu : state variable
+//              u  : state variable
 //              uf : forcing
 //              fname: file name
 // RETURNS    : none.
@@ -168,7 +169,7 @@ void GGlobalDiag_basic<EquationType>::do_kinetic_L2(const Time t, const State &u
   // Relative helicity = <u.omega/(|u|*|omega|)>
   lmax[4] = GMTK::relhelicity(*grid_, ku_, utmp, isreduced, ismax);
 
-  // Gather final max's:
+  // Gather final sums:
   GComm::Allreduce(lmax.data(), gmax.data(), 5, T2GCDatatype<GFTYPE>(), GC_OP_SUM, grid_->get_comm());
   ener = gmax[0]; enst = gmax[1]; fv = gmax[2]; hel = gmax[3]; rhel = gmax[4];
 

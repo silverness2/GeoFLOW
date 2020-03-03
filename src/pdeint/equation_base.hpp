@@ -25,14 +25,36 @@ class EquationBase {
 
 public:
 	using Types      = TypePack;
-	using State      = typename TypePack::State;
-	using Grid       = typename TypePack::Grid;
-	using Value      = typename TypePack::Value;
-	using Derivative = typename TypePack::Derivative;
-	using Time       = typename TypePack::Time;
-	using CompDesc   = typename TypePack::CompDesc;
-	using Jacobian   = typename TypePack::Jacobian;
-	using Size       = typename TypePack::Size;
+	using State      = typename Types::State;
+        using StateInfo  = typename Types::StateInfo;
+	using Grid       = typename Types::Grid;
+	using Value      = typename Types::Value;
+	using Derivative = typename Types::Derivative;
+	using Time       = typename Types::Time;
+	using Jacobian   = typename Types::Jacobian;
+	using CompDesc   = typename Types::CompDesc;
+	using Size       = typename Types::Size;
+
+
+/*
+        struct GStateInfo {
+          int         sttype  = 1;        // state type index (grid=0 or state=1)
+          int         gtype   = 0;        // check src/cdg/include/gtypes.h
+          size_t      index   = 0;        // time index
+          size_t      nelems  = 0;        // num elems
+          size_t      cycle   = 0;        // continuous time cycle
+          Value       time    = 0.0;      // state time
+          std::vector<std::string>
+                      svars;              // names of state members
+          CompDesc    icomptype;          // encoding of state component types    
+          GTMatrix<GINT>
+                      porder;             // if ivers=0, is 1 X GDIM; else nelems X GDIM;
+          std::string idir    = ".";      // input directory
+          std::string odir    = ".";      // output directory
+        };
+        static_assert(std::is_same<StateInfo,GStateInfo>::value,
+               "StateInfo is of incorrect type");
+*/
 
 
 	EquationBase() { update_bdy_callback_ = nullptr; }
@@ -112,11 +134,11 @@ public:
 		this->step_impl(t,uin,uf,ub,dt,uout);
 	}
 
-	/** Return State component description data
+	/** Return StateInfo data
          * 
          */
-        CompDesc& comptype() {
-                return icomptype_;
+        StateInfo& stateinfo() {
+                return stateinfo_;
         }
 
 
@@ -160,7 +182,7 @@ protected:
                  update_bdy_callback_;
 
 private:
-        CompDesc icomptype_;
+        StateInfo stateinfo_;
 };
 
 

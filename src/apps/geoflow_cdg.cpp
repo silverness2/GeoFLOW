@@ -16,6 +16,8 @@ int main(int argc, char **argv)
     GSIZET  icycle=0;       // curr time cycle
     std::vector<GINT> pstd(GDIM);  // order in each direction
     GTMatrix<GINT> p; // needed for restart, but is dummy
+    ObsTraitsType binobstraits;
+    CommandLine   cline_;
 
     typename MyTypes::Time  t  = 0;
     typename MyTypes::Time  dt = 0.1;
@@ -45,6 +47,7 @@ int main(int argc, char **argv)
 #if defined(_G_USE_GPTL)
     // Set GTPL options:
     GPTLsetoption (GPTLcpu, 1);
+    GPTLsetoption (GPTLsync_mpi, 1);
 #endif
     // Initialize timer:
     GTimerInit();
@@ -61,7 +64,8 @@ int main(int argc, char **argv)
     EH_MESSAGE("geoflow: build grid...");
     GTimerStart("gen_grid");
 
-    grid_ = GGridFactory::build(ptree_, gbasis_, comm_);
+    ObserverFactory<MyTypes>::get_traits(ptree_, "gio_observer", binobstraits); 
+    grid_ = GGridFactory<MyTypes>::build(ptree_, gbasis_, pIO_, binobstraits, comm_);
     GTimerStop("gen_grid");
 
     //***************************************************
@@ -92,21 +96,19 @@ int main(int argc, char **argv)
     // Create the mixer (to update forcing)
     //***************************************************
     EH_MESSAGE("geoflow: create mixer...");
-    MixBasePtr pMixer;
-    create_mixer(ptree_, pMixer);
+    create_mixer(ptree_, pMixer_);
 
     //***************************************************
     // Create observers: 
     //***************************************************
     EH_MESSAGE("geoflow: create observers...");
-    std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> pObservers(new std::vector<std::shared_ptr<ObserverBase<MyTypes>>>());
-    create_observers(pEqn_, ptree_, icycle, t, pObservers);
+    create_observers(pEqn_, ptree_, icycle, t, pObservers_);
 
     //***************************************************
     // Create integrator:
     //***************************************************
     EH_MESSAGE("geoflow: create integrator...");
-    pIntegrator_ = IntegratorFactory<MyTypes>::build(ptree_, pEqn_, pMixer, pObservers, *grid_);
+    pIntegrator_ = IntegratorFactory<MyTypes>::build(ptree_, pEqn_, pMixer_, pObservers_, *grid_);
     pIntegrator_->get_traits().cycle = icycle;
 
     //***************************************************
@@ -117,12 +119,12 @@ int main(int argc, char **argv)
     if ( itindex == 0 ) { // start new run
       icycle = 0; t = 0.0; 
       init_state(ptree_, *grid_, pEqn_, t, utmp_, u_, ub_);
-      init_bdy  (ptree_, *grid_, pEqn_, t, utmp_, u_, ub_);
-      init_force(ptree_, *grid_, pEqn_, t, utmp_, u_, uf_);
     }
     else {                // restart run
-      gio_restart(ptree_, 0, u_, p, icycle, t, comm_);
+      do_restart(ptree_, *grid_, u_, p, icycle, t);
     }
+    init_bdy  (ptree_, *grid_, pEqn_, t, utmp_, u_, ub_);
+    init_force(ptree_, *grid_, pEqn_, t, utmp_, u_, uf_);
 
     //***************************************************
     // Do time integration (output included
@@ -152,10 +154,10 @@ int main(int argc, char **argv)
     compare(ptree_, *grid_, pEqn_, t, utmp_, ub_, u_);
  
 #if defined(_G_USE_GPTL)
-    GComm::Synch();
-//  GPTLpr(myrank);
     GPTLpr_file("timings.txt");
-    GPTLpr_summary(comm_);
+//  GPTLpr(GComm::WorldRank(comm_));
+//  GPTLpr(0);
+    GPTLpr_summary();
 #endif
     GTimerFinal();
 
@@ -245,11 +247,11 @@ void create_mixer(PropertyTree &ptree, MixBasePtr &pMixer)
 //**********************************************************************************
 //**********************************************************************************
 // METHOD: create_observers
-// DESC  : Create observer list from main ptree
+// DESC  : Create IO object and observer list from main ptree. 
 // ARGS  : grid      : GGrid object
 //         icycle    : initial icycle
 //         time      : initial time
-//         pObservers: gather/scatter op, GGFX
+//         pObservers: observer list, returned
 //**********************************************************************************
 void create_observers(EqnBasePtr &pEqn, PropertyTree &ptree, GSIZET icycle, Time time,
 std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers)
@@ -259,12 +261,19 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
     GSIZET  deltac, cyc_ref;   // cycle interval
     GFTYPE  ofact ;            // output freq in terms of restart output
     Time    deltat, delt_ref;  // time interval
-    PropertyTree obsptree;     // observer props 
     GString dstr = "none";
-    GString ptype;
+    GString spref;
     GString ctype;
+    GString ptype;
+    ObserverBase<MyTypes>::Traits
+            obstraits;         // observer traits
+    PropertyTree 
+            obsptree;          // observer props 
+    StateInfo 
+            stateinfo;         // StateInfo structure
+    State   dummy(1);
 
-    if ( bench_ ) return;
+    if ( bench_ ) return; // don't need IO
 
     std::vector<GString> default_obslist; default_obslist.push_back(dstr);
     std::vector<GString> obslist = ptree.getArray<GString>("observer_list",default_obslist);
@@ -272,7 +281,7 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
     ptype = ptree.getValue<GString>("exp_order_type",dstr);
 
     // Tie cadence_type to restart type:
-    obsptree = ptree.getPropertyTree("posixio_observer");
+    obsptree = ptree.getPropertyTree("gio_observer");
     ctype    = obsptree.getValue<GString>("cadence_type");
    
     // If doing a restart, set observer output
@@ -285,7 +294,7 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
     // other observer cadences to it:
     for ( GSIZET j=0; j<obslist.size(); j++ ) {
       obsptree = ptree.getPropertyTree(obslist[j]);
-      if ( "posixio_observer" == obslist[j]  ) {
+      if ( "gio_observer" == obslist[j]  ) {
         delt_ref      = obsptree.getValue<GDOUBLE>("time_interval",0.01);
         cyc_ref       = obsptree.getValue <GSIZET>("cycle_interval",1);
       }
@@ -296,19 +305,19 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
         obsptree = ptree.getPropertyTree(obslist[j]);
         // Set output version based on exp_order_type:
         if ( "constant" == ptype 
-         && "posixio_observer" == obslist[j]  ) obsptree.setValue<GINT>("misc",ivers);
+         && "gio_observer" == obslist[j]  ) obsptree.setValue<GINT>("misc",ivers);
 
         ofact       = obsptree.getValue<GDOUBLE>("interval_freq_fact",1.0);
         deltat      = obsptree.getValue<GDOUBLE>("time_interval",0.01);
         deltac      = obsptree.getValue <GSIZET>("cycle_interval",1);
         // Set current time and output cycle so that observer can initialize itself
         // These could/should be hidden from the config file:
-        if ( "posixio_observer" == obslist[j]  ) ofact = 1.0;
+        if ( "gio_observer" == obslist[j]  ) ofact = 1.0;
         obsptree.setValue <GSIZET>("start_ocycle",MAX(0.0,rest_ocycle*ofact));
         obsptree.setValue <GFTYPE>("start_time"  ,time);
 
         // Link each observer cadence to I/O cadence:
-        if ( "posixio_observer" != obslist[j]  ) {
+        if ( "gio_observer" != obslist[j]  ) {
           obsptree.setValue <GFTYPE>("time_interval", MAX(0.0,delt_ref/ofact));
           deltac = (GSIZET)( ((GDOUBLE)cyc_ref)/ofact );
           obsptree.setValue <GSIZET>("cycle_interval",MAX(1  ,deltac));
@@ -316,11 +325,30 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
         }
         ptree.setPropertyTree(obslist[j],obsptree); // set obs tree with new values
 
-        pObservers->push_back(ObserverFactory<MyTypes>::build(ptree, obslist[j], pEqn, *grid_));
+        // Create pIO object factory call:
+        if ( pIO_ == NULLPTR ) {
+          pIO_ = IOFactory<MyTypes>::build(ptree, *grid_, comm_);
+        }
+        pObservers->push_back(ObserverFactory<MyTypes>::build(ptree, obslist[j], pEqn, *grid_, pIO_));
+        (*pObservers)[j]->set_tmp(utmp_);
+        
+        if ( "gio_observer" == obslist[j]  ) {
+          spref            = obsptree.getValue<std::string>("agg_state_name","state");
+          stateinfo.sttype = 0; // grid type filename format
+          stateinfo.svars  = obsptree.getArray<std::string>("state_names");
+          stateinfo.idir   = obsptree.getValue<std::string>("idir");
+          stateinfo.index  = rest_ocycle;
+          // If doing a restart, initialize observer with stateinfo data:
+          if ( rest_ocycle > 0 ) { 
+//          obstraits = (*pObservers)[j]->get_traits();
+            pIO_->read_state(spref, stateinfo, dummy, false);
+          }
+          irestobs_ = j;
+        }
+        (*pObservers)[j]->init(stateinfo);
       }
     }
 
-    for ( GSIZET j=0; j<pObservers->size(); j++ ) (*pObservers)[j]->set_tmp(utmp_);
 
 } // end method create_observers
 
@@ -642,6 +670,7 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
   std::vector<GFTYPE>            pstd;
   PropertyTree                   gtree;
 
+
   sgrid = ptree.getValue<GString>("grid_type");
   gtree = ptree.getPropertyTree(sgrid);
 
@@ -654,6 +683,7 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
   delta.resize(GDIM);
   xnodes = &grid.xNodes();
   glob_indices.resize(grid_->ndof());
+
 
   // If (x, y, z) < epsilon, set to 0:
   GMTK::zero(*xnodes);
@@ -685,7 +715,7 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
     delta[0] = 0.5*grid.minlength()/(rad*pmax*pmax);
     delta[1] = grid.minlength()/(rad*pmax*pmax);
     for ( auto j=0; j<dX.size(); j++ ) dX[j] = 0.025 *delta[j];
-    gmorton.setType(GMORTON_STACKED);
+//  gmorton.setType(GMORTON_STACKED);
 //  gmorton.setType(GMORTON_INTERLEAVE);
 #else
     P0.resize(GDIM+1);
@@ -733,7 +763,7 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
   // Integralize *all* internal nodes
   // using Morton indices:
 //gmorton.setDoLog(TRUE);
-//gmorton.setType(GMORTON_STACKED);
+  gmorton.setType(GMORTON_STACKED);
 //gmorton.setType(GMORTON_INTERLEAVE);
   gmorton.setIntegralLen(P0,dX);
   gmorton.key(glob_indices, xkey);
@@ -837,18 +867,43 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
   // Set up and output the analytic solution
   // and difference solution as well as
   // advection velocity if one exists:
-  GIOTraits iot;
-  iot.nelems = grid.nelems();
-  iot.gtype  = grid.gtype();
-  iot.porder.resize(1,GDIM);
-  for ( GINT j=0; j<GDIM; j++ ) iot.porder(0,j) = pstd[j];
-  gio_write_state(iot, grid, ua, istate, savars, comm_);
-  for ( GINT j=0; j<c_.size(); j++ ) 
-  gio_write_state(iot, grid, c_, cstate, scvars, comm_);
+  std::stringstream  format;
+  StateInfo          stateinfo;
+  ObsTraitsType      binobstraits = (*pObservers_)[irestobs_]->get_traits();
+
+  stateinfo.sttype   = 1; // state variable type
+  stateinfo.svars.resize(binobstraits.state_names.size());
+  stateinfo.svars    = binobstraits.state_names;
+  stateinfo.idir     = binobstraits.idir;
+  stateinfo.odir     = binobstraits.odir;
+  stateinfo.index    = 0;
+  stateinfo.cycle    = 0;
+  stateinfo.time     = t;
+
+  // Get data:
+  stateinfo.svars.resize(nsolve_);
+  for ( GINT j=0; j<nsolve_; j++ ) { 
+    format .str(""); format .clear();
+    format << "u" << j+1 << "a";
+    stateinfo.svars[j] = format.str();
+  }
+  pIO_->write_state("ua", stateinfo, ua);
+
   for ( GINT j=0; j<nsolve_; j++ ) { 
     *utmp[j] = *u[j] - *ua[j];
+    format .str(""); format .clear();
+    format << "diff" << j+1;
+    stateinfo.svars[j] = format.str();
   }
-  gio_write_state(iot, grid, utmp, istate, sdvars, comm_);
+  pIO_->write_state("diff", stateinfo, utmp);
+  
+  stateinfo.svars.resize(c_.size());
+  for ( GINT j=0; j<c_.size(); j++ ) { 
+    format .str(""); format .clear();
+    format << "c" << j+1;
+    stateinfo.svars[j] = format.str();
+  }
+  pIO_->write_state("c", stateinfo, c_);
 #endif
 
   // Compute error norms:
@@ -911,4 +966,52 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
   for ( GINT j=0; j<ua.size(); j++ ) delete ua[j];
 
 } // end method compare
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : do_restart
+// DESC   : Set state for restart
+// ARGS   : 
+//          ptree: main prop tree
+//          grid : grid object
+//          u    : read-in state
+//          cycle: time cycle from restart
+//          t    : time from restart
+// RETURNS: none.
+//**********************************************************************************
+void do_restart(const PropertyTree &ptree, GGrid &, State &u, 
+                GTMatrix<GINT>&p,  GSIZET &cycle, Time &t)
+{
+
+  assert(pIO_ != NULLPTR && "IO operator not set!");
+
+  GBOOL              bret;
+  GSIZET             itindex;
+  GFTYPE             tt = t;
+  std::stringstream  format;
+  StateInfo          stateinfo;
+  ObsTraitsType      binobstraits = (*pObservers_)[irestobs_]->get_traits();
+
+
+  itindex            = ptree.getValue<GSIZET>("restart_index", 0);
+  stateinfo.sttype   = 0; // state variable type
+  stateinfo.svars.resize(binobstraits.state_names.size());
+  stateinfo.svars    = binobstraits.state_names;
+  stateinfo.idir     = binobstraits.idir;
+  stateinfo.odir     = binobstraits.odir;
+  stateinfo.index    = itindex;
+
+  // Get data:
+  pIO_->read_state(binobstraits.agg_state_name, stateinfo, u);
+  p.resize(stateinfo.porder.size(1),stateinfo.porder.size(2));
+  p = stateinfo.porder;
+ 
+  // Assign time and cycle from traits, for return:
+  cycle = stateinfo.cycle;
+  t     = stateinfo.time;
+
+  
+} // end of method do_restart
+
 
