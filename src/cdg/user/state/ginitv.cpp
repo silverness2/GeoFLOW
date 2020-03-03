@@ -228,6 +228,7 @@ GBOOL impl_simpsum1d_box(const PropertyTree &ptree, GString &sconfig, GGrid &gri
   GFTYPE       E0, kn, knh, L, p, x, y, z;
   GFTYPE       knx, kny, knz, knxh, knyh, knzh;
   GFTYPE       phase1, phase2, phase3;
+
   GTPoint<GFTYPE>
                G0(2), G1(2);
   PropertyTree vtree ;
@@ -317,6 +318,7 @@ GBOOL impl_simpsum_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
   std::default_random_engine
                generator;
   std::normal_distribution<GFTYPE>
+
               *distribution;
 
 #if defined(_G_IS3D)

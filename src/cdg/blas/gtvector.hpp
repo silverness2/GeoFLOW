@@ -140,6 +140,7 @@ template <class T> class GTVector
 
     #pragma acc routine vector
         GBOOL isfinite();
+
     #pragma acc routine vector
         GBOOL isfinite(GSIZET &iwhere);
     #pragma acc routine vector

@@ -30,14 +30,21 @@ project("GeoFLOW" VERSION 0.0.0.1 LANGUAGES C CXX Fortran)
 #---------------------------------------------------------------------
 # User Configure Build Process
 #---------------------------------------------------------------------
-set(CMAKE_VERBOSE_MAKEFILE TRUE)
+set(CMAKE_VERBOSE_MAKEFILE ${VERBOSE_MAKE})
 set(CMAKE_COLOR_MAKEFILE TRUE)
 set(DEFAULT_BUILD_TYPE "Release")
+
+# Control message level of CMake
+# Should be set on command line as follow by user
+# --log-level=<ERROR|WARNING|NOTICE|STATUS|VERBOSE|DEBUG|TRACE>
+# --loglevel=  Older versions of CMake
+set(CMAKE_MESSAGE_LOG_LEVEL STATUS)
 
 #---------------------------------------------------------------------
 # Set location of *.cmake modules
 #---------------------------------------------------------------------
-set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+#set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules" ${CMAKE_MODULE_PATH})
 
 #
 #---------------------------------------------------------------------
@@ -51,18 +58,18 @@ include(InSourceBuild)
 # Directory Report
 #---------------------------------------------------------------------
 #
-if(CMAKE_VERBOSE_MAKEFILE)
-	message("")
-	message("--------------------- Directory Report -----------------------")
-	message(" ") # CMAKE directories are from top level CMakeLists.txt
-	message("Top Level Directories:")
-	message("CMAKE_SOURCE_DIR  = ${CMAKE_SOURCE_DIR}")
-	message("CMAKE_BINARY_DIR  = ${CMAKE_BINARY_DIR}")
-	message(" ") # PROJECT directories are for recent project call
-	message("Project Level Directories:")
-	message("PROJECT_SOURCE_DIR = ${PROJECT_SOURCE_DIR}")
-	message("PROJECT_BINARY_DIR = ${PROJECT_BINARY_DIR}")
-endif(CMAKE_VERBOSE_MAKEFILE)
+message(VERBOSE "")
+message(VERBOSE "")
+message(VERBOSE "--------------------- Directory Report -----------------------")
+message(VERBOSE "") # CMAKE directories are from top level CMakeLists.txt
+message(VERBOSE "Top Level Directories:")
+message(VERBOSE "CMAKE_SOURCE_DIR  = ${CMAKE_SOURCE_DIR}")
+message(VERBOSE "CMAKE_BINARY_DIR  = ${CMAKE_BINARY_DIR}")
+message(VERBOSE "") # PROJECT directories are for recent project call
+message(VERBOSE "Project Level Directories:")
+message(VERBOSE "PROJECT_SOURCE_DIR = ${PROJECT_SOURCE_DIR}")
+message(VERBOSE "PROJECT_BINARY_DIR = ${PROJECT_BINARY_DIR}")
+
 
 #---------------------------------------------------------------------
 # Locations of Installation & Report
@@ -83,24 +90,22 @@ set(MY_INSTALL_LIBDIR ${MY_INSTALL_PREFIX}/lib)
 set(MY_INSTALL_TSTDIR ${MY_INSTALL_PREFIX}/test)
 set(MY_INSTALL_EXADIR ${MY_INSTALL_PREFIX}/examples)
 
-if(CMAKE_VERBOSE_MAKEFILE)
-	message(" ")
-	message("Using Directories:")
-	message("--- Original Locations ---")
-	message("MY_PROJECT_PREFIX = ${MY_PROJECT_PREFIX}")
-	message("MY_PROJECT_INCDIR = ${MY_PROJECT_INCDIR}")
-	message("MY_PROJECT_SRCDIR = ${MY_PROJECT_SRCDIR}")
-	message("MY_PROJECT_TSTDIR = ${MY_PROJECT_TSTDIR}")
-	message(" ")
-	message("--- Installation Locations ---")
-	message("MY_INSTALL_PREFIX = ${MY_INSTALL_PREFIX}")
-	message("MY_INSTALL_BINDIR = ${MY_INSTALL_BINDIR}")
-	message("MY_INSTALL_INCDIR = ${MY_INSTALL_INCDIR}")
-	message("MY_INSTALL_SRCDIR = ${MY_INSTALL_SRCDIR}")
-	message("MY_INSTALL_LIBDIR = ${MY_INSTALL_LIBDIR}")
-	message("MY_INSTALL_TSTDIR = ${MY_INSTALL_TSTDIR}")
-	message("MY_INSTALL_EXADIR = ${MY_INSTALL_EXADIR}")
-endif(CMAKE_VERBOSE_MAKEFILE)
+message(VERBOSE " ")
+message(VERBOSE "Using Directories:")
+message(VERBOSE "--- Original Locations ---")
+message(VERBOSE "MY_PROJECT_PREFIX = ${MY_PROJECT_PREFIX}")
+message(VERBOSE "MY_PROJECT_INCDIR = ${MY_PROJECT_INCDIR}")
+message(VERBOSE "MY_PROJECT_SRCDIR = ${MY_PROJECT_SRCDIR}")
+message(VERBOSE "MY_PROJECT_TSTDIR = ${MY_PROJECT_TSTDIR}")
+message(VERBOSE " ")
+message(VERBOSE "--- Installation Locations ---")
+message(VERBOSE "MY_INSTALL_PREFIX = ${MY_INSTALL_PREFIX}")
+message(VERBOSE "MY_INSTALL_BINDIR = ${MY_INSTALL_BINDIR}")
+message(VERBOSE "MY_INSTALL_INCDIR = ${MY_INSTALL_INCDIR}")
+message(VERBOSE "MY_INSTALL_SRCDIR = ${MY_INSTALL_SRCDIR}")
+message(VERBOSE "MY_INSTALL_LIBDIR = ${MY_INSTALL_LIBDIR}")
+message(VERBOSE "MY_INSTALL_TSTDIR = ${MY_INSTALL_TSTDIR}")
+message(VERBOSE "MY_INSTALL_EXADIR = ${MY_INSTALL_EXADIR}")
 
 #---------------------------------------------------------------------
 # Detect Configuration for Record
@@ -110,105 +115,32 @@ include(RecordVars)
 #---------------------------------------------------------------------
 # Detect Library includes, flags, etc.
 #---------------------------------------------------------------------
-message("")
-message("================================================================")
-message("                    Searching for Libraries                     ")
-message("================================================================")
+message(VERBOSE "")
+message(VERBOSE "================================================================")
+message(VERBOSE "                    Searching for Libraries                     ")
+message(VERBOSE "================================================================")
 if(${CMAKE_VERSION} VERSION_GREATER "3.11.999") 
 	cmake_policy(SET CMP0074 NEW) # find_package search <name>_ROOT
 endif()
 
-if(USE_OPENMP)
-message("")
-message("--------------------- OpenMP Libraries ------------------------")
-find_package(OpenMP REQUIRED)
-if(CMAKE_VERBOSE_MAKEFILE)
-	message("")
-	message("OpenMP Found          = ${OpenMP_FOUND}")
-	message("OpenMP F Comp Flags   = ${OpenMP_Fortran_FLAGS}")
-	message("OpenMP F Includes     = ${OpenMP_Fortran_INCLUDE_PATH}")
-	message("OpenMP F Link Flags   = ${OpenMP_Fortran_LINK_FLAGS}")
-	message("OpenMP F Libraries    = ${OpenMP_Fortran_LIBRARIES}")
-	message("OpenMP C Comp Flags   = ${OpenMP_C_FLAGS}")
-	message("OpenMP C Includes     = ${OpenMP_C_INCLUDE_PATH}")
-	message("OpenMP C Link Flags   = ${OpenMP_C_LINK_FLAGS}")
-	message("OpenMP C Libraries    = ${OpenMP_C_LIBRARIES}")
-	message("OpenMP C++ Comp Flags = ${OpenMP_CXX_FLAGS}")
-	message("OpenMP C++ Includes   = ${OpenMP_CXX_INCLUDE_PATH}")
-	message("OpenMP C++ Link Flags = ${OpenMP_CXX_LINK_FLAGS}")
-	message("OpenMP C++ Libraries  = ${OpenMP_CXX_LIBRARIES}")
-endif(CMAKE_VERBOSE_MAKEFILE)
-endif(USE_OPENMP)
+if(USE_OPENMP) 
+	find_package(_OpenMP) 
+endif()
 
 if(USE_MPI)
-message("")
-message("------------------------ MPI Libraries --------------------------")
-find_package(MPI REQUIRED)
-if(CMAKE_VERBOSE_MAKEFILE)
-	message("")
-	message("MPI F Found        = ${MPI_Fortran_FOUND}")
-	message("MPI F Comp Flags   = ${MPI_Fortran_FLAGS}")
-	message("MPI F Includes     = ${MPI_Fortran_INCLUDE_PATH}")
-	message("MPI F Link Flags   = ${MPI_Fortran_LINK_FLAGS}")
-	message("MPI F Libraries    = ${MPI_Fortran_LIBRARIES}")
-	message("MPI C Found        = ${MPI_C_FOUND}")
-	message("MPI C Comp Flags   = ${MPI_C_FLAGS}")
-	message("MPI C Includes     = ${MPI_C_INCLUDE_PATH}")
-	message("MPI C Link Flags   = ${MPI_C_LINK_FLAGS}")
-	message("MPI C Libraries    = ${MPI_C_LIBRARIES}")
-	message("MPI C++ Found      = ${MPI_CXX_FOUND}")
-	message("MPI C++ Comp Flags = ${MPI_CXX_FLAGS}")
-	message("MPI C++ Includes   = ${MPI_CXX_INCLUDE_PATH}")
-	message("MPI C++ Link Flags = ${MPI_CXX_LINK_FLAGS}")
-	message("MPI C++ Libraries  = ${MPI_CXX_LIBRARIES}")
-endif(CMAKE_VERBOSE_MAKEFILE)
-endif(USE_MPI)
+	find_package(_MPI)
+endif()
+
+find_package(_Boost)
 
 if(USE_GPTL)
-message("")
-message("------------------------ GPTL Libraries --------------------------")
-message("GPTL_ROOT = ${GPTL_ROOT}")
-find_package(GPTL REQUIRED)
-if(CMAKE_VERBOSE_MAKEFILE)
-	message("")
-	message("GPTL Found        = ${GPTL_FOUND}")
-	message("GPTL Comp Flags   = ${GPTL_FLAGS}")
-	message("GPTL Includes     = ${GPTL_INCLUDE_DIRS}")
-	message("GPTL Libraries    = ${GPTL_LIBRARIES}")
-endif(CMAKE_VERBOSE_MAKEFILE)
-endif(USE_GPTL)
+	find_package(GPTL REQUIRED)
+endif()
 
 if(USE_PAPI)
-message("")
-message("------------------------ PAPI Libraries --------------------------")
-message("PAPI_ROOT = ${PAPI_ROOT}")
-find_package(PAPI REQUIRED)
-if(CMAKE_VERBOSE_MAKEFILE)
-	message("")
-	message("PAPI Found        = ${PAPI_FOUND}")
-	message("PAPI Comp Flags   = ${PAPI_FLAGS}")
-	message("PAPI Includes     = ${PAPI_INCLUDE_DIRS}")
-	message("PAPI Libraries    = ${PAPI_LIBRARIES}")
-endif(CMAKE_VERBOSE_MAKEFILE)
-endif(USE_PAPI)  
+	find_package(PAPI REQUIRED)
+endif()
 
-message("")
-message("--------------------- Boost Libraries ------------------------")
-message("BOOST_ROOT = ${BOOST_ROOT}")
-set(Boost_DEBUG OFF)              # Enable debug output from FIND_PACKAGE
-set(Boost_NO_SYSTEM_PATHS ON)     # Do not search system paths before BOOST_ROOT
-set(Boost_USE_STATIC_LIBS ON)     # Static link to Boost libraries
-set(Boost_USE_STATIC_RUNTIME OFF) # Use Boost static linked to C++ runtime
-#set(Boost_USE_MULTITHREADED OFF)  # Use Boost multi-threaded code
-find_package(Boost 1.65.0 COMPONENTS mpi serialization REQUIRED)
-if(CMAKE_VERBOSE_MAKEFILE)
-	message("")
-	message("Boost Found               = ${Boost_FOUND}")
-	message("Boost Version             = ${Boost_VERSION}")
-	message("Boost Includes            = ${Boost_INCLUDE_DIRS}")
-	message("Boost Link Libraries      = ${Boost_LIBRARY_DIRS}")
-	message("Boost Component Libraries = ${Boost_LIBRARIES}")
-endif(CMAKE_VERBOSE_MAKEFILE)
 
 #
 #---------------------------------------------------------------------
@@ -219,27 +151,25 @@ endif(CMAKE_VERBOSE_MAKEFILE)
 # Partialy because each compiler names features differently or 
 # some not at all.
 #
-if(CMAKE_VERBOSE_MAKEFILE)
-	message("")
-	message("------------------ Compiler Feature Detection ---------------------")
-	message("")
-	message("CMAKE_CXX_COMPILER         = ${CMAKE_CXX_COMPILER}")
-	message("CMAKE_CXX_COMPILER_ID      = ${CMAKE_CXX_COMPILER_ID}")
-	message("CMAKE_CXX_COMPILER_VERSION = ${CMAKE_CXX_COMPILER_VERSION}")
+message(VERBOSE "")
+message(VERBOSE "------------------ Compiler Feature Detection ---------------------")
+message(VERBOSE "")
+message(VERBOSE "CMAKE_CXX_COMPILER         = ${CMAKE_CXX_COMPILER}")
+message(VERBOSE "CMAKE_CXX_COMPILER_ID      = ${CMAKE_CXX_COMPILER_ID}")
+message(VERBOSE "CMAKE_CXX_COMPILER_VERSION = ${CMAKE_CXX_COMPILER_VERSION}")
 
-	message("")
-	message("CMake Version Test can for the following C++ features:")
-	get_property(known_features GLOBAL PROPERTY CMAKE_CXX_KNOWN_FEATURES)
-	foreach(i ${known_features})
-		message("${i}")
-	endforeach()
+message(VERBOSE "")
+message(VERBOSE "CMake Version Test can for the following C++ features:")
+get_property(known_features GLOBAL PROPERTY CMAKE_CXX_KNOWN_FEATURES)
+foreach(i ${known_features})
+	message(VERBOSE "${i}")
+endforeach()
 	
-	message("")
-	message("C++ Compiler Supported Features:")
-	foreach(i ${CMAKE_CXX_COMPILE_FEATURES})
-		message("${i}")
-	endforeach()
-endif(CMAKE_VERBOSE_MAKEFILE)
+message(VERBOSE "")
+message(VERBOSE "C++ Compiler Supported Features:")
+foreach(i ${CMAKE_CXX_COMPILE_FEATURES})
+	message(VERBOSE "${i}")
+endforeach()
 
 #---------------------------------------------------------------------
 # Set Project Level Compiler Options
@@ -273,6 +203,10 @@ add_subdirectory(analysis/src)
 # Build Executables
 #add_subdirectory(src/apps)
 
-# Build Tests for Libraries
-add_subdirectory(test)
+include(CTest)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
+
+
 
