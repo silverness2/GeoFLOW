@@ -17,6 +17,7 @@ int main(int argc, char **argv)
     std::vector<GINT> pstd(GDIM);  // order in each direction
     GTMatrix<GINT> p; // needed for restart, but is dummy
     ObsTraitsType binobstraits;
+    CommandLine   cline_;
 
     typename MyTypes::Time  t  = 0;
     typename MyTypes::Time  dt = 0.1;
