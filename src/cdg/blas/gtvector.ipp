@@ -933,6 +933,24 @@ GTVector<T>::operator*(const GTVector &obj)
   return this->mul_impl_(obj, typename std::is_floating_point<T>::type());
 } // end, operator-
 
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : dot
+// DESC   :
+// ARGS   : GTVector &
+// RETURNS: typename T
+//**********************************************************************************
+template<class T>
+T
+GTVector<T>::dot(const GTVector &obj)
+{
+
+//return this->dot_impl_(obj, typename std::is_floating_point<T>::type());
+
+} // end, dot
+
+
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : operator += (2)
@@ -2951,7 +2969,7 @@ GTVector<T>::mul_impl_(const GTVector &obj, std::false_type d)
   #endif
 
   return vret;
-} // end, sub_impl_
+} // end, mul_impl_
 
 
 //**********************************************************************************
@@ -2966,7 +2984,7 @@ GTVector<T>
 GTVector<T>::mul_impl_(const GTVector &obj, std::true_type d)
 {
     return mul_impl_(obj,std::false_type());
-} // end, sub_impl_
+} // end, mul_impl_
 
 //**********************************************************************************
 //**********************************************************************************

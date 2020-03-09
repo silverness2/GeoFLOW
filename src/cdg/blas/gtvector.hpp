@@ -121,6 +121,8 @@ template <class T> class GTVector
     GTVector       operator-(const GTVector &b);
     #pragma acc routine vector 
     GTVector       operator*(const GTVector &b);
+    #pragma acc routine vector 
+    T              dot(const GTVector &b);
 
 
     #pragma acc routine vector
@@ -266,8 +268,13 @@ inline void   quicksorts2l(T *a, GSIZET *isort, GLLONG start, GLLONG end);
 
   #pragma acc routine vector
    GTVector mul_impl_(const GTVector &b, std::true_type);
-    #pragma acc routine vector
+  #pragma acc routine vector
    GTVector mul_impl_(const GTVector &b, std::false_type);
+
+  #pragma acc routine vector
+   GTVector dot_impl_(const GTVector &b, std::true_type);
+  #pragma acc routine vector
+   GTVector dot_impl_(const GTVector &b, std::false_type);
 };
 
 
