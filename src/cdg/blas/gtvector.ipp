@@ -827,8 +827,8 @@ void GTVector<T>::updatedev()
 //**********************************************************************************
 template<class T> void GTVector<T>::transpose(GSIZET n)
 {
-  assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value || std::is_pointer<T>::value &&
-    "Invalid template type: GMatrix<T>::transpose()");
+  assert(std::is_arithmetic<T>::value || std::is_pointer<T>::value &&
+    "Invalid template type: GTVector<T>::transpose()");
 
   T       tmp;
   GSIZET  i, j;
@@ -931,7 +931,7 @@ GTVector<T>
 GTVector<T>::operator*(const GTVector &obj)
 {
   return this->mul_impl_(obj, typename std::is_floating_point<T>::type());
-} // end, operator-
+} // end, operator*
 
 
 //**********************************************************************************
@@ -942,11 +942,42 @@ GTVector<T>::operator*(const GTVector &obj)
 // RETURNS: typename T
 //**********************************************************************************
 template<class T>
-T
-GTVector<T>::dot(const GTVector &obj)
+T GTVector<T>::dot(const GTVector &obj)
 {
+  assert(std::is_arithmetic<T>::value &&
+    "Invalid template type: GVector<T>::dot()");
 
-//return this->dot_impl_(obj, typename std::is_floating_point<T>::type());
+  GLLONG j;
+  T ret = 0;
+  for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+    ret += this->data_[j] * obj[j];
+  }
+
+  return ret;
+
+} // end, dot
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : gdot
+// DESC   : Compute dot product over all ranks
+// ARGS   : obj  : input vector
+//          comm : communicator
+// RETURNS: typename T
+//**********************************************************************************
+template<class T>
+T GTVector<T>::gdot(const GTVector &obj, GC_COMM comm)
+{
+  assert(std::is_arithmetic<T>::value &&
+    "Invalid template type: GVector<T>::gdot()");
+
+  T lret = this->dot(obj); 
+  T gret;
+
+  GComm::Allreduce(&lret, &gret, 1, T2GCDatatype<T>() , GC_OP_SUM, comm);
+
+  return gret;
 
 } // end, dot
 

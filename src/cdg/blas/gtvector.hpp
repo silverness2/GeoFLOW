@@ -18,6 +18,7 @@
 #include "gtypes.h"
 #include "gindex.hpp"
 #include "cff_blas.h"
+#include "gcomm.hpp"
 
 #include <cstdlib>
 #include <limits>
@@ -123,6 +124,8 @@ template <class T> class GTVector
     GTVector       operator*(const GTVector &b);
     #pragma acc routine vector 
     T              dot(const GTVector &b);
+    #pragma acc routine vector 
+    T              gdot(const GTVector &b, GC_COMM comm);
 
 
     #pragma acc routine vector
