@@ -1570,12 +1570,15 @@ template<class T>
 T
 GTVector<T>::Eucnorm() 
 {
-  GDOUBLE xnorm;
+  GDOUBLE n, xnorm;
   GLLONG j;
 
+  n = 0.0;
   for ( j=this->gindex_.beg(), xnorm=0; j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
     xnorm += this->data_[j]*this->data_[j];
+    n += 1.0;
   }
+  xnorm /= n;
   
   return static_cast<T>(sqrt(xnorm));
 } // end, Eucnorm
