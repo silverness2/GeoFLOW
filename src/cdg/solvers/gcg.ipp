@@ -239,24 +239,24 @@ GINT GCG<T>::compute_norm(const StateComp& x, State& tmp)
 
   switch (traits_.normtype) {
     case GCG_NORM_INF:
-      lret[0] = utmp[0]->infnorm();
+      lret[0] = x.infnorm();
       GComm::Allreduce(lret, gret, 1, T2GCDatatype<GFTYPE>() , GC_OP_MAX, comm_);
       break;
     case GCG_NORM_EUCLID:
-      lret[0]  = utmp[0]->Eucnorm();
-      lret[0] *= lret[0];
-      lret[1]  = lret.size();
+     *utmp[0]  = x; utmp[0]->pow(2);
+      lret[0]  = utmp[0]->sum();
+      lret[1]  = x.size();
       GComm::Allreduce(lret, gret, 2, T2GCDatatype<GFTYPE>() , GC_OP_SUM, comm_);
       gret[0]  = sqrt(gret[0]/gret[1]);
       break;
     case GCG_NORM_L2:
      *utmp[0]  = x; utmp[0]->pow(2);
-      gret[0]  = grid_->integrate(*utmp_  [1],*utmp_[:]);
+      gret[0]  = grid_->integrate(*tmp[0],*tmp[1]);
       gret[0] /= this->grid_->volume();
       break;
     case GCG_NORM_L1:
      *utmp[0]  = x; utmp[0]->abs();
-      gret[0]  = grid_->integrate(*utmp_  [1],*utmp_[:]);
+      gret[0]  = grid_->integrate(*tmp[0],*tmp[1]);
       gret[0] /= this->grid_->volume();
       break;
   }
