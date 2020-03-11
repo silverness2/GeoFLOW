@@ -61,6 +61,7 @@ public:
 
 
 private:
+                      GFTYPE   compute_norm(const StateComp&, State&);
 // Private methods:
      GC_COMM           comm_;
      GINT              irank_;
