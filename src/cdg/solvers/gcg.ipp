@@ -126,18 +126,19 @@ GINT GCG<T>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
     tmp[j] = (*this->tmp_)[j+4];
   }
 
+  *r = b;
   A.opVec_prod(x, tmp, *p);
-  *r = b; // initial residual
+  *r -= (*p);                         // initial residual
   while ( n<traits_.maxit && residual > traits_.tol ) {
 
-    if ( precond_ != NULLPTR ) { // solve Mz = r for z
-      precond_->solve(*r, *z); // apply preconditioner
+    if ( precond_ != NULLPTR ) {      // solve Mz = r for z
+      precond_->solve(*r, *z);        // apply preconditioner
     }
     else {
-      *z = *r;                 // use identity preconditioner
+      *z = *r;                        // use identity preconditioner
     }
     rho = r->gdot(*z);
-    if ( n == 0 ) {            // find p
+    if ( n == 0 ) {                   // find p
       *p = *z;
     }
     else {
@@ -145,14 +146,14 @@ GINT GCG<T>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
       GMTK::saxpby(*p, beta, *z, 1.0);
     }
 
-    A.opVec_prod(*p, tmp, *q);        // q = A p
+//  A.opVec_prod(*p, tmp, *q);        // q = A p
     alpha = rho / (p->gdot(*q));
     GMTK::saxpby(*x, 1.0, *p, alpha); // x = x + alpha p
     GMTK::saxpby(*r, 1.0, *q,-alpha); // r = r - alpha q
 
     rhom = rho;
 
-    residual = compute_norm(*r, tmp);
+    residual = compute_norm(*r, tmp); // find norm of residual
 
   } // end, CG loop
     
@@ -167,58 +168,25 @@ GINT GCG<T>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
 // ARGS   : A    : linear operator to invert
 //          b    : right-hand side vector
 //          xb   : boundary solution
-//          x0   : homogeneous solution, returned
+//          x    : solution, x0+xb, returned, where x0=homogeneous solution
 // ARGS   : 
 // RETURNS: integer error code
 //************************************************************************************
 template<typename TPack>
-GINT GCG<T>::solve_impl(Operator& A, const StateComp& b, StateComp& xb, StateComp& x0)
+GINT GCG<T>::solve_impl(Operator& A, const StateComp& b, StateComp& xb, StateComp& x)
 {
-  GINT      n=0;
-  GFTYPE    alpha, rho, rhom;
-  StateComp *p, *q, *r, *z;
-  State      tmp(this->tmp_->size()-4);
 
-  assert(this_->tmp_->size() > 5);
+  // Subtract out the boundary solution:
+  x -= xb; 
 
-  tmp(.resize(this->tmp_->size()-4);
-  p  = (*this->tmp_)[0];
-  q  = (*this->tmp_)[1];
-  z  = (*this->tmp_)[2];
-  r  = (*this->tmp_)[3];
-  for ( auto j=0; j<this->tmp_->size()-4) {
-    tmp[j] = (*this->tmp_)[j+4];
-  }
+  // Compute homogeneous solution:
+  iret = solve_impl(A, b, x);
+  assert(iret != GCGERR_NONE);
 
-  A.opVec_prod(x, tmp, *p);
-  *r = b - (*p); // initial residual
-  while ( n<traits_.maxit && residual > traits_.tol ) {
-
-    if ( precond_ != NULLPTR ) { // solve Mz = r for z
-      precond_->solve(*r, *z); // apply preconditioner
-    }
-    else {
-      *z = *r;                 // use identity preconditioner
-    }
-    rho = r->gdot(*z);
-    if ( n == 0 ) {            // find p
-      *p = *z;
-    }
-    else {
-      beta = rho / rhom;
-      GMTK::saxpby(*p, beta, *z, 1.0);
-    }
-
-    A.opVec_prod(*p, tmp, *q);        // q = A p
-    alpha = rho / (p->gdot(*q));
-    GMTK::saxpby(x0, 1.0, *p, alpha); // x = x + alpha p
-    GMTK::saxpby(*r, 1.0, *q,-alpha); // r = r - alpha q
-
-    rhom = rho;
-
-    residual = compute_norm(*r, tmp);
-
-  } // end, CG loop
+  // Add back boundary solution:
+  x += xb;
+ 
+  return iret;
 
 } // end of method solve_impl (2)
 
