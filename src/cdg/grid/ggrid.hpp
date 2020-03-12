@@ -20,11 +20,31 @@
 #include "ggrid.hpp"
 #include "gcomm.hpp"
 #include "ggfx.hpp"
+#include "ghelmholtz.hpp"
 #include "tbox/property_tree.hpp"
 
 
 using namespace geoflow::tbox;
 using namespace std;
+
+template< // define terrain typepack
+typename OperatorType        = GHelmholtz;
+typename PrecondType         = GLinOp;
+typename StateType           = GTVector<GTVector<GFTYPE>*>,
+typename StateCompType       = GTVector<GFTYPE>,
+typename GridType            = GGrid,
+typename ValueType           = GFTYPE,
+typename ConnectivityOpType  = GGFX
+>
+struct TCGTypePack {
+        using Operator         = OperatorType;
+        using Preconditioner   = PrecondrType;
+        using State            = StateType;
+        using StateComp        = StateCompType;
+        using Grid             = GridType;
+        using Value            = ValueType;
+        using ConnectivityOp   = ConnectivityOpType;
+};
 
 class GMass;
 
@@ -59,7 +79,8 @@ virtual void                 print(const GString &filename){}          // print 
         void                 grid_init();                             // initialize class
         void                 grid_init(GTMatrix<GINT> &p, 
                                GTVector<GTVector<GFTYPE>> &xnodes);   // initialize class for restart
-        void                 add_terrain();                           // add terrain 
+        void                 add_terrain(const GTVector<GFTYPE> &xb, GTVector<GTVector<GFTYPE>*> &tmp); 
+                                                                      // add terrain 
         void                 do_typing(); // classify into types
         GElemList           &elems() { return gelems_; }              // get elem list
         GSIZET               nelems() { return gelems_.size(); }      // local num elems

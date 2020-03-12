@@ -438,14 +438,13 @@ void GGrid::grid_init()
   GTimerStop("GGrid::grid_init: init_bc_info");
 
   GTimerStart("GGrid::grid_init: def_geom_init");
-  if ( itype_[GE_2DEMBEDDED].size() > 0
-    || itype_  [GE_DEFORMED].size() > 0 ) {
+  if ( gtype_ == GE_2DEMBEDDED || gtype_  == GE_DEFORMED ) {
     def_geom_init();
   }
   GTimerStop("GGrid::grid_init: def_geom_init");
 
   GTimerStart("GGrid::grid_init: reg_geom_init");
-  if ( itype_[GE_REGULAR].size() > 0 ) {
+  if ( gtype_ == GE_REGULAR ) {
     reg_geom_init();
   }
   GTimerStop("GGrid::grid_init: reg_geom_init");
@@ -462,7 +461,7 @@ void GGrid::grid_init()
   minnodedist_ = find_min_dist();
   GTimerStop("GGrid::grid_init: find_min_dist");
 
-  // Compute grid volume:
+  // Compute (global) grid volume:
   GTVector<GFTYPE> tmp0(ndof()), tmp1(ndof());
   tmp0 = 1.0;
   volume_  = integrate(tmp0, tmp1);
@@ -554,6 +553,9 @@ void GGrid::grid_init(GTMatrix<GINT> &p,
 void GGrid::def_geom_init()
 {
    assert(gelems_.size() > 0 && "Elements not set");
+   assert(gtype_ == GE_2DEMBEDDED
+       || gtype_ == GE_DEFORMED && "Invalid element type")
+
 
    GString serr = "GGrid::def_geom_init: ";
    GSIZET nxy = gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
@@ -643,6 +645,7 @@ void GGrid::def_geom_init()
 void GGrid::reg_geom_init()
 {
    assert(gelems_.size() > 0 && "Elements not set");
+   assert( gtype_ == GE_REGULAR && "Invalid element type");
 
    GString serr = "GridIcos::reg_geom_init: ";
    GSIZET nxy = GDIM;
@@ -1107,6 +1110,7 @@ void GGrid::init_local_face_info()
 
 } // end, init_local_face_info
 
+
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : init_bc_info
@@ -1172,4 +1176,76 @@ void GGrid::init_bc_info()
   if ( ind != NULLPTR ) delete [] ind;
 
 } // end of method init_bc_info
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : add_terrain
+// DESC   : Add bdy terrain by deforming coordinates. 
+//          Works with only non-regular grids, and must be called 
+//          after 'base' grid is completely constructed.
+// ARGS   : xb  : boundary coordinates
+//          utmp: tmp array pool
+// RETURNS: none.
+//**********************************************************************************
+void GGrid::add_terrain(const GTVector<GTVector<GFTYPE>*> &xb, GTVector<GTVector<GFTYPE>*> &utmp)
+{
+   assert(gtype_ == GE_2DEMBEDDED
+       || gtype_ == GE_DEFORMED && "Invalid element type")
+
+   assert(utmp.size() > 5);
+
+  // Set up temp arrays from pool:
+  GTVector<GFTYPE> *x0=utmp[0];
+  GTVector<GFTYPE> *b =utmp[1];
+  GTVector<GTVector<GFTYPE>*> GTVector<GFTYPE> tmp(utmp.size()-3);
+
+  for ( auto j=0; j<utmp.size()-3; j++ ) tmp[j] = utmp[j+3];
+
+
+  // Construct solver and weak Laplacian operator:
+  CG<TCGTypePack>   cg(*this, ggfx, tmp);
+  GHelmholtz        H(*this);
+
+  H.use_metric(FALSE); // do Laplacian in reference space
+
+  // Solve Nabla^2 (Xnew + Xb - XNodes) = 0 
+  // for new (homgogeneous) grid solution, Xnew, 
+  // given terrain, Xb, and // 'base' grid, XNodes:
+  GTimerStart("GGrid::add_terrain: Solve");
+  for ( auto j=0; j<xNodes_.size(); j++ ) {
+   *x0 = xNodes_[j]  - (*xb[j]); 
+    H.opVec_prod(*x0, tmp, *b);  // b = H (XNodes-xb)
+    cg.solve(H, *b, *x0);
+    xNodes_[j] = *x0;             // Reset XNodes = x0
+  }
+  GTimerStop("GGrid::add_terrain: Solve");
+ 
+  // Before computing new metric, Jacobian, etc, must set
+  // new coordinates in elements that have already been initialized:
+   GSIZET ibeg, iend; // beg, end indices for global arrays
+   for ( GSIZET e=0; e<gelems_.size(); e++ ) {
+     ibeg  = gelems_[e]->igbeg(); iend  = gelems_[e]->igend();
+     for ( auto j=0; j<xNodes_.size(); j++ ) xNodes_[j].range(ibeg, iend)
+     gelems_[e]->set_nodes(xNodes_);
+   }
+   for ( auto j=0; j<xNodes_.size(); j++ ) xNodes_[j].range_reset();
+
+  // Now, with new coordinates, recompute metric terms, 
+  // Jacobian, normals:
+  GTimerStart("GGrid::add_terrain: def_geom_init");
+  def_geom_init();
+  GTimerStop("GGrid::add_terrain: def_geom_init");
+
+  // Compute new minimum node distance:
+  GTimerStart("GGrid::grid_init: find_min_dist");
+  minnodedist_ = find_min_dist();
+  GTimerStop("GGrid::grid_init: find_min_dist");
+
+  // Compute new (global) grid volume:
+  *utmp[0] = 1.0;
+  volume_  = integrate(*utmp[0], *utmp[1]);
+  ivolume_ = 1.0 / volume_;
+
+} // end of method add_terrain
 
