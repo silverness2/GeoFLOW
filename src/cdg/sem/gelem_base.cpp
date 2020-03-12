@@ -1889,6 +1889,31 @@ void GElem_base::init(GVVFType &xNodes)
 } // end of method init
 
 
+//***********************************************************************************
+//***********************************************************************************
+// METHOD : set_nodes
+// DESC   : Set nodes, if they're modified after init, due, say to terrain
+//          mods
+// ARGS   : 
+//          xNodes: Cartesian coordinates for all node points (each
+//                  node point is in tensor product form).
+// RETURNS: none.
+//***********************************************************************************
+void GElem_base::set_nodes(GVVFType &xNodes)
+{
+  GString serr = "GElem_base::set_nodes: ";
+
+  assert( bbasis_ && "Basis or element type not set");
+
+  // Set xNodes_ data member. Note that the input array sizes may be
+  // larger than for xNodes_:
+  for ( GSIZET j=0; j<xNodes.size(); j++ ) {
+    for ( GSIZET i=0; i<xNodes_[j].size(); i++ ) xNodes_[j][i] = xNodes[j][i];
+  }
+  
+} // end of method set_nodes
+
+
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : Assignment method

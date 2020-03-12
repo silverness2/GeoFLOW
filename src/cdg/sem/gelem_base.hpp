@@ -64,6 +64,7 @@ public:
 virtual void                set_basis(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b); // must be called first
 virtual void                set_elemtype(GElemType);          // set element type
 virtual void                init(GVVFType &xNodes);           // must be called second
+        void                set_nodes(GVVFType &xNodes);      // if modifying coords
 
 virtual void                interp(GTVector<GFTYPE> &ufrom, GTVector<GTVector<GFTYPE>*> &xito, GTVector<GFTYPE> &uto);
 virtual void                interp(GTVector<GFTYPE> &ufrom, GTVector<GTVector<GFTYPE>*> &xito, GTVector<GFTYPE> &uto, GTVector<GTMatrix<GFTYPE>> &matv, GTVector<GTMatrix<GFTYPE>> &matu, GTVector<GFTYPE> &tmp);
