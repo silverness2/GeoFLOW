@@ -34,6 +34,7 @@ using namespace std;
 //**********************************************************************************
 GHelmholtz::GHelmholtz(GGrid &grid)
 : GLinOp(grid),
+buse_metric_   (TRUE),
 bown_p_        (TRUE),
 bown_q_       (FALSE),
 bcompute_helm_(FALSE),
@@ -142,15 +143,20 @@ void GHelmholtz::def_prod(GTVector<GFTYPE> &u,
   // Compute derivatives of u:
   GMTK::compute_grefderivs(*grid_, u, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj u
 
-  // Compute Gij (D^j u). Recall, Gij contain mass: 
-  for ( GSIZET j=0; j<GDIM; j++ ) { 
-   *gdu[j] = 0.0;
-    for ( GSIZET i=0; i<GDIM; i++ ) {
-      utmp[i]->pointProd(*G_(i,j),uo); // Gij * du^j
-     *gdu[j] += uo;
+  if ( buse_metric_ ) {
+    // Compute Gij (D^j u). Recall, Gij contain mass: 
+    for ( GSIZET j=0; j<GDIM; j++ ) { 
+     *gdu[j] = 0.0;
+      for ( GSIZET i=0; i<GDIM; i++ ) {
+        utmp[i]->pointProd(*G_(i,j),uo); // Gij * du^j
+       *gdu[j] += uo;
+      }
+      // Apply mass; recall that it contains Jacobian:
+//    gdu[j]->pointProd(*massop->data());
     }
-    // Apply mass; recall that it contains Jacobian:
-//  gdu[j]->pointProd(*massop->data());
+  }
+  else {
+    for ( GSIZET j=0; j<GDIM; j++ ) *gdu[j] = *utmp[j];
   }
 
   // Apply variable p parameter ('viscosity') 
@@ -239,14 +245,20 @@ void GHelmholtz::embed_prod(GTVector<GFTYPE> &u,
   // Compute reference-space gradient of u:
   GMTK::compute_grefderivs(*grid_, u, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj u
 
-  // Compute Gij (D^j u). Recall, Gij contain mass, Jac: 
-  for ( GSIZET j=0; j<GDIM; j++ ) {
-   *gdu[j] = 0.0;
-    for ( GSIZET i=0; i<GDIM; i++ ) { 
-      utmp[i]->pointProd(*G_(i,j), uo); // Gij * du^j
-     *gdu[j] += uo;
+  if ( buse_metric_ ) {
+    // Compute Gij (D^j u). Recall, Gij contain mass, Jac: 
+    for ( GSIZET j=0; j<GDIM; j++ ) {
+     *gdu[j] = 0.0;
+      for ( GSIZET i=0; i<GDIM; i++ ) { 
+        utmp[i]->pointProd(*G_(i,j), uo); // Gij * du^j
+       *gdu[j] += uo;
+      }
     }
   }
+  else {
+    for ( GSIZET j=0; j<GDIM; j++ ) *gdu[j] = *utmp[j];
+  }
+
 
   // Apply variable p parameter ('viscosity') 
   // before final 'divergence':
@@ -328,7 +340,9 @@ void GHelmholtz::reg_prod(GTVector<GFTYPE> &u,
   // 'viscosity', and mass:
   GTVector<GFTYPE> *Jac = &grid_->Jac();
   for ( GSIZET k=0; k<GDIM; k++ ) {
-    gdu[k]->pointProd(*G_(k,0));
+    if ( buse_metric_ ) {
+      gdu[k]->pointProd(*G_(k,0));
+    }
     // Apply p parameter ('viscosity') if necessary to Laplacian:
     if ( p_ != NULLPTR ) {
       if ( p_->size() >= grid_->ndof() ) gdu[k]->pointProd(*p_);
