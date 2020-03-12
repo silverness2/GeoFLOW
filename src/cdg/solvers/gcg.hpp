@@ -25,7 +25,7 @@ public:
                       enum  GCGERR         {GCGERR_NONE=0, GCGERR_NOCONVERGE, GCGERR_SOLVE, GCGERR_BADITERNUM};
                       using Types          = TypePack;
                       using Operator       = typename Types::Operator;
-                      using Preconditioner = typename Types::Operator;
+                      using Preconditioner = typename Types::Preconditioner;
                       using State          = typename Types::State;
                       using StateComp      = typename Types::StateComp;
                       using Grid           = typename Types::Grid;
