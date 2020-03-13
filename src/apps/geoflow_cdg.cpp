@@ -990,7 +990,7 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
 //**********************************************************************************
 void do_terrain(const PropertyTree &ptree, GGrid &grid)
 {
-  GBOOL bret;
+  GBOOL bret, bterr;
   GINT  iret, nc;
   State xb, tmp;
   
@@ -1002,10 +1002,10 @@ void do_terrain(const PropertyTree &ptree, GGrid &grid)
   for ( auto j=0; j<nc        ; j++ ) xb [j] = utmp_[j]
   for ( auto j=0; j<tmp.size(); j++ ) tmp[j] = utmp_[j+nc];
 
-  bret = GSpecTerrainFactory<MyTypes>::spec(ptree, grid, tmp, xb);
+  bret = GSpecTerrainFactory<MyTypes>::spec(ptree, grid, tmp, xb, bterr);
   assert(bret);
 
-  grid.add_terrain(xb, tmp);
+  if ( bterr ) grid.add_terrain(xb, tmp);
 
 } // end of method do_terrain
 
