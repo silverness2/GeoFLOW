@@ -990,6 +990,22 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
 //**********************************************************************************
 void do_terrain(const PropertyTree &ptree, GGrid &grid)
 {
+  GBOOL bret;
+  GINT  iret, nc;
+  State xb, tmp;
+  
+  nc = grid.xNodes().size();
+  xb.resize(nc);
+  tmp.resize(utmp_.size()-nc);
+
+  // Set terrain & tmp arrays from tmp array pool:
+  for ( auto j=0; j<nc        ; j++ ) xb [j] = utmp_[j]
+  for ( auto j=0; j<tmp.size(); j++ ) tmp[j] = utmp_[j+nc];
+
+  bret = GSpecTerrainFactory<MyTypes>::spec(ptree, grid, tmp, xb);
+  assert(bret);
+
+  grid.add_terrain(xb, tmp);
 
 } // end of method do_terrain
 
