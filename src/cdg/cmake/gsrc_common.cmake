@@ -47,6 +47,8 @@
                     ${GHOME}/user/state/ginits.cpp 
                     ${GHOME}/user/state/ginitstate_direct_user.cpp 
                     ${GHOME}/user/state/ginitv.cpp 
+                    ${GHOME}/user/terrain/gterrain_specbox_user.cpp 
+                    ${GHOME}/user/terrain/gterrain_specsph_user.cpp 
     )
 
  set(CDG_UTILS_SRC  ${GHOME}/utils/gbitblock.cpp 
