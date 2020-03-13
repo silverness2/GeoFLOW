@@ -27,18 +27,18 @@ namespace gterrain_specbox {
 GBOOL impl_gauss_range(const PropertyTree &ptree, GGrid &grid, State &utmp, State &xb)
 {
 
-  GString  sterrain  = ptree.getPropertyTree("terrain_type");
-
-  assert("gauss_range" == sterrain && "Invalid terrain_type");
+  GString  sterrain  = ptree.getValue<GString>("terrain_type");
 
   PropertyTree ttree     = ttree.getPropertyTree(sterrain);
   PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
 
-  GSIZET nxy = (*xnodes)[0].size();
+  GSIZET nxy;
   GFTYPE dx, dy, eps;
   GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
   GTPoint<GFTYPE>  P0(3);
   
+  nxy = (*xnodes)[0].size();
+
   std::vector<GFTYPE> x0   = ttree.getArray<GFTYPE>("x0");
   if ( GDIM == 3 ) 
   std::vector<GFTYPE> y0   = ttree.getArray<GFTYPE>("y0");
@@ -96,19 +96,20 @@ GBOOL impl_gauss_range(const PropertyTree &ptree, GGrid &grid, State &utmp, Stat
 GBOOL impl_boxrange_range(const PropertyTree &ptree, GGrid &grid, State &utmp, State &xb)
 {
 
-  GString  sterrain  = ptree.getPropertyTree("terrain_type");
+  GString  sterrain  = ptree.getValue<GString>("terrain_type");
 
-  assert("poly_range" == sterrain && "Invalid terrain_type");
 
   PropertyTree ttree     = ttree.getPropertyTree(sterrain);
-//PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
+  PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
 
-  GSIZET nxy = (*xnodes)[0].size();
-  GFTYPE dx, dy;
+  GSIZET nxy;
+  GFTYPE dx, dy, eps;
   GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
   GTPoint<GFTYPE>  P0(3);
   
-  std::vector<GFTYPE> pexp = ttree.getArray<GFTYPE>("exponent", 3);
+  nxy = (*xnodes)[0].size();
+
+  std::vector<GFTYPE> pexp = ttree.getArray<GFTYPE>("exponent");
   std::vector<GFTYPE> x0   = ttree.getArray<GFTYPE>("x0");
   if ( GDIM == 3 ) 
   std::vector<GFTYPE> y0   = ttree.getArray<GFTYPE>("y0");
@@ -172,18 +173,18 @@ GBOOL impl_boxrange_range(const PropertyTree &ptree, GGrid &grid, State &utmp, S
 GBOOL impl_schar_range(const PropertyTree &ptree, GGrid &grid, State &utmp, State &xb)
 {
 
-  GString  sterrain  = ptree.getPropertyTree("terrain_type");
-
-  assert("schar_range" == sterrain && "Invalid terrain_type");
+  GString  sterrain  = ptree.getValue<GString>("terrain_type");
 
   PropertyTree ttree     = ttree.getPropertyTree(sterrain);
-//PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
+  PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
 
-  GSIZET nxy = (*xnodes)[0].size();
-  GFTYPE dx, dy;
+  GSIZET nxy;
+  GFTYPE dx, dy, eps;
   GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
   GTPoint<GFTYPE>  P0(3);
   
+  nxy = (*xnodes)[0].size();
+
   GFTYPE lambda  = ttree.getValue<GFTYPE>("lambda");       // perturbation wavelength
   GFTYPE extent  = ttree.getValue<GFTYPE>("range_extent"); // extent 
   GFTYPE h0      = ttree.getValue<GFTYPE>("h0");           // height

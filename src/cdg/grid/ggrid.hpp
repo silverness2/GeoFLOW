@@ -20,40 +20,53 @@
 #include "ggrid.hpp"
 #include "gcomm.hpp"
 #include "ggfx.hpp"
+#include "glinop.hpp"
 #include "ghelmholtz.hpp"
+#include "gcg.hpp"
 #include "tbox/property_tree.hpp"
 
 
 using namespace geoflow::tbox;
 using namespace std;
 
+/*
 template< // define terrain typepack
-typename OperatorType        = GHelmholtz;
-typename PrecondType         = GLinOp;
+typename OperatorType        = GHelmholtz,
+typename PrecondType         = GLinOp,
 typename StateType           = GTVector<GTVector<GFTYPE>*>,
 typename StateCompType       = GTVector<GFTYPE>,
 typename GridType            = GGrid,
 typename ValueType           = GFTYPE,
-typename ConnectivityOpType  = GGFX
+typename ConnectivityOpType  = GGFX<GFTYPE>
 >
-struct TCGTypePack {
-        using Operator         = OperatorType;
-        using Preconditioner   = PrecondrType;
-        using State            = StateType;
-        using StateComp        = StateCompType;
-        using Grid             = GridType;
-        using Value            = ValueType;
-        using ConnectivityOp   = ConnectivityOpType;
+*/
+struct CGTypePack {
+        using Types            = CGTypePack;
+        using Operator         = class GHelmholtz;
+        using Preconditioner   = LinSolverBase<Types>;
+        using State            = GTVector<GTVector<GFTYPE>*>;
+        using StateComp        = GTVector<GFTYPE>;
+        using Grid             = GGrid;
+        using Value            = GFTYPE;
+        using ConnectivityOp   = GGFX<GFTYPE>;
 };
 
 class GMass;
 
 typedef GTVector<GElem_base*> GElemList;
 
-
 class GGrid 
 {
 public:
+                             using CGTypes        = CGTypePack;
+                             using Operator       = typename CGTypes::Operator;
+                             using Preconditioner = typename CGTypes::Preconditioner;
+                             using State          = typename CGTypes::State;
+                             using StateComp      = typename CGTypes::StateComp;
+                             using Grid           = typename CGTypes::Grid;
+                             using Value          = typename CGTypes::Value;
+                             using ConnectivityOp = typename CGTypes::ConnectivityOp;
+
                              GGrid() = delete;
                              GGrid(const geoflow::tbox::PropertyTree &ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GC_COMM &comm);
 

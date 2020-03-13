@@ -999,7 +999,7 @@ void do_terrain(const PropertyTree &ptree, GGrid &grid)
   tmp.resize(utmp_.size()-nc);
 
   // Set terrain & tmp arrays from tmp array pool:
-  for ( auto j=0; j<nc        ; j++ ) xb [j] = utmp_[j]
+  for ( auto j=0; j<nc        ; j++ ) xb [j] = utmp_[j];
   for ( auto j=0; j<tmp.size(); j++ ) tmp[j] = utmp_[j+nc];
 
   bret = GSpecTerrainFactory<MyTypes>::spec(ptree, grid, tmp, xb, bterr);

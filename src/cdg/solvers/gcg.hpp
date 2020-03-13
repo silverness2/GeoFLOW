@@ -16,7 +16,10 @@
 #include "glinop.hpp"
 #include "gcomm.hpp"
 #include "ggfx.hpp"
+#include "pdeint/lin_solver_base.hpp"
 
+using namespace geoflow::pdeint;
+using namespace std;
 
 template<typename TypePack> 
 class GCG : public LinSolverBase<TypePack>
@@ -24,6 +27,7 @@ class GCG : public LinSolverBase<TypePack>
 public:
                       enum  GCGERR         {GCGERR_NONE=0, GCGERR_NOCONVERGE, GCGERR_SOLVE, GCGERR_PRECOND,  GCGERR_BADITERNUM};
                       using Types          = TypePack;
+                      using SolverBase     = LinSolverBase<Types>;
                       using Operator       = typename Types::Operator;
                       using Preconditioner = typename Types::Preconditioner;
                       using State          = typename Types::State;
@@ -31,9 +35,13 @@ public:
                       using Grid           = typename Types::Grid;
                       using Value          = typename Types::Value;
                       using ConnectivityOp = typename Types::ConnectivityOp;
+                      using Traits         = typename SolverBase::Traits;
 
+/*
                       static_assert(std::is_same<Operator,GLinOp>::value,
                                     "Operator is of incorrect type");
+*/
+
                       static_assert(std::is_same<State,GTVector<GTVector<GFTYPE>*>>::value,
                                     "State is of incorrect type");
                       static_assert(std::is_same<StateComp,GTVector<GFTYPE>>::value,
@@ -44,19 +52,17 @@ public:
                                     "ConnectivityOp is of incorrect type");
 
 
-
                       GCG() = delete;
-                      GCG(Traits& traits, Grid& grid, ConnectivityOp& ggfx, 
-                          State& tmppack);
+                      GCG(Traits& traits, Grid& grid, ConnectivityOp& ggfx, State& tmppack);
                      ~GCG();
                       GCG(const GCG &a);
                       GCG  &operator=(const GCG &);
                    
 
-                      void         solve_impl(Operator& A, const StateComp& b, StateComp& x);
-                      void         solve_impl(Operator& A, const StateComp& b, 
+                      GINT         solve_impl(Operator& A, const StateComp& b, StateComp& x);
+                      GINT         solve_impl(Operator& A, const StateComp& b, 
                                               const StateComp& xb, StateComp& x);
-                      void         solve_impl(const StateComp& b, StateComp& x) {};
+                      GINT         solve_impl(const StateComp& b, StateComp& x) {assert(FALSE);}
                       StateComp&   get_residuals() { return residuals_; }  
                       GINT         get_iteration_count() { return iter_+1; }  
 
@@ -64,9 +70,10 @@ public:
 private:
 // Private methods:
                       void     init();
-                      GFTYPE   compute_norm(const StateComp&, State&);
+                      GFTYPE   compute_norm(StateComp&, State&);
 // Private data:
      GC_COMM           comm_;        // communicator
+     GBOOL             bInit_;       // object initialized?
      GINT              irank_;       // rank
      GINT              iter_;        // iteration number
      GINT              nprocs_;      // no. tasks

@@ -6,8 +6,8 @@
 // Copyright    : Copyright 2020. Colorado State University. All rights reserved.
 // Derived From : none.
 //==================================================================================
-#if !defined(_GTERRAINSPEC_USER_HPP)
-#define _GTERRAINSPEC_USER_HPP
+#if !defined(_GTERRAINSPECSPH_USER_HPP)
+#define _GTERRAINSPECSPH_USER_HPP
 
 #include "tbox/property_tree.hpp"
 #include "gtypes.h"
@@ -22,7 +22,7 @@ typedef GFTYPE                      Time;
 typedef GTVector<GTVector<GFTYPE>*> State;
 
 
-namespace gterrain_specbox
+namespace gterrain_specsph
 {
 
 GBOOL impl_gauss_range     (const PropertyTree& stree, GGrid &grid,  State &utmp, State &xb);

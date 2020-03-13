@@ -6,8 +6,8 @@
 // Copyright    : Copyright 2020. Colorado State University. All rights reserved.
 // Derived From : none.
 //==================================================================================
-#if !defined(_GTERRAINSPEC_USER_HPP)
-#define _GTERRAINSPEC_USER_HPP
+#if !defined(_GTERRAINSPECBOX_USER_HPP)
+#define _GTERRAINSPECBOX_USER_HPP
 
 #include "tbox/property_tree.hpp"
 #include "gtypes.h"

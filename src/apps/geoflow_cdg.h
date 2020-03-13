@@ -46,6 +46,7 @@
 #include "ginitforce_factory.hpp"
 #include "ginitbdy_factory.hpp"
 #include "gupdatebdy_factory.hpp"
+#include "gspecterrain_factory.hpp"
 #include "tbox/command_line.hpp"
 #include "tbox/property_tree.hpp"
 #include "tbox/mpixx.hpp"
@@ -79,6 +80,7 @@ struct stStateInfo {
 
 template< // Complete typepack
 typename StateType     = GTVector<GTVector<GFTYPE>*>,
+typename StateCompType = GTVector<GFTYPE>,
 typename StateInfoType = stStateInfo,
 typename GridType      = GGrid,
 typename ValueType     = GFTYPE,
@@ -90,6 +92,7 @@ typename SizeType      = GSIZET
 >
 struct TypePack {
         using State      = StateType;
+        using Statecomp  = StateCompType;
         using StateInfo  = StateInfoType;
         using Grid       = GridType;
         using Value      = ValueType;

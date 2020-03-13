@@ -16,6 +16,7 @@
 #include "ggrid.hpp"
 #include "gmass.hpp"
 #include "gcomm.hpp"
+#include "ggfx.hpp"
 #include "tbox/error_handler.hpp"
 
 using namespace std;
@@ -554,7 +555,7 @@ void GGrid::def_geom_init()
 {
    assert(gelems_.size() > 0 && "Elements not set");
    assert(gtype_ == GE_2DEMBEDDED
-       || gtype_ == GE_DEFORMED && "Invalid element type")
+       || gtype_ == GE_DEFORMED && "Invalid element type");
 
 
    GString serr = "GGrid::def_geom_init: ";
@@ -1191,21 +1192,26 @@ void GGrid::init_bc_info()
 void GGrid::add_terrain(const State &xb, State &utmp)
 {
    assert(gtype_ == GE_2DEMBEDDED
-       || gtype_ == GE_DEFORMED && "Invalid element type")
+       || gtype_ == GE_DEFORMED && "Invalid element type");
 
    assert(utmp.size() > 5);
 
   // Set up temp arrays from pool:
-  GTVector<GFTYPE> *x0=utmp[0];
-  GTVector<GFTYPE> *b =utmp[1];
-  GTVector<GTVector<GFTYPE>*> GTVector<GFTYPE> tmp(utmp.size()-3);
+  StateComp *x0=utmp[0];
+  StateComp *b =utmp[1];
+  State      tmp(utmp.size()-2);
 
-  for ( auto j=0; j<utmp.size()-3; j++ ) tmp[j] = utmp[j+3];
+  for ( auto j=0; j<tmp.size(); j++ ) tmp[j] = utmp[j+2];
 
+  assert(ggfx_ != NULLPTR && "GGFX not set");
 
   // Construct solver and weak Laplacian operator:
-  CG<TCGTypePack>   cg(*this, ggfx, tmp);
-  GHelmholtz        H(*this);
+  LinSolverBase<CGTypes>::Traits cgtraits;
+  cgtraits.maxit    = 128;
+  cgtraits.tol      = 1.0e-6;
+  cgtraits.normtype = LinSolverBase<CGTypes>::GCG_NORM_INF;
+  GCG<CGTypes>   cg(cgtraits, *this, *ggfx_, tmp);
+  GHelmholtz     H(*this);
 
   H.use_metric(FALSE); // do Laplacian in reference space
 
@@ -1226,7 +1232,7 @@ void GGrid::add_terrain(const State &xb, State &utmp)
    GSIZET ibeg, iend; // beg, end indices for global arrays
    for ( GSIZET e=0; e<gelems_.size(); e++ ) {
      ibeg  = gelems_[e]->igbeg(); iend  = gelems_[e]->igend();
-     for ( auto j=0; j<xNodes_.size(); j++ ) xNodes_[j].range(ibeg, iend)
+     for ( auto j=0; j<xNodes_.size(); j++ ) xNodes_[j].range(ibeg, iend);
      gelems_[e]->set_nodes(xNodes_);
    }
    for ( auto j=0; j<xNodes_.size(); j++ ) xNodes_[j].range_reset();

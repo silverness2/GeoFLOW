@@ -29,18 +29,18 @@ GBOOL impl_gauss_range(const PropertyTree &ptree, GGrid &grid, State &utmp, Stat
 
   assert(FALSE && "Under construction");
 
-  GString  sterrain  = ptree.getPropertyTree("terrain_type");
-
-  assert("gauss_range" == sterrain && "Invalid terrain_type");
+  GString  sterrain  = ptree.getValue<GString>("terrain_type");
 
   PropertyTree ttree     = ttree.getPropertyTree(sterrain);
   PropertyTree sphptree  = ptree.getPropertyTree("grid_sph");
 
-  GSIZET nxy = (*xnodes)[0].size();
+  GSIZET nxy;
   GFTYPE dx, dy, eps;
   GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
   GTPoint<GFTYPE>  P0(3);
   
+  nxy = (*xnodes)[0].size();
+
   std::vector<GFTYPE> x0   = ttree.getArray<GFTYPE>("x0");
   if ( GDIM == 3 ) 
   std::vector<GFTYPE> y0   = ttree.getArray<GFTYPE>("y0");
@@ -102,19 +102,19 @@ GBOOL impl_sphrange_range(const PropertyTree &ptree, GGrid &grid, State &utmp, S
   assert(FALSE && "Under construction");
 
 
-  GString  sterrain  = ptree.getPropertyTree("terrain_type");
-
-  assert("poly_range" == sterrain && "Invalid terrain_type");
+  GString  sterrain  = ptree.getValue<GString>("terrain_type");
 
   PropertyTree ttree     = ttree.getPropertyTree(sterrain);
-//PropertyTree sphptree  = ptree.getPropertyTree("grid_sph");
+  PropertyTree sphptree  = ptree.getPropertyTree("grid_sph");
 
-  GSIZET nxy = (*xnodes)[0].size();
-  GFTYPE dx, dy;
+  GSIZET nxy;
+  GFTYPE dx, dy, eps;
   GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
   GTPoint<GFTYPE>  P0(3);
   
-  std::vector<GFTYPE> pexp = ttree.getArray<GFTYPE>("exponent", 3);
+  nxy = (*xnodes)[0].size();
+
+  std::vector<GFTYPE> pexp = ttree.getArray<GFTYPE>("exponent");
   std::vector<GFTYPE> x0   = ttree.getArray<GFTYPE>("x0");
   if ( GDIM == 3 ) 
   std::vector<GFTYPE> y0   = ttree.getArray<GFTYPE>("y0");

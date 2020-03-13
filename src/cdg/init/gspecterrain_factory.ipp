@@ -18,7 +18,7 @@
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename Types>
-GBOOL GSpecTerrainFactory<Types>::spec(const PropertyTree& ptree, GGrid &grid, State &utmp, State &xb, GBOOL &bterr)
+GBOOL GSpecTerrainFactory<Types>::spec(const PropertyTree& ptree, Grid &grid, State &utmp, State &xb, GBOOL &bterr)
 {
   GBOOL         bret = FALSE;
   GString       stype;  
@@ -27,20 +27,27 @@ GBOOL GSpecTerrainFactory<Types>::spec(const PropertyTree& ptree, GGrid &grid, S
   stype = ptree.getValue<GString>("terrain_type","");
   if ( "none"   == stype 
     || ""       == stype ) {
-    bterr = FALSE;
+    bterr = FALSE;         // terrain not loaded into xb
     return TRUE;
   }
-  else if ( std::is_same<grid,GGridBox>::value ) {
+
+  // Terrain makes no sense if we don't have deformed elements,
+  // so check that here:
+  assert(grid.gtype() != GE_REGULAR && "Invalid element type");
+
+
+  if      ( std::is_same<Grid,GGridBox>::value ) {
     bret = spec_box   (ptree, grid, utmp, stype, xb);
   }
-  else if ( std::is_same<grid,GGridIcos>::value ) {
+  else if ( std::is_same<Grid,GGridIcos>::value ) {
     bret = spec_sphere(ptree, grid, utmp, stype, xb);
   }
   else {
     assert(FALSE && "Invalid specification class or grid type");
   }
 
-  if ( bret ) bterr = TRUE;
+  if ( bret ) bterr = TRUE; // terrain loaded
+
   return bret;
 
 } // end, init method
@@ -58,7 +65,7 @@ GBOOL GSpecTerrainFactory<Types>::spec(const PropertyTree& ptree, GGrid &grid, S
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename Types>
-GBOOL GSpecTerrainFactory<Types>::spec_box(const PropertyTree& ptree, GGrid &grid, State &utmp, GString stype, State &xb)
+GBOOL GSpecTerrainFactory<Types>::spec_box(const PropertyTree& ptree, Grid &grid, State &utmp, GString stype, State &xb)
 {
   GBOOL         bret    = FALSE;
 
@@ -97,7 +104,7 @@ GBOOL GSpecTerrainFactory<Types>::spec_box(const PropertyTree& ptree, GGrid &gri
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename Types>
-GBOOL GSpecTerrainFactory<Types>::spec_sphere(const PropertyTree& ptree, GGrid &grid, State &utmp, GString stype, State &xb)
+GBOOL GSpecTerrainFactory<Types>::spec_sphere(const PropertyTree& ptree, Grid &grid, State &utmp, GString stype, State &xb)
 {
   GBOOL         bret    = FALSE;
 

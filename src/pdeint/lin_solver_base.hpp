@@ -36,7 +36,7 @@ public:
         struct Traits {
           bool         bbdycond = false;    // is there a bdy condition? 
           int          maxit    = 512;      // max no. iterations
-          GNormType    normtype = GCG_NORM_INF,
+          GNormType    normtype = GCG_NORM_INF;
                                             // norm type
           float        tol      = 1e-8;     // tolerance
         };
@@ -45,14 +45,14 @@ public:
 	LinSolverBase() = delete;
 
 	/**
-	 * Constructor to initialize everything needed to do IO
+	 * Constructor to initialize everything needed to do linear solve
 	 *
 	 */
 	LinSolverBase(Traits& traits, Grid& grid, ConnectivityOp& ggfx, State& tmppack):
           traits_ (traits), grid_(&grid), ggfx_(&ggfx), tmp_(&tmppack){}
-	LinSolverBase(const LinSolverBase& I) = default;
+	LinSolverBase(const LinSolverBase& LS) = default;
 	~LinSolverBase() = default;
-	LinSolverBase& operator=(const LinSolverBase& I) = default;
+	LinSolverBase& operator=(const LinSolverBase& LS) = default;
 
 	/**
 	 * Do solve LinSolveClass x = b, for x; 
@@ -102,17 +102,17 @@ public:
              }
 
 protected:
-        virtual void solve_impl(const StateInfo& b,    
-                                StateComp&       x) = 0;
+        virtual int solve_impl(const StateComp& b,    
+                               StateComp&       x) = 0;
 
-        virtual void solve_impl(Operator&        A,
-                                const StateInfo& b,    
-                                StateComp&       x) = 0;
+        virtual int solve_impl(Operator&        A,
+                               const StateComp& b,    
+                               StateComp&       x) = 0;
 
-        virtual void solve_impl(Operator&        A,
-                                const StateInfo& b,    
-                                const StateComp& xb,    
-                                StateComp&       x) = 0;
+        virtual int solve_impl(Operator&        A,
+                               const StateComp& b,    
+                               const StateComp& xb,    
+                               StateComp&       x) = 0;
 
         Traits          traits_;
         Grid           *grid_;

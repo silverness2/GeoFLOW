@@ -27,16 +27,15 @@ class GSpecTerrainFactory
   public:
         using Types         = TypePack;
         using State         = typename Types::State;
-        using StateComp     = typename Types::StateComp;
         using Grid          = typename Types::Grid;
         using Value         = typename Types::Value;
 
 
-	static GBOOL spec(const geoflow::tbox::PropertyTree& ptree, Grid &grid, State &utmp, State &xb, GBOOL &bterr);
+	static GBOOL spec(const PropertyTree& ptree, Grid &grid, State &utmp, State &xb, GBOOL &bterr);
 
   private:
-	       GBOOL spec_box   (const geoflow::tbox::PropertyTree& ptree, Grid &grid, State &utmp, GString stype, State &xb);
-	       GBOOL spec_sphere(const geoflow::tbox::PropertyTree& ptree, Grid &grid, State &utmp, GString stype,  State &xb);
+	static GBOOL spec_box   (const PropertyTree& ptree, Grid &grid, State &utmp, GString stype, State &xb);
+	static GBOOL spec_sphere(const PropertyTree& ptree, Grid &grid, State &utmp, GString stype,  State &xb);
 
 }; // end, class GSpecTerrainFactory
 
