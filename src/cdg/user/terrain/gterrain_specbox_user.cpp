@@ -15,7 +15,7 @@ namespace gterrain_specbox {
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : impl_boxgauss_boxrange
+// METHOD : impl_gauss_range
 // DESC   : Specify terrange as a 'Gaussian mountain range' with
 //          info by ttree. Intended for box grids
 // ARGS   : ptree: main prop tree 
@@ -24,12 +24,12 @@ namespace gterrain_specbox {
 //          xb   : terrain vectors
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL impl_boxgauss_range(const PropertyTree &ptree, GGrid &grid, State &utmp, State &xb)
+GBOOL impl_gauss_range(const PropertyTree &ptree, GGrid &grid, State &utmp, State &xb)
 {
 
   GString  sterrain  = ptree.getPropertyTree("terrain_type");
 
-  assert("boxgauss_range" == sterrain && "Invalid terrain_type");
+  assert("gauss_range" == sterrain && "Invalid terrain_type");
 
   PropertyTree ttree     = ttree.getPropertyTree(sterrain);
   PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
@@ -78,12 +78,12 @@ GBOOL impl_boxgauss_range(const PropertyTree &ptree, GGrid &grid, State &utmp, S
 
   return TRUE;
 
-} // end, impl_boxgauss_range
+} // end, impl_gauss_range
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : impl_boxpoly_range
+// METHOD : impl_poly_range
 // DESC   : Specify terrange as a inverse polynomials of the form:
 //               h = h0/[(x-x0)^2/a^2 + (y-y0)^2/b^2]^(p/2)
 //          
@@ -98,7 +98,7 @@ GBOOL impl_boxrange_range(const PropertyTree &ptree, GGrid &grid, State &utmp, S
 
   GString  sterrain  = ptree.getPropertyTree("terrain_type");
 
-  assert("boxpoly_range" == sterrain && "Invalid terrain_type");
+  assert("poly_range" == sterrain && "Invalid terrain_type");
 
   PropertyTree ttree     = ttree.getPropertyTree(sterrain);
 //PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
@@ -149,13 +149,13 @@ GBOOL impl_boxrange_range(const PropertyTree &ptree, GGrid &grid, State &utmp, S
 
   return TRUE;
 
-} // end, impl_boxpoly_range
+} // end, impl_poly_range
 
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : impl_boxschar_range
+// METHOD : impl_schar_range
 // DESC   : Specify terrange as given in Schar et al., MWR 130:2459 2002:
 //               h(x) = cos^2(pi x/lambda) h'(x),
 //          where
@@ -169,12 +169,12 @@ GBOOL impl_boxrange_range(const PropertyTree &ptree, GGrid &grid, State &utmp, S
 //          xb   : terrain vectors
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL impl_boxschar_range(const PropertyTree &ptree, GGrid &grid, State &utmp, State &xb)
+GBOOL impl_schar_range(const PropertyTree &ptree, GGrid &grid, State &utmp, State &xb)
 {
 
   GString  sterrain  = ptree.getPropertyTree("terrain_type");
 
-  assert("boxschar_range" == sterrain && "Invalid terrain_type");
+  assert("schar_range" == sterrain && "Invalid terrain_type");
 
   PropertyTree ttree     = ttree.getPropertyTree(sterrain);
 //PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
@@ -211,7 +211,7 @@ GBOOL impl_boxschar_range(const PropertyTree &ptree, GGrid &grid, State &utmp, S
 
   return TRUE;
 
-} // end, impl_boxschar_range
+} // end, impl_schar_range
 
 
 

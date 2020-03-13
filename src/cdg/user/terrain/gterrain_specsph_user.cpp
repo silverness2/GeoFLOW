@@ -15,7 +15,7 @@ namespace gterrain_specsph {
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : impl_sphgauss_sphrange
+// METHOD : impl_gauss_sphrange
 // DESC   : Specify terrange as a 'Gaussian mountain range' with
 //          info by ttree. Intended for sph grids
 // ARGS   : ptree: main prop tree 
@@ -24,14 +24,14 @@ namespace gterrain_specsph {
 //          xb   : terrain vectors
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL impl_sphgauss_range(const PropertyTree &ptree, GGrid &grid, State &utmp, State &xb)
+GBOOL impl_gauss_range(const PropertyTree &ptree, GGrid &grid, State &utmp, State &xb)
 {
 
   assert(FALSE && "Under construction");
 
   GString  sterrain  = ptree.getPropertyTree("terrain_type");
 
-  assert("sphgauss_range" == sterrain && "Invalid terrain_type");
+  assert("gauss_range" == sterrain && "Invalid terrain_type");
 
   PropertyTree ttree     = ttree.getPropertyTree(sterrain);
   PropertyTree sphptree  = ptree.getPropertyTree("grid_sph");
@@ -80,12 +80,12 @@ GBOOL impl_sphgauss_range(const PropertyTree &ptree, GGrid &grid, State &utmp, S
 
   return TRUE;
 
-} // end, impl_sphgauss_range
+} // end, impl_gauss_range
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : impl_sphpoly_range
+// METHOD : impl_poly_range
 // DESC   : Specify terrange as a inverse polynomials of the form:
 //               h = h0/[(x-x0)^2/a^2 + (y-y0)^2/b^2]^(p/2)
 //           Intended for sph grids.
@@ -104,7 +104,7 @@ GBOOL impl_sphrange_range(const PropertyTree &ptree, GGrid &grid, State &utmp, S
 
   GString  sterrain  = ptree.getPropertyTree("terrain_type");
 
-  assert("sphpoly_range" == sterrain && "Invalid terrain_type");
+  assert("poly_range" == sterrain && "Invalid terrain_type");
 
   PropertyTree ttree     = ttree.getPropertyTree(sterrain);
 //PropertyTree sphptree  = ptree.getPropertyTree("grid_sph");
@@ -155,7 +155,7 @@ GBOOL impl_sphrange_range(const PropertyTree &ptree, GGrid &grid, State &utmp, S
 
   return TRUE;
 
-} // end, impl_sphpoly_range
+} // end, impl_poly_range
 
 
 
