@@ -157,6 +157,7 @@ void create_observers (EqnBasePtr &eqn_ptr, PropertyTree &ptree, GSIZET icycle, 
 void create_equation  (const PropertyTree &ptree, EqnBasePtr &pEqn);
 void create_mixer     (PropertyTree &ptree, MixBasePtr &pMixer);
 void create_basis_pool(PropertyTree &ptree, BasisBase &gbasis);
+void do_terrain       (PropertyTree &ptree);
 void init_ggfx        (PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx);
 void gresetart        (PropertyTree &ptree);
 void compare          (const PropertyTree &ptree, GGrid &, EqnBasePtr &pEqn, Time &t, State &utmp, State &ub, State &u);

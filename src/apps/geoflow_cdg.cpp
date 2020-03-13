@@ -87,6 +87,17 @@ int main(int argc, char **argv)
     EH_MESSAGE("geoflow: gather/scatter initialized.");
 
     //***************************************************
+    // Set grid terrain:
+    //***************************************************
+    EH_MESSAGE("geoflow: set grid terrain...");
+    GTimerStart("do_terrain");
+
+    do_terrain(ptree_, *grid_);
+
+    GTimerStop("do_terrain");
+    EH_MESSAGE("geoflow: terrain added.");
+
+    //***************************************************
     // Create equation set:
     //***************************************************
     EH_MESSAGE("geoflow: create equation...");
@@ -966,6 +977,21 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
   for ( GINT j=0; j<ua.size(); j++ ) delete ua[j];
 
 } // end method compare
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : do_terrain
+// DESC   : Set the user-specified terrain in grid
+// ARGS   : 
+//          ptree: main prop tree
+//          grid : grid object
+// RETURNS: none.
+//**********************************************************************************
+void do_terrain(const PropertyTree &ptree, GGrid &grid)
+{
+
+} // end of method do_terrain
 
 
 //**********************************************************************************
