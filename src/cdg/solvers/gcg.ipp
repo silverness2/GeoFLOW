@@ -110,12 +110,15 @@ void GCG<T>::init(GNIDBuffer &glob_index)
 template<typename TPack>
 GINT GCG<T>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
 {
-  GINT      n=0;
-  GFTYPE    alpha, rho, rhom;
+  GINT       iret;
+  GFTYPE     alpha, residual, rho, rhom;
   StateComp *p, *q, *r, *z;
   State      tmp(this->tmp_->size()-4);
 
   assert(this_->tmp_->size() > 5);
+
+  iret = GCGERR_NONE;
+
 
   tmp(.resize(this->tmp_->size()-4);
   p  = (*this->tmp_)[0];
@@ -126,27 +129,34 @@ GINT GCG<T>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
     tmp[j] = (*this->tmp_)[j+4];
   }
 
-  *r = b;
+ *r = b;
   A.opVec_prod(x, tmp, *p);
-  *r -= (*p);                         // initial residual
-  while ( n<traits_.maxit && residual > traits_.tol ) {
+ *r -= (*p);                         // initial residual
+  ggfx_->doOp(*r, GGFX_OP_SSUM);      // DSS r
+  iter_ = 0; residual = 1.0;
+  while ( iter_ < traits_.maxit && residual > traits_.tol ) {
 
     if ( precond_ != NULLPTR ) {      // solve Mz = r for z
-      precond_->solve(*r, *z);        // apply preconditioner
+      iret = precond_->solve(*r, *z); // apply preconditioner
+      if ( iret >  0 ) {
+        iret = GCGERR_PRECOND;
+        break;
+      }
     }
     else {
       *z = *r;                        // use identity preconditioner
     }
     rho = r->gdot(*z);
-    if ( n == 0 ) {                   // find p
-      *p = *z;
+    if ( iter_  == 0 ) {              // find p
+     *p = *z;
     }
     else {
       beta = rho / rhom;
       GMTK::saxpby(*p, beta, *z, 1.0);
     }
 
-//  A.opVec_prod(*p, tmp, *q);        // q = A p
+    A.opVec_prod(*p, tmp, *q);        // q = A p
+    ggfx_->doOp(*q, GGFX_OP_SUM);     // DSS q
     alpha = rho / (p->gdot(*q));
     GMTK::saxpby(*x, 1.0, *p, alpha); // x = x + alpha p
     GMTK::saxpby(*r, 1.0, *q,-alpha); // r = r - alpha q
@@ -155,8 +165,16 @@ GINT GCG<T>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
 
     residual = compute_norm(*r, tmp); // find norm of residual
 
+    residuals_[iter_] = residual;
+    iter_++;
+
   } // end, CG loop
     
+  if ( iret != GCGERR_NONE 
+    && iter_ >= traits_.maxit 
+    && residual > traits_.tol ) iret = GCGERR_NOCONVERGE;
+
+  return iret;
 
 } // end of method solve_impl (1)
 
