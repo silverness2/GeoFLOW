@@ -1188,7 +1188,7 @@ void GGrid::init_bc_info()
 //          utmp: tmp array pool
 // RETURNS: none.
 //**********************************************************************************
-void GGrid::add_terrain(const GTVector<GTVector<GFTYPE>*> &xb, GTVector<GTVector<GFTYPE>*> &utmp)
+void GGrid::add_terrain(const State &xb, State &utmp)
 {
    assert(gtype_ == GE_2DEMBEDDED
        || gtype_ == GE_DEFORMED && "Invalid element type")

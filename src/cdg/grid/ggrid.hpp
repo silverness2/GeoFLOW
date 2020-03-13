@@ -79,8 +79,7 @@ virtual void                 print(const GString &filename){}          // print 
         void                 grid_init();                             // initialize class
         void                 grid_init(GTMatrix<GINT> &p, 
                                GTVector<GTVector<GFTYPE>> &xnodes);   // initialize class for restart
-        void                 add_terrain(const GTVector<GFTYPE> &xb, GTVector<GTVector<GFTYPE>*> &tmp); 
-                                                                      // add terrain 
+        void                 add_terrain(const State &xb, State &tmp);// add terrain 
         void                 do_typing(); // classify into types
         GElemList           &elems() { return gelems_; }              // get elem list
         GSIZET               nelems() { return gelems_.size(); }      // local num elems
