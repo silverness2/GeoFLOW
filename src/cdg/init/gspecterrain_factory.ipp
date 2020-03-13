@@ -14,18 +14,20 @@
 //          grid   : grid object
 //          utmp   : tmp arrays
 //          xb     : terrain coordinates (of size of a State vector)
+//          bterr  : flag telling if terrain was loaded
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename Types>
-GBOOL GSpecTerrainFactory<Types>::spec(const PropertyTree& ptree, GGrid &grid, State &utmp, State &xb)
+GBOOL GSpecTerrainFactory<Types>::spec(const PropertyTree& ptree, GGrid &grid, State &utmp, State &xb, GBOOL &bterr)
 {
-  GBOOL         bret    = FALSE;
+  GBOOL         bret = FALSE;
   GString       stype;  
 
   // Get type of initialization: by-name or by-block:
   stype = ptree.getValue<GString>("terrain_type","");
   if ( "none"   == stype 
     || ""       == stype ) {
+    bterr = FALSE;
     return TRUE;
   }
   else if ( std::is_same<grid,GGridBox>::value ) {
@@ -38,6 +40,7 @@ GBOOL GSpecTerrainFactory<Types>::spec(const PropertyTree& ptree, GGrid &grid, S
     assert(FALSE && "Invalid specification class or grid type");
   }
 
+  if ( bret ) bterr = TRUE;
   return bret;
 
 } // end, init method

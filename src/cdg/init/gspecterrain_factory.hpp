@@ -32,7 +32,7 @@ class GSpecTerrainFactory
         using Value         = typename Types::Value;
 
 
-	static GBOOL spec(const geoflow::tbox::PropertyTree& ptree, Grid &grid, State &utmp, State &xb);
+	static GBOOL spec(const geoflow::tbox::PropertyTree& ptree, Grid &grid, State &utmp, State &xb, GBOOL &bterr);
 
   private:
 	       GBOOL spec_box   (const geoflow::tbox::PropertyTree& ptree, Grid &grid, State &utmp, GString stype, State &xb);
