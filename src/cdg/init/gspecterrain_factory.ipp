@@ -60,7 +60,7 @@ GBOOL GSpecTerrainFactory<Types>::spec(const PropertyTree& ptree, Grid &grid, St
 // ARGS   : ptree  : main property tree
 //          grid   : grid object
 //          utmp   : tmp arrays
-//          stype  : terrain type name
+//          stype  : terrain type block name
 //          xb     : terrain coordinates
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
@@ -68,19 +68,18 @@ template<typename Types>
 GBOOL GSpecTerrainFactory<Types>::spec_box(const PropertyTree& ptree, Grid &grid, State &utmp, GString stype, State &xb)
 {
   GBOOL         bret    = FALSE;
+  GString       sname;
+  PropertyTree  blktree = ptree.getPropertyTree(stype);
 
-  if      ( "none"          == stype 
-         || ""              == stype ) {
-    return TRUE;
+  sname = blktree.getValue<GString>("name");
+  if      ( "boxgauss_range"   == sname ) {
+    bret = gterrain_specbox::impl_gauss_range   (ptree, stype, grid, utmp, xb);
   }
-  else if ( "gauss_range"   == stype ) {
-    bret = gterrain_specbox::impl_gauss_range   (ptree, grid, utmp, xb);
+  else if ( "boxpoly_range"    == sname ) {
+    bret = gterrain_specbox::impl_poly_range    (ptree, stype, grid, utmp, xb);
   }
-  else if ( "poly_range"    == stype ) {
-    bret = gterrain_specbox::impl_poly_range    (ptree, grid, utmp, xb);
-  }
-  else if ( "schar_range"   == stype ) {
-    bret = gterrain_specbox::impl_schar_range   (ptree, grid, utmp, xb);
+  else if ( "boxschar_range"   == sname ) {
+    bret = gterrain_specbox::impl_schar_range   (ptree, stype, grid, utmp, xb);
   }
   else                                        {
     assert(FALSE && "Terrain specification method unknown");
@@ -99,7 +98,7 @@ GBOOL GSpecTerrainFactory<Types>::spec_box(const PropertyTree& ptree, Grid &grid
 // ARGS   : ptree  : main property tree
 //          grid   : grid object
 //          utmp   : tmp arrays
-//          stype  : terrain type name
+//          stype  : terrain type block name
 //          xb     : terrain coordinates
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
@@ -107,16 +106,16 @@ template<typename Types>
 GBOOL GSpecTerrainFactory<Types>::spec_sphere(const PropertyTree& ptree, Grid &grid, State &utmp, GString stype, State &xb)
 {
   GBOOL         bret    = FALSE;
+  GString       sname;
+  PropertyTree  blktree = ptree.getPropertyTree(stype);
 
-  if      ( "none"          == stype 
-         || ""              == stype ) {
-    return TRUE;
+  sname = blktree.getValue<GString>("name");
+
+  if      ( "sphgauss_range"   == sname ) {
+    bret = gterrain_specsph::impl_gauss_range   (ptree, stype, grid, utmp, xb);
   }
-  else if ( "gauss_range"   == stype ) {
-    bret = gterrain_specsph::impl_gauss_range   (ptree, grid, utmp, xb);
-  }
-  else if ( "poly_range"    == stype ) {
-    bret = gterrain_specsph::impl_poly_range    (ptree, grid, utmp, xb);
+  else if ( "sphpoly_range"    == sname ) {
+    bret = gterrain_specsph::impl_poly_range    (ptree, stype, grid, utmp, xb);
   }
   else                                        {
     assert(FALSE && "Terrain specification method unknown");
