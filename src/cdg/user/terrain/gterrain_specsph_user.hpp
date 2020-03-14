@@ -25,8 +25,8 @@ typedef GTVector<GTVector<GFTYPE>*> State;
 namespace gterrain_specsph
 {
 
-GBOOL impl_gauss_range     (const PropertyTree& stree, GGrid &grid,  State &utmp, State &xb);
-GBOOL impl_poly_range      (const PropertyTree& stree, GGrid &grid,  State &utmp, State &xb);
+GBOOL impl_gauss_range     (const PropertyTree& ptree, GString sblk, GGrid &grid,  State &utmp, State &xb);
+GBOOL impl_poly_range      (const PropertyTree& ptree, GString sblk, GGrid &grid,  State &utmp, State &xb);
 };
 
 #endif

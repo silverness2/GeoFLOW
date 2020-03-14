@@ -20,16 +20,15 @@ namespace gterrain_specbox {
 //          info by ttree. Intended for box grids
 // ARGS   : ptree: main prop tree 
 //          grid : grid
+//          sblk : data block name
 //          utmp : tmp arrays
 //          xb   : terrain vectors
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL impl_gauss_range(const PropertyTree &ptree, GGrid &grid, State &utmp, State &xb)
+GBOOL impl_gauss_range(const PropertyTree &ptree, GString sblk, GGrid &grid, State &utmp, State &xb)
 {
 
-  GString  sterrain  = ptree.getValue<GString>("terrain_type");
-
-  PropertyTree ttree     = ttree.getPropertyTree(sterrain);
+  PropertyTree ttree     = ttree.getPropertyTree(sblk);
   PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
 
   GSIZET nxy;
@@ -88,18 +87,16 @@ GBOOL impl_gauss_range(const PropertyTree &ptree, GGrid &grid, State &utmp, Stat
 //               h = h0/[(x-x0)^2/a^2 + (y-y0)^2/b^2]^(p/2)
 //          
 // ARGS   : ptree: main prop tree 
+//          sblk : data block name
 //          grid : grid
 //          utmp : tmp arrays
 //          xb   : terrain vectors
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL impl_boxrange_range(const PropertyTree &ptree, GGrid &grid, State &utmp, State &xb)
+GBOOL impl_boxrange_range(const PropertyTree &ptree, GString sblk, GGrid &grid, State &utmp, State &xb)
 {
 
-  GString  sterrain  = ptree.getValue<GString>("terrain_type");
-
-
-  PropertyTree ttree     = ttree.getPropertyTree(sterrain);
+  PropertyTree ttree     = ttree.getPropertyTree(sblk);
   PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
 
   GSIZET nxy;
@@ -165,17 +162,17 @@ GBOOL impl_boxrange_range(const PropertyTree &ptree, GGrid &grid, State &utmp, S
 //          Currently works only for 2D.
 //          
 // ARGS   : ptree: main prop tree 
+//          sblk : data block name
 //          grid : grid
 //          utmp : tmp arrays
 //          xb   : terrain vectors
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL impl_schar_range(const PropertyTree &ptree, GGrid &grid, State &utmp, State &xb)
+GBOOL impl_schar_range(const PropertyTree &ptree, GString sblk, GGrid &grid, State &utmp, State &xb)
 {
 
-  GString  sterrain  = ptree.getValue<GString>("terrain_type");
 
-  PropertyTree ttree     = ttree.getPropertyTree(sterrain);
+  PropertyTree ttree     = ttree.getPropertyTree(sblk);
   PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
 
   GSIZET nxy;

@@ -19,19 +19,18 @@ namespace gterrain_specsph {
 // DESC   : Specify terrange as a 'Gaussian mountain range' with
 //          info by ttree. Intended for sph grids
 // ARGS   : ptree: main prop tree 
+//          sblk : data block name
 //          grid : grid
 //          utmp : tmp arrays
 //          xb   : terrain vectors
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL impl_gauss_range(const PropertyTree &ptree, GGrid &grid, State &utmp, State &xb)
+GBOOL impl_gauss_range(const PropertyTree &ptree, GString sblk, GGrid &grid, State &utmp, State &xb)
 {
 
   assert(FALSE && "Under construction");
 
-  GString  sterrain  = ptree.getValue<GString>("terrain_type");
-
-  PropertyTree ttree     = ttree.getPropertyTree(sterrain);
+  PropertyTree ttree     = ttree.getPropertyTree(sblk);
   PropertyTree sphptree  = ptree.getPropertyTree("grid_sph");
 
   GSIZET nxy;
@@ -91,20 +90,18 @@ GBOOL impl_gauss_range(const PropertyTree &ptree, GGrid &grid, State &utmp, Stat
 //           Intended for sph grids.
 //          
 // ARGS   : ptree: main prop tree 
+//          sblk : data block name
 //          grid : grid
 //          utmp : tmp arrays
 //          xb   : terrain vectors
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL impl_sphrange_range(const PropertyTree &ptree, GGrid &grid, State &utmp, State &xb)
+GBOOL impl_sphrange_range(const PropertyTree &ptree, GString sblk, GGrid &grid, State &utmp, State &xb)
 {
 
   assert(FALSE && "Under construction");
 
-
-  GString  sterrain  = ptree.getValue<GString>("terrain_type");
-
-  PropertyTree ttree     = ttree.getPropertyTree(sterrain);
+  PropertyTree ttree     = ttree.getPropertyTree(sblk);
   PropertyTree sphptree  = ptree.getPropertyTree("grid_sph");
 
   GSIZET nxy;
