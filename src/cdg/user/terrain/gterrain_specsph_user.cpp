@@ -30,7 +30,7 @@ GBOOL impl_gauss_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
 
   assert(FALSE && "Under construction");
 
-  PropertyTree ttree     = ttree.getPropertyTree(sblk);
+  PropertyTree ttree     = ptree.getPropertyTree(sblk);
   PropertyTree sphptree  = ptree.getPropertyTree("grid_sph");
 
   GSIZET nxy;
@@ -101,7 +101,7 @@ GBOOL impl_sphrange_range(const PropertyTree &ptree, GString sblk, GGrid &grid, 
 
   assert(FALSE && "Under construction");
 
-  PropertyTree ttree     = ttree.getPropertyTree(sblk);
+  PropertyTree ttree     = ptree.getPropertyTree(sblk);
   PropertyTree sphptree  = ptree.getPropertyTree("grid_sph");
 
   GSIZET nxy;

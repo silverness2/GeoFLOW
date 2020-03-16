@@ -28,7 +28,7 @@ namespace gterrain_specbox {
 GBOOL impl_gauss_range(const PropertyTree &ptree, GString sblk, GGrid &grid, State &utmp, State &xb)
 {
 
-  PropertyTree ttree     = ttree.getPropertyTree(sblk);
+  PropertyTree ttree     = ptree.getPropertyTree(sblk);
   PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
 
   GSIZET nxy;
@@ -96,7 +96,7 @@ GBOOL impl_gauss_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
 GBOOL impl_boxrange_range(const PropertyTree &ptree, GString sblk, GGrid &grid, State &utmp, State &xb)
 {
 
-  PropertyTree ttree     = ttree.getPropertyTree(sblk);
+  PropertyTree ttree     = ptree.getPropertyTree(sblk);
   PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
 
   GSIZET nxy;
@@ -172,7 +172,7 @@ GBOOL impl_schar_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
 {
 
 
-  PropertyTree ttree     = ttree.getPropertyTree(sblk);
+  PropertyTree ttree     = ptree.getPropertyTree(sblk);
   PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
 
   GSIZET nxy;
