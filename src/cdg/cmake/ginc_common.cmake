@@ -12,7 +12,6 @@ set(CDG_INC
           ${GHOME}/include
           ${GHOME}/blas
           ${GHOME}/comm
-          ${GHOME}/exec
           ${GHOME}/grid
           ${GHOME}/init
           ${GHOME}/io

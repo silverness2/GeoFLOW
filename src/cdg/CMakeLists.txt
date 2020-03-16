@@ -42,7 +42,7 @@ target_compile_features(cdg
 # 
 target_compile_options(cdg 
 	PRIVATE
-		"$<$<CXX_COMPILER_ID:AppleClang>:-Wno-comment>"
+#		"$<$<CXX_COMPILER_ID:AppleClang>:-Wno-comment>"
 	)
 
 #
