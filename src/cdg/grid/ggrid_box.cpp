@@ -952,19 +952,24 @@ void GGridBox::config_bdy(const PropertyTree &ptree,
     buniform [j] = bdyclass == "uniform" ? TRUE : FALSE;
     confmthd [j] = bdytree.getValue<GString>("bdy_config_method","");
     bperiodic    = bperiodic || bdytype[j] == GBDY_PERIODIC;
-    assert(bperiodic && buniform[j] && "GBDY_PERIODIC boundary must have bdy_class = uniform");
+cout << "j=" << j << "uniform=" << buniform[j] << " bdytypye=" << bdytype[j] << endl;
+    if ( bperiodic ) {
+      assert(buniform[j] && "GBDY_PERIODIC boundary must have bdy_class = uniform");
+    }
   }
 
-  if ( ndim_ == 2 ) {
-    assert( (  (bdytype[0] == GBDY_PERIODIC && bdytype[2] == GBDY_PERIODIC)
-           ||  (bdytype[3] == GBDY_PERIODIC && bdytype[1] == GBDY_PERIODIC) )
-           &&  "Incompatible GBDY_PERIODIC boundary specification");
-  }
-  else if ( ndim_ == 3 ) {
-    assert( (  (bdytype[0] == GBDY_PERIODIC && bdytype[2] == GBDY_PERIODIC)
-           ||  (bdytype[3] == GBDY_PERIODIC && bdytype[1] == GBDY_PERIODIC)  
-           ||  (bdytype[4] == GBDY_PERIODIC && bdytype[5] == GBDY_PERIODIC) )
-           &&  "Incompatible GBDY_PERIODIC boundary specification");
+  if ( bperiodic ) {
+    if ( ndim_ == 2 ) {
+      assert( (  (bdytype[0] == GBDY_PERIODIC && bdytype[2] == GBDY_PERIODIC)
+             ||  (bdytype[3] == GBDY_PERIODIC && bdytype[1] == GBDY_PERIODIC) )
+             &&  "Incompatible GBDY_PERIODIC boundary specification");
+    }
+    else if ( ndim_ == 3 ) {
+      assert( (  (bdytype[0] == GBDY_PERIODIC && bdytype[2] == GBDY_PERIODIC)
+             ||  (bdytype[3] == GBDY_PERIODIC && bdytype[1] == GBDY_PERIODIC)  
+             ||  (bdytype[4] == GBDY_PERIODIC && bdytype[5] == GBDY_PERIODIC) )
+             &&  "Incompatible GBDY_PERIODIC boundary specification");
+    }
   }
        
   // Handle non-uniform (user-configured) bdy types first;
