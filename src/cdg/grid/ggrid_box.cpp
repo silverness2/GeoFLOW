@@ -958,7 +958,6 @@ void GGridBox::config_bdy(const PropertyTree &ptree,
     buniform [j] = bdyclass == "uniform" ? TRUE : FALSE;
     confmthd [j] = bdytree.getValue<GString>("bdy_config_method","");
     bperiodic    = bperiodic || bdytype[j] == GBDY_PERIODIC;
-cout << "j=" << j << "uniform=" << buniform[j] << " bdytypye=" << bdytype[j] << endl;
     if ( bperiodic ) {
       assert(buniform[j] && "GBDY_PERIODIC boundary must have bdy_class = uniform");
     }
@@ -978,6 +977,7 @@ cout << "j=" << j << "uniform=" << buniform[j] << " bdytypye=" << bdytype[j] << 
     }
   }
        
+cout << "GGridBox::config_bdy: 0" << endl;
   // Handle non-uniform (user-configured) bdy types first;
   // Note: If "uniform" not specified for a boundary, then
   //       user MUST supply a method to configure it.
@@ -1400,6 +1400,7 @@ void GGridBox::do_face_normals2d()
 void GGridBox::do_face_normals3d()
 {
 
+  assert(FALSE);
 
 } // end, method do_bdy_normals3d
 
@@ -1434,7 +1435,6 @@ void GGridBox::do_bdy_normals()
 //**********************************************************************************
 void GGridBox::do_bdy_normals2d()
 {
-
 } // end, method do_bdy_normals2d
 
 
@@ -1447,6 +1447,5 @@ void GGridBox::do_bdy_normals2d()
 //**********************************************************************************
 void GGridBox::do_bdy_normals3d()
 {
-
 } // end, method do_bdy_normals3d
 
