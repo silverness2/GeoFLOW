@@ -22,6 +22,9 @@ GBOOL GSpecTerrainFactory<Types>::spec(const PropertyTree& ptree, Grid &grid, St
 {
   GBOOL         bret = FALSE;
   GString       stype;  
+  GGridBox     *box = dynamic_cast<GGridBox*>(&grid);
+  GGridIcos    *icos= dynamic_cast<GGridIcos*>(&grid);
+
 
   // Get type of initialization: by-name or by-block:
   stype = ptree.getValue<GString>("terrain_type","");
@@ -36,10 +39,10 @@ GBOOL GSpecTerrainFactory<Types>::spec(const PropertyTree& ptree, Grid &grid, St
   assert(grid.gtype() != GE_REGULAR && "Invalid element type");
 
 
-  if      ( std::is_same<Grid,GGridBox>::value ) {
+  if      ( box ) {
     bret = spec_box   (ptree, grid, utmp, stype, xb);
   }
-  else if ( std::is_same<Grid,GGridIcos>::value ) {
+  else if ( icos ) {
     bret = spec_sphere(ptree, grid, utmp, stype, xb);
   }
   else {
