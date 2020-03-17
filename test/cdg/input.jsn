@@ -1,0 +1,178 @@
+{ 
+  "exp_order"         : [4, 4, 4],
+  "exp_order_type"    : "constant",
+  "grid_type"         : "grid_box",
+  "pde_name"          : "pde_burgers",
+  "init_block"        : "init_icosgauss",
+  "restart_index"     : 0,
+  "benchmark"         : false,
+  "observer_list"     : ["gio_observer", "global_diag_basic"],
+  "IO_implementation" : "gio",
+  "terrain_type"      : "myboxterrain",
+  "myboxterrain": {
+    "name"    : "boxgauss_range",
+    "x0"      : [0.5],
+    "y0"      : [0.0],
+    "xsigma"  : [0.1],
+    "ysigma"  : [0.1],
+    "h0"      : [0.15]
+  },
+  "poly_test": {
+    "xpoly" : 2,
+    "ypoly" : 4,
+    "zpoly" : 0,
+    "excise_angle" : 0.01,
+    "u0"    : 1.0
+  },
+  "init_lump": {
+    "x0"     : 0.5,
+    "y0"     : 0.5,
+    "z0"     : 0.5,
+    "sigma"  : 0.05,
+    "u0"     : 1.0,
+    "adv_vel": [1.0, 0.0, 0.0]
+  },
+  "init_icosbell": {
+    "latitude0"  : 0.0,
+    "longitude0" :-30.0,
+    "sigma"      : 0.15,
+    "alpha"      : 20.0,
+    "u0"         : 1.0
+  },
+  "init_icosgauss": {
+    "latitude0"  : [0.0, -40.0], 
+    "longitude0" : [-90.0,-90.0],
+    "sigma"      : [0.25, 0.25],
+    "c0"         : [1.0,1.0],
+    "alpha"      : 0.0,
+    "u0"         : 1.0,
+    "nlumps"     : 1
+  },
+  "init_icosdefgauss": {
+    "latitude0"  : 60.0,
+    "longitude0" :180.0,
+    "latitude1"  :-60.0,
+    "longitude1" :180.0,
+    "sigma"      : 0.4472,
+    "u0"         : 2.4,
+    "Tper"       : 5.0
+  },
+  "init_nwave": {
+    "x0"    : 0.5,
+    "y0"    : 0.5,
+    "z0"    : 0.5,
+    "ULparm": 1.0,
+    "Re"    : 6.0,
+    "t0"    : 0.01,
+    "planar": false,
+    "prop_dir": [1.0, 2.0, 0.0]
+  },
+  "pde_burgers": {
+    "doheat"      : false,
+    "bpureadv"    : true,
+    "bconserved"  : false,
+    "use_forcing" : false,
+    "forcing_comp": [0, 1, 2]
+  },
+  "grid_icos": {
+    "grid_name" : "grid_icos",
+    "ilevel"    : 0,
+    "radius"    : 1.0,
+    "num_elems" : [10, 10, 10]
+  },
+  "grid_sphere" : {
+    "grid_name" : "grid_sphere",
+    "radiusi"   : 1.0,
+    "radiuso"   : 2.0,
+    "num_elems" : [10, 10, 10],
+    "bdy_inner": "GBDY_DIRICHLET",
+    "bdy_outer": "GBDY_SPONGE"
+  },
+  "my_dirichlet": {
+    "bdy_class"        : "uniform",
+    "base_type"        : "GBDY_DIRICHLET"
+  },
+  "fully_periodic": {
+    "bdy_class"        : "uniform",
+    "base_type"        : "GBDY_PERIODIC"
+  },
+  "grid_box": {
+    "grid_name" : "grid_box",
+    "xyz0"      : [1.0, 1.0, 1.0],
+    "delxyz"    : [1.0, 1.0, 1.0],
+    "num_elems" : [4, 4, 1],
+    "bdy_x_0"   : "my_dirichlet",
+    "bdy_x_1"   : "my_dirichlet",
+    "bdy_y_0"   : "my_dirichlet",
+    "bdy_y_1"   : "my_dirichlet",
+    "bdy_z_0"   : "my_dirichlet",
+    "bdy_z_1"   : "my_dirichlet"
+  },
+  "stepper_props": {
+    "stepping_method"  : "GSTEPPER_EXRK",
+    "time_deriv_order" : 4,
+    "extrap_order"     : 2,
+    "variable_dt"      : false,
+    "courant"          : 0.04 
+  },
+  "dissipation_traits": {
+    "nu"      : 5.0e-2,
+    "nu_type" : "constant"
+  },
+  "gio": {
+    "ivers"   : 0,
+    "multivar" : false,
+    "io_type"  : "POSIX",
+    "wtime"    : 6,
+    "wtask"    : 5,
+    "wfile"    : 2048
+  },
+  "curlv": {
+    "state_index" : [0, 1, 2],
+    "names"       : ["omegax", "omegay", "omegaz"],
+    "mathop"      : "curl"
+  },
+  "curlvmag": {
+    "state_index" : [0, 1, 2],
+    "names"       : ["omega"],
+    "mathop"      : "curlmag"
+  },
+  "vmag": {
+    "state_index" : [0, 1, 2],
+    "names"       : ["vmag"],
+    "mathop"      : "vmag"
+  },
+  "gradv": {
+    "state_index" : [0],
+    "names"       : ["gradx", "grady", "gradz"],
+    "mathop"      : "grad"
+  },
+  "gio_observer": {
+    "observer_name"      : "gio_observer",
+    "idir"               : "outs",
+    "odir"               : "outs",
+    "cadence_type"       : "cycle",
+    "cycle_interval"     : 1,
+    "time_interval"      : 0.01,
+    "state_index"        : [0],
+    "state_names"        : ["u1", "u2", "u3"],
+    "grid_names"         : ["xgrid", "ygrid", "zgrid"],
+    "agg_state_name"     : "u",
+    "agg_grid_name "     : "grid",
+    "derived_quantities" : ["curlvmag"]
+  },
+  "global_diag_basic": {
+    "observer_name"      : "global_diag_basic",
+    "idir"               : ".",
+    "odir"               : ".",
+    "interval_freq_fact" : 10.0,
+    "treat_as_1d"        : false
+  },
+  "time_integration": {
+    "integ_type" : "cycle",
+    "time_end"   : 1.001,
+    "cycle_end"  : 10,
+    "dt"         : 1.0e-6
+  }
+
+}
