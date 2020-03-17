@@ -173,6 +173,8 @@ void GShapeFcn_hostd<T>::Ni_2d(GTVector<GINT> &ishape,
                           GTVector<GTVector<T>*> &xi, GTVector<T> &N)
 {
   
+  d_.resizem(xi.size());
+
   for ( GSIZET j=0; j<xi.size(); j++ ) {
     d_[j].resize(xi[j]->size());
     this->gbasis_[j]->evalBasis(ishape[j], *xi[j], d_[j]);
@@ -213,6 +215,8 @@ template<typename T>
 void GShapeFcn_hostd<T>::Ni_3d(GTVector<GINT> &ishape, 
                           GTVector<GTVector<T>*> &xi, GTVector<T> &N)
 {
+  d_.resizem(xi.size());
+
   for ( GSIZET j=0; j<xi.size(); j++ ) {
     d_[j].resize(xi[j]->size());
     this->gbasis_[0]->evalBasis(ishape[j], *xi[j], d_[j]);
@@ -322,7 +326,9 @@ void GShapeFcn_hostd<T>::dNdXi_2d(GTVector<GINT> &ishape, GINT jder,
 {
   assert(jder>0 && jder<=(GDIM+1) && "Invalid matrix element");
 
-  for ( GSIZET j=0; j<GDIM+1; j++ ) { 
+  d_.resizem(xi.size());
+
+  for ( GSIZET j=0; j<xi.size(); j++ ) {
     d_[j].resize(xi[j]->size());
     if ( j == (jder-1)) {
       this->gbasis_[j]->evalDBasis(ishape[j], *xi[j], d_[j]);
@@ -366,6 +372,8 @@ void GShapeFcn_hostd<T>::dNdXi_3d(GTVector<GINT> &ishape, GINT jder,
                                GTVector<T> &dNdxi)
 {
   assert(jder>0 && jder>xi.size() && "Invalid matrix element");
+
+  d_.resizem(xi.size());
 
   for ( GSIZET j=0; j<xi.size(); j++ ) {
     d_[j].resize(xi[j]->size());
