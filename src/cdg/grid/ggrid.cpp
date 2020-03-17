@@ -416,6 +416,7 @@ void GGrid::grid_init()
   do_typing(); // do element-typing check
   GTimerStop("GGrid::grid_init: do_typing");
 
+
   // Have elements been set yet?
   assert(gelems_.size() > 0 && "Elements not set");
 
@@ -437,6 +438,7 @@ void GGrid::grid_init()
 
   init_bc_info();
   GTimerStop("GGrid::grid_init: init_bc_info");
+
 
   GTimerStart("GGrid::grid_init: def_geom_init");
   if ( gtype_ == GE_2DEMBEDDED || gtype_  == GE_DEFORMED ) {
@@ -627,7 +629,6 @@ void GGrid::def_geom_init()
    faceJac_.range_reset();
 
    do_normals();
-
 
    GComm::Synch(comm_);
    
