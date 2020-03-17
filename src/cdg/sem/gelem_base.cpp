@@ -36,6 +36,7 @@
 #include "gshapefcn_embed.hpp"
 #include "gshapefcn_hostd.hpp"
 #include "gmtk.hpp"
+#include "tbox/error_handler.hpp"
 
 using namespace std;
 
@@ -920,6 +921,7 @@ void GElem_base::dogeom2d(GTMatrix<GTVector<GFTYPE>> &rij, GTMatrix<GTVector<GFT
   GTVector<GFTYPE> dNi(nnodes);// shape function derivative
   GTVector<GFTYPE> tmp(nnodes);// tmp space
   GTVector<GINT>   I(2);       // tensor product index
+
 
   // Can have 'embedded' coords, so # Cartesian coordinates may be > GDIM;
   // but the total number of node points in each metrix element will 
