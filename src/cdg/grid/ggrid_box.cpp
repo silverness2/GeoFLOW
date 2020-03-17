@@ -47,9 +47,15 @@ lshapefcn_             (NULLPTR)
   nprocs_ = GComm::WorldSize(comm_);
 
   GString gname   = ptree.getValue<GString>("grid_type");
+  GString tname   = ptree.getValue<GString>("terrain_type");
   assert(gname == "grid_box");
   geoflow::tbox::PropertyTree gridptree = ptree.getPropertyTree(gname);
 
+  // If terrain is being used, elements may not be
+  // GE_REGULAR:
+  this->gtype_ = GE_REGULAR;
+  if ( "none" != tname 
+   &&  ""     != tname ) this->gtype_ = GE_DEFORMED;
 
   gbasis_.resize(GDIM);
   gbasis_ = b;
@@ -270,7 +276,7 @@ void GGridBox::do_elems2d()
   GLONG  bcurr = 0; // current global bdy index
 
   for ( auto i=0; i<qmesh_.size(); i++ ) { // for each quad in irank's mesh
-    pelem = new GElem_base(GE_REGULAR, gbasis_);
+    pelem = new GElem_base(this->gtype_, gbasis_);
     xNodes  = &pelem->xNodes();  // node spatial data
     xiNodes = &pelem->xiNodes(); // node ref interval data
     Ni.resize(pelem->nnodes()); // tensor product shape function
@@ -380,7 +386,7 @@ void GGridBox::do_elems3d()
   GLONG  bcurr = 0; // current global bdy index
   for ( auto i=0; i<hmesh_.size(); i++ ) { // for each hex in irank's mesh
 
-    pelem = new GElem_base(GE_REGULAR, gbasis_);
+    pelem = new GElem_base(this->gtype_, gbasis_);
     xNodes  = &pelem->xNodes();  // node spatial data
     xiNodes = &pelem->xiNodes(); // node ref interval data
     Ni.resize(pelem->nnodes()); // tensor product shape function
@@ -494,7 +500,7 @@ void GGridBox::do_elems2d(GTMatrix<GINT> &p,
       gb[j] = gbasis_[iwhere];
       nvnodes *= (p(i,j) + 1);
     }
-    pelem = new GElem_base(GE_REGULAR, gb);
+    pelem = new GElem_base(this->gtype_, gb);
     xNodes  = &pelem->xNodes();  // node spatial data
     xiNodes = &pelem->xiNodes(); // node ref interval data
     bdy_ind = &pelem->bdy_indices(); // get bdy indices data member
@@ -608,7 +614,7 @@ void GGridBox::do_elems3d(GTMatrix<GINT> &p,
       nvnodes *= (p(i,j) + 1);
     }    
 
-    pelem = new GElem_base(GE_REGULAR, gbasis_);
+    pelem = new GElem_base(this->gtype_, gbasis_);
     xNodes  = &pelem->xNodes();  // node spatial data
     xiNodes = &pelem->xiNodes(); // node ref interval data
     bdy_ind = &pelem->bdy_indices(); // get bdy indices data member
