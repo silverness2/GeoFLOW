@@ -96,7 +96,7 @@ GBOOL impl_gauss_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
 //          xb   : terrain vectors
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL impl_sphrange_range(const PropertyTree &ptree, GString sblk, GGrid &grid, State &utmp, State &xb)
+GBOOL impl_poly_range(const PropertyTree &ptree, GString sblk, GGrid &grid, State &utmp, State &xb)
 {
 
   assert(FALSE && "Under construction");

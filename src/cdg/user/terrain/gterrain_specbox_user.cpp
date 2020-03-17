@@ -93,7 +93,7 @@ GBOOL impl_gauss_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
 //          xb   : terrain vectors
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL impl_boxrange_range(const PropertyTree &ptree, GString sblk, GGrid &grid, State &utmp, State &xb)
+GBOOL impl_poly_range(const PropertyTree &ptree, GString sblk, GGrid &grid, State &utmp, State &xb)
 {
 
   PropertyTree ttree     = ptree.getPropertyTree(sblk);
