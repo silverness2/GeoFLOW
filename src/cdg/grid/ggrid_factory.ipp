@@ -110,7 +110,7 @@ void GGridFactory<TypePack>::read_grid(const geoflow::tbox::PropertyTree& ptree,
 
   stateinfo.sttype   = 0; // grid variable type
   stateinfo.svars.resize(obstraits.grid_names.size());
-  stateinfo.svars  = obstraits.grid_names;
+  stateinfo.svars    = obstraits.grid_names;
   stateinfo.idir     = obstraits.idir;
   stateinfo.odir     = obstraits.odir;
 //stateinfo.index    = itindex; // not required for grid
