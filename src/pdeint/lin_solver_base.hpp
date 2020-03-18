@@ -24,8 +24,8 @@ class LinSolverBase {
 
 public:
         enum GNormType        {GCG_NORM_INF=0, GCG_NORM_EUC , GCG_NORM_L2 , GCG_NORM_L1, GCG_NORM_NONE};
-        static const constexpr char* const
-            cGNormType[]     ={"GCG_NORM_INF","GCG_NORM_EUC","GCG_NORM_L2","GCG_NORM_L1","GCG_NORM_NONE"};
+        // Note: if GNormType is modified, must also modify
+        //       static str2normtype method!
         using Types          = TypePack;
 	using Operator       = typename Types::Operator;
 	using Preconditioner = typename Types::Operator;
@@ -105,7 +105,7 @@ public:
 
         /**
 	 * str2normtype: get GNormType from string
-	 *
+	 * @param[in] : snorm
 	 */
         static GNormType str2normtype(std::string snorm);
 
