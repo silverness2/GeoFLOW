@@ -49,6 +49,24 @@ void curl(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &u, const GINT idir,
      curlc = 0.0; 
   }
 
+  // Handle 2-d case:
+  else if ( GDIM == 2 && u.size() >= GDIM && grid.gtype() != GE_2DEMBEDDED ) {
+    switch (idir) {
+      case 1:
+      case 2:
+        curlc = 0.0;
+        break;
+      case 3:
+        grid.deriv(*u[1], 1, *tmp[0], curlc);
+        grid.deriv(*u[0], 2, *tmp[0], *tmp[1]);
+        curlc -= *tmp[1];
+        break;
+      default:
+        assert( FALSE && "Invalid component specified");
+        break;
+    }
+  }
+
   // Handle 2.5-d or 2d-3c case:
   else if ( GDIM == 2 && u.size() > GDIM && grid.gtype() != GE_2DEMBEDDED ) {
     switch (idir) {
@@ -3461,7 +3479,7 @@ template<>
 void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GString sop, GTVector<GTVector<GFTYPE>*> &utmp, GTVector<GTVector<GFTYPE>*> &uout, GTVector<GINT> &iuout)
 {
 
-  GINT                        nxy;
+  GINT                        ib, nxy;
   GTVector<GTVector<GFTYPE>*> tmp(3);
 
   if      ( "div"  == sop ) { // operates on a vector field...
@@ -3469,7 +3487,7 @@ void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GStrin
     nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
     assert(utmp .size() >= 1   && "Insufficient temp space");
     assert(uin  .size() >= nxy && "Insufficient no. input components");
-    assert(uout .size() >= nxy && "Insufficient no. output components");
+    assert(uout .size() >= 1   && "Incorrect no. output components");
     GMTK::grad(grid, *uin[0], 1, utmp, *uout[0]);
     iuout.resize(1); iuout[0] = 0;
     for ( auto j=1; j<nxy; j++ ) {
@@ -3481,7 +3499,7 @@ void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GStrin
     // produces a vector field:
     nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
     assert(utmp .size() >= 1   && "Insufficient temp space");
-    assert(uin  .size() >= 1   && "Insufficient no. input components");
+    assert(uin  .size() >= 1   && "Incorrect no. input components");
     assert(uout .size() >= nxy && "Insufficient no. output components");
     iuout.resize(nxy); 
     for ( auto j=0; j<nxy; j++ ) {
@@ -3493,7 +3511,7 @@ void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GStrin
     // produces a scalar field:
     nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
     assert(utmp .size() >= 2   && "Insufficient temp space");
-    assert(uin  .size() >= 1   && "Insufficient no. input components");
+    assert(uin  .size() >= 1   && "Incorrect no. input components");
     assert(uout .size() >= 1   && "Insufficient no. output components");
     iuout.resize(1); iuout[0] = 0; 
     tmp[0] = utmp[0]; tmp[1] = utmp[1];
@@ -3509,27 +3527,31 @@ void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GStrin
   else if ( "curl" == sop ) { // operates on a vector field...
     // produces a vector field:
     nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+    ib = 1; 
+    if ( GDIM == 2 && grid.gtype() != GE_2DEMBEDDED ) { nxy = 1; ib = 3; }
     assert(utmp .size() >= 2   && "Insufficient temp space");
     assert(uin  .size() >= nxy && "Insufficient no. input components");
     assert(uout .size() >= nxy && "Insufficient no. output components");
     iuout.resize(nxy); 
     for ( auto j=0; j<nxy; j++ ) {
-      GMTK::curl(grid, uin, j+1, utmp, *uout[j]);
+      GMTK::curl(grid, uin, j+ib, utmp, *uout[j]);
       iuout[j] = j; 
     }
   }
   else if ( "curlmag" == sop ) { // operates on a vector field...
     // produces a scalar field:
     nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+    ib = 1; 
+    if ( GDIM == 2 && grid.gtype() != GE_2DEMBEDDED ) { nxy = 1; ib = 3; }
     assert(utmp .size() >= 3   && "Insufficient temp space");
     assert(uin  .size() >= nxy && "Insufficient no. input components");
     assert(uout .size() >= 1   && "Insufficient no. output components");
     iuout.resize(1); iuout[0] = 0; 
     tmp[0] = utmp[0]; tmp[1] = utmp[1]; tmp[2] = utmp[2];
-    GMTK::curl(grid, uin, 1, utmp, *uout[0]);
+    GMTK::curl(grid, uin, ib, utmp, *uout[0]);
     uout[0]->rpow(2);
     for ( auto j=1; j<nxy; j++ ) {
-      GMTK::curl(grid, uin, j+1, tmp, *tmp[2]);
+      GMTK::curl(grid, uin, j+ib, tmp, *tmp[2]);
       tmp[2]->rpow(2);
       *uout[0] += *tmp[2];
     }
