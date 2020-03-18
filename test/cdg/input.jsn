@@ -3,10 +3,10 @@
   "exp_order"            : [4, 4, 4],
   "exp_order_type"       : "constant",
   "grid_type"            : "grid_box",
-  "initstate_block"      : "mystateinit",
+  "initstate_block"      : "initstate_boxnwave",
   "initforce_block"      : "",
   "use_forcing"          : false,
-  "initstate_type"       : "component",
+  "initstate_type"       : "direct",
   "initforce_type"       : "",
   "restart_index"        : 0,
   "benchmark"            : false,
@@ -51,7 +51,7 @@
     "initps"  : "zero",
     "initc"   : "zero"
   },
-  "init_lump": {
+  "initstate_boxpergauss": {
     "x0"     : 0.5,
     "y0"     : 0.5,
     "z0"     : 0.5,
@@ -59,40 +59,26 @@
     "u0"     : 1.0,
     "adv_vel": [1.0, 0.0, 0.0]
   },
-  "init_icosbell": {
-    "latitude0"  : 0.0,
-    "longitude0" :-30.0,
-    "sigma"      : 0.15,
-    "alpha"      : 20.0,
-    "u0"         : 1.0
+  "initstate_boxdirgauss": {
+    "x0"     : 0.5,
+    "y0"     : 0.5,
+    "z0"     : 0.5,
+    "sigma"  : 0.05,
+    "u0"     : 1.0,
+    "adv_vel": [1.0, 0.0, 0.0]
   },
-  "init_icosgauss": {
-    "latitude0"  : [0.0, -40.0], 
-    "longitude0" : [-90.0,-90.0],
-    "sigma"      : [0.25, 0.25],
-    "c0"         : [1.0,1.0],
-    "alpha"      : 0.0,
-    "u0"         : 1.0,
-    "nlumps"     : 1
-  },
-  "init_icosdefgauss": {
-    "latitude0"  : 60.0,
-    "longitude0" :180.0,
-    "latitude1"  :-60.0,
-    "longitude1" :180.0,
-    "sigma"      : 0.4472,
-    "u0"         : 2.4,
-    "Tper"       : 5.0
-  },
-  "init_nwave": {
-    "x0"    : 0.5,
-    "y0"    : 0.5,
-    "z0"    : 0.5,
-    "ULparm": 1.0,
-    "Re"    : 6.0,
-    "t0"    : 0.01,
-    "planar": false,
-    "prop_dir": [1.0, 2.0, 0.0]
+  "initstate_boxnwave": {
+    "x0"        : [0.5],
+    "y0"        : [0.5],
+    "z0"        : [0.5],
+    "ULparam"   : [1.0],
+    "nu"        : [0.0833],
+    "Re"        : [6.0],
+    "t0"        : [0.05],
+    "planar"    : [true],
+    "prop_dir_x": [1.0],
+    "prop_dir_y": [1.0],
+    "prop_dir_z": [1.0]
   },
   "pde_burgers": {
     "doheat"      : false,
@@ -149,7 +135,7 @@
     "courant"          : 0.04 
   },
   "dissipation_traits": {
-    "nu"      : 5.0e-2,
+    "nu"      : 8.33e-2,
     "nu_type" : "constant"
   },
   "gio": {
