@@ -44,7 +44,7 @@ end
 if nargout < 1
   error('Must provide at least the data output argument');
 end
-if nargout > 8
+if nargout > 9
   error('Too many output arguments provided');
 end
 
@@ -104,11 +104,14 @@ if nargout >= 6
   time = ptime;
 end
 if nargout >= 7
-  multivar = pmuultivar;
+  multivar = pmultivar;
 end
 if nargout >= 8
   icycle = pcycle;
 end
 if nargout == 9
   ivers = pvers;
+end
+
+
 end

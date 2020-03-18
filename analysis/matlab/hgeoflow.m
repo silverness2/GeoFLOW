@@ -42,7 +42,7 @@ if nargin < 4
 end
 swarn = sprintf('using isz=%d; sformat=%s', isz, sformat);
 
-if nargout > 8
+if nargout > 9
   error('Too many output arguments provided');
 end
 
@@ -139,4 +139,7 @@ if nargout >= 8
 end
 if nargout == 9
   skip = pskip;
+end
+
+
 end

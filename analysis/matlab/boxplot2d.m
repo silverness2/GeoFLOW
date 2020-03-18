@@ -1,4 +1,4 @@
-function h = boxplot2d(svar, tindex, blog, dtype, ftype, varargin)
+function h = boxplot2d(svar, tindex, blog, bwire, dtype, isz, varargin)
 %
 % Does a line plot 2D GeoFLOW Posix data in x-direction, 
 % at fixed specified y-index
@@ -9,10 +9,10 @@ function h = boxplot2d(svar, tindex, blog, dtype, ftype, varargin)
 %  Input:
 %    svar    : prefix for field file. Required
 %    tindex  : time index for output. Required
-%    blog    : take log of data?
-%    bwire   : do wire plot?
+%    blog    : take log of data? Deffault is 0
+%    bwire   : do wire plot? Default is 0
 %    dtype   : data file type: 'POSIX', 'COLLC'. Default is 'COLL'
-%    ftype   : floating point size (4 or 8). Default is 8.
+%    isz    : floating point size (4 or 8). Default is 8.
 %    varargin: to pass to quadmesh: e.g. to plot
 %              wire mesh only and set to single color,
 %              set bwire=1, and call:
@@ -30,25 +30,28 @@ end
 
 if nargin < 3
   blog = 0;
+  bwire = 0;
   dtype = 'COLL';;
-  ftype = 8;
+  isz = 8;
 end 
 if nargin < 4
+  bwire = 0;
   dtype = 'COLL';
-  ftype = 8;
+  isz = 8;
 end 
 if nargin < 5
-  ftype = 8;
+  dtype = 'COLL';
+  isz = 8;
+end 
+if nargin < 6
+  isz = 8;
 end 
 
-if dtype ~= 'POSIX' && dtype ~= 'COLL'
+dtype
+if ~strcmp(dtype,'POSIX') & ~strcmp(dtype,'COLL')
   error(['Invalid dtype: ' dtype]);
 end
 
-sz = size(plottype)
-if ~isempty(plottype) && sz(1)*sz(2) ~= 2 
-  error('incorrect plottype specification');
-end
 
 lwidth = 2;
 szfont = 16;
@@ -72,8 +75,10 @@ end
 
 scoord = {'xgrid','ygrid' 'zgrid'};
 
+[umin, umax] = gminmax_gio(svar, tindex, dtype, isz, 'ieee-le');
+
 ntasks = 1;
-if dtype == 'POSIX'
+if strcmp(dtype,'POSIX')
   d = dir('xgrid.*');
   ntasks = length(d);
   if ntasks<= 0 
@@ -81,12 +86,14 @@ if dtype == 'POSIX'
   end
 end
 
+nverts = 4;
+
 % Find global size:
-if dtype == 'POSIX'
+if strcmp(dtype,'POSIX')
   tsize = zeros(ntasks,1); % total size per task
   for itask = 0:ntasks-1
     fname = sprintf('%s.%06d.%05d.out', svar, tindex, itask);
-    [u dim nelems porder gtype icycle time] = rgeoflow(fname, ftype, 'ieee-le', 1);
+    [u dim nelems porder gtype icycle time mvar] = rgeoflow(fname, isz, 'ieee-le', 1);
     NN = double(porder + 1); 
   % lelem = prod(NN(1:dim));  % data length per element
     tsize (itask+1) = NN(1)*nelems;
@@ -94,7 +101,7 @@ if dtype == 'POSIX'
   nglobal = sum(tsize); % global no. nodes
 else
   fname = sprintf('%s.%06d.out', svar, tindex);
-  [u dim nelems porder gtype icycle time] = rgeoflow(fname, ftype, 'ieee-le', 1);
+  [u dim nelems porder gtype icycle time mvar] = rgeoflow(fname, isz, 'ieee-le', 1);
   NN = double(porder + 1); 
 end
 
@@ -112,31 +119,28 @@ for itask = 0:ntasks-1
 
   % Read node coords:
   for j=1:2
-    if dtype == 'POSIX'
-      fname = sprintf('%s.%05d.out', scoord{j}, itask);
+    if strcmp(dtype,'POSIX')
+      fname = sprintf('%s.%06d.%05d.out', scoord{j}, 0);
     elseif dtype == 'COLL'
-      fname = sprintf('%s.out', scoord{j});
+      fname = sprintf('%s.%06d.out', scoord{j}, 0);
     end
-    [x{j} dim nelems porder gtype icycle time mvar] = rgeoflow(fname, ftype, 'ieee-le');
+    [x{j} dim nelems porder gtype icycle time mvar] = rgeoflow(fname, isz, 'ieee-le');
   end
   if ( dim ~= 2 )
     error('Grid must be 2D');
   end 
 
-  if dtype == 'POSIX'
+  if strcmp(dtype,'POSIX')
     fname = sprintf('%s.%06d.%05d.out', svar, tindex, itask);
   elseif dtype == 'COLL'
     fname = sprintf('%s.%06d.out', svar, tindex);
   end
-  [u dim nelems porder gtype icycle time mvar] = rgeoflow(fname, ftype, 'ieee-le');
+  [u dim nelems porder gtype icycle time mvar] = rgeoflow(fname, isz, 'ieee-le');
 
  
   NN = double(porder + 1); 
   lelem = prod(NN(1:dim));  % data length per element
 
-  if jindex < 0 || jindex >= NN(2) 
-    error('Invalid jindex');
-  end
 
   % Cycle over elems, and gather 22 data:
   icurr = 1;
@@ -167,10 +171,10 @@ for itask = 0:ntasks-1
       else
         puu = uu;
       end
-      h = quadmesh(imat,xx,yy,zz,puu,'FaceColor','interp');
+      h = quadmesh(imat,xx,yy,puu,'FaceColor','interp');
       colorbar('vertical');
     else
-      h = quadmesh(imat,xx,yy,zz,varargin{:});
+      h = quadmesh(imat,xx,yy,varargin{:});
     end
     hold on;
 %   set(p, 'FaceColor', 'blue', 'EdgeColor', 'none');
