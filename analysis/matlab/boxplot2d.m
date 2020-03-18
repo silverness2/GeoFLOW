@@ -88,34 +88,8 @@ end
 
 nverts = 4;
 
-% Find global size:
-if strcmp(dtype,'POSIX')
-  tsize = zeros(ntasks,1); % total size per task
-  for itask = 0:ntasks-1
-    fname = sprintf('%s.%06d.%05d.out', svar, tindex, itask);
-    [u dim nelems porder gtype icycle time mvar] = rgeoflow(fname, isz, 'ieee-le', 1);
-    NN = double(porder + 1); 
-  % lelem = prod(NN(1:dim));  % data length per element
-    tsize (itask+1) = NN(1)*nelems;
-  end
-  nglobal = sum(tsize); % global no. nodes
-else
-  fname = sprintf('%s.%06d.out', svar, tindex);
-  [u dim nelems porder gtype icycle time mvar] = rgeoflow(fname, isz, 'ieee-le', 1);
-  NN = double(porder + 1); 
-end
 
-
-igstart = 1;
-iegsave = 1;
-ntot    = 0;
 for itask = 0:ntasks-1
-
-  % Find start index in global data for this 
-  % task's data:
-  if itask > 0
-    igstart = sum(tsize(1:itask)) + 1;
-  end
 
   % Read node coords:
   for j=1:2
@@ -129,6 +103,8 @@ for itask = 0:ntasks-1
   if ( dim ~= 2 )
     error('Grid must be 2D');
   end 
+dim
+nelems
 
   if strcmp(dtype,'POSIX')
     fname = sprintf('%s.%06d.%05d.out', svar, tindex, itask);
@@ -186,6 +162,8 @@ for itask = 0:ntasks-1
     icurr = icurr + lelem; 
     
   end % end, elem loop
+
+view(2); % std 2d view
 
 end % end, task loop
 
