@@ -203,6 +203,8 @@ protected:
                                     igbdyt_bydface_;// global domain bdy types for each igbdy index
         PropertyTree                ptree_;         // main prop tree
         GGFX<GFTYPE>               *ggfx_;          // connectivity operator
+        LinSolverBase<CGTypes>::Traits
+                                    cgtraits_;      // GCG operator traits
 
 };
 

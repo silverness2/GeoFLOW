@@ -615,7 +615,7 @@ void GGrid::def_geom_init()
      }
 
      // Zero-out local xe; only global allowed now:
-     for ( GSIZET j=0; j<nxy; j++ ) (*xe)[j].clear(); 
+//   for ( GSIZET j=0; j<nxy; j++ ) (*xe)[j].clear(); 
      
    } // end, element loop
 
@@ -707,7 +707,7 @@ void GGrid::reg_geom_init()
      }
       
      // Zero-out local xe; only global allowed now:
-     for ( GSIZET j=0; j<nxy; j++ ) (*xe)[j].clear(); 
+//   for ( GSIZET j=0; j<nxy; j++ ) (*xe)[j].clear(); 
 
    } // end, element loop
 
@@ -1207,11 +1207,7 @@ void GGrid::add_terrain(const State &xb, State &utmp)
   assert(ggfx_ != NULLPTR && "GGFX not set");
 
   // Construct solver and weak Laplacian operator:
-  LinSolverBase<CGTypes>::Traits cgtraits;
-  cgtraits.maxit    = 128;
-  cgtraits.tol      = 1.0e-6;
-  cgtraits.normtype = LinSolverBase<CGTypes>::GCG_NORM_INF;
-  GCG<CGTypes>   cg(cgtraits, *this, *ggfx_, tmp);
+  GCG<CGTypes>   cg(cgtraits_, *this, *ggfx_, tmp);
   GHelmholtz     H(*this);
 
   H.use_metric(FALSE); // do Laplacian in reference space
@@ -1222,8 +1218,12 @@ void GGrid::add_terrain(const State &xb, State &utmp)
   GTimerStart("GGrid::add_terrain: Solve");
   for ( auto j=0; j<xNodes_.size(); j++ ) {
    *x0 = xNodes_[j]  - (*xb[j]); 
+cout << "GGrid::add_terrain: x0[" << j << "]=" << *x0 << endl;
     H.opVec_prod(*x0, tmp, *b);  // b = H (XNodes-xb)
+EH_MESSAGE("GGrid::add_terrain: 2");
+    *x0 = 0.0; // first guess
     cg.solve(H, *b, *x0);
+EH_MESSAGE("GGrid::add_terrain: 3");
     xNodes_[j] = *x0;             // Reset XNodes = x0
   }
   GTimerStop("GGrid::add_terrain: Solve");
@@ -1238,11 +1238,14 @@ void GGrid::add_terrain(const State &xb, State &utmp)
    }
    for ( auto j=0; j<xNodes_.size(); j++ ) xNodes_[j].range_reset();
 
+EH_MESSAGE("GGrid::add_terrain: 4");
+
   // Now, with new coordinates, recompute metric terms, 
   // Jacobian, normals:
   GTimerStart("GGrid::add_terrain: def_geom_init");
   def_geom_init();
   GTimerStop("GGrid::add_terrain: def_geom_init");
+EH_MESSAGE("GGrid::add_terrain: 5");
 
   // Compute new minimum node distance:
   GTimerStart("GGrid::grid_init: find_min_dist");
