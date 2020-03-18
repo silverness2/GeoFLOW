@@ -92,6 +92,9 @@ GCG<Types>& GCG<Types>::operator=(const GCG<Types> &a)
 template<typename Types>
 void GCG<Types>::init()
 {
+  if ( bInit_ ) return;
+
+cout << "GCG: maxit=" << this->traits_.maxit << " tol=" << this->traits_.tol << endl;
   residuals_.resize(this->traits_.maxit);
   bInit_ = TRUE;
 
@@ -116,6 +119,7 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
   State      tmp(this->tmp_->size()-4);
 
   assert(this->tmp_->size() > 5);
+  init();
 
   iret = GCGERR_NONE;
 
@@ -133,6 +137,8 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
  *r -= (*p);                         // initial residual
   this->ggfx_->doOp(*r, GGFX_OP_SUM);      // DSS r
   iter_ = 0; residual = 1.0;
+
+cout << "GCG::solve: rk_0=" << *r << endl;
   while ( iter_ < this->traits_.maxit && residual > this->traits_.tol ) {
 
     if ( precond_ != NULLPTR ) {      // solve Mz = r for z
@@ -145,18 +151,23 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
     else {
       *z = *r;                        // use identity preconditioner
     }
+cout << "GCG::solve: iter=" << iter_ << " zk=" << *z << endl;
     rho = r->gdot(*z,comm_);
+cout << "GCG::solve: iter=" << iter_ << " rho=" << rho << " rhom=" << rhom << endl;
     if ( iter_  == 0 ) {              // find p
      *p = *z;
     }
     else {
       beta = rho / rhom;
+cout << "GCG::solve: iter=" << iter_ << " beta =" << beta << endl;
       GMTK::saxpby(*p, beta, *z, 1.0);
     }
 
     A.opVec_prod(*p, tmp, *q);        // q = A p
     this->ggfx_->doOp(*q, GGFX_OP_SUM);     // DSS q
+cout << "GCG::solve: qk=" << *q << endl;
     alpha = rho / (p->gdot(*q,comm_));
+cout << "GCG::solve: iter=" << iter_ << " alpha=" << alpha << endl;
     GMTK::saxpby( x, 1.0, *p, alpha); // x = x + alpha p
     GMTK::saxpby(*r, 1.0, *q,-alpha); // r = r - alpha q
 
@@ -168,10 +179,14 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
     iter_++;
 
   } // end, CG loop
+
+cout << "GCG::solve: iter_     =" << iter_ << endl;
+cout << "GCG::solve: rersiduals=" << residuals_ << endl;
     
   if ( iret != GCGERR_NONE 
     && iter_ >= this->traits_.maxit 
     && residual > this->traits_.tol ) iret = GCGERR_NOCONVERGE;
+EH_MESSAGE("GCG::solve_impl: 12" );
 
   return iret;
 
