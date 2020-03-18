@@ -1,14 +1,19 @@
 { 
-  "exp_order"         : [4, 4, 4],
-  "exp_order_type"    : "constant",
-  "grid_type"         : "grid_box",
-  "pde_name"          : "pde_burgers",
-  "init_block"        : "init_icosgauss",
-  "restart_index"     : 0,
-  "benchmark"         : false,
-  "observer_list"     : ["gio_observer", "global_diag_basic"],
-  "IO_implementation" : "gio",
-  "terrain_type"      : "myboxterrain",
+  "pde_name"             : "pde_burgers",
+  "exp_order"            : [4, 4, 4],
+  "exp_order_type"       : "constant",
+  "grid_type"            : "grid_box",
+  "initstate_block"      : "mystateinit",
+  "initforce_block"      : "",
+  "use_forcing"          : false,
+  "initstate_type"       : "component",
+  "initforce_type"       : "",
+  "restart_index"        : 0,
+  "benchmark"            : false,
+  "do_comparison"        : false,
+  "observer_list"        : ["gio_observer", "global_diag_basic"],
+  "IO_implementation"    : "gio",
+  "terrain_type"         : "myboxterrain",
   "myboxterrain": {
     "name"    : "boxgauss_range",
     "x0"      : [0.5],
@@ -23,6 +28,28 @@
     "zpoly" : 0,
     "excise_angle" : 0.01,
     "u0"    : 1.0
+  },
+  "initvss": {
+    "name"     : "simplesum",
+    "kdn"      : 2,
+    "kup"      : 60,
+    "kpower"   : 0.025,
+    "E0"       : 1.0
+  },
+  "initv": {
+    "name"  : "abc",
+    "kdn"   : 2,
+    "kup"   : 3,
+    "kpower": 0.5,
+    "A"     : 0.9,
+    "B"     : 1.0,
+    "C"     : 1.1,
+    "E0"    : 1.0
+  },
+  "mystateinit": {
+    "initv"   : "initvss",
+    "initps"  : "zero",
+    "initc"   : "zero"
   },
   "init_lump": {
     "x0"     : 0.5,
@@ -69,7 +96,7 @@
   },
   "pde_burgers": {
     "doheat"      : false,
-    "bpureadv"    : true,
+    "bpureadv"    : false,
     "bconserved"  : false,
     "use_forcing" : false,
     "forcing_comp": [0, 1, 2]
@@ -79,6 +106,9 @@
     "ilevel"    : 0,
     "radius"    : 1.0,
     "num_elems" : [10, 10, 10]
+    "maxit"     : 128,
+    "tol"       : 1.0e-6,
+    "norm_type" : "GCG_NORM_INF"
   },
   "grid_sphere" : {
     "grid_name" : "grid_sphere",
@@ -107,6 +137,9 @@
     "bdy_y_1"   : "my_dirichlet",
     "bdy_z_0"   : "my_dirichlet",
     "bdy_z_1"   : "my_dirichlet"
+    "maxit"     : 128,
+    "tol"       : 1.0e-6,
+    "norm_type" : "GCG_NORM_INF"
   },
   "stepper_props": {
     "stepping_method"  : "GSTEPPER_EXRK",
@@ -122,7 +155,7 @@
   "gio": {
     "ivers"   : 0,
     "multivar" : false,
-    "io_type"  : "POSIX",
+    "io_type"  : "collective",
     "wtime"    : 6,
     "wtask"    : 5,
     "wfile"    : 2048
@@ -133,8 +166,8 @@
     "mathop"      : "curl"
   },
   "curlvmag": {
-    "state_index" : [0, 1, 2],
-    "names"       : ["omega"],
+    "state_index" : [0, 1],
+    "names"       : ["omega_mag"],
     "mathop"      : "curlmag"
   },
   "vmag": {
