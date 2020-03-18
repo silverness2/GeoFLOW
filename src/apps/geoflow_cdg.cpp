@@ -153,10 +153,8 @@ int main(int argc, char **argv)
     //***************************************************
     // Do benchmarking if required:
     //***************************************************
-    EH_MESSAGE("geoflow: do benchmark...");
     GTimerStart("benchmark_timer");
     do_bench("benchmark.txt", pIntegrator_->get_numsteps());
-    EH_MESSAGE("geoflow: benchmark done.");
     GTimerStop("benchmark_timer");
 
     //***************************************************
