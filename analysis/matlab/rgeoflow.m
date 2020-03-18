@@ -1,4 +1,4 @@
-function [data dim nelems porder gtype icycle time ivers] = rgeoflow(filein, isz, sformat, quiet)
+function [data dim nelems porder gtype icycle time multivar ivers] = rgeoflow(filein, isz, sformat, quiet)
 %
 % Reads binary GeoFLOW data, and stores in local variable data.
 %
@@ -21,6 +21,7 @@ function [data dim nelems porder gtype icycle time ivers] = rgeoflow(filein, isz
 %    gtype   : grid type (of GeoFLOW type GElemType)
 %    icycle  : time cycle
 %    time    : time stamp
+%    multivar: multiple variables in file?
 %    ivers   : version number
 %
 if nargin < 1
@@ -57,7 +58,7 @@ else
 end
 
 % Read header:
-[pdim pnelems pporder pgtype pcycle ptime pvers skip] = hgeoflow(filein, isz, sformat, quiet);
+[pdim pnelems pporder pgtype pcycle ptime pmultivar pvers skip] = hgeoflow(filein, isz, sformat, quiet);
 
 lun =fopen(filein,'r',sformat);
 if  lun == -1
@@ -103,8 +104,11 @@ if nargout >= 6
   time = ptime;
 end
 if nargout >= 7
+  multivar = pmuultivar;
+end
+if nargout >= 8
   icycle = pcycle;
 end
-if nargout == 8
+if nargout == 9
   ivers = pvers;
 end

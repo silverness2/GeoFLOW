@@ -1,4 +1,4 @@
-function [dim nelems porder gtype icycle time ivers skip] = hgeoflow(filein, isz, sformat, quiet)
+function [dim nelems porder gtype icycle time multivar ivers skip] = hgeoflow(filein, isz, sformat, quiet)
 %
 % Reads header from binary GeoFLOW data file
 %
@@ -20,6 +20,7 @@ function [dim nelems porder gtype icycle time ivers skip] = hgeoflow(filein, isz
 %    gtype   : grid type (of GeoFLOW type GElemType)
 %    icycle  : time cycle stamp
 %    time    : time stamp
+%    multivar: multiple fields in file?
 %    ivers   : version number
 %    skip    : total header size in bytes
 %
@@ -72,6 +73,7 @@ pporder = fread(lun, pdim, 'uint32'); % expansion order in each dir
 pgtype  = fread(lun, 1   , 'uint32'); % grid type
 pcycle  = fread(lun, 1   , 'uint64'); % time cycle 
 ptime   = fread(lun, 1   ,  zsize  ); % time stamp
+pmvar   = fread(lun, 1   , 'uint32'); % multiple vars in file
 
 % Ensure header types have correct size:
 pvers   = uint32(pvers);
@@ -85,9 +87,11 @@ if strcmp(ssize,'real*4' )
 elseif strcmp(ssize,'real*8')
   ptime = double(ptime);
 end
+pmultivar = uint32(pmvar);
 
 pskip = sizeof(pvers) + sizeof(pdim)   + sizeof(pnelems) + pdim*sizeof(pporder) ...
-                      + sizeof(pgtype) + sizeof(pcycle)  + sizeof(ptime);
+                      + sizeof(pgtype) + sizeof(pcycle)  + sizeof(ptime) ...
+                      + sizeof(pmultivar)
 
 pformat = '  %s=';
 for j=1:pdim
@@ -103,6 +107,7 @@ if quiet == 0
   disp(sprintf('  %s=%d', 'grid_type' , pgtype));
   disp(sprintf('  %s=%d', 'time_cycle', pcycle));
   disp(sprintf('  %s=%f', 'time_stamp', ptime));
+  disp(sprintf('  %s=%f', 'multivar'  , pmultivar));
 end
 
 fclose(lun);
@@ -127,8 +132,11 @@ if nargout >= 6
   time = ptime;
 end
 if nargout >= 7
+  multivar = pmultivar;
+end
+if nargout >= 8
   ivers = pvers;
 end
-if nargout == 8
+if nargout == 9
   skip = pskip;
 end
