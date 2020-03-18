@@ -23,7 +23,9 @@ template<typename TypePack>
 class LinSolverBase {
 
 public:
-        enum GNormType       {GCG_NORM_INF=0, GCG_NORM_EUC, GCG_NORM_L2, GCG_NORM_L1};
+        enum GNormType        {GCG_NORM_INF=0, GCG_NORM_EUC , GCG_NORM_L2 , GCG_NORM_L1, GCG_NORM_NONE};
+        static const constexpr char* const
+            cGNormType[]     ={"GCG_NORM_INF","GCG_NORM_EUC","GCG_NORM_L2","GCG_NORM_L1","GCG_NORM_NONE"};
         using Types          = TypePack;
 	using Operator       = typename Types::Operator;
 	using Preconditioner = typename Types::Operator;
@@ -38,7 +40,7 @@ public:
           int          maxit    = 512;      // max no. iterations
           GNormType    normtype = GCG_NORM_INF;
                                             // norm type
-          float        tol      = 1e-8;     // tolerance
+          float        tol      = 1e-6;     // tolerance
         };
 
       
@@ -49,7 +51,7 @@ public:
 	 *
 	 */
 	LinSolverBase(Traits& traits, Grid& grid, ConnectivityOp& ggfx, State& tmppack):
-          traits_ (traits), grid_(&grid), ggfx_(&ggfx), tmp_(&tmppack){}
+          traits_ (traits), grid_(&grid), ggfx_(&ggfx), tmp_(&tmppack) {}
 	LinSolverBase(const LinSolverBase& LS) = default;
 	~LinSolverBase() = default;
 	LinSolverBase& operator=(const LinSolverBase& LS) = default;
@@ -101,6 +103,12 @@ public:
                return traits_;
              }
 
+        /**
+	 * str2normtype: get GNormType from string
+	 *
+	 */
+        static GNormType str2normtype(std::string snorm);
+
 protected:
         virtual int solve_impl(const StateComp& b,    
                                StateComp&       x) = 0;
@@ -124,6 +132,6 @@ protected:
 } // namespace pdeint
 } // namespace geoflow
 
+#include "pdeint/lin_solver_base.ipp"
 
-
-#endif /* SRC_PDEINT_IOBASE_HPP_ */
+#endif /* SRC_PDEINT_LINSOLVERBASE_HPP_ */
