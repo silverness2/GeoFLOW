@@ -39,6 +39,7 @@ lshapefcn_                    (NULLPTR)
 {
   assert(b.size() == GDIM && "Basis has incorrect dimensionality");
   
+  GString snorm;
   GString gname   = ptree.getValue<GString>("grid_type");
   assert(gname == "grid_icos" || gname == "grid_sphere");
   geoflow::tbox::PropertyTree gridptree = ptree.getPropertyTree(gname);
@@ -48,6 +49,11 @@ lshapefcn_                    (NULLPTR)
   lshapefcn_ = new GShapeFcn_linear<GTICOS>();
   ilevel_  = gridptree.getValue<GINT>("ilevel");
   sreftype_= gridptree.getValue<GString>("refine_type","GICOS_LAGRANGIAN");
+  this->cgtraits_.maxit = gridptree.getValue<GFTYPE>("maxit",512);
+  this->cgtraits_.tol   = gridptree.getValue<GFTYPE>("tol",1.0e-8);
+  snorm                 = gridptree.getValue<GString>("norm_type","GCG_NORM_INF");
+  this->cgtraits_.normtype = LinSolverBase<CGTypePack>::str2normtype(snorm);
+
   
   if ( ndim_ == 2 ) {
     assert(GDIM == 2 && "GDIM must be 2");

@@ -46,8 +46,10 @@ lshapefcn_             (NULLPTR)
   irank_  = GComm::WorldRank(comm_);
   nprocs_ = GComm::WorldSize(comm_);
 
+  GINT    inorm;
   GString gname   = ptree.getValue<GString>("grid_type");
   GString tname   = ptree.getValue<GString>("terrain_type");
+  GString snorm;
   assert(gname == "grid_box");
   geoflow::tbox::PropertyTree gridptree = ptree.getPropertyTree(gname);
 
@@ -72,6 +74,10 @@ lshapefcn_             (NULLPTR)
   for ( auto j=0; j<GDIM; j++ ) P0_[j] = spt[j];
   spt = gridptree.getArray<GFTYPE>("delxyz");
   sne = gridptree.getArray<int>("num_elems");
+  this->cgtraits_.maxit = gridptree.getValue<GFTYPE>("maxit",512);
+  this->cgtraits_.tol   = gridptree.getValue<GFTYPE>("tol",1.0e-8);
+  snorm                 = gridptree.getValue<GString>("norm_type","GCG_NORM_INF");
+  this->cgtraits_.normtype = LinSolverBase<CGTypePack>::str2normtype(snorm);
 
   eps_ = 100*std::numeric_limits<GFTYPE>::epsilon();
   // compute global bdy range, and global vertices:
