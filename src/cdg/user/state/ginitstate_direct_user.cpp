@@ -113,7 +113,6 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
   for ( i=0; i<GDIM; i++ ) {
     *u[i] = 0.0;
   }
-
   for ( GINT ilump=0; ilump<nlump; ilump++ ) {
     r0[0]  = xinit[ilump]; r0[1]  = yinit[ilump]; 
     if ( GDIM > 2 ) r0[2]  = zinit[ilump]; 
@@ -156,7 +155,7 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
 
   return bret;
 
-} // end, impl_icosnwaveburgers
+} // end, impl_boxnwaveburgers
 
 
 //**********************************************************************************
