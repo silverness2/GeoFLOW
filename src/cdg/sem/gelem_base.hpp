@@ -153,7 +153,6 @@ inline  GTVector<GINT>     &bdy_indices(){ return bdy_indices_;}
 inline  GTVector<GBdyType> &ibdy_types(){ return ibdy_types_;}
 inline  GTVector<GINT>     &ibdy_indices(){ return ibdy_indices_;}
 inline  GTVector<GBdyType> &bdy_types(){ return bdy_types_;}
-inline  GTVector<GFTYPE>   &mask(){ return mask_;}
 
 virtual void                dogeom1d (GTMatrix<GTVector<GFTYPE>> &rij, GTMatrix<GTVector<GFTYPE>> &irij, GTVector<GFTYPE> &jac, GTVector<GFTYPE> &facejac); 
 virtual void                dogeom2d (GTMatrix<GTVector<GFTYPE>> &rij, GTMatrix<GTVector<GFTYPE>> &irij, GTVector<GFTYPE> &jac, GTVector<GFTYPE> &facejac); 
@@ -247,7 +246,6 @@ GIBuffer                bdy_indices_;   // global bdy indices
 GIBuffer                ibdy_indices_;  // internal bdy indices
 GTVector<GBdyType>      bdy_types_;     // global bdy condition/type
 GTVector<GBdyType>      ibdy_types_;    // internal bdy condition/type
-GTVector<GFTYPE>        mask_;          // mask storage (values 0 or 1)
 };
 
 #endif

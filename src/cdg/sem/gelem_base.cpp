@@ -236,7 +236,6 @@ std::ostream &operator<<(std::ostream &str, GElem_base &e)
 #if defined(G_IS3D)
 //str << " face_types : " << *(e.face_types_) << std::endl;
 #endif
-//str << " Mask       : " <<  (e.mask_) << std::endl;
   str << std::endl << "}";
 
   return str;
@@ -389,8 +388,6 @@ void GElem_base::set_size1d()
     bdyNormal_[j][0].resize(1);
   }
 #endif
-  mask_.resize(Ntot_);
-  mask_ = 1.0;
 
   // Indirection indices:
   get_indirect(gbasis_, vert_indices_, edge_indices_, face_indices_);
@@ -513,9 +510,6 @@ void GElem_base::set_size2d()
   }
 #endif
  
-  mask_.resize(Ntot_);
-  mask_ = 1.0;
-  
   // Indirection indices:
   get_indirect(gbasis_, vert_indices_, edge_indices_, face_indices_);
   Nftot_ = 0;
@@ -655,9 +649,6 @@ void GElem_base::set_size3d()
   }
 #endif
 
-  mask_.resize(Ntot_);
-  mask_ = 1.0;
-  
   // Indirection indices:
   get_indirect(gbasis_, vert_indices_, edge_indices_, face_indices_);
   Nftot_ = 0;
@@ -1963,7 +1954,6 @@ void GElem_base::operator=(const GElem_base &e)
   face_indices_ = e.face_indices_;
   bdy_indices_  = e.bdy_indices_;
   bdy_types_    = e.bdy_types_;
-  mask_         = e.mask_;
 
 } // end, method operator=
 
