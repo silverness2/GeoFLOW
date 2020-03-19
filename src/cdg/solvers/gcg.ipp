@@ -95,7 +95,6 @@ void GCG<Types>::init()
 {
   if ( bInit_ ) return;
 
-cout << "GCG: maxit=" << this->traits_.maxit << " tol=" << this->traits_.tol << endl;
   residuals_.resize(this->traits_.maxit);
   bInit_ = TRUE;
 
@@ -114,15 +113,14 @@ cout << "GCG: maxit=" << this->traits_.maxit << " tol=" << this->traits_.tol << 
 template<typename Types>
 GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
 {
-  GINT       iret;
+  GINT       iret=GCGERR_NONE;
   GFTYPE     alpha, beta, residual, rho, rhom;
   StateComp *p, *q, *r, *z;
   State      tmp(this->tmp_->size()-4);
+  StateComp *mask = &this->grid_->get_mask();
 
   assert(this->tmp_->size() > 5);
   init();
-
-  iret = GCGERR_NONE;
 
   tmp.resize(this->tmp_->size()-4);
   p  = (*this->tmp_)[0];
@@ -132,13 +130,14 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
   for ( auto j=0; j<this->tmp_->size()-4; j++ ) {
     tmp[j] = (*this->tmp_)[j+4];
   }
+  residuals_ = 0.0;
 
  *r = b;
-  if ( bbv_ ) x.pointProd(this->grid_->get_mask());
+  if ( bbv_ ) x.pointProd(*mask);
   A.opVec_prod(x, tmp, *p);             // Ax
  *r -= (*p);                            // r = b - Ax, initial residual
-  if ( bbv_ ) r->pointProd(this->grid_->get_mask());
-  this->ggfx_->doOp(*r, GGFX_OP_SUM);   // DSS r
+  if ( bbv_ ) r->pointProd(*mask);
+  this->ggfx_->doOp(*r, GGFX_OP_SMOOTH);   // DSS r
   iter_ = 0; residual = 1.0;
 
   while ( iter_ < this->traits_.maxit && residual > this->traits_.tol ) {
@@ -153,44 +152,43 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
     else {
       *z = *r;                          // use identity preconditioner
     }
-cout << "GCG::solve: iter=" << iter_ << " zk=" << *z << endl;
+//cout << "GCG::solve: iter=" << iter_ << " zk=" << *z << endl;
     rho = r->gdot(*z,comm_);
-cout << "GCG::solve: iter=" << iter_ << " rho=" << rho << " rhom=" << rhom << endl;
+//cout << "GCG::solve: iter=" << iter_ << " rho=" << rho << " rhom=" << rhom << endl;
     if ( iter_  == 0 ) {                // find p
      *p = *z;
     }
     else {
       beta = rho / rhom;
-cout << "GCG::solve: iter=" << iter_ << " beta =" << beta << endl;
+//cout << "GCG::solve: iter=" << iter_ << " beta =" << beta << endl;
       GMTK::saxpby(*p, beta, *z, 1.0);
     }
 
     A.opVec_prod(*p, tmp, *q);          // q = A p
-    this->ggfx_->doOp(*q, GGFX_OP_SUM); // DSS q
-cout << "GCG::solve: qk=" << *q << endl;
+    this->ggfx_->doOp(*q, GGFX_OP_SMOOTH); // DSS q
+//cout << "GCG::solve: qk=" << *q << endl;
     alpha = rho / (p->gdot(*q,comm_));
-cout << "GCG::solve: iter=" << iter_ << " alpha=" << alpha << endl;
-    if ( bbv_ ) p->pointProd(this->grid_->get_mask());
+//cout << "GCG::solve: iter=" << iter_ << " alpha=" << alpha << endl;
+    if ( bbv_ ) p->pointProd(*mask); 
     GMTK::saxpby( x, 1.0, *p, alpha);   // x = x + alpha p
     GMTK::saxpby(*r, 1.0, *q,-alpha);   // r = r - alpha q
-    if ( bbv_ ) r->pointProd(this->grid_->get_mask());
+    if ( bbv_ ) r->pointProd(*mask);
 
     rhom = rho;
 
     residual = compute_norm(*r, tmp); // find norm of residual
-
+//cout << "GCG::solve: residual=" << residual << " tol=" << this->traits_.tol << endl;
     residuals_[iter_] = residual;
     iter_++;
 
   } // end, CG loop
 
-cout << "GCG::solve: iter_     =" << iter_ << endl;
-cout << "GCG::solve: rersiduals=" << residuals_ << endl;
+//cout << "GCG::solve: iter_     =" << iter_ << endl;
+//cout << "GCG::solve: rersiduals=" << residuals_ << endl;
     
-  if ( iret != GCGERR_NONE 
+  if ( iret == GCGERR_NONE 
     && iter_ >= this->traits_.maxit 
     && residual > this->traits_.tol ) iret = GCGERR_NOCONVERGE;
-EH_MESSAGE("GCG::solve_impl: 12" );
 
   return iret;
 
