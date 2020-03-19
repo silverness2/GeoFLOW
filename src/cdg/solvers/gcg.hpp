@@ -74,6 +74,7 @@ private:
 // Private data:
      GC_COMM           comm_;        // communicator
      GBOOL             bInit_;       // object initialized?
+     GBOOL             bbv_;         // is there a bdy vector?
      GINT              irank_;       // rank
      GINT              iter_;        // iteration number
      GINT              nprocs_;      // no. tasks

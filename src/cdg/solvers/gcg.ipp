@@ -28,6 +28,7 @@ GCG<Types>::GCG(Traits& traits, Grid& grid, ConnectivityOp& ggfx, State& tmppack
 : SolverBase(traits, grid, ggfx, tmppack),
 comm_        (ggfx.getComm()),
 bInit_                (FALSE),
+bbv_                  (FALSE),
 nprocs_                   (1),
 irank_                    (0),
 precond_            (NULLPTR)
@@ -133,28 +134,29 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
   }
 
  *r = b;
-  A.opVec_prod(x, tmp, *p);
- *r -= (*p);                         // initial residual
-  this->ggfx_->doOp(*r, GGFX_OP_SUM);      // DSS r
+  if ( bbv_ ) x.pointProd(this->grid_->get_mask());
+  A.opVec_prod(x, tmp, *p);             // Ax
+ *r -= (*p);                            // r = b - Ax, initial residual
+  if ( bbv_ ) r->pointProd(this->grid_->get_mask());
+  this->ggfx_->doOp(*r, GGFX_OP_SUM);   // DSS r
   iter_ = 0; residual = 1.0;
 
-cout << "GCG::solve: rk_0=" << *r << endl;
   while ( iter_ < this->traits_.maxit && residual > this->traits_.tol ) {
 
-    if ( precond_ != NULLPTR ) {      // solve Mz = r for z
-      iret = precond_->solve(*r, *z); // apply preconditioner
+    if ( precond_ != NULLPTR ) {        // solve P z = r for z
+      iret = precond_->solve(*r, *z);   // apply preconditioner
       if ( iret >  0 ) {
         iret = GCGERR_PRECOND;
         break;
       }
     }
     else {
-      *z = *r;                        // use identity preconditioner
+      *z = *r;                          // use identity preconditioner
     }
 cout << "GCG::solve: iter=" << iter_ << " zk=" << *z << endl;
     rho = r->gdot(*z,comm_);
 cout << "GCG::solve: iter=" << iter_ << " rho=" << rho << " rhom=" << rhom << endl;
-    if ( iter_  == 0 ) {              // find p
+    if ( iter_  == 0 ) {                // find p
      *p = *z;
     }
     else {
@@ -163,13 +165,15 @@ cout << "GCG::solve: iter=" << iter_ << " beta =" << beta << endl;
       GMTK::saxpby(*p, beta, *z, 1.0);
     }
 
-    A.opVec_prod(*p, tmp, *q);        // q = A p
-    this->ggfx_->doOp(*q, GGFX_OP_SUM);     // DSS q
+    A.opVec_prod(*p, tmp, *q);          // q = A p
+    this->ggfx_->doOp(*q, GGFX_OP_SUM); // DSS q
 cout << "GCG::solve: qk=" << *q << endl;
     alpha = rho / (p->gdot(*q,comm_));
 cout << "GCG::solve: iter=" << iter_ << " alpha=" << alpha << endl;
-    GMTK::saxpby( x, 1.0, *p, alpha); // x = x + alpha p
-    GMTK::saxpby(*r, 1.0, *q,-alpha); // r = r - alpha q
+    if ( bbv_ ) p->pointProd(this->grid_->get_mask());
+    GMTK::saxpby( x, 1.0, *p, alpha);   // x = x + alpha p
+    GMTK::saxpby(*r, 1.0, *q,-alpha);   // r = r - alpha q
+    if ( bbv_ ) r->pointProd(this->grid_->get_mask());
 
     rhom = rho;
 
@@ -209,8 +213,13 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, const StateComp& xb
 {
   GINT iret;
 
-  // Subtract out the boundary solution:
-  x -= xb; 
+  bbv_ = TRUE;
+
+  // Add in boundary solution, so 
+  // that it will form RHS in homogeneous solve:
+  
+  if ( bbv_ ) x.pointProd(this->grid_->get_mask()); // apply mask
+  x += xb; 
 
   // Compute homogeneous solution:
   iret = solve_impl(A, b, x);
