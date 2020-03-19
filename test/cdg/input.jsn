@@ -73,12 +73,11 @@
     "z0"        : [0.5],
     "ULparam"   : [1.0],
     "nu"        : [0.0833],
-    "Re"        : [6.0],
     "t0"        : [0.05],
-    "planar"    : [true],
-    "prop_dir_x": [1.0],
-    "prop_dir_y": [1.0],
-    "prop_dir_z": [1.0]
+    "planar"    : [false],
+    "prop_dir_x": [0.0],
+    "prop_dir_y": [0.0],
+    "prop_dir_z": [0.0]
   },
   "pde_burgers": {
     "doheat"      : false,
@@ -114,9 +113,9 @@
   },
   "grid_box": {
     "grid_name" : "grid_box",
-    "xyz0"      : [1.0, 1.0, 1.0],
+    "xyz0"      : [0.0, 0.0, 0.0],
     "delxyz"    : [1.0, 1.0, 1.0],
-    "num_elems" : [4, 4, 1],
+    "num_elems" : [8, 8, 1],
     "bdy_x_0"   : "my_dirichlet",
     "bdy_x_1"   : "my_dirichlet",
     "bdy_y_0"   : "my_dirichlet",
@@ -135,7 +134,7 @@
     "courant"          : 0.04 
   },
   "dissipation_traits": {
-    "nu"      : 8.33e-2,
+    "nu"      : 0.4,
     "nu_type" : "constant"
   },
   "gio": {
@@ -157,7 +156,7 @@
     "mathop"      : "curlmag"
   },
   "vmag": {
-    "state_index" : [0, 1, 2],
+    "state_index" : [0, 1],
     "names"       : ["vmag"],
     "mathop"      : "vmag"
   },
@@ -178,7 +177,7 @@
     "grid_names"         : ["xgrid", "ygrid", "zgrid"],
     "agg_state_name"     : "u",
     "agg_grid_name "     : "grid",
-    "derived_quantities" : ["curlvmag"]
+    "derived_quantities" : ["vmag"]
   },
   "global_diag_basic": {
     "observer_name"      : "global_diag_basic",
