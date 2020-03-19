@@ -1225,6 +1225,7 @@ EH_MESSAGE("GGrid::add_terrain: 2");
     cg.solve(H, *b, *x0);
 EH_MESSAGE("GGrid::add_terrain: 3");
     xNodes_[j] = *x0;             // Reset XNodes = x0
+    xNodes_[j] += *xb[j];         // add in bdy solution to homog. solution
   }
   GTimerStop("GGrid::add_terrain: Solve");
  
