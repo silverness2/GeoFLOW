@@ -60,7 +60,7 @@ cout << "impl_gauss_range: made it!" << endl;
     for ( auto j=0; j<nxy; j++ ) {
       dx        = (*xnodes)[0][j] - x0[m];
       if ( FUZZYEQ(P0.x2,(*xnodes)[1][j],eps) ) {
-        (*xb[1])[j] += h0[m]*exp(-pow(dx,2) / (sig[m]*sig[m]) )
+        (*xb[1])[j] += h0[m]*exp(-pow(dx,2) / (xsig[m]*xsig[m]) );
 cout << "impl_gauss_range: yb =" << (*xb[1])[j] << endl;
       }
     }
@@ -133,9 +133,8 @@ GBOOL impl_poly_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Stat
     *xb[1] = 0.0;
     for ( auto j=0; j<nxy; j++ ) {
       dx        = (*xnodes)[0][j] - x0[m];
-      if ( xb[1][j] == 
       if ( FUZZYEQ(P0.x2,(*xnodes)[1][j],eps) )
-        (*xb[1])[j] += h0[m]/( pow( dx*dx/(xsigma*xsigma) + 1, pexp[m]/2) );
+        (*xb[1])[j] += h0[m]/( pow( dx*dx/(xsig[m]*xsig[m]) + 1, pexp[m]/2) );
     }
   }
 #elif defined(_G_IS3D)
@@ -145,7 +144,7 @@ GBOOL impl_poly_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Stat
       dx        = (*xnodes)[0][j] - x0[m];
       dy        = (*xnodes)[1][j] - y0[m];
       if ( FUZZYEQ(P0.x3,(*xnodes)[2][j],eps) )
-        (*xb[2])[j] += h0[m]/( pow( dx*dx/(xsigma*xsigma) + dy*dy/(ysigma*ysigma) + 1, pexp[m]/2) );
+        (*xb[2])[j] += h0[m]/( pow( dx*dx/(xsig[m]*xsig[m]) + dy*dy/(ysig[m]*ysig[m]) + 1, pexp[m]/2) );
     }
   }
 #endif
@@ -181,7 +180,7 @@ GBOOL impl_schar_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
   PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
 
   GSIZET nxy;
-  GFTYPE dx, dy, eps;
+  GFTYPE eps, x;
   GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
   GTPoint<GFTYPE>  P0(3);
   
@@ -199,13 +198,17 @@ GBOOL impl_schar_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
 
   // Build terrain height vector:
 #if defined(_G_IS2D)
-  for ( auto m=0; m<x0.size(); m++ ) {   // for each Gaussian lump
-    *xb[1] = 0.0;
-    for ( auto j=0; j<nxy; j++ ) {
-      dx        = (*xnodes)[0][j] - x0[m];
-      if ( FUZZYEQ(P0.x2,(*xnodes)[1][j],eps) )
-        (*xb[1])[j] += h0[m]/( pow( dx*dx/(xsigma*xsigma) + 1, pexp[m]/2) );
-    }
+  *xb[1] = 0.0;
+  for ( auto j=0; j<nxy; j++ ) {
+    x        = (*xnodes)[0][j];
+    if ( FUZZYEQ(P0.x2,(*xnodes)[1][j],eps) )
+//               h(x) = cos^2(pi x/lambda) h'(x),
+//               h'(x) = h0 cos^2(pi x/2a), |x| <= a;
+      (*xb[1])[j] = 0.0;
+      if ( abs(x) <= extent ) {
+        (*xb[1])[j] += h0*pow(cos(PI*x/lambda)    ,2)
+                         *pow(cos(PI*x/(2*extent)),2);
+      }
   }
 #elif defined(_G_IS3D)
   assert(FALSE && "Method undefined in 3D");

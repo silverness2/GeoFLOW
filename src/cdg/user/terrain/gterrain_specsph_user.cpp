@@ -56,24 +56,7 @@ GBOOL impl_gauss_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
 
   // Build terrain height vector:
 #if defined(_G_IS2D)
-  for ( auto m=0; m<x0.size(); m++ ) {   // for each Gaussian lump
-    *xb[1] = 0.0;
-    for ( auto j=0; j<nxy; j++ ) {
-      dx        = (*xnodes)[0][j] - x0[m];
-      if ( FUZZYEQ(P0.x2,(*xnodes)[1][j],eps) )
-        (*xb[1])[j] += h0[m]*exp(-pow(dx,2) / (sig[m]*sig[m]) )
-    }
-  }
 #elif defined(_G_IS3D)
-  *xb[2] = 0.0;
-  for ( auto m=0; m<x0.size(); m++ ) {   // for each Gaussian lump
-    for ( auto j=0; j<nxy; j++ ) {
-      dx        = (*xnodes)[0][j] - x0[m];
-      dy        = (*xnodes)[1][j] - y0[m];
-      if ( FUZZYEQ(P0.x3,(*xnodes)[2][j],eps) )
-        (*xb[2])[j] += h0[m]*exp(-dx*dx / (xsig[m]*xsig[m])) * exp(-dy*dy / (ysig[m]*ysig[m]));
-    }
-  }
 #endif
 
   return TRUE;
@@ -128,24 +111,7 @@ GBOOL impl_poly_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Stat
 
   // Build terrain height vector:
 #if defined(_G_IS2D)
-  for ( auto m=0; m<x0.size(); m++ ) {   // for each Gaussian lump
-    *xb[1] = 0.0;
-    for ( auto j=0; j<nxy; j++ ) {
-      dx        = (*xnodes)[0][j] - x0[m];
-      if ( FUZZYEQ(P0.x2,(*xnodes)[1][j],eps) )
-        (*xb[1])[j] += h0[m]/( pow( dx*dx/(xsigma*xsigma) + 1, pexp[m]/2) );
-    }
-  }
 #elif defined(_G_IS3D)
-  *xb[2] = 0.0;
-  for ( auto m=0; m<x0.size(); m++ ) {   // for each Gaussian lump
-    for ( auto j=0; j<nxy; j++ ) {
-      dx        = (*xnodes)[0][j] - x0[m];
-      dy        = (*xnodes)[1][j] - y0[m];
-      if ( FUZZYEQ(P0.x3,(*xnodes)[2][j],eps) )
-        (*xb[2])[j] += h0[m]/( pow( dx*dx/(xsigma*xsigma) + dy*dy/(ysigma*ysigma) + 1, pexp[m]/2) );
-    }
-  }
 #endif
 
   return TRUE;
