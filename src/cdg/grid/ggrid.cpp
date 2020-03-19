@@ -1146,10 +1146,6 @@ void GGrid::init_bc_info()
     nind += igbdy_bydface_[j].size(); // by-domain-face
   }
 
-#if 0
-  assert(nebdy == nind && "Global bdy count inconsistent");
-#endif
-
   igbdy_ .resize(nind);
   igbdyt_.resize(nind);
   nind = 0;
@@ -1176,6 +1172,17 @@ void GGrid::init_bc_info()
   } // end, element loop
 
   if ( ind != NULLPTR ) delete [] ind;
+
+  // Compute mask matrix from bdy vector:
+  mask_.resize(ndof()); 
+  mask_ = 1.0;
+  for ( auto j=0; j<igbdy_binned_[GBDY_DIRICHLET].size(); j++ ) {
+    mask_[igbdy_binned_[GBDY_DIRICHLET][j]] = 0.0;
+  }
+  for ( auto j=0; j<igbdy_binned_[GBDY_INFLOWT].size(); j++ ) {
+    mask_[igbdy_binned_[GBDY_INFLOWT][j]] = 0.0;
+  }
+
 
 } // end of method init_bc_info
 
@@ -1217,15 +1224,14 @@ void GGrid::add_terrain(const State &xb, State &utmp)
   // given terrain, Xb, and // 'base' grid, XNodes:
   GTimerStart("GGrid::add_terrain: Solve");
   for ( auto j=0; j<xNodes_.size(); j++ ) {
-   *x0 = xNodes_[j]  - (*xb[j]); 
+   *x0 = xNodes_[j];
 cout << "GGrid::add_terrain: x0[" << j << "]=" << *x0 << endl;
-    H.opVec_prod(*x0, tmp, *b);  // b = H (XNodes-xb)
+    H.opVec_prod(*x0, tmp, *b);  // b = H XNodes
 EH_MESSAGE("GGrid::add_terrain: 2");
     *x0 = 0.0; // first guess
-    cg.solve(H, *b, *x0);
+    cg.solve(H, *b, *xb[j], *x0);
 EH_MESSAGE("GGrid::add_terrain: 3");
     xNodes_[j] = *x0;             // Reset XNodes = x0
-    xNodes_[j] += *xb[j];         // add in bdy solution to homog. solution
   }
   GTimerStop("GGrid::add_terrain: Solve");
  
