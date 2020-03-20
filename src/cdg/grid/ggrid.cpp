@@ -1223,14 +1223,14 @@ void GGrid::add_terrain(const State &xb, State &utmp)
   // for new (homgogeneous) grid solution, Xnew, 
   // given terrain, Xb, and // 'base' grid, XNodes:
   GTimerStart("GGrid::add_terrain: Solve");
-  for ( auto j=0; j<xNodes_.size(); j++ ) {
-   *x0 = xNodes_[j];
-cout << "GGrid::add_terrain: x0[" << j << "]=" << *x0 << endl;
-    H.opVec_prod(*x0, tmp, *b);  // b = H XNodes
-EH_MESSAGE("GGrid::add_terrain: 2");
-    *x0 = 0.0; // first guess
+  for ( auto j=1; j<xNodes_.size(); j++ ) {
+// *x0 = xNodes_[j];
+   *x0 = 0.0;
+   *b  = 0.0;
+//  H.opVec_prod(*x0, tmp, *b);  // b = H XNodes
+//  *x0 = 0.0; // first guess
     cg.solve(H, *b, *xb[j], *x0);
-EH_MESSAGE("GGrid::add_terrain: 3");
+    cout << "GGrid::add_terrain: xb_new[" << j << "]=" << *x0 << endl;
     xNodes_[j] = *x0;             // Reset XNodes = x0
   }
   GTimerStop("GGrid::add_terrain: Solve");
@@ -1245,14 +1245,12 @@ EH_MESSAGE("GGrid::add_terrain: 3");
    }
    for ( auto j=0; j<xNodes_.size(); j++ ) xNodes_[j].range_reset();
 
-EH_MESSAGE("GGrid::add_terrain: 4");
 
   // Now, with new coordinates, recompute metric terms, 
   // Jacobian, normals:
   GTimerStart("GGrid::add_terrain: def_geom_init");
   def_geom_init();
   GTimerStop("GGrid::add_terrain: def_geom_init");
-EH_MESSAGE("GGrid::add_terrain: 5");
 
   // Compute new minimum node distance:
   GTimerStart("GGrid::grid_init: find_min_dist");
