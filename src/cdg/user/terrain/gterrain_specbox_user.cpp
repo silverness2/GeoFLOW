@@ -54,6 +54,8 @@ GBOOL impl_gauss_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
   // Set initial bdy vector to be current coordinates:
   for ( auto j=0; j<xb.size(); j++ ) *xb[j] = 0.0;
 
+ *xb[0] = 0.0;
+ *xb[1] = 0.0;
   for ( auto j=0; j<igbdy->size(); j++ ) {
     i = (*igbdy)[j];
     (*xb[0])[i] = (*xnodes)[0][i];
@@ -64,7 +66,6 @@ GBOOL impl_gauss_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
   // Build terrain height vector:
 #if defined(_G_IS2D)
   for ( auto m=0; m<x0.size(); m++ ) {   // for each Gaussian lump
-    *xb[1] = 0.0;
     for ( auto j=0; j<nxy; j++ ) {
       dx        = (*xnodes)[0][j] - x0[m];
       if ( FUZZYEQ(P0.x2,(*xnodes)[1][j],eps) ) { // bottom
@@ -72,6 +73,8 @@ GBOOL impl_gauss_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
       }
     }
   }
+cout << "gauss_range: igbdy.size=" << igbdy->size() << " xb=" << *xb[0] << endl;
+cout << "gauss_range: igbdy.size=" << igbdy->size() << " yb=" << *xb[1] << endl;
 #elif defined(_G_IS3D)
   for ( auto m=0; m<x0.size(); m++ ) {   // for each Gaussian lump
     for ( auto j=0; j<nxy; j++ ) {
@@ -132,6 +135,8 @@ GBOOL impl_poly_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Stat
   // Set initial bdy vector to be current coordinates:
   for ( auto j=0; j<xb.size(); j++ ) *xb[j] = 0.0;
 
+ *xb[0] = 0.0;
+ *xb[1] = 0.0;
   for ( auto j=0; j<igbdy->size(); j++ ) {
     i = (*igbdy)[j];
     (*xb[0])[i] = (*xnodes)[0][i];
@@ -144,7 +149,6 @@ GBOOL impl_poly_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Stat
   // Build terrain height vector:
 #if defined(_G_IS2D)
   for ( auto m=0; m<x0.size(); m++ ) {   // for each Gaussian lump
-    *xb[1] = 0.0;
     for ( auto j=0; j<nxy; j++ ) {
       dx        = (*xnodes)[0][j] - x0[m];
       if ( FUZZYEQ(P0.x2,(*xnodes)[1][j],eps) )
@@ -152,7 +156,6 @@ GBOOL impl_poly_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Stat
     }
   }
 #elif defined(_G_IS3D)
-  *xb[2] = 0.0;
   for ( auto m=0; m<x0.size(); m++ ) {   // for each Gaussian lump
     for ( auto j=0; j<nxy; j++ ) {
       dx        = (*xnodes)[0][j] - x0[m];
@@ -211,6 +214,8 @@ GBOOL impl_schar_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
   // Set initial bdy vector to be current coordinates:
   for ( auto j=0; j<xb.size(); j++ ) *xb[j] = 0.0;
 
+  *xb[0] = 0.0;
+  *xb[1] = 0.0;
   for ( auto j=0; j<igbdy->size(); j++ ) {
     i = (*igbdy)[j];
     (*xb[0])[i] = (*xnodes)[0][i];
@@ -222,7 +227,6 @@ GBOOL impl_schar_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
 
   // Build terrain height vector:
 #if defined(_G_IS2D)
-  *xb[1] = 0.0;
   for ( auto j=0; j<nxy; j++ ) {
     x        = (*xnodes)[0][j];
     if ( FUZZYEQ(P0.x2,(*xnodes)[1][j],eps) )
