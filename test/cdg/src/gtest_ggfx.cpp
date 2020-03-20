@@ -148,9 +148,7 @@ NOTE: global ids are labeled starting from left on bottom-most
         jstart = irow*rowlen + myrank*np ; // global start of col index
         for ( GSIZET j=0; j<np+1; j++) {
           icol = jstart + j; // global col id
-          ua[n] = irow+icol;
-          r = irow; c = icol;
-#if 0
+#if 1
           if ( isTopElem  && i == np ) ua[n] = 2;
           if ( isBotElem  && i ==  0 ) ua[n] = 2;
           if ( isLeftTask && j ==  0 ) ua[n] = 2;
@@ -159,7 +157,9 @@ NOTE: global ids are labeled starting from left on bottom-most
           if ( isLeftTask && isBotElem && i ==  0 && j == 0  ) ua[n] = 4;
           if ( isRghtTask && isTopElem && i == np && j == np ) ua[n] = 4;
           if ( isRghtTask && isBotElem && i ==  0 && j == np ) ua[n] = 4;
-#endif
+#else
+          ua[n] = irow+icol;
+          r = irow; c = icol;
           if ( isTopElem  && i == np ) ua[n] = irow+icol + irow+icol+1;
           if ( isBotElem  && i ==  0 ) ua[n] = irow+icol + irow+icol-1;
           if ( isLeftTask && j ==  0 ) ua[n] = irow+icol + irow-1+icol;
@@ -168,6 +168,7 @@ NOTE: global ids are labeled starting from left on bottom-most
           if ( isLeftTask && isBotElem && i ==  0 && j == 0  ) ua[n] = r+c + r+1+c + r+1+c+1 + r+c+1;
           if ( isRghtTask && isTopElem && i == np && j == np ) ua[n] = r+c + r-1+c + r-1+c-1 + r+c-1;
           if ( isRghtTask && isBotElem && i ==  0 && j == np ) ua[n] = r+c + r+c-1 + r+1+c-1 + r+1+c;
+#endif
           n++;
         }
       }
@@ -207,15 +208,15 @@ NOTE: global ids are labeled starting from left on bottom-most
 
     GComm::Allreduce(&errcode, &gerrcode, 1, T2GCDatatype<GINT>() , GC_OP_MAX, comm);
 
-    // Print u to task 0:
 
     // Check against truth solution:
+    // Print error code to task 0
     GTVector<GFLOAT> del(ua.size());
-    if ( gerrcode > 0 ) {
-      GPP(comm,serr << " ua=" << ua);
-      GPP(comm,serr << " u =" << u );
+    if ( gerrcode == 0 ) {
       del = ua - u; 
       if ( del.max() > 0 ) {
+        GPP(comm,serr << " ua=" << ua);
+        GPP(comm,serr << " u =" << u );
         GPP(comm,serr << "del=" << del);
         GPP(comm,"main: Solution error in GGFX test");
         errcode = 4;
@@ -227,6 +228,7 @@ NOTE: global ids are labeled starting from left on bottom-most
     GPTLfinalize();
 #endif
 
+    GComm::Allreduce(&errcode, &gerrcode, 1, T2GCDatatype<GINT>() , GC_OP_MAX, comm);
 
 term:
     if ( myrank == 0 ) {
