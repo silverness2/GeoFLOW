@@ -31,8 +31,9 @@ GBOOL impl_gauss_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
   PropertyTree ttree     = ptree.getPropertyTree(sblk);
   PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
 
-  GSIZET nxy;
+  GSIZET i, nxy;
   GFTYPE dx, dy, eps;
+  GTVector<GSIZET> *igbdy = &grid.igbdy();
   GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
   GTPoint<GFTYPE>  P0(3);
   
@@ -49,24 +50,29 @@ GBOOL impl_gauss_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
   std::vector<GFTYPE> xyz0 = boxptree.getArray<GFTYPE>("xyz0");
 //std::vector<GFTYPE> dxyz = boxptree.getArray<GFTYPE>("delxyz");
   P0 = xyz0; 
+  
+  // Set initial bdy vector to be current coordinates:
+  for ( auto j=0; j<xb.size(); j++ ) *xb[j] = 0.0;
+
+  for ( auto j=0; j<igbdy->size(); j++ ) {
+    i = (*igbdy)[j];
+    (*xb[0])[i] = (*xnodes)[0][i];
+    (*xb[1])[i] = (*xnodes)[1][i];
+  }
 
   eps =  100*std::numeric_limits<GFTYPE>::epsilon();
-
   // Build terrain height vector:
 #if defined(_G_IS2D)
-cout << "impl_gauss_range: made it!" << endl;
   for ( auto m=0; m<x0.size(); m++ ) {   // for each Gaussian lump
     *xb[1] = 0.0;
     for ( auto j=0; j<nxy; j++ ) {
       dx        = (*xnodes)[0][j] - x0[m];
-      if ( FUZZYEQ(P0.x2,(*xnodes)[1][j],eps) ) {
+      if ( FUZZYEQ(P0.x2,(*xnodes)[1][j],eps) ) { // bottom
         (*xb[1])[j] += h0[m]*exp(-pow(dx,2) / (xsig[m]*xsig[m]) );
-cout << "impl_gauss_range: yb =" << (*xb[1])[j] << endl;
       }
     }
   }
 #elif defined(_G_IS3D)
-  *xb[2] = 0.0;
   for ( auto m=0; m<x0.size(); m++ ) {   // for each Gaussian lump
     for ( auto j=0; j<nxy; j++ ) {
       dx        = (*xnodes)[0][j] - x0[m];
@@ -77,8 +83,6 @@ cout << "impl_gauss_range: yb =" << (*xb[1])[j] << endl;
     }
   }
 #endif
-cout << "impl_gauss_range: xb =" << *xb[0] << endl;
-cout << "impl_gauss_range: yb =" << *xb[1] << endl;
 
   return TRUE;
 
@@ -104,8 +108,9 @@ GBOOL impl_poly_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Stat
   PropertyTree ttree     = ptree.getPropertyTree(sblk);
   PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
 
-  GSIZET nxy;
+  GSIZET i, nxy;
   GFTYPE dx, dy, eps;
+  GTVector<GSIZET> *igbdy = &grid.igbdy();
   GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
   GTPoint<GFTYPE>  P0(3);
   
@@ -123,6 +128,15 @@ GBOOL impl_poly_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Stat
   std::vector<GFTYPE> xyz0 = boxptree.getArray<GFTYPE>("xyz0");
 //std::vector<GFTYPE> dxyz = boxptree.getArray<GFTYPE>("delxyz");
   P0 = xyz0; 
+
+  // Set initial bdy vector to be current coordinates:
+  for ( auto j=0; j<xb.size(); j++ ) *xb[j] = 0.0;
+
+  for ( auto j=0; j<igbdy->size(); j++ ) {
+    i = (*igbdy)[j];
+    (*xb[0])[i] = (*xnodes)[0][i];
+    (*xb[1])[i] = (*xnodes)[1][i];
+  }
 
   eps =  100*std::numeric_limits<GFTYPE>::epsilon();
 
@@ -179,8 +193,9 @@ GBOOL impl_schar_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
   PropertyTree ttree     = ptree.getPropertyTree(sblk);
   PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
 
-  GSIZET nxy;
+  GSIZET i, nxy;
   GFTYPE eps, x;
+  GTVector<GSIZET> *igbdy = &grid.igbdy();
   GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
   GTPoint<GFTYPE>  P0(3);
   
@@ -192,6 +207,15 @@ GBOOL impl_schar_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
   std::vector<GFTYPE> xyz0 = boxptree.getArray<GFTYPE>("xyz0");
 //std::vector<GFTYPE> dxyz = boxptree.getArray<GFTYPE>("delxyz");
   P0 = xyz0; 
+
+  // Set initial bdy vector to be current coordinates:
+  for ( auto j=0; j<xb.size(); j++ ) *xb[j] = 0.0;
+
+  for ( auto j=0; j<igbdy->size(); j++ ) {
+    i = (*igbdy)[j];
+    (*xb[0])[i] = (*xnodes)[0][i];
+    (*xb[1])[i] = (*xnodes)[1][i];
+  }
 
   eps =  100*std::numeric_limits<GFTYPE>::epsilon();
 
