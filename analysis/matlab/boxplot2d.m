@@ -88,7 +88,7 @@ end
 
 nverts = 4;
 
-
+figure();
 for itask = 0:ntasks-1
 
   % Read node coords:
