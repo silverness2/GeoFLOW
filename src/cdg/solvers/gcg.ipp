@@ -115,32 +115,44 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
 {
   GINT       iret=GCGERR_NONE;
   GFTYPE     alpha, beta, residual, rho, rhom;
-  StateComp *p, *q, *r, *z;
+  StateComp *q, *r, *w, *z;
   State      tmp(this->tmp_->size()-4);
   StateComp *mask = &this->grid_->get_mask();
 
   assert(this->tmp_->size() > 5);
   init();
 
+  // Set some pointers:
   tmp.resize(this->tmp_->size()-4);
-  p  = (*this->tmp_)[0];
   q  = (*this->tmp_)[1];
-  z  = (*this->tmp_)[2];
   r  = (*this->tmp_)[3];
+  w  = (*this->tmp_)[0];
+  z  = (*this->tmp_)[2];
   for ( auto j=0; j<this->tmp_->size()-4; j++ ) {
     tmp[j] = (*this->tmp_)[j+4];
   }
   residuals_ = 0.0;
 
+ // Initialize CG loop, and enter loop:
  *r = b;
-  if ( bbv_ ) x.pointProd(*mask);
+//if ( bbv_ ) x.pointProd(*mask);
   A.opVec_prod(x, tmp, *p);             // Ax
  *r -= (*p);                            // r = b - Ax, initial residual
-  if ( bbv_ ) r->pointProd(*mask);
-  this->ggfx_->doOp(*r, GGFX_OP_SMOOTH);   // DSS r
+cout << "GCG::solve: r=" << *r << endl;
+  this->ggfx_->doOp(*r, GGFX_OP_SUM);   // DSS r
+  if ( bbv_ ) r->pointProd(*mask);      // Mask DSS r
+  if ( precond_ != NULLPTR ) {          // solve P z = r for z
+    iret = precond_->solve(*r, *z);  
+    if ( iret >  0 ) iret = GCGERR_PRECOND; 
+  }
+  else {
+    *z = *r;                            // use identity preconditioner
+  }
   iter_ = 0; residual = 1.0;
 
-  while ( iter_ < this->traits_.maxit && residual > this->traits_.tol ) {
+  while ( iret == GCERR_NONE 
+       && iter_ < this->traits_.maxit 
+       && residual > this->traits_.tol ) {
 
     if ( precond_ != NULLPTR ) {        // solve P z = r for z
       iret = precond_->solve(*r, *z);   // apply preconditioner
@@ -165,14 +177,14 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
     }
 
     A.opVec_prod(*p, tmp, *q);          // q = A p
-    this->ggfx_->doOp(*q, GGFX_OP_SMOOTH); // DSS q
+    this->ggfx_->doOp(*q, GGFX_OP_SUM); // DSS q
 //cout << "GCG::solve: qk=" << *q << endl;
     alpha = rho / (p->gdot(*q,comm_));
 //cout << "GCG::solve: iter=" << iter_ << " alpha=" << alpha << endl;
-    if ( bbv_ ) p->pointProd(*mask); 
+//  if ( bbv_ ) p->pointProd(*mask); 
     GMTK::saxpby( x, 1.0, *p, alpha);   // x = x + alpha p
     GMTK::saxpby(*r, 1.0, *q,-alpha);   // r = r - alpha q
-    if ( bbv_ ) r->pointProd(*mask);
+//  if ( bbv_ ) r->pointProd(*mask);
 
     rhom = rho;
 
@@ -183,8 +195,10 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
 
   } // end, CG loop
 
-//cout << "GCG::solve: iter_     =" << iter_ << endl;
-//cout << "GCG::solve: rersiduals=" << residuals_ << endl;
+  if ( bbv_ ) x.pointProd(*mask);
+
+  cout << "GCG::solve: iter_     =" << iter_ << endl;
+  cout << "GCG::solve: rersiduals=" << residuals_ << endl;
     
   if ( iret == GCGERR_NONE 
     && iter_ >= this->traits_.maxit 
@@ -215,13 +229,13 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, const StateComp& xb
 
   // Add in boundary solution, so 
   // that it will form RHS in homogeneous solve:
-  
+
   if ( bbv_ ) x.pointProd(this->grid_->get_mask()); // apply mask
   x += xb; 
 
   // Compute homogeneous solution:
   iret = solve_impl(A, b, x);
-  assert(iret != GCGERR_NONE);
+  assert(iret == GCGERR_NONE);
 
   // Add back boundary solution:
   x += xb;
