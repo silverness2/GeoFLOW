@@ -104,7 +104,10 @@ void GCG<Types>::init()
 //************************************************************************************
 //************************************************************************************
 // METHOD : solve_impl (1)
-// DESC   : Solve implementation
+// DESC   : Solve implementation. Taken from
+//          High Order Methods for Incompressible Fluid Flow,
+//          Deville, Fischer, Mund, Cambridge 2002, p 197-198
+//           
 // ARGS   : A    : linear operator to invert
 //          b    : right-hand side vector
 //          x    : solution, returned
@@ -115,31 +118,38 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
 {
   GINT       iret=GCGERR_NONE;
   GFTYPE     alpha, beta, residual, rho, rhom;
-  StateComp *q, *r, *w, *z;
+  StateComp *q, *r, *t, *w, *z;
   State      tmp(this->tmp_->size()-4);
-  StateComp *mask = &this->grid_->get_mask();
+  StateComp *mask  = &this->grid_->get_mask();
+  StateComp *imult = &this->ggfx_->get_imult();
 
   assert(this->tmp_->size() > 5);
   init();
 
   // Set some pointers:
   tmp.resize(this->tmp_->size()-4);
-  q  = (*this->tmp_)[1];
-  r  = (*this->tmp_)[3];
-  w  = (*this->tmp_)[0];
-  z  = (*this->tmp_)[2];
+  q  = (*this->tmp_)[0];
+  r  = (*this->tmp_)[1];
+  w  = (*this->tmp_)[2];
+  z  = (*this->tmp_)[3];
+  t  = (*this->tmp_)[4];
   for ( auto j=0; j<this->tmp_->size()-4; j++ ) {
     tmp[j] = (*this->tmp_)[j+4];
   }
   residuals_ = 0.0;
 
  // Initialize CG loop, and enter loop:
+EH_MESSAGE("r = b...");
  *r = b;
 //if ( bbv_ ) x.pointProd(*mask);
-  A.opVec_prod(x, tmp, *p);             // Ax
- *r -= (*p);                            // r = b - Ax, initial residual
+EH_MESSAGE("A x...");
+  A.opVec_prod(x, tmp, *w);             // Ax
+EH_MESSAGE("r = b - Ax...");
+ *r -= (*w);                            // r = b - Ax, initial residual
 cout << "GCG::solve: r=" << *r << endl;
+EH_MESSAGE("DSS(r_init)...");
   this->ggfx_->doOp(*r, GGFX_OP_SUM);   // DSS r
+EH_MESSAGE("Mask(r_init)...");
   if ( bbv_ ) r->pointProd(*mask);      // Mask DSS r
   if ( precond_ != NULLPTR ) {          // solve P z = r for z
     iret = precond_->solve(*r, *z);  
@@ -148,48 +158,50 @@ cout << "GCG::solve: r=" << *r << endl;
   else {
     *z = *r;                            // use identity preconditioner
   }
+EH_MESSAGE("Compute rho_init...");
+cout << "solve_impl: imult=" << *imult << endl;
+  rho = r->gdot(*z, *imult, *t, comm_); // rho = r^T imult z
   iter_ = 0; residual = 1.0;
 
-  while ( iret == GCERR_NONE 
+  while ( iret == GCGERR_NONE 
        && iter_ < this->traits_.maxit 
        && residual > this->traits_.tol ) {
 
-    if ( precond_ != NULLPTR ) {        // solve P z = r for z
-      iret = precond_->solve(*r, *z);   // apply preconditioner
+EH_MESSAGE("q= A w...");
+    A.opVec_prod(*w, tmp, *q);          // q = A w
+EH_MESSAGE("DSS(q)...");
+    this->ggfx_->doOp(*q, GGFX_OP_SUM); // q <- DSS q
+EH_MESSAGE("Mask(q)...");
+    if ( bbv_ ) q->pointProd(*mask);    // Mask(q)
+
+EH_MESSAGE("compute alpha...");
+    alpha = rho /
+     (w->gdot(*q, *imult, *t, comm_)); // alpha=rho/w^T imult q
+
+EH_MESSAGE("update x, r...");
+    GMTK::saxpby( x, 1.0, *w, alpha);   // x = x + alpha w
+    GMTK::saxpby(*r, 1.0, *q,-alpha);   // r = r - alpha q
+
+EH_MESSAGE("z = P^-1  r...");
+    if ( precond_ != NULLPTR ) {        // z = P^-1 r for z,
+      iret = precond_->solve(*r, *z);   // where P^-1 is precond
       if ( iret >  0 ) {
-        iret = GCGERR_PRECOND;
-        break;
+        iret = GCGERR_PRECOND; break;
       }
     }
     else {
       *z = *r;                          // use identity preconditioner
     }
 //cout << "GCG::solve: iter=" << iter_ << " zk=" << *z << endl;
-    rho = r->gdot(*z,comm_);
-//cout << "GCG::solve: iter=" << iter_ << " rho=" << rho << " rhom=" << rhom << endl;
-    if ( iter_  == 0 ) {                // find p
-     *p = *z;
-    }
-    else {
-      beta = rho / rhom;
-//cout << "GCG::solve: iter=" << iter_ << " beta =" << beta << endl;
-      GMTK::saxpby(*p, beta, *z, 1.0);
-    }
-
-    A.opVec_prod(*p, tmp, *q);          // q = A p
-    this->ggfx_->doOp(*q, GGFX_OP_SUM); // DSS q
-//cout << "GCG::solve: qk=" << *q << endl;
-    alpha = rho / (p->gdot(*q,comm_));
-//cout << "GCG::solve: iter=" << iter_ << " alpha=" << alpha << endl;
-//  if ( bbv_ ) p->pointProd(*mask); 
-    GMTK::saxpby( x, 1.0, *p, alpha);   // x = x + alpha p
-    GMTK::saxpby(*r, 1.0, *q,-alpha);   // r = r - alpha q
-//  if ( bbv_ ) r->pointProd(*mask);
 
     rhom = rho;
+EH_MESSAGE("Compute rho ...");
+    rho  = r->gdot(*z,*imult,*t,comm_); // rho = r^T imult z
+    beta = rho / rhom;
+EH_MESSAGE("update w...");
+    GMTK::saxpby(*w, beta, *z, 1.0);    // w = z + beta w
 
-    residual = compute_norm(*r, tmp); // find norm of residual
-//cout << "GCG::solve: residual=" << residual << " tol=" << this->traits_.tol << endl;
+    residual = compute_norm(*r, tmp);   // find norm of residual
     residuals_[iter_] = residual;
     iter_++;
 
