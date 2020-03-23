@@ -127,7 +127,7 @@ template <class T> class GTVector
     #pragma acc routine vector 
     T              gdot(const GTVector &b, GC_COMM comm);
     #pragma acc routine vector 
-    T              gdot(const GTVector &b, const GTVector &c, GTVector &tmp, GC_COMM comm);
+    T              gdot(const GTVector &b, const GTVector &c, GC_COMM comm);
 
 
     #pragma acc routine vector

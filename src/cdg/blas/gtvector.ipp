@@ -990,21 +990,21 @@ T GTVector<T>::gdot(const GTVector &obj, GC_COMM comm)
 //          where : represents pointProd of operands
 // ARGS   : b : input vector
 //          c : input vector
-//          tmp  : tmp vector, of same size as obj1, obj2
 //          comm : communicator
 // RETURNS: typename T
 //**********************************************************************************
 template<class T>
-T GTVector<T>::gdot(const GTVector &b, const GTVector &c, GTVector &tmp, GC_COMM comm)
+T GTVector<T>::gdot(const GTVector &b, const GTVector &c, GC_COMM comm)
 {
   assert(std::is_arithmetic<T>::value &&
     "Invalid template type: GVector<T>::gdot()");
 
-  T lret; 
+  T lret=0.0; 
   T gret;
 
-  this->pointProd(b, tmp);
-  lret = tmp.dot(c); 
+  for ( auto j=gindex_.beg(); j<=gindex_.end(); j+=gindex_.stride() ) {
+    lret += data_[j]*b[j]*c[j];
+  }
   
   GComm::Allreduce(&lret, &gret, 1, T2GCDatatype<T>() , GC_OP_SUM, comm);
 
