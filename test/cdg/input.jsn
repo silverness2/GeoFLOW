@@ -123,8 +123,8 @@
     "bdy_z_0"   : "my_dirichlet",
     "bdy_z_1"   : "my_dirichlet",
     "maxit"     : 128,
-    "tol"       : 1.0e-6,
-    "norm_type" : "GCG_NORM_INF"
+    "tol"       : 1.0e-2,
+    "norm_type" : "GCG_NORM_L2"
   },
   "stepper_props": {
     "stepping_method"  : "GSTEPPER_EXRK",
