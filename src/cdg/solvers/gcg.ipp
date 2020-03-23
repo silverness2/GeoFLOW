@@ -118,7 +118,7 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
 {
   GINT       iret=GCGERR_NONE;
   GFTYPE     alpha, beta, residual, rho, rhom;
-  StateComp *q, *r, *t, *w, *z;
+  StateComp *q, *r, *w, *z;
   State      tmp(this->tmp_->size()-4);
   StateComp *mask  = &this->grid_->get_mask();
   StateComp *imult = &this->ggfx_->get_imult();
@@ -132,24 +132,24 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
   r  = (*this->tmp_)[1];
   w  = (*this->tmp_)[2];
   z  = (*this->tmp_)[3];
-  t  = (*this->tmp_)[4];
   for ( auto j=0; j<this->tmp_->size()-4; j++ ) {
     tmp[j] = (*this->tmp_)[j+4];
   }
   residuals_ = 0.0;
 
 GPP(comm_, "mask=" << *mask);
+GPP(comm_, "imult=" << *imult);
+
  // Initialize CG loop, and enter loop:
-EH_MESSAGE("r = b...");
  *r = b;
 EH_MESSAGE("A x...");
   A.opVec_prod(x, tmp, *w);             // Ax
 EH_MESSAGE("r = b - Ax...");
  *r -= (*w);                            // r = b - Ax, initial residual
 cout << "GCG::solve: r=" << *r << endl;
-EH_MESSAGE("DSS(r_init)...");
+
   this->ggfx_->doOp(*r, GGFX_OP_SUM);   // DSS r
-EH_MESSAGE("Mask(r_init)...");
+
   if ( bbv_ ) r->pointProd(*mask);      // Mask DSS r
   if ( precond_ != NULLPTR ) {          // solve P z = r for z
     iret = precond_->solve(*r, *z);  
@@ -159,31 +159,26 @@ EH_MESSAGE("Mask(r_init)...");
     *z = *r;                            // use identity preconditioner
   }
   *w = *z;                              // w = z, for initial w
-EH_MESSAGE("Compute rho_init...");
-cout << "solve_impl: imult=" << *imult << endl;
-  rho = r->gdot(*z, *imult, *t, comm_); // rho = r^T imult z
+
+  rho = r->gdot(*z, *imult, comm_);     // rho = r^T imult z
   iter_ = 0; residual = 1.0;
 
   while ( iret == GCGERR_NONE 
        && iter_ < this->traits_.maxit 
        && residual > this->traits_.tol ) {
 
-EH_MESSAGE("q= A w...");
     A.opVec_prod(*w, tmp, *q);          // q = A w
-EH_MESSAGE("DSS(q)...");
+
     this->ggfx_->doOp(*q, GGFX_OP_SUM); // q <- DSS q
-EH_MESSAGE("Mask(q)...");
+
     if ( bbv_ ) q->pointProd(*mask);    // Mask(q)
 
-EH_MESSAGE("compute alpha...");
     alpha = rho /
-     (w->gdot(*q, *imult, *t, comm_)); // alpha=rho/w^T imult q
+     (w->gdot(*q, *imult, comm_));      // alpha=rho/w^T imult q
 
-EH_MESSAGE("update x, r...");
     GMTK::saxpby( x, 1.0, *w, alpha);   // x = x + alpha w
     GMTK::saxpby(*r, 1.0, *q,-alpha);   // r = r - alpha q
 
-EH_MESSAGE("z = P^-1  r...");
     if ( precond_ != NULLPTR ) {        // z = P^-1 r for z,
       iret = precond_->solve(*r, *z);   // where P^-1 is precond
       if ( iret >  0 ) {
@@ -196,10 +191,9 @@ EH_MESSAGE("z = P^-1  r...");
 //cout << "GCG::solve: iter=" << iter_ << " zk=" << *z << endl;
 
     rhom = rho;
-EH_MESSAGE("Compute rho ...");
-    rho  = r->gdot(*z,*imult,*t,comm_); // rho = r^T imult z
+    rho  = r->gdot(*z, *imult, comm_);  // rho = r^T imult z
     beta = rho / rhom;
-EH_MESSAGE("update w...");
+
     GMTK::saxpby(*w, beta, *z, 1.0);    // w = z + beta w
 
     residual = compute_norm(*r, tmp);   // find norm of residual
