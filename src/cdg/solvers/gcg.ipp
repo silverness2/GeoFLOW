@@ -142,13 +142,13 @@ GPP(comm_, "imult=" << *imult);
 
  // Initialize CG loop, and enter loop:
  *r = b;
-EH_MESSAGE("A x...");
+
   A.opVec_prod(x, tmp, *w);             // Ax
-EH_MESSAGE("r = b - Ax...");
+
  *r -= (*w);                            // r = b - Ax, initial residual
 cout << "GCG::solve: r=" << *r << endl;
 
-  this->ggfx_->doOp(*r, GGFX_OP_SUM);   // DSS r
+  this->ggfx_->doOp(*r, GGFX_OP_SMOOTH);   // DSS r
 
   if ( bbv_ ) r->pointProd(*mask);      // Mask DSS r
   if ( precond_ != NULLPTR ) {          // solve P z = r for z
@@ -169,7 +169,7 @@ cout << "GCG::solve: r=" << *r << endl;
 
     A.opVec_prod(*w, tmp, *q);          // q = A w
 
-    this->ggfx_->doOp(*q, GGFX_OP_SUM); // q <- DSS q
+    this->ggfx_->doOp(*q, GGFX_OP_SMOOTH); // q <- DSS q
 
     if ( bbv_ ) q->pointProd(*mask);    // Mask(q)
 
