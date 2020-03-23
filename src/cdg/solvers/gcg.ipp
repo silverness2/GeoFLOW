@@ -138,10 +138,10 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
   }
   residuals_ = 0.0;
 
+GPP(comm_, "mask=" << *mask);
  // Initialize CG loop, and enter loop:
 EH_MESSAGE("r = b...");
  *r = b;
-//if ( bbv_ ) x.pointProd(*mask);
 EH_MESSAGE("A x...");
   A.opVec_prod(x, tmp, *w);             // Ax
 EH_MESSAGE("r = b - Ax...");
@@ -158,6 +158,7 @@ EH_MESSAGE("Mask(r_init)...");
   else {
     *z = *r;                            // use identity preconditioner
   }
+  *w = *z;                              // w = z, for initial w
 EH_MESSAGE("Compute rho_init...");
 cout << "solve_impl: imult=" << *imult << endl;
   rho = r->gdot(*z, *imult, *t, comm_); // rho = r^T imult z
@@ -210,7 +211,7 @@ EH_MESSAGE("update w...");
   if ( bbv_ ) x.pointProd(*mask);
 
   cout << "GCG::solve: iter_     =" << iter_ << endl;
-  cout << "GCG::solve: rersiduals=" << residuals_ << endl;
+  cout << "GCG::solve: residuals=" << residuals_ << endl;
     
   if ( iret == GCGERR_NONE 
     && iter_ >= this->traits_.maxit 
@@ -242,7 +243,8 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, const StateComp& xb
   // Add in boundary solution, so 
   // that it will form RHS in homogeneous solve:
 
-  if ( bbv_ ) x.pointProd(this->grid_->get_mask()); // apply mask
+//if ( bbv_ ) x.pointProd(this->grid_->get_mask()); // apply mask
+  x = 0.0;
   x += xb; 
 
   // Compute homogeneous solution:
