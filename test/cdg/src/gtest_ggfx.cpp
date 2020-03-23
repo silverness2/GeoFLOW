@@ -28,6 +28,7 @@ int main(int argc, char **argv)
     GINT   errcode=0, gerrcode;
     GSIZET ne=16; // no. elements per task (# 'y' elems)
     GSIZET np=4;    // elem 'order'
+    GFLOAT eps = std::numeric_limits<GFLOAT>::epsilon();
     GC_COMM comm = GC_COMM_WORLD;
     GGFX<GFLOAT>   ggfx;
 
@@ -211,13 +212,18 @@ NOTE: global ids are labeled starting from left on bottom-most
 
     // Check against truth solution:
     // Print error code to task 0
+    GFLOAT           ldel, gdel;
     GTVector<GFLOAT> del(ua.size());
     if ( gerrcode == 0 ) {
       del = ua - u; 
-      if ( del.max() > 0 ) {
-        GPP(comm,serr << " ua=" << ua);
-        GPP(comm,serr << " u =" << u );
-        GPP(comm,serr << "del=" << del);
+      ldel = del.max();
+      GComm::Allreduce(&ldel, &gdel, 1, T2GCDatatype<GFLOAT>() , GC_OP_MAX, comm);
+      if ( gdel > eps ) {
+        GPP(comm,serr << "  ua=" << ua);
+        GPP(comm,serr << "  ua=" << ua);
+        GPP(comm,serr << "  u =" << u );
+        GPP(comm,serr << " del=" << del);
+        GPP(comm,serr << "gdel=" << gdel);
         GPP(comm,"main: Solution error in GGFX test");
         errcode = 4;
       }
