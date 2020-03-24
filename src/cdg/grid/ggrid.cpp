@@ -41,6 +41,8 @@ minnodedist_   (std::numeric_limits<GFTYPE>::max()),
 volume_                           (0.0),
 ivolume_                          (0.0),
 comm_                            (comm),
+mass_                         (NULLPTR),
+imass_                        (NULLPTR),
 ggfx_                         (NULLPTR),
 ptree_                          (ptree)
 {
@@ -57,6 +59,7 @@ ptree_                          (ptree)
 GGrid::~GGrid()
 {
   if ( mass_ != NULLPTR ) delete mass_;
+  if ( imass_ != NULLPTR ) delete imass_;
   for ( auto j=0; j<gelems_.size(); j++ ) {
     if ( gelems_[j] != NULLPTR ) delete gelems_[j];
   }
@@ -848,6 +851,22 @@ GMass &GGrid::massop()
 
 //**********************************************************************************
 //**********************************************************************************
+// METHOD : imassop
+// DESC   : return inverse of global diagonal mass operator
+// ARGS   : none
+// RETURNS: GTVector<GFTYPE> &
+//**********************************************************************************
+GMass &GGrid::imassop()
+{
+   assert(bInitialized_ && "Object not inititaized");
+   if ( imass_ == NULLPTR ) imass_ = new GMass(*this, TRUE);
+   return *imass_;
+
+} // end of method imassop
+
+
+//**********************************************************************************
+//**********************************************************************************
 // METHOD : Jac
 // DESC   : return global coord transform Jacobian
 // ARGS   : none
@@ -1232,6 +1251,7 @@ void GGrid::add_terrain(const State &xb, State &utmp)
     cg.solve(H, *b, *xb[j], *x0);
     cout << "GGrid::add_terrain: xb_new[" << j << "]=" << *x0 << endl;
     xNodes_[j] = *x0;             // Reset XNodes = x0
+GPP(comm_,"GGrid::add_terrain: new_xNodes[" << j << "]=" << xNodes_[j]);
   }
   GTimerStop("GGrid::add_terrain: Solve");
  

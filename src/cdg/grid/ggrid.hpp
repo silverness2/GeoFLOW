@@ -131,6 +131,7 @@ virtual void                 print(const GString &filename){}          // print 
                             
 
         GMass               &massop();                                 // global mass op
+        GMass               &imassop();                                // global inv.mass op
         GTVector<GFTYPE>    &Jac();                                    // global Jacobian
         GTVector<GFTYPE>
                             &faceJac();                                // global face Jacobian
@@ -174,6 +175,7 @@ protected:
         GFTYPE                      find_min_dist(); 
 
         GBOOL                       bInitialized_;    // object initialized?
+        GBOOL                       bInvMass_;        // inverse mass computed?
         GBOOL                       is_bdy_time_dep_; // time-dep bdy vals?
         GBOOL                       do_face_normals_; // compute elem face normals for fluxes?
         GElemType                   gtype_;         // element types comprising grid
@@ -191,6 +193,7 @@ protected:
         GTMatrix<GTVector<GFTYPE>>  dXidX_;         // matrix Rij = dXi^j/dX^i, global
         GTVector<GTVector<GFTYPE>>  xNodes_;        // Cart coords of all node points
         GMass                      *mass_;          // mass operator
+        GMass                      *imass_;         // inverse of mass operator
         GTVector<GFTYPE>            Jac_;           // interior Jacobian, global
         GTVector<GFTYPE>            faceJac_;       // face Jacobian, global
         GTVector<GTVector<GFTYPE>>  faceNormal_;    // normal to eleme faces each face node point (2d & 3d), global
