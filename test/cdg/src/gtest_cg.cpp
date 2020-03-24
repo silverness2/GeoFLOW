@@ -1,7 +1,12 @@
 //==================================================================================
 // Module       : gtest_cg.cpp
 // Date         : 3/16/20 (DLR)
-// Description  : GeoFLOW test of conjigate gradient operator
+// Description  : GeoFLOW test of conjigate gradient operator, 
+//                solving
+//                    Nabla^2 u = -f, 
+//                In a 2D box, where f =  6xy(1-y) - 2x^3
+//                on 0 <= x,y <= 1, and u(x,y=0)=u(x,y=1)=0;
+//                u(x=0,y)=0; u(x=1,y) = y(1-y). 
 // Copyright    : Copyright 2020. Colorado State University. All rights reserved.
 // Derived From : none.
 //==================================================================================
@@ -30,6 +35,7 @@
 #include "gio_observer.hpp"
 #include "gio.hpp"
 #include "gcg.hpp"
+#include "ghelmholtz.hpp"
 #if defined(_G_USE_GPTL)
   #include "gptl.h"
 #endif
@@ -59,7 +65,7 @@ struct stStateInfo {
 
 struct MyCGTypes {
         using Types            = MyCGTypes;
-        using Operator         = class GMass;
+        using Operator         = class GHelmholtz;
         using Preconditioner   = LinSolverBase<Types>;
         using State            = GTVector<GTVector<GFTYPE>*>;
         using StateComp        = GTVector<GFTYPE>;
@@ -100,7 +106,7 @@ using IOBasePtr     = std::shared_ptr<IOBaseType>;// IO Base ptr
 using Grid          = GGrid;
 
 
-GGrid       *grid_;
+GGrid        *grid_=NULLPTR;
 GC_COMM      comm_=GC_COMM_WORLD ;      // communicator
 
 void init_ggfx(PropertyTree &ptree, Grid &grid, GGFX<GFTYPE> &ggfx);
@@ -147,12 +153,20 @@ int main(int argc, char **argv)
     // Get minimal property tree:
     PropertyTree gtree, ptree; 
     GString sgrid;
+    GTPoint<GFTYPE> P0, P1, dP;
     std::vector<GINT> pstd(GDIM);
 
-    ptree.load_file("input.jsn");
+    ptree.load_file("input_cg.jsn");
     sgrid       = ptree.getValue<GString>("grid_type");
     pstd        = ptree.getArray<GINT>("exp_order");
     gtree       = ptree.getPropertyTree(sgrid);
+
+    std::vector<GFTYPE> xyz0 = gtree.getArray<GFTYPE>("xyz0");
+    std::vector<GFTYPE> dxyz = gtree.getArray<GFTYPE>("delxyz");
+    P0  = xyz0;
+    P1  = dxyz;
+    P1 += P0;
+
 
 
     // Create basis:
@@ -178,59 +192,75 @@ int main(int argc, char **argv)
     EH_MESSAGE("main: Initialize GGFX operator...");
 
     // Initialize gather/scatter operator:
-    GGFX<GFTYPE> ggfx_;
-    init_ggfx(ptree, *grid_, ggfx_);
+    GGFX<GFTYPE>  ggfx;
+    init_ggfx(ptree, *grid_, ggfx);
 
     xnodes = &(grid_->xNodes());
 
-    GTVector<GFTYPE>            f(grid_->ndof());
-    GTVector<GFTYPE>            g(grid_->ndof());
-    GTVector<GFTYPE>            b(grid_->ndof());
+    GTVector<GFTYPE>            f (grid_->ndof());
+    GTVector<GFTYPE>            u (grid_->ndof());
+    GTVector<GFTYPE>            ua(grid_->ndof());
+    GTVector<GFTYPE>            ub(grid_->ndof());
+    GTVector<GFTYPE>           *mass_local = grid_->massop().data();
     GTVector<GTVector<GFTYPE>*> utmp(10);
 
     for ( auto j=0; j<utmp.size(); j++ ) utmp[j] = new GTVector<GFTYPE>(grid_->ndof());
 
-    cgtraits.maxit    = 256;
-    cgtraits.tol      = 1.0e-5;
-    snorm             = "GCG_NORM_INF";
+    cgtraits.maxit    = 128;
+    cgtraits.tol      = 1.0e-4;
+    snorm             = "GCG_NORM_L2";
     cgtraits.normtype = LinSolverBase<MyCGTypes>::str2normtype(snorm);
 
     EH_MESSAGE("main: Initialize CG operator...");
 
     // Initialize GCG operator:
-    GCG<MyCGTypes>   cg(cgtraits, *grid_, ggfx_, utmp);
-    GMass            massop(*grid_,FALSE);
-    GMass            imassop(*grid_,TRUE); // do inverse
     GFTYPE           eps = std::numeric_limits<GFTYPE>::epsilon();
     GFTYPE           err, x, y, z;
 
+    EH_MESSAGE("main: Create Lap op...");
+    GHelmholtz       L(*grid_); // Laplacian operator
+
+    EH_MESSAGE("main: Create CG op...");
+
+    GCG<MyCGTypes>   cg(cgtraits, *grid_, ggfx, utmp);
+
     EH_MESSAGE("main: Set RHS...");
 
-    // Generate smooth RHS:
+    // Generate smooth RHS, bdyy vector:
+    //    f =  6xy(1-y) - 2x^3
     for ( auto j=0; j<grid_->ndof(); j++ ) {
       x = (*xnodes)[0][j]; y = (*xnodes)[1][j];
       if ( GDIM > 2 ) z = (*xnodes)[2][j];
-      b[j] = cos(2*PI*x)*cos(2*PI*y);
-      if ( GDIM > 2 ) b[j] *= cos(2*PI*z);
+      f[j] = 6.0*x*y*(1.0-y) - 2.0*pow(x,3);                    // RHS
+      ua[j] =y*(1.0-y)*pow(x,3);    // analytic solution
+      if ( FUZZYEQ(P0.x2,y,eps) || FUZZYEQ(P1.x2,y,eps) ) // N & S bdy
+        ub[j] = 0.0; 
+      if ( FUZZYEQ(P0.x1,x,eps) ) // W bdy
+        ub[j] = 0.0; 
+      if ( FUZZYEQ(P1.x1,x,eps) ) // E bdy
+        ub[j] = y*(1.0-y);
+
     }
- 
+    f *= -1.0;                     // -f
+
+    // Multiply f by local mass matrix:
+    f.pointProd(*mass_local);     // M_L f_L
+
+GPP(comm_, "main: ub=" << ub);
+GPP(comm_, "main: f=" << f);
 
 
     EH_MESSAGE("main: Solve linear system...");
 
-    // Invert mass operator, solve M f = b for f, 
-    // where M is mass operator:
-    iret = cg.solve(massop, b, f);
+    // Invert mass operator, solve L u = f for u, 
+    // where H is Laplacian operator:
+    u = 0.0;
+    iret = cg.solve(L, f, ub, u);
     assert(iret == GCG<MyCGTypes>::GCGERR_NONE  && "Solve failure");
-
-    EH_MESSAGE("main: Compute analytic solution...");
-
-    // Analytic solve is inverse mass:
-    imassop.opVec_prod(b, utmp, g);
 
     EH_MESSAGE("main: Compute errors...");
 
-    *utmp[0] = f - g;
+    *utmp[0] = u - ua;
     utmp[0]->rpow(2);
     err = grid_->integrate(*utmp[0], *utmp[1]) * grid_->ivolume();
 
@@ -242,17 +272,17 @@ int main(int argc, char **argv)
     ios.open("cg_err.txt",std::ios_base::app);
 
     if ( itst.peek() == std::ofstream::traits_type::eof() ) {
-      ios << "#elems" << "  ";
+      ios << "#elems" << "  " << "#dof" << "  ";
       for ( auto j=0; j<GDIM; j++ ) ios << "p" << j+1 << "  ";
-      ios <<  "ndof    err_diff " << std::endl;
+      ios << "err" << std::endl;
     }
     itst.close();
 
     ios << grid_->ngelems() << "  "
         << grid_->ndof()    << "  " ;
         for ( auto j=0; j<GDIM; j++ ) 
-    ios << pstd[j]          << "  " 
-        << err              << std::endl;
+    ios << pstd[j]          << "  " ;
+    ios << err              << std::endl;
 
     ios.close();
 
