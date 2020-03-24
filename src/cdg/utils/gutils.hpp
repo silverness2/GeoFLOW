@@ -5,11 +5,12 @@
 // Copyright    : Copyright 2019. Colorado State University. All rights reserved
 // Derived From : none.
 //==================================================================================
-#if !defined(_GEOFLOW_HPP)
-#define _GEOFLOW_HPP
+#if !defined(_GUTILS_HPP)
+#define _GUTILS_HPP
 
-#include "gtypes.h"
 #include <cassert>
+#include "gtypes.h"
+#include "ggrid.hpp"
 
 
 namespace geoflow
@@ -19,6 +20,12 @@ GBdyType       str2bdytype (const GString &stype);
 GStateCompType str2comptype(const GString &stype);
 GBOOL          file_empty(GString filename);
 
+template<typename T>
+void           smooth(GGrid &grid, GGFX_OP op,  GTVector<T> &tmp, GTVector<T> &v);
+
+
 } // end, namespace
+
+#include "gutils.hpp"
 
 #endif
