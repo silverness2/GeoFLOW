@@ -167,7 +167,8 @@ int main(int argc, char **argv)
     P1  = dxyz;
     P1 += P0;
 
-
+    assert(P0.x1 == 0.0 && P1.x1 == 1.0
+        && P0.x2 == 0.0 && P1.x2 == 1.0 );
 
     // Create basis:
     GTVector<GNBasis<GCTYPE,GFTYPE>*> gbasis(GDIM);
@@ -227,11 +228,12 @@ int main(int argc, char **argv)
 
     EH_MESSAGE("main: Set RHS...");
 
-    // Generate smooth RHS, bdyy vector:
+    // Generate smooth RHS, bdyy vectors:
     //    f =  6xy(1-y) - 2x^3
 
     ub = 0.0;
     for ( auto j=0; j<grid_->ndof(); j++ ) {
+
       x = (*xnodes)[0][j]; y = (*xnodes)[1][j];
       if ( GDIM > 2 ) z = (*xnodes)[2][j];
       f [j] = 6.0*x*y*(1.0-y) - 2.0*pow(x,3.0);           // RHS
@@ -244,11 +246,13 @@ int main(int argc, char **argv)
         ub[j] = y*(1.0-y);
 
     }
-    f *= -1.0;                    // -f
+
 
     // Multiply f by local mass matrix:
     f.pointProd(*mass_local);     // M_L f_L
+    f *= -1.0;                    // -f required by discretization
 
+GPP(comm_, "main: f.infnorm=" << f.infnorm());
 GPP(comm_, "main: ub=" << ub);
 GPP(comm_, "main: f=" << f);
 
@@ -280,7 +284,7 @@ GPP(comm_, "main: f=" << f);
     if ( itst.peek() == std::ofstream::traits_type::eof() ) {
       ios << "#elems" << "  " << "#dof" << "  ";
       for ( auto j=0; j<GDIM; j++ ) ios << "p" << j+1 << "  ";
-      ios << "err" << "  " << "niter" << "  " 
+      ios << "L2_err" << "  " << "niter" << "  " 
           << "resid_min" << "  " << "resid_max" <<  std::endl;
     }
     itst.close();
