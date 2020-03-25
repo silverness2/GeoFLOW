@@ -40,7 +40,7 @@ public:
           int          maxit    = 512;      // max no. iterations
           GNormType    normtype = GCG_NORM_INF;
                                             // norm type
-          float        tol      = 1e-6;     // tolerance
+          double       tol      = 1e-6;     // tolerance
         };
 
       
