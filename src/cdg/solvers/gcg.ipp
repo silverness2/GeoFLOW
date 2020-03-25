@@ -26,11 +26,14 @@ using namespace std;
 template<typename Types>
 GCG<Types>::GCG(Traits& traits, Grid& grid, ConnectivityOp& ggfx, State& tmppack)
 : SolverBase(traits, grid, ggfx, tmppack),
-comm_        (ggfx.getComm()),
-bInit_                (FALSE),
-bbv_                  (FALSE),
-nprocs_                   (1),
-irank_                    (0),
+comm_            (ggfx.getComm()),
+bInit_                    (FALSE),
+bbv_                      (FALSE),
+nprocs_                       (1),
+irank_                        (0),
+residmax_                   (0.0),
+residmin_
+  (std::numeric_limits<GFTYPE>::max()),
 precond_            (NULLPTR)
 {
   irank_   = GComm::WorldRank(comm_);
@@ -104,9 +107,9 @@ void GCG<Types>::init()
 //************************************************************************************
 //************************************************************************************
 // METHOD : solve_impl (1)
-// DESC   : Solve implementation. Taken from
-//          High Order Methods for Incompressible Fluid Flow,
-//          Deville, Fischer, Mund, Cambridge 2002, p 197-198
+// DESC   : Solve implementation to find homogeneous solution. 
+//          Taken from High Order Methods for Incompressible Fluid 
+//          Flow, Deville, Fischer, Mund, Cambridge 2002, p 197-198
 //           
 // ARGS   : A    : linear operator to invert
 //          b    : right-hand side vector
@@ -117,7 +120,9 @@ template<typename Types>
 GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
 {
   GINT       iret=GCGERR_NONE;
-  GFTYPE     alpha, beta, residual, rho, rhom;
+  GFTYPE     alpha, beta, rnorm, rho, rhom;
+  GFTYPE     rtol = this->traits_.tol;
+  GFTYPE     eps = 100.0*std::numeric_limits<GFTYPE>::epsilon();
   StateComp *q, *r, *w, *z;
   State      tmp(this->tmp_->size()-4);
   StateComp *mask  = &this->grid_->get_mask();
@@ -146,9 +151,10 @@ GPP(comm_, "imult=" << *imult);
   A.opVec_prod(x, tmp, *w);             // Ax
 
  *r -= (*w);                            // r = b - Ax, initial residual
-cout << "GCG::solve: r=" << *r << endl;
 
-  this->ggfx_->doOp(*r, GGFX_OP_SMOOTH);   // DSS r
+//cout << "GCG::solve: r=" << *r << endl;
+
+  this->ggfx_->doOp(*r, GGFX_OP_SUM);   // DSS r
 
   if ( bbv_ ) r->pointProd(*mask);      // Mask DSS r
   if ( precond_ != NULLPTR ) {          // solve P z = r for z
@@ -161,26 +167,40 @@ cout << "GCG::solve: r=" << *r << endl;
   *w = *z;                              // w = z, for initial w
 
   rho = r->gdot(*z, *imult, comm_);     // rho = r^T imult z
-  iter_ = 0; residual = 1.0;
+
+  // Create residual normalization, 
+  // effective initial residual:
+//if ( this->traits_.normtype 
+//  != LinSolverBase<Types>::GCG_NORM_INF ) {
+    rnorm = compute_norm(b, tmp);
+//  rnorm = MAX(compute_norm(*r, tmp),
+//              std::numeric_limits<GFTYPE>::epsilon());
+//  rtol  = this->traits_.tol*rnorm;       // residual tolerance
+//}
+  rtol = rnorm <= eps ? this->traits_.tol : this->traits_.tol * rnorm;
+
+  iter_ = 0; //rnorm = 10.0*rtol;
+
+cout << "solve_impl: rnorm_0=" << rnorm << " traits.tol=" << this->traits_.tol <<  " rtol=" << rtol << endl;
 
   while ( iret == GCGERR_NONE 
        && iter_ < this->traits_.maxit 
-       && residual > this->traits_.tol ) {
+       && rnorm > rtol ) {
 
-    A.opVec_prod(*w, tmp, *q);          // q = A w
+    A.opVec_prod(*w, tmp, *q);             // q = A w
 
-    this->ggfx_->doOp(*q, GGFX_OP_SMOOTH); // q <- DSS q
+    this->ggfx_->doOp(*q, GGFX_OP_SUM);    // q <- DSS q
 
-    if ( bbv_ ) q->pointProd(*mask);    // Mask(q)
+    if ( bbv_ ) q->pointProd(*mask);       // Mask(q)
 
     alpha = rho /
-     (w->gdot(*q, *imult, comm_));      // alpha=rho/w^T imult q
+     (w->gdot(*q, *imult, comm_));         // alpha=rho/w^T imult q
 
-    GMTK::saxpby( x, 1.0, *w, alpha);   // x = x + alpha w
-    GMTK::saxpby(*r, 1.0, *q,-alpha);   // r = r - alpha q
+    GMTK::saxpby( x, 1.0, *w, alpha);      // x = x + alpha w
+    GMTK::saxpby(*r, 1.0, *q,-alpha);      // r = r - alpha q
 
-    if ( precond_ != NULLPTR ) {        // z = P^-1 r for z,
-      iret = precond_->solve(*r, *z);   // where P^-1 is precond
+    if ( precond_ != NULLPTR ) {           // z = P^-1 r for z,
+      iret = precond_->solve(*r, *z);      // where P^-1 is precond
       if ( iret >  0 ) {
         iret = GCGERR_PRECOND; break;
       }
@@ -196,8 +216,10 @@ cout << "GCG::solve: r=" << *r << endl;
 
     GMTK::saxpby(*w, beta, *z, 1.0);    // w = z + beta w
 
-    residual = compute_norm(*r, tmp);   // find norm of residual
-    residuals_[iter_] = residual;
+    rnorm = compute_norm(*r, tmp);   // residual norm
+    residuals_[iter_] = rnorm;
+    residmax_ = MAX(rnorm,residmax_);
+    residmin_ = MIN(rnorm,residmin_);
     iter_++;
 
   } // end, CG loop
@@ -209,7 +231,7 @@ cout << "GCG::solve: r=" << *r << endl;
     
   if ( iret == GCGERR_NONE 
     && iter_ >= this->traits_.maxit 
-    && residual > this->traits_.tol ) iret = GCGERR_NOCONVERGE;
+    && rnorm > this->traits_.tol ) iret = GCGERR_NOCONVERGE;
 
   return iret;
 
@@ -232,7 +254,7 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, const StateComp& xb
 {
   GINT iret;
 
-  bbv_ = TRUE;
+  bbv_ = TRUE; // there is a boundary vector/solution
 
   // Add in boundary solution, so 
   // that it will form RHS in homogeneous solve:
@@ -263,13 +285,14 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, const StateComp& xb
 // RETURNS: required norm 
 //************************************************************************************
 template<typename Types>
-GFTYPE GCG<Types>::compute_norm(StateComp& x, State& tmp)
+GFTYPE GCG<Types>::compute_norm(const StateComp& x, State& tmp)
 {
   GFTYPE lret[2], gret[2];
 
   switch (this->traits_.normtype) {
     case LinSolverBase<Types>::GCG_NORM_INF:
-      lret[0] = x.infnorm();
+     *tmp[0]  = x; 
+      lret[0] = tmp[0]->infnorm();
       GComm::Allreduce(lret, gret, 1, T2GCDatatype<GFTYPE>() , GC_OP_MAX, comm_);
       break;
     case LinSolverBase<Types>::GCG_NORM_EUC:
@@ -282,12 +305,13 @@ GFTYPE GCG<Types>::compute_norm(StateComp& x, State& tmp)
     case LinSolverBase<Types>::GCG_NORM_L2:
      *tmp[0]  = x; tmp[0]->rpow(2);
       gret[0]  = this->grid_->integrate(*tmp[0],*tmp[1]);
-      gret[0] /= this->grid_->volume();
+      gret[0] *= this->grid_->ivolume();
+      gret[0]  = sqrt(gret[0]);
       break;
     case LinSolverBase<Types>::GCG_NORM_L1:
      *tmp[0]  = x; tmp[0]->abs();
       gret[0]  = this->grid_->integrate(*tmp[0],*tmp[1]);
-      gret[0] /= this->grid_->volume();
+      gret[0] *= this->grid_->ivolume();
       break;
     default:
       assert(FALSE);

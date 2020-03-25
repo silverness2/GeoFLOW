@@ -64,13 +64,15 @@ public:
                                               const StateComp& xb, StateComp& x);
                       GINT         solve_impl(const StateComp& b, StateComp& x) {assert(FALSE);}
                       StateComp&   get_residuals() { return residuals_; }  
+                      GFTYPE       get_resid_max() { return residmax_; }
+                      GFTYPE       get_resid_min() { return residmin_; }
                       GINT         get_iteration_count() { return iter_+1; }  
 
 
 private:
 // Private methods:
                       void     init();
-                      GFTYPE   compute_norm(StateComp&, State&);
+                      GFTYPE   compute_norm(const StateComp&, State&);
 // Private data:
      GC_COMM           comm_;        // communicator
      GBOOL             bInit_;       // object initialized?
@@ -78,6 +80,8 @@ private:
      GINT              irank_;       // rank
      GINT              iter_;        // iteration number
      GINT              nprocs_;      // no. tasks
+     GFTYPE            residmax_;    // max residual
+     GFTYPE            residmin_;    // min residual
      StateComp         residuals_;   // list of resituals for each iteration
      LinSolverBase<TypePack>
                       *precond_;     // preconditioner
