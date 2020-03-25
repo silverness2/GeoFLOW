@@ -74,9 +74,9 @@ lshapefcn_             (NULLPTR)
   for ( auto j=0; j<GDIM; j++ ) P0_[j] = spt[j];
   spt = gridptree.getArray<GFTYPE>("delxyz");
   sne = gridptree.getArray<int>("num_elems");
-  this->cgtraits_.maxit = gridptree.getValue<GFTYPE>("maxit",512);
-  this->cgtraits_.tol   = gridptree.getValue<GFTYPE>("tol",1.0e-8);
-  snorm                 = gridptree.getValue<GString>("norm_type","GCG_NORM_INF");
+  this->cgtraits_.maxit = gridptree.getValue<GDOUBLE>("maxit");
+  this->cgtraits_.tol   = gridptree.getValue<GDOUBLE>("tol");
+  snorm                 = gridptree.getValue<GString>("norm_type");
   this->cgtraits_.normtype = LinSolverBase<CGTypePack>::str2normtype(snorm);
 
   eps_ = 100*std::numeric_limits<GFTYPE>::epsilon();

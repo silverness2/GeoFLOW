@@ -1238,6 +1238,7 @@ void GGrid::add_terrain(const State &xb, State &utmp)
 
   H.use_metric(FALSE); // do Laplacian in reference space
 
+
   // Solve Nabla^2 (Xnew + Xb - XNodes) = 0 
   // for new (homgogeneous) grid solution, Xnew, 
   // given terrain, Xb, and // 'base' grid, XNodes:
