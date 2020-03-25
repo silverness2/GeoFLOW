@@ -1244,11 +1244,8 @@ void GGrid::add_terrain(const State &xb, State &utmp)
   // given terrain, Xb, and // 'base' grid, XNodes:
   GTimerStart("GGrid::add_terrain: Solve");
   for ( auto j=1; j<xNodes_.size(); j++ ) {
-// *x0 = xNodes_[j];
-   *x0 = 0.0;
    *b  = 0.0;
-//  H.opVec_prod(*x0, tmp, *b);  // b = H XNodes
-//  *x0 = 0.0; // first guess
+   *x0 = 0.0; // first guess
     cg.solve(H, *b, *xb[j], *x0);
     cout << "GGrid::add_terrain: xb_new[" << j << "]=" << *x0 << endl;
     xNodes_[j] = *x0;             // Reset XNodes = x0
