@@ -104,6 +104,129 @@ void GCG<Types>::init()
 } // end of method init
 
 
+#if 1
+//************************************************************************************
+//************************************************************************************
+// METHOD : solve_impl (1)
+// DESC   : Solve implementation to find homogeneous solution. 
+//          Taken from High Order Methods for Incompressible Fluid 
+//          Flow, Deville, Fischer, Mund, Cambridge 2002, p 197-198
+//           
+// ARGS   : A    : linear operator to invert
+//          b    : right-hand side vector
+//          x    : solution, returned
+// RETURNS: integer error code
+//************************************************************************************
+template<typename Types>
+GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
+{
+  GINT       iret=GCGERR_NONE;
+  GFTYPE     alpha, beta, rnorm, rho, rhom;
+  GFTYPE     rtol = this->traits_.tol;
+  GFTYPE     eps = 100.0*std::numeric_limits<GFTYPE>::epsilon();
+  StateComp *q, *r, *w, *z;
+  State      tmp(this->tmp_->size()-4);
+  StateComp *mask  = &this->grid_->get_mask();
+  StateComp *imult = &this->ggfx_->get_imult();
+
+  assert(this->tmp_->size() > 5);
+  init();
+
+  // Set some pointers:
+  tmp.resize(this->tmp_->size()-4);
+  q  = (*this->tmp_)[0];
+  r  = (*this->tmp_)[1];
+  w  = (*this->tmp_)[2];
+  z  = (*this->tmp_)[3];
+  for ( auto j=0; j<this->tmp_->size()-4; j++ ) {
+    tmp[j] = (*this->tmp_)[j+4];
+  }
+  residuals_ = 0.0;
+
+GPP(comm_, "mask=" << *mask);
+GPP(comm_, "imult=" << *imult);
+
+ // Initialize CG loop, and enter loop:
+ *r = b;
+
+  A.opVec_prod(x, tmp, *w);             // Ax
+
+ *r -= (*w);                            // r = b - Ax, initial residual
+
+//cout << "GCG::solve: r=" << *r << endl;
+
+  this->ggfx_->doOp(*r, GGFX_OP_SUM);   // DSS r
+
+
+  // Create effective initial residual
+  // and tolerance:
+  rnorm = compute_norm(b, tmp);
+  rtol = rnorm <= 1.0 ? this->traits_.tol : this->traits_.tol * rnorm;
+
+  iter_ = 0; rnorm = 10.0*rtol;
+
+cout << "solve_impl: rnorm_0=" << rnorm << " traits.tol=" << this->traits_.tol <<  " rtol=" << rtol << endl;
+
+  while ( iret == GCGERR_NONE 
+       && iter_ < this->traits_.maxit 
+       && rnorm > rtol ) {
+
+    if ( precond_ != NULLPTR ) {        // z = P^-1 r for z,
+      iret = precond_->solve(*r, *z);   // where P^-1 is precond
+      if ( iret >  0 ) {
+        iret = GCGERR_PRECOND; break;
+      }
+    }
+    else {
+      *z = *r;                          // use identity preconditioner
+    }
+
+    rho  = r->gdot(*z, *imult, comm_);  // rho = r^T imult z
+    if ( iter_ == 0 ) {
+      *w = *z;
+    }
+    else {
+      beta = rho / rhom;
+      GMTK::saxpby(*w, beta, *z, 1.0);  // w = beta w +  z
+    }
+
+    A.opVec_prod(*w, tmp, *q);          // q = A w
+
+    this->ggfx_->doOp(*q, GGFX_OP_SUM); // q <- DSS q
+
+    if ( bbv_ ) q->pointProd(*mask);    // Mask(q)
+
+    alpha = rho /
+     (w->gdot(*q, *imult, comm_));      // alpha=rho/w^T imult q
+
+    GMTK::saxpby( x, 1.0, *w, alpha);   // x = x + alpha w
+    GMTK::saxpby(*r, 1.0, *q,-alpha);   // r = r - alpha q
+
+    rhom = rho;
+
+    rnorm = compute_norm(*r, tmp);      // residual norm
+    residuals_[iter_] = rnorm;
+    residmax_ = MAX(rnorm,residmax_);
+    residmin_ = MIN(rnorm,residmin_);
+    iter_++;
+
+  } // end, CG loop
+
+  if ( bbv_ ) x.pointProd(*mask);
+
+  cout << "GCG::solve: iter_     =" << iter_ << endl;
+  cout << "GCG::solve: residuals=" << residuals_ << endl;
+    
+  if ( iret == GCGERR_NONE 
+    && iter_ >= this->traits_.maxit 
+    && rnorm > this->traits_.tol ) iret = GCGERR_NOCONVERGE;
+
+  return iret;
+
+} // end of method solve_impl (1)
+
+#else
+
 //************************************************************************************
 //************************************************************************************
 // METHOD : solve_impl (1)
@@ -229,12 +352,14 @@ cout << "solve_impl: rnorm_0=" << rnorm << " traits.tol=" << this->traits_.tol <
   return iret;
 
 } // end of method solve_impl (1)
+#endif
 
 
 //************************************************************************************
 //************************************************************************************
 // METHOD : solve_impl (2)
-// DESC   : Solve implementation, with boundary solution
+// DESC   : Solve implementation, with boundary solution, 
+//          assuming an initial guess, x
 // ARGS   : A    : linear operator to invert
 //          b    : right-hand side vector
 //          xb   : boundary solution
@@ -252,8 +377,7 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, const StateComp& xb
   // Add in boundary solution, so 
   // that it will form RHS in homogeneous solve:
 
-//if ( bbv_ ) x.pointProd(this->grid_->get_mask()); // apply mask
-  x = 0.0;
+  if ( bbv_ ) x.pointProd(this->grid_->get_mask()); // apply mask
   x += xb; 
 
   // Compute homogeneous solution:
