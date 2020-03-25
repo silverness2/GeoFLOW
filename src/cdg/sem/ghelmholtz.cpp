@@ -317,7 +317,7 @@ void GHelmholtz::reg_prod(GTVector<GFTYPE> &u,
 
   GTVector<GTVector<GFTYPE>*> gdu(GDIM);
   GElemList        *gelems=&grid_->elems();
-  GMass             *massop = &grid_->massop();                     
+  GMass            *massop = &grid_->massop();                     
   GElem_base       *elem;
 
   // Compute:
