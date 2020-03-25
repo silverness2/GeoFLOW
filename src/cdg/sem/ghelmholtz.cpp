@@ -160,7 +160,7 @@ void GHelmholtz::def_prod(GTVector<GFTYPE> &u,
   }
 
   // Apply variable p parameter ('viscosity') 
-  // before final 'dovergence':
+  // before final 'divergence':
   if ( p_ != NULLPTR ) {
     if ( p_->size() >= grid_->ndof() ) {
       for ( GSIZET j=0; j<GDIM; j++ ) {
