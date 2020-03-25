@@ -206,16 +206,17 @@ int main(int argc, char **argv)
 
     for ( auto j=0; j<utmp.size(); j++ ) utmp[j] = new GTVector<GFTYPE>(grid_->ndof());
 
-    cgtraits.maxit    = 128;
-    cgtraits.tol      = 1.0e-4;
-    snorm             = "GCG_NORM_L2";
+    cgtraits.maxit    = gtree.getValue<GDOUBLE>("maxit");
+    cgtraits.tol      = gtree.getValue<GDOUBLE>("tol");
+    snorm             = gtree.getValue<GString>("norm_type");
     cgtraits.normtype = LinSolverBase<MyCGTypes>::str2normtype(snorm);
 
     EH_MESSAGE("main: Initialize CG operator...");
 
     // Initialize GCG operator:
+    GSIZET           niter;
     GFTYPE           eps = std::numeric_limits<GFTYPE>::epsilon();
-    GFTYPE           err, x, y, z;
+    GFTYPE           err, resmin, resmax, x, y, z;
 
     EH_MESSAGE("main: Create Lap op...");
     GHelmholtz       L(*grid_); // Laplacian operator
@@ -228,11 +229,13 @@ int main(int argc, char **argv)
 
     // Generate smooth RHS, bdyy vector:
     //    f =  6xy(1-y) - 2x^3
+
+    ub = 0.0;
     for ( auto j=0; j<grid_->ndof(); j++ ) {
       x = (*xnodes)[0][j]; y = (*xnodes)[1][j];
       if ( GDIM > 2 ) z = (*xnodes)[2][j];
-      f[j] = 6.0*x*y*(1.0-y) - 2.0*pow(x,3);                    // RHS
-      ua[j] =y*(1.0-y)*pow(x,3);    // analytic solution
+      f [j] = 6.0*x*y*(1.0-y) - 2.0*pow(x,3.0);           // RHS
+      ua[j] = y*(1.0-y)*pow(x,3.0);                       // analytic solution
       if ( FUZZYEQ(P0.x2,y,eps) || FUZZYEQ(P1.x2,y,eps) ) // N & S bdy
         ub[j] = 0.0; 
       if ( FUZZYEQ(P0.x1,x,eps) ) // W bdy
@@ -241,7 +244,7 @@ int main(int argc, char **argv)
         ub[j] = y*(1.0-y);
 
     }
-    f *= -1.0;                     // -f
+    f *= -1.0;                    // -f
 
     // Multiply f by local mass matrix:
     f.pointProd(*mass_local);     // M_L f_L
@@ -253,11 +256,14 @@ GPP(comm_, "main: f=" << f);
     EH_MESSAGE("main: Solve linear system...");
 
     // Invert mass operator, solve L u = f for u, 
-    // where H is Laplacian operator:
+    // where L is Laplacian operator:
     u = 0.0;
     iret = cg.solve(L, f, ub, u);
     assert(iret == GCG<MyCGTypes>::GCGERR_NONE  && "Solve failure");
 
+    niter  = cg.get_iteration_count();
+    resmin = cg.get_resid_min();
+    resmax = cg.get_resid_max();
     EH_MESSAGE("main: Compute errors...");
 
     *utmp[0] = u - ua;
@@ -274,7 +280,8 @@ GPP(comm_, "main: f=" << f);
     if ( itst.peek() == std::ofstream::traits_type::eof() ) {
       ios << "#elems" << "  " << "#dof" << "  ";
       for ( auto j=0; j<GDIM; j++ ) ios << "p" << j+1 << "  ";
-      ios << "err" << std::endl;
+      ios << "err" << "  " << "niter" << "  " 
+          << "resid_min" << "  " << "resid_max" <<  std::endl;
     }
     itst.close();
 
@@ -282,7 +289,10 @@ GPP(comm_, "main: f=" << f);
         << grid_->ndof()    << "  " ;
         for ( auto j=0; j<GDIM; j++ ) 
     ios << pstd[j]          << "  " ;
-    ios << err              << std::endl;
+    ios << err              << "  " ;
+    ios << niter            << "  " ;
+    ios << resmin           << "  " ;
+    ios << resmax           << std::endl;
 
     ios.close();
 
