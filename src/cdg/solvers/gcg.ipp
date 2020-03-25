@@ -168,18 +168,12 @@ GPP(comm_, "imult=" << *imult);
 
   rho = r->gdot(*z, *imult, comm_);     // rho = r^T imult z
 
-  // Create residual normalization, 
-  // effective initial residual:
-//if ( this->traits_.normtype 
-//  != LinSolverBase<Types>::GCG_NORM_INF ) {
-    rnorm = compute_norm(b, tmp);
-//  rnorm = MAX(compute_norm(*r, tmp),
-//              std::numeric_limits<GFTYPE>::epsilon());
-//  rtol  = this->traits_.tol*rnorm;       // residual tolerance
-//}
-  rtol = rnorm <= eps ? this->traits_.tol : this->traits_.tol * rnorm;
+  // Create effective initial residual
+  // and tolerance:
+  rnorm = compute_norm(b, tmp);
+  rtol = rnorm <= 1.0 ? this->traits_.tol : this->traits_.tol * rnorm;
 
-  iter_ = 0; //rnorm = 10.0*rtol;
+  iter_ = 0; rnorm = 10.0*rtol;
 
 cout << "solve_impl: rnorm_0=" << rnorm << " traits.tol=" << this->traits_.tol <<  " rtol=" << rtol << endl;
 
@@ -187,20 +181,20 @@ cout << "solve_impl: rnorm_0=" << rnorm << " traits.tol=" << this->traits_.tol <
        && iter_ < this->traits_.maxit 
        && rnorm > rtol ) {
 
-    A.opVec_prod(*w, tmp, *q);             // q = A w
+    A.opVec_prod(*w, tmp, *q);          // q = A w
 
-    this->ggfx_->doOp(*q, GGFX_OP_SUM);    // q <- DSS q
+    this->ggfx_->doOp(*q, GGFX_OP_SUM); // q <- DSS q
 
-    if ( bbv_ ) q->pointProd(*mask);       // Mask(q)
+    if ( bbv_ ) q->pointProd(*mask);    // Mask(q)
 
     alpha = rho /
-     (w->gdot(*q, *imult, comm_));         // alpha=rho/w^T imult q
+     (w->gdot(*q, *imult, comm_));      // alpha=rho/w^T imult q
 
-    GMTK::saxpby( x, 1.0, *w, alpha);      // x = x + alpha w
-    GMTK::saxpby(*r, 1.0, *q,-alpha);      // r = r - alpha q
+    GMTK::saxpby( x, 1.0, *w, alpha);   // x = x + alpha w
+    GMTK::saxpby(*r, 1.0, *q,-alpha);   // r = r - alpha q
 
-    if ( precond_ != NULLPTR ) {           // z = P^-1 r for z,
-      iret = precond_->solve(*r, *z);      // where P^-1 is precond
+    if ( precond_ != NULLPTR ) {        // z = P^-1 r for z,
+      iret = precond_->solve(*r, *z);   // where P^-1 is precond
       if ( iret >  0 ) {
         iret = GCGERR_PRECOND; break;
       }
@@ -208,7 +202,6 @@ cout << "solve_impl: rnorm_0=" << rnorm << " traits.tol=" << this->traits_.tol <
     else {
       *z = *r;                          // use identity preconditioner
     }
-//cout << "GCG::solve: iter=" << iter_ << " zk=" << *z << endl;
 
     rhom = rho;
     rho  = r->gdot(*z, *imult, comm_);  // rho = r^T imult z
@@ -216,7 +209,7 @@ cout << "solve_impl: rnorm_0=" << rnorm << " traits.tol=" << this->traits_.tol <
 
     GMTK::saxpby(*w, beta, *z, 1.0);    // w = z + beta w
 
-    rnorm = compute_norm(*r, tmp);   // residual norm
+    rnorm = compute_norm(*r, tmp);      // residual norm
     residuals_[iter_] = rnorm;
     residmax_ = MAX(rnorm,residmax_);
     residmin_ = MIN(rnorm,residmin_);
@@ -265,7 +258,6 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, const StateComp& xb
 
   // Compute homogeneous solution:
   iret = solve_impl(A, b, x);
-  assert(iret == GCGERR_NONE);
 
   // Add back boundary solution:
   x += xb;
