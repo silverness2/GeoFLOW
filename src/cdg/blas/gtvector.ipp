@@ -1579,7 +1579,7 @@ template<class T>
 T
 GTVector<T>::infnorm() 
 {
-  GDOUBLE xnorm;
+  GDOUBLE xnorm=0.0;
   GLLONG j;
 
   for ( j=this->gindex_.beg(), xnorm=0; j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
@@ -1601,7 +1601,7 @@ template<class T>
 T
 GTVector<T>::Eucnorm() 
 {
-  GDOUBLE n, xnorm;
+  GDOUBLE n, xnorm=0.0;
   GLLONG j;
 
   n = 0.0;
