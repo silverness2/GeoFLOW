@@ -61,6 +61,8 @@ GBOOL impl_gauss_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
     (*xb[0])[i] = (*xnodes)[0][i];
     (*xb[1])[i] = (*xnodes)[1][i];
   }
+cout << "gauss_range: xb_initial=" << *xb[0] << endl;
+cout << "gauss_range: yb_initial=" << *xb[1] << endl;
 
   eps =  100*std::numeric_limits<GFTYPE>::epsilon();
   // Build terrain height vector:
@@ -73,8 +75,8 @@ GBOOL impl_gauss_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
       }
     }
   }
-cout << "gauss_range: igbdy.size=" << igbdy->size() << " xb=" << *xb[0] << endl;
-cout << "gauss_range: igbdy.size=" << igbdy->size() << " yb=" << *xb[1] << endl;
+cout << "gauss_range: igbdy.size=" << igbdy->size() << " xb_final=" << *xb[0] << endl;
+cout << "gauss_range: igbdy.size=" << igbdy->size() << " yb_final=" << *xb[1] << endl;
 #elif defined(_G_IS3D)
   for ( auto m=0; m<x0.size(); m++ ) {   // for each Gaussian lump
     for ( auto j=0; j<nxy; j++ ) {
