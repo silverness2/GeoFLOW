@@ -1,5 +1,7 @@
 function h = boxplot2d(svar, tindex, blog, bwire, dtype, isz, varargin)
 %
+%   function h = boxplot2d(svar, tindex, blog, bwire, dtype, isz, varargin)
+%
 % Does a line plot 2D GeoFLOW Posix data in x-direction, 
 % at fixed specified y-index
 %
