@@ -149,13 +149,13 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
 
  *r -= (*w);                            // r = b - Ax, initial residual
 
-  this->ggfx_->doOp(*r, GGFX_OP_SMOOTH);   // DSS r
+  this->ggfx_->doOp(*r, GGFX_OP_SUM);// DSS r
 
 
   // Create effective initial residual
   // and tolerance:
   rnorm = compute_norm(b, tmp);
-  rtol = rnorm <= 1.0 ? this->traits_.tol : this->traits_.tol * rnorm;
+  rtol = rnorm < 1.0 ? this->traits_.tol : this->traits_.tol * rnorm;
 
   iter_ = 0; rnorm = 10.0*rtol;
 
@@ -186,7 +186,7 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
 
     A.opVec_prod(*w, tmp, *q);          // q = A w
 
-    this->ggfx_->doOp(*q, GGFX_OP_SMOOTH); // q <- DSS q
+    this->ggfx_->doOp(*q, GGFX_OP_SUM); // q <- DSS q
 
     if ( bbv_ ) q->pointProd(*mask);    // Mask(q)
 
@@ -216,7 +216,7 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
 
 } // end of method solve_impl (1)
 
-#endif
+#else
 
 //************************************************************************************
 //************************************************************************************
@@ -263,7 +263,7 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
 
  *r -= (*w);                            // r = b - Ax, initial residual
 
-  this->ggfx_->doOp(*r, GGFX_OP_SMOOTH);   // DSS r
+  this->ggfx_->doOp(*r, GGFX_OP_SUM);   // DSS r
 
   if ( bbv_ ) r->pointProd(*mask);      // Mask DSS r
   if ( precond_ != NULLPTR ) {          // solve P z = r for z
@@ -280,7 +280,7 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
   // Create effective initial residual
   // and tolerance:
   rnorm = compute_norm(b, tmp);
-  rtol = rnorm <= 1.0 ? this->traits_.tol : this->traits_.tol * rnorm;
+  rtol = rnorm < 1.0 ? this->traits_.tol : this->traits_.tol * rnorm;
 
   iter_ = 0; rnorm = 10.0*rtol;
 
@@ -292,7 +292,7 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
 
     A.opVec_prod(*w, tmp, *q);          // q = A w
 
-    this->ggfx_->doOp(*q, GGFX_OP_SMOOTH); // q <- DSS q
+    this->ggfx_->doOp(*q, GGFX_OP_SUM); // q <- DSS q
 
     if ( bbv_ ) q->pointProd(*mask);    // Mask(q)
 
@@ -335,6 +335,7 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
   return iret;
 
 } // end of method solve_impl (1)
+#endif
 
 
 //************************************************************************************
