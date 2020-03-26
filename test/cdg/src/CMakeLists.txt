@@ -6,6 +6,7 @@
 # Build list of all tests to create
 #
 set(test_cdg_files
+		  gtest_cg.cpp    
 		  gtest_blas.cpp    
 		  gtest_ggfx.cpp
 		  gtest_gmtk.cpp
