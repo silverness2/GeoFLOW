@@ -26,6 +26,6 @@ void           smooth(GGrid &grid, GGFX_OP op,  GTVector<T> &tmp, GTVector<T> &v
 
 } // end, namespace
 
-#include "gutils.hpp"
+#include "gutils.ipp"
 
 #endif

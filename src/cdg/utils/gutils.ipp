@@ -31,12 +31,12 @@ namespace geoflow
 template<typename T>
 void smooth(GGrid &grid, GGFX_OP op, GTVector<T> &tmp, GTVector<T> &u)
 {
-  GGFX *ggfx = &grid->get_ggfx();
+  GGFX<T> *ggfx = &grid.get_ggfx();
   tmp = u;
  
-  u.pointProd(grid_->massop()->data());
-  tmp = grid_->imassop()->data();
-  ggfx_->doOp(tmp, op);  // DSS(mass_local)
+  u.pointProd(*(grid.massop().data()));
+  tmp = *(grid.imassop().data());
+  ggfx->doOp(tmp, op);  // DSS(mass_local)
 
   u.pointProd(tmp);      // M_assembled u M_L
 
