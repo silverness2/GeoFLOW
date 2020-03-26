@@ -142,19 +142,19 @@ nelems
     cm = mean(cu,2);
     cf = (cm - umin) / (umax - umin + eps);
     cv = (uu - umin) / (umax - umin + eps);
-    if bwire == 0
-      if blog > 0
-        puu = log10(uu);
-      else
-        puu = uu;
-      end
-      h = quadmesh(imat,xx,yy,puu,'FaceColor','interp');
-      colorbar('vertical');
+    if blog > 0
+      puu = log10(uu);
     else
-      h = quadmesh(imat,xx,yy,varargin{:});
+      puu = uu;
+    end
+    h = quadmesh(imat,xx,yy,puu,'FaceColor','interp');
+    colorbar('vertical');
+%   h = quadmesh(imat,xx,yy,varargin{:});
+%   set(h, 'FaceColor', 'blue', 'EdgeColor', 'none');
+    if bwire == 1
+      set(h, 'FaceColor', 'none', 'EdgeColor', 'blue');
     end
     hold on;
-%   set(p, 'FaceColor', 'blue', 'EdgeColor', 'none');
     if bwire == 0
       title(sprintf('%s t=%f', svar, time));
     end
