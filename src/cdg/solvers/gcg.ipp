@@ -104,13 +104,12 @@ void GCG<Types>::init()
 } // end of method init
 
 
-#if 1
+#if 0
 //************************************************************************************
 //************************************************************************************
 // METHOD : solve_impl (1)
 // DESC   : Solve implementation to find homogeneous solution. 
-//          Taken from High Order Methods for Incompressible Fluid 
-//          Flow, Deville, Fischer, Mund, Cambridge 2002, p 197-198
+//          Taken from van der Vorst.
 //           
 // ARGS   : A    : linear operator to invert
 //          b    : right-hand side vector
@@ -143,17 +142,12 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
   }
   residuals_ = 0.0;
 
-GPP(comm_, "mask=" << *mask);
-GPP(comm_, "imult=" << *imult);
-
  // Initialize CG loop, and enter loop:
  *r = b;
 
   A.opVec_prod(x, tmp, *w);             // Ax
 
  *r -= (*w);                            // r = b - Ax, initial residual
-
-//cout << "GCG::solve: r=" << *r << endl;
 
   this->ggfx_->doOp(*r, GGFX_OP_SMOOTH);   // DSS r
 
@@ -165,7 +159,7 @@ GPP(comm_, "imult=" << *imult);
 
   iter_ = 0; rnorm = 10.0*rtol;
 
-cout << "solve_impl: rnorm_0=" << rnorm << " traits.tol=" << this->traits_.tol <<  " rtol=" << rtol << endl;
+//cout << "solve_impl: rnorm_0=" << rnorm << " traits.tol=" << this->traits_.tol <<  " rtol=" << rtol << endl;
 
   while ( iret == GCGERR_NONE 
        && iter_ < this->traits_.maxit 
@@ -214,9 +208,6 @@ cout << "solve_impl: rnorm_0=" << rnorm << " traits.tol=" << this->traits_.tol <
 
   if ( bbv_ ) x.pointProd(*mask);
 
-  cout << "GCG::solve: iter_     =" << iter_ << endl;
-  cout << "GCG::solve: residuals=" << residuals_ << endl;
-    
   if ( iret == GCGERR_NONE 
     && iter_ >= this->traits_.maxit 
     && rnorm > this->traits_.tol ) iret = GCGERR_NOCONVERGE;
@@ -225,7 +216,7 @@ cout << "solve_impl: rnorm_0=" << rnorm << " traits.tol=" << this->traits_.tol <
 
 } // end of method solve_impl (1)
 
-#else
+#endif
 
 //************************************************************************************
 //************************************************************************************
@@ -265,17 +256,12 @@ GINT GCG<Types>::solve_impl(Operator& A, const StateComp& b, StateComp& x)
   }
   residuals_ = 0.0;
 
-GPP(comm_, "mask=" << *mask);
-GPP(comm_, "imult=" << *imult);
-
  // Initialize CG loop, and enter loop:
  *r = b;
 
   A.opVec_prod(x, tmp, *w);             // Ax
 
  *r -= (*w);                            // r = b - Ax, initial residual
-
-//cout << "GCG::solve: r=" << *r << endl;
 
   this->ggfx_->doOp(*r, GGFX_OP_SMOOTH);   // DSS r
 
@@ -298,7 +284,7 @@ GPP(comm_, "imult=" << *imult);
 
   iter_ = 0; rnorm = 10.0*rtol;
 
-cout << "solve_impl: rnorm_0=" << rnorm << " traits.tol=" << this->traits_.tol <<  " rtol=" << rtol << endl;
+//cout << "solve_impl: rnorm_0=" << rnorm << " traits.tol=" << this->traits_.tol <<  " rtol=" << rtol << endl;
 
   while ( iret == GCGERR_NONE 
        && iter_ < this->traits_.maxit 
@@ -342,9 +328,6 @@ cout << "solve_impl: rnorm_0=" << rnorm << " traits.tol=" << this->traits_.tol <
 
   if ( bbv_ ) x.pointProd(*mask);
 
-  cout << "GCG::solve: iter_     =" << iter_ << endl;
-  cout << "GCG::solve: residuals=" << residuals_ << endl;
-    
   if ( iret == GCGERR_NONE 
     && iter_ >= this->traits_.maxit 
     && rnorm > this->traits_.tol ) iret = GCGERR_NOCONVERGE;
@@ -352,7 +335,6 @@ cout << "solve_impl: rnorm_0=" << rnorm << " traits.tol=" << this->traits_.tol <
   return iret;
 
 } // end of method solve_impl (1)
-#endif
 
 
 //************************************************************************************
