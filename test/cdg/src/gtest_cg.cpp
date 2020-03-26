@@ -236,18 +236,14 @@ int main(int argc, char **argv)
     for ( auto j=0; j<f.size(); j++ ) {
       f[j] = 1.0;
 //    ggfx.doOp(f, GGFX_OP_SUM);
-u = 1.0;
       L.opVec_prod(f, utmp, u);
 //    ggfx.doOp(u, GGFX_OP_SUM);
-if ( j==4 ) {
-cout << "main: f=" << f <<endl;
-cout << "main: u=" << u <<endl;
-}
       for ( auto i=0; i<f.size(); i++ ) Hmat(i,j) = u[i];
       f[j] = 0.0;
     }
-cout << "Hmat=" << Hmat << endl;
-#if 0
+
+//cout << "Hmat=" << Hmat << endl;
+#if 1
     GSIZET nbad = 0;
     for ( auto j=0; j<f.size(); j++ ) {
       for ( auto i=j; i<f.size(); i++ ) {
@@ -257,7 +253,12 @@ cout << "Hmat=" << Hmat << endl;
         }
       }
     }
-cout << "main: .................................. nbad=" << nbad << "; size=" << f.size()*(f.size()+1)/2 << endl;
+
+    if ( nbad == 0 ) {
+      cout << "main: .................................. operator is SPD!" << endl;
+    } else {
+      cout << "main: .................................. nbad=" << nbad << "; size=" << f.size()*(f.size()+1)/2 << endl;
+    }
 #endif
       
 
