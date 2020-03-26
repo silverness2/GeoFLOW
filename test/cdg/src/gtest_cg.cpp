@@ -120,6 +120,8 @@ int main(int argc, char **argv)
     GTVector<GTVector<GFTYPE>>    *xnodes;
     LinSolverBase<MyCGTypes>::Traits cgtraits;
     GString   snorm;
+    std::ifstream itst;
+    std::ofstream ios;
 
     typename ObserverBase<MyTypes>::Traits
                    binobstraits;
@@ -245,7 +247,7 @@ int main(int argc, char **argv)
 
 //cout << "Hmat=" << Hmat << endl;
 #if 1
-    GSIZET nbad = 0;
+    GSIZET nbad = 0, ngbad;
     for ( auto j=0; j<f.size(); j++ ) {
       for ( auto i=j; i<f.size(); i++ ) {
         if ( !FUZZYEQ(Hmat(i,j), Hmat(j,i), eps) ) {
@@ -255,10 +257,15 @@ int main(int argc, char **argv)
       }
     }
 
-    if ( nbad == 0 ) {
+    // Accumulate 'bad' entry number:
+    GComm::Allreduce(&nbad, &ngbad, 1, T2GCDatatype<GSIZET>() , GC_OP_MAX, comm_);
+    if ( ngbad == 0 ) {
       cout << "main: .................................. operator is SPD!" << endl;
     } else {
-      cout << "main: .................................. nbad=" << nbad << "; size=" << f.size()*(f.size()+1)/2 << endl;
+      cout << "main: .................................. operator NOT SPD!" << endl;
+      cout << "main: .................................. ngbad=" << nbad << "; size=" << f.size()*(f.size()+1)/2 << endl;
+      errcode = 1;
+      goto prerror;
     }
 #endif
       
@@ -307,8 +314,6 @@ int main(int argc, char **argv)
 
     EH_MESSAGE("main: Write to file...");
 
-    std::ifstream itst;
-    std::ofstream ios;
     itst.open("cg_err.txt");
     ios.open("cg_err.txt",std::ios_base::app);
 
@@ -331,17 +336,20 @@ int main(int argc, char **argv)
 
     ios.close();
 
-    assert(iret == GCG<MyCGTypes>::GCGERR_NONE  && "Solve failure");
-
-    errcode = err < 1e-12 ? 0 : 1;
-
-    // Accumulate error codes:
-    GComm::Allreduce(&errcode, &gerrcode, 1, T2GCDatatype<GINT>() , GC_OP_MAX, comm_);
-
- 
-    if ( gerrcode != 0 ) {
+    errcode = err < 1e-12 ? 0 : 2;
+    if ( errcode != 0 || iret != GCG<MyCGTypes>::GCGERR_NONE ) {
       cout << serr << " Error: err=" << err << " code=" << errcode << endl;
       cout << serr << " residuals=" << *resvec << endl;
+    }
+    assert(iret == GCG<MyCGTypes>::GCGERR_NONE  && "Solve failure");
+
+
+prerror:
+    // Accumulate error codes:
+    GComm::Allreduce(&errcode, &gerrcode, 1, T2GCDatatype<GINT>() , GC_OP_MAX, comm_);
+ 
+    if ( gerrcode != 0 ) {
+      cout << serr << " Error: errcode=" << gerrcode << endl;
     }
     else {
       cout << serr << " Success!" << endl;
