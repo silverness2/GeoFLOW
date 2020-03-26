@@ -333,12 +333,14 @@ void GHelmholtz::reg_prod(GTVector<GFTYPE> &u,
   // Re-arrange local temp space for divergence:
   for ( GSIZET i=0; i<GDIM; i++ ) gdu[i] = utmp[i];
 
+
   // Compute deriviatives of u:
   GMTK::compute_grefderivs (*grid_, u, etmp1_, FALSE, gdu); // utmp stores tensor-prod derivatives
 
   // Multiply by (element-size const) metric factors, possibly x-dependent 
   // 'viscosity', and mass:
   GTVector<GFTYPE> *Jac = &grid_->Jac();
+
   for ( GSIZET k=0; k<GDIM; k++ ) {
     if ( buse_metric_ ) {
       gdu[k]->pointProd(*G_(k,0));
@@ -348,12 +350,14 @@ void GHelmholtz::reg_prod(GTVector<GFTYPE> &u,
       if ( p_->size() >= grid_->ndof() ) gdu[k]->pointProd(*p_);
     }
     // massop contains mass already:
-    massop->opVec_prod(*gdu[k], gdu, uo); // tmp array does nothing
+    massop->opVec_prod(*gdu[k], gdu, uo); // tmp array, gdu, dummy here
     *gdu[k] = uo;
   }
 
+
   // Take 'divergence' with D^T:
   GMTK::compute_grefdiv  (*grid_, gdu, etmp1_, TRUE, uo); // Compute 'divergence' with W^-1 D_j
+
 
   // If p_ is constant, multiply at the end:
   if ( p_ != NULLPTR ) {
