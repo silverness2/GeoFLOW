@@ -6,6 +6,7 @@
 // Derived From : none.
 //==================================================================================
 #include "gterrain_specbox_user.hpp"
+#include "gutils.hpp"
 
 
 namespace gterrain_specbox {
@@ -86,8 +87,14 @@ cout << "gauss_range: igbdy.size=" << igbdy->size() << " yb_final=" << *xb[1] <<
         (*xb[2])[j] += h0[m]*exp(-dx*dx / (xsig[m]*xsig[m])) * exp(-dy*dy / (ysig[m]*ysig[m]));
       }
     }
+
   }
 #endif
+
+  // Do smoothing:
+  for ( auto j=0; j<xb.size(); j++ ) {
+    geoflow::smooth<GFTYPE>(grid, GGFX_OP_SMOOTH, *utmp[0], *xb[j]);
+  }
 
   return TRUE;
 
@@ -168,6 +175,12 @@ GBOOL impl_poly_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Stat
   }
 #endif
 
+  // Do smoothing:
+  for ( auto j=0; j<xb.size(); j++ ) {
+    geoflow::smooth<GFTYPE>(grid, GGFX_OP_SMOOTH, *utmp[0], *xb[j]);
+  }
+
+
   return TRUE;
 
 } // end, impl_poly_range
@@ -243,6 +256,11 @@ GBOOL impl_schar_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
 #elif defined(_G_IS3D)
   assert(FALSE && "Method undefined in 3D");
 #endif
+
+  // Do smoothing:
+  for ( auto j=0; j<xb.size(); j++ ) {
+    geoflow::smooth<GFTYPE>(grid, GGFX_OP_SMOOTH, *utmp[0], *xb[j]);
+  }
 
   return TRUE;
 
