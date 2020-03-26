@@ -560,7 +560,7 @@ T &GTVector<T>::back() const
 template<class T> 
 T *GTVector<T>::data() 
 {
-  return data_; //+gindex_.beg();
+  return data_ + gindex_.beg();
 } // end, method data 
 
 
@@ -574,7 +574,7 @@ T *GTVector<T>::data()
 template<class T> 
 const T *GTVector<T>::data() const 
 {
-  return data_ ; //gindex_.beg();
+  return data_ + gindex_.beg();
 } // end, method data (const)
 
 
