@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 
     // Initialize GCG operator:
     GSIZET           niter;
-    GFTYPE           eps = std::numeric_limits<GFTYPE>::epsilon();
+    GFTYPE           eps = 100.0*std::numeric_limits<GFTYPE>::epsilon();
     GFTYPE           err, resmin, resmax, x, y, z;
 
     EH_MESSAGE("main: Create Lap op...");
@@ -225,6 +225,41 @@ int main(int argc, char **argv)
     EH_MESSAGE("main: Create CG op...");
 
     GCG<MyCGTypes>   cg(cgtraits, *grid_, ggfx, utmp);
+
+    EH_MESSAGE("main: Check for SPD...");
+
+//L.use_metric(FALSE);
+
+    // Check if operator is SPD:
+    GTMatrix<GFTYPE> Hmat (f.size(),f.size());
+    f = 0.0;
+    for ( auto j=0; j<f.size(); j++ ) {
+      f[j] = 1.0;
+//    ggfx.doOp(f, GGFX_OP_SUM);
+u = 1.0;
+      L.opVec_prod(f, utmp, u);
+//    ggfx.doOp(u, GGFX_OP_SUM);
+if ( j==4 ) {
+cout << "main: f=" << f <<endl;
+cout << "main: u=" << u <<endl;
+}
+      for ( auto i=0; i<f.size(); i++ ) Hmat(i,j) = u[i];
+      f[j] = 0.0;
+    }
+cout << "Hmat=" << Hmat << endl;
+#if 0
+    GSIZET nbad = 0;
+    for ( auto j=0; j<f.size(); j++ ) {
+      for ( auto i=j; i<f.size(); i++ ) {
+        if ( !FUZZYEQ(Hmat(i,j), Hmat(j,i), eps) ) {
+          cout << "main: (" << i << "," << j << "): H=" << Hmat(i,j) << " H^T=" << Hmat(j,i) << endl;
+          nbad++;
+        }
+      }
+    }
+cout << "main: .................................. nbad=" << nbad << "; size=" << f.size()*(f.size()+1)/2 << endl;
+#endif
+      
 
     EH_MESSAGE("main: Set RHS...");
 
@@ -250,20 +285,20 @@ int main(int argc, char **argv)
 
     // Multiply f by local mass matrix:
     f.pointProd(*mass_local);     // M_L f_L
-    f *= -1.0;                    // -f required by discretization
+    f *= -1.0;                     // -f required by discretization
 
 GPP(comm_, "main: f.infnorm=" << f.infnorm());
 GPP(comm_, "main: ub=" << ub);
 GPP(comm_, "main: f=" << f);
+GPP(comm_, "main: Mloc=" << *mass_local);
 
 
     EH_MESSAGE("main: Solve linear system...");
 
     // Invert mass operator, solve L u = f for u, 
     // where L is Laplacian operator:
-    u = 0.0;
+    u = 0.0; // initial guess
     iret = cg.solve(L, f, ub, u);
-    assert(iret == GCG<MyCGTypes>::GCGERR_NONE  && "Solve failure");
 
     niter  = cg.get_iteration_count();
     resmin = cg.get_resid_min();
@@ -299,6 +334,8 @@ GPP(comm_, "main: f=" << f);
     ios << resmax           << std::endl;
 
     ios.close();
+
+    assert(iret == GCG<MyCGTypes>::GCGERR_NONE  && "Solve failure");
 
     errcode = err < 1e-10 ? 0 : 1;
 
