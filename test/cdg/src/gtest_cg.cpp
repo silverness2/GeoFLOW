@@ -215,9 +215,10 @@ int main(int argc, char **argv)
     EH_MESSAGE("main: Initialize CG operator...");
 
     // Initialize GCG operator:
-    GSIZET           niter;
-    GFTYPE           eps = 100.0*std::numeric_limits<GFTYPE>::epsilon();
-    GFTYPE           err, resmin, resmax, x, y, z;
+    GSIZET            niter;
+    GFTYPE            eps = 100.0*std::numeric_limits<GFTYPE>::epsilon();
+    GFTYPE            err, resmin, resmax, x, y, z;
+    GTVector<GFTYPE> *resvec;
 
     EH_MESSAGE("main: Create Lap op...");
     GHelmholtz       L(*grid_); // Laplacian operator
@@ -283,16 +284,9 @@ int main(int argc, char **argv)
 
     }
 
-
     // Multiply f by local mass matrix:
     f.pointProd(*mass_local);     // M_L f_L
-    f *= -1.0;                     // -f required by discretization
-
-GPP(comm_, "main: f.infnorm=" << f.infnorm());
-GPP(comm_, "main: ub=" << ub);
-GPP(comm_, "main: f=" << f);
-GPP(comm_, "main: Mloc=" << *mass_local);
-
+    f *= -1.0;                    // -f required by discretization
 
     EH_MESSAGE("main: Solve linear system...");
 
@@ -301,9 +295,10 @@ GPP(comm_, "main: Mloc=" << *mass_local);
     u = 0.0; // initial guess
     iret = cg.solve(L, f, ub, u);
 
-    niter  = cg.get_iteration_count();
-    resmin = cg.get_resid_min();
-    resmax = cg.get_resid_max();
+    niter  =  cg.get_iteration_count();
+    resmin =  cg.get_resid_min();
+    resmax =  cg.get_resid_max();
+    resvec = &cg.get_residuals();
     EH_MESSAGE("main: Compute errors...");
 
     *utmp[0] = u - ua;
@@ -338,14 +333,15 @@ GPP(comm_, "main: Mloc=" << *mass_local);
 
     assert(iret == GCG<MyCGTypes>::GCGERR_NONE  && "Solve failure");
 
-    errcode = err < 1e-10 ? 0 : 1;
+    errcode = err < 1e-12 ? 0 : 1;
 
     // Accumulate error codes:
     GComm::Allreduce(&errcode, &gerrcode, 1, T2GCDatatype<GINT>() , GC_OP_MAX, comm_);
 
  
     if ( gerrcode != 0 ) {
-      cout << serr << " Error: code=" << errcode << endl;
+      cout << serr << " Error: err=" << err << " code=" << errcode << endl;
+      cout << serr << " residuals=" << *resvec << endl;
     }
     else {
       cout << serr << " Success!" << endl;
