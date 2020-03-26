@@ -985,6 +985,8 @@ itasks.range_reset();
   if ( vvals  != NULLPTR ) delete [] vvals;
   if ( ivals  != NULLPTR ) delete [] ivals;
   if ( iivals != NULLPTR ) delete [] iivals;
+  if ( ijvals != NULLPTR ) delete [] ijvals;
+
  
 #if defined(GGFX_TRACE_OUTPUT)
   EH_MESSAGE("GGFX::doCommonNodeSort: done.");
