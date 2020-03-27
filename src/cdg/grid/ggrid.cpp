@@ -1236,7 +1236,7 @@ void GGrid::add_terrain(const State &xb, State &utmp)
   GCG<CGTypes>   cg(cgtraits_, *this, *ggfx_, tmp);
   GHelmholtz     H(*this);
 
-  H.use_metric(FALSE); // do Laplacian in reference space
+  H.use_metric(TRUE); // do Laplacian in real space
 
 
   // Solve Nabla^2 (Xnew + Xb - XNodes) = 0 
