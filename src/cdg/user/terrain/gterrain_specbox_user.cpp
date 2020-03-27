@@ -91,10 +91,12 @@ cout << "gauss_range: igbdy.size=" << igbdy->size() << " yb_final=" << *xb[1] <<
   }
 #endif
 
+#if 0
   // Do smoothing:
   for ( auto j=0; j<xb.size(); j++ ) {
     geoflow::smooth<GFTYPE>(grid, GGFX_OP_SMOOTH, *utmp[0], *xb[j]);
   }
+#endif
 
   return TRUE;
 
@@ -196,6 +198,11 @@ GBOOL impl_poly_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Stat
 //               h'(x) = h0 cos^2(pi x/2a), |x| <= a;
 //                     = 0                , |x| >  a.
 //          Currently works only for 2D.
+//         
+//          Starting values might be:
+//            h0 = 8km
+//            lambda = 8km
+//            a = extent = 25km, and may be non-dimensionalized.
 //          
 // ARGS   : ptree: main prop tree 
 //          sblk : data block name
