@@ -912,6 +912,7 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
     format << "c" << j+1;
     stateinfo.svars[j] = format.str();
   }
+
   pIO_->write_state("c", stateinfo, c_);
 #endif
 

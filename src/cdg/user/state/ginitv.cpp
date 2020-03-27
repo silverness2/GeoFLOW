@@ -283,8 +283,6 @@ GBOOL impl_simpsum1d_box(const PropertyTree &ptree, GString &sconfig, GGrid &gri
 
   delete distribution;
 
-  return TRUE;
-
 } // end, method impl_simpsum1d_box
 
   
