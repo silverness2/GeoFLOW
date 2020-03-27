@@ -107,8 +107,10 @@
     "grid_name"   : "grid_icos",
     "ilevel"      : 2,
     "refine_type" : "GICOS_BISECTION",
-    "radius"      : 1.0
-
+    "radius"      : 1.0,
+    "maxit"       : 128,
+    "tol"         : 1.0e-8,
+    "norm_type"   : "GCG_NORM_INF"
   },
   "grid_sphere" : {
     "grid_name"         : "grid_sphere",
@@ -147,7 +149,10 @@
     "bdy_z_1"   : "fully_periodic",
     "bdy_init_method  " : "",
     "bdy_update_method" : "", 
-    "use_state_init"    : true
+    "use_state_init"    : true,
+    "maxit"     : 128,
+    "tol"       : 1.0e-8,
+    "norm_type" : "GCG_NORM_INF"
   },
   "stepper_props": {
     "stepping_method"  : "GSTEPPER_EXRK",
