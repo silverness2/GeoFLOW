@@ -148,11 +148,12 @@ nelems
       puu = uu;
     end
     h = quadmesh(imat,xx,yy,puu,'FaceColor','interp');
-    colorbar('vertical');
 %   h = quadmesh(imat,xx,yy,varargin{:});
 %   set(h, 'FaceColor', 'blue', 'EdgeColor', 'none');
     if bwire == 1
       set(h, 'FaceColor', 'none', 'EdgeColor', 'blue');
+    else
+      colorbar('vertical');
     end
     hold on;
     if bwire == 0
