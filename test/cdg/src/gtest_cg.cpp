@@ -158,7 +158,7 @@ int main(int argc, char **argv)
     GTPoint<GFTYPE> P0, P1, dP;
     std::vector<GINT> pstd(GDIM);
 
-    ptree.load_file("input_cg.jsn");
+    ptree.load_file("cg_input.jsn");
     sgrid       = ptree.getValue<GString>("grid_type");
     pstd        = ptree.getArray<GINT>("exp_order");
     gtree       = ptree.getPropertyTree(sgrid);
