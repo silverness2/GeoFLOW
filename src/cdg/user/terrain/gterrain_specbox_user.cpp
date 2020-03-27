@@ -54,9 +54,6 @@ GBOOL impl_gauss_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
   
   // Set initial bdy vector to be current coordinates:
   for ( auto j=0; j<xb.size(); j++ ) *xb[j] = 0.0;
-
- *xb[0] = 0.0;
- *xb[1] = 0.0;
   for ( auto j=0; j<igbdy->size(); j++ ) {
     i = (*igbdy)[j];
     (*xb[0])[i] = (*xnodes)[0][i];
@@ -145,9 +142,6 @@ GBOOL impl_poly_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Stat
 
   // Set initial bdy vector to be current coordinates:
   for ( auto j=0; j<xb.size(); j++ ) *xb[j] = 0.0;
-
- *xb[0] = 0.0;
- *xb[1] = 0.0;
   for ( auto j=0; j<igbdy->size(); j++ ) {
     i = (*igbdy)[j];
     (*xb[0])[i] = (*xnodes)[0][i];
@@ -162,8 +156,9 @@ GBOOL impl_poly_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Stat
   for ( auto m=0; m<x0.size(); m++ ) {   // for each Gaussian lump
     for ( auto j=0; j<nxy; j++ ) {
       dx        = (*xnodes)[0][j] - x0[m];
-      if ( FUZZYEQ(P0.x2,(*xnodes)[1][j],eps) )
+      if ( FUZZYEQ(P0.x2,(*xnodes)[1][j],eps) ) {
         (*xb[1])[j] += h0[m]/( pow( dx*dx/(xsig[m]*xsig[m]) + 1, pexp[m]/2) );
+      }
     }
   }
 #elif defined(_G_IS3D)
@@ -203,6 +198,7 @@ GBOOL impl_poly_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Stat
 //            h0 = 8km
 //            lambda = 8km
 //            a = extent = 25km, and may be non-dimensionalized.
+//            on a domain of [-75, 75] x [0, 15] km^2
 //          
 // ARGS   : ptree: main prop tree 
 //          sblk : data block name
@@ -229,15 +225,13 @@ GBOOL impl_schar_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
   GFTYPE lambda  = ttree.getValue<GFTYPE>("lambda");       // perturbation wavelength
   GFTYPE extent  = ttree.getValue<GFTYPE>("range_extent"); // extent 
   GFTYPE h0      = ttree.getValue<GFTYPE>("h0");           // height
+  GFTYPE x0      = ttree.getValue<GFTYPE>("x0");           // ref position
   std::vector<GFTYPE> xyz0 = boxptree.getArray<GFTYPE>("xyz0");
 //std::vector<GFTYPE> dxyz = boxptree.getArray<GFTYPE>("delxyz");
   P0 = xyz0; 
 
   // Set initial bdy vector to be current coordinates:
   for ( auto j=0; j<xb.size(); j++ ) *xb[j] = 0.0;
-
-  *xb[0] = 0.0;
-  *xb[1] = 0.0;
   for ( auto j=0; j<igbdy->size(); j++ ) {
     i = (*igbdy)[j];
     (*xb[0])[i] = (*xnodes)[0][i];
@@ -250,8 +244,8 @@ GBOOL impl_schar_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
   // Build terrain height vector:
 #if defined(_G_IS2D)
   for ( auto j=0; j<nxy; j++ ) {
-    x        = (*xnodes)[0][j];
-    if ( FUZZYEQ(P0.x2,(*xnodes)[1][j],eps) )
+    x        = (*xnodes)[0][j] - x0;
+    if ( FUZZYEQ(P0.x2,(*xnodes)[1][j],eps) ) {
 //               h(x) = cos^2(pi x/lambda) h'(x),
 //               h'(x) = h0 cos^2(pi x/2a), |x| <= a;
       (*xb[1])[j] = 0.0;
@@ -259,11 +253,13 @@ GBOOL impl_schar_range(const PropertyTree &ptree, GString sblk, GGrid &grid, Sta
         (*xb[1])[j] += h0*pow(cos(PI*x/lambda)    ,2)
                          *pow(cos(PI*x/(2*extent)),2);
       }
+    }
   }
 #elif defined(_G_IS3D)
   assert(FALSE && "Method undefined in 3D");
 #endif
 
+ 
   // Do smoothing:
   for ( auto j=0; j<xb.size(); j++ ) {
     geoflow::smooth<GFTYPE>(grid, GGFX_OP_SMOOTH, *utmp[0], *xb[j]);
