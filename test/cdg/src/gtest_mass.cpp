@@ -135,7 +135,7 @@ int main(int argc, char **argv)
     GString sgrid;
     std::vector<GINT> pstd(GDIM);
 
-    ptree.load_file("icos_input.jsn");
+    ptree.load_file("mass_input.jsn");
     sgrid       = ptree.getValue<GString>("grid_type");
     pstd        = ptree.getArray<GINT>("exp_order");
     gtree       = ptree.getPropertyTree(sgrid);
