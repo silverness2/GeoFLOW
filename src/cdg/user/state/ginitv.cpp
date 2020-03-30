@@ -219,7 +219,6 @@ GBOOL impl_abc_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Ti
 //**********************************************************************************
 GBOOL impl_simpsum1d_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
 {
-
   GGridBox *tgrid = dynamic_cast<GGridBox*>(&grid);
   assert(tgrid != NULLPTR && "Box grid required");
 
@@ -282,6 +281,8 @@ GBOOL impl_simpsum1d_box(const PropertyTree &ptree, GString &sconfig, GGrid &gri
   GMTK::normalizeL2(grid, u, utmp, E0);
 
   delete distribution;
+
+  return TRUE;
 
 } // end, method impl_simpsum1d_box
 
