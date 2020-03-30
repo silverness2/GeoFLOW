@@ -1,13 +1,8 @@
 //==================================================================================
-// Module       : gtest_cg.cpp
-// Date         : 3/16/20 (DLR)
-// Description  : GeoFLOW test of conjigate gradient operator, 
-//                solving
-//                    Nabla^2 u = -f, 
-//                In a 2D box, where f =  6xy(1-y) - 2x^3
-//                on 0 <= x,y <= 1, and u(x,y=0)=u(x,y=1)=0;
-//                u(x=0,y)=0; u(x=1,y) = y(1-y). 
-// Copyright    : Copyright 2020. Colorado State University. All rights reserved.
+// Module       : gtest_mass.cpp
+// Date         : 10/24/18 (DLR)
+// Description  : GeoFLOW test of GMass classes
+// Copyright    : Copyright 2018. Colorado State University. All rights reserved
 // Derived From : none.
 //==================================================================================
 
@@ -34,8 +29,6 @@
 #include "ggrid_factory.hpp"
 #include "gio_observer.hpp"
 #include "gio.hpp"
-#include "gcg.hpp"
-#include "ghelmholtz.hpp"
 #if defined(_G_USE_GPTL)
   #include "gptl.h"
 #endif
@@ -61,20 +54,6 @@ struct stStateInfo {
   GString     idir;              // input directory
   GString     odir;              // output directory
 };
-
-
-struct MyCGTypes {
-        using Types            = MyCGTypes;
-        using Operator         = class GHelmholtz;
-        using Preconditioner   = LinSolverBase<Types>;
-        using State            = GTVector<GTVector<GFTYPE>*>;
-        using StateComp        = GTVector<GFTYPE>;
-        using Grid             = GGrid;
-        using Value            = GFTYPE;
-        using ConnectivityOp   = GGFX<GFTYPE>;
-};
-
-
 
 template< // default template arg types
 typename StateType     = GTVector<GTVector<GFTYPE>*>,
@@ -106,7 +85,7 @@ using IOBasePtr     = std::shared_ptr<IOBaseType>;// IO Base ptr
 using Grid          = GGrid;
 
 
-GGrid        *grid_=NULLPTR;
+GGrid       *grid_;
 GC_COMM      comm_=GC_COMM_WORLD ;      // communicator
 
 void init_ggfx(PropertyTree &ptree, Grid &grid, GGFX<GFTYPE> &ggfx);
@@ -114,18 +93,15 @@ void init_ggfx(PropertyTree &ptree, Grid &grid, GGFX<GFTYPE> &ggfx);
 
 int main(int argc, char **argv)
 {
-    GString   serr="main: ";
-    GINT      errcode, gerrcode, iret;
+    GString   serr ="main: ";
+    GINT      errcode, gerrcode;
+    GFTYPE    err, radiusi;
     IOBasePtr pIO;         // ptr to IOBase operator
-    GTVector<GTVector<GFTYPE>>    *xnodes;
-    LinSolverBase<MyCGTypes>::Traits cgtraits;
-    GString   snorm;
-    std::ifstream itst;
-    std::ofstream ios;
 
     typename ObserverBase<MyTypes>::Traits
                    binobstraits;
 
+    EH_MESSAGE("main: Starting...");
 
     if ( argc > 1 ) {
       cout << "No arguments accepted" << endl;
@@ -141,6 +117,7 @@ int main(int argc, char **argv)
     GlobalManager::startup();
 
 
+
     GINT myrank  = GComm::WorldRank();
     GINT nprocs  = GComm::WorldSize();
 
@@ -151,26 +128,21 @@ int main(int argc, char **argv)
     // Initialize GPTL:
     GPTLinitialize();
 #endif
+    EH_MESSAGE("main: Read prop tree...");
 
     // Get minimal property tree:
     PropertyTree gtree, ptree; 
     GString sgrid;
-    GTPoint<GFTYPE> P0, P1, dP;
     std::vector<GINT> pstd(GDIM);
 
-    ptree.load_file("cg_input.jsn");
+    ptree.load_file("mass_input.jsn");
     sgrid       = ptree.getValue<GString>("grid_type");
     pstd        = ptree.getArray<GINT>("exp_order");
     gtree       = ptree.getPropertyTree(sgrid);
 
-    std::vector<GFTYPE> xyz0 = gtree.getArray<GFTYPE>("xyz0");
-    std::vector<GFTYPE> dxyz = gtree.getArray<GFTYPE>("delxyz");
-    P0  = xyz0;
-    P1  = dxyz;
-    P1 += P0;
+    assert(sgrid == "grid_icos" && "Must use ICOS grid for now");
 
-    assert(P0.x1 == 0.0 && P1.x1 == 1.0
-        && P0.x2 == 0.0 && P1.x2 == 1.0 );
+    radiusi = gtree.getValue<GFTYPE>("radius",1.0);
 
     // Create basis:
     GTVector<GNBasis<GCTYPE,GFTYPE>*> gbasis(GDIM);
@@ -178,7 +150,7 @@ int main(int argc, char **argv)
       gbasis [k] = new GLLBasis<GCTYPE,GFTYPE>(pstd[k]);
     }
 
-    EH_MESSAGE("main: Create grid...");
+    EH_MESSAGE("main: Generate grid...");
 
     // Generate grid:
 #if defined(_G_USE_GPTL)
@@ -192,164 +164,95 @@ int main(int argc, char **argv)
     GPTLstop("gen_grid");
 #endif
 
-    EH_MESSAGE("main: Initialize GGFX operator...");
+    EH_MESSAGE("main: Initialize gather-scatter...");
 
     // Initialize gather/scatter operator:
-    GGFX<GFTYPE>  ggfx;
+    GGFX<GFTYPE> ggfx;
     init_ggfx(ptree, *grid_, ggfx);
 
-    xnodes = &(grid_->xNodes());
+    // Test some of the coord transformation methods:
+    GFTYPE xlat, xlatc, xlong, xlongc;
+    GFTYPE eps = std::numeric_limits<GFTYPE>::epsilon();
 
-    GTVector<GFTYPE>            f (grid_->ndof());
-    GTVector<GFTYPE>            u (grid_->ndof());
-    GTVector<GFTYPE>            ua(grid_->ndof());
-    GTVector<GFTYPE>            ub(grid_->ndof());
-    GTVector<GFTYPE>           *mass_local = grid_->massop().data();
-    GTVector<GTVector<GFTYPE>*> utmp(10);
+    GTVector<GFTYPE> f(grid_->ndof());
+    GTVector<GFTYPE> g(grid_->ndof());
+    GTVector<GFTYPE> *imult = &ggfx.get_imult();
+//  GTVector<GFTYPE> *jac = &(grid_->Jac());
+    GTVector<GTVector<GFTYPE>*> utmp(1);
+    GMass massop(*grid_,FALSE);
 
-    for ( auto j=0; j<utmp.size(); j++ ) utmp[j] = new GTVector<GFTYPE>(grid_->ndof());
-
-    cgtraits.maxit    = gtree.getValue<GDOUBLE>("maxit");
-    cgtraits.tol      = gtree.getValue<GDOUBLE>("tol");
-    snorm             = gtree.getValue<GString>("norm_type");
-    cgtraits.normtype = LinSolverBase<MyCGTypes>::str2normtype(snorm);
-
-    EH_MESSAGE("main: Initialize CG operator...");
-
-    // Initialize GCG operator:
-    GSIZET            niter;
-    GFTYPE            eps = 100.0*std::numeric_limits<GFTYPE>::epsilon();
-    GFTYPE            err, resmin, resmax, x, y, z;
-    GTVector<GFTYPE> *resvec;
-
-    EH_MESSAGE("main: Create Lap op...");
-    GHelmholtz       L(*grid_); // Laplacian operator
-
-    EH_MESSAGE("main: Create CG op...");
-
-    GCG<MyCGTypes>   cg(cgtraits, *grid_, ggfx, utmp);
-
-    EH_MESSAGE("main: Check for SPD...");
-
-//L.use_metric(FALSE);
-
-    // Check if operator is SPD:
-    GTMatrix<GFTYPE> Hmat (f.size(),f.size());
-    f = 0.0;
-    for ( auto j=0; j<f.size(); j++ ) {
-      f[j] = 1.0;
-//    ggfx.doOp(f, GGFX_OP_SUM);
-      L.opVec_prod(f, utmp, u);
-//    ggfx.doOp(u, GGFX_OP_SUM);
-      for ( auto i=0; i<f.size(); i++ ) Hmat(i,j) = u[i];
-      f[j] = 0.0;
-    }
-
-//cout << "Hmat=" << Hmat << endl;
-#if 1
-    GSIZET nbad = 0, ngbad;
-    for ( auto j=0; j<f.size(); j++ ) {
-      for ( auto i=j; i<f.size(); i++ ) {
-        if ( !FUZZYEQ(Hmat(i,j), Hmat(j,i), eps) ) {
-          cout << "main: (" << i << "," << j << "): H=" << Hmat(i,j) << " H^T=" << Hmat(j,i) << endl;
-          nbad++;
-        }
-      }
-    }
-
-    // Accumulate 'bad' entry number:
-    GComm::Allreduce(&nbad, &ngbad, 1, T2GCDatatype<GSIZET>() , GC_OP_MAX, comm_);
-    if ( ngbad == 0 ) {
-      cout << "main: .................................. operator is SPD!" << endl;
-    } else {
-      cout << "main: .................................. operator NOT SPD!" << endl;
-      cout << "main: .................................. ngbad=" << nbad << "; size=" << f.size()*(f.size()+1)/2 << endl;
-      errcode = 1;
-      goto prerror;
-    }
+    f = 1.0;
+#if 0
+//  ggfx.doOp(f, GGFX_OP_SMOOTH);
+    // Multiply f by inverse multiplicity:
+    f.pointProd(*imult);
 #endif
-      
 
-    EH_MESSAGE("main: Set RHS...");
+    EH_MESSAGE("main: Compute integral...");
 
-    // Generate smooth RHS, bdyy vectors:
-    //    f =  6xy(1-y) - 2x^3
+    GFTYPE integral;
+    GFTYPE gintegral;
 
-    ub = 0.0;
-    for ( auto j=0; j<grid_->ndof(); j++ ) {
-
-      x = (*xnodes)[0][j]; y = (*xnodes)[1][j];
-      if ( GDIM > 2 ) z = (*xnodes)[2][j];
-      f [j] = 6.0*x*y*(1.0-y) - 2.0*pow(x,3.0);           // RHS
-      ua[j] = y*(1.0-y)*pow(x,3.0);                       // analytic solution
-      if ( FUZZYEQ(P0.x2,y,eps) || FUZZYEQ(P1.x2,y,eps) ) // N & S bdy
-        ub[j] = 0.0; 
-      if ( FUZZYEQ(P0.x1,x,eps) ) // W bdy
-        ub[j] = 0.0; 
-      if ( FUZZYEQ(P1.x1,x,eps) ) // E bdy
-        ub[j] = y*(1.0-y);
-
-    }
-
-    // Multiply f by local mass matrix:
-    f.pointProd(*mass_local);     // M_L f_L
-    f *= -1.0;                    // -f required by discretization
-
-    EH_MESSAGE("main: Solve linear system...");
-
-    // Invert mass operator, solve L u = f for u, 
-    // where L is Laplacian operator:
-    u = 0.0; // initial guess
-    iret = cg.solve(L, f, ub, u);
-
-    niter  =  cg.get_iteration_count();
-    resmin =  cg.get_resid_min();
-    resmax =  cg.get_resid_max();
-    resvec = &cg.get_residuals();
-    EH_MESSAGE("main: Compute errors...");
-
-    *utmp[0] = u - ua;
-    utmp[0]->rpow(2);
-    err = grid_->integrate(*utmp[0], *utmp[1]) * grid_->ivolume();
+#if 0
+    GPTLstart("massop_prod");
+    massop.opVec_prod(f,utmp,g);
+    GPTLstop("massop_prod");
+    std::cout << "main: mass_prod_sum=" << g.sum() << std::endl;
+  
+    integral = g.sum();
+    GComm::Allreduce(&integral, &gintegral, 1, T2GCDatatype<GFTYPE>() , GC_OP_SUM, comm_);
+#else
+    gintegral = grid_->integrate(f, g);
+#endif
 
     EH_MESSAGE("main: Write to file...");
 
-    itst.open("cg_err.txt");
-    ios.open("cg_err.txt",std::ios_base::app);
+    std::ifstream itst;
+    std::ofstream ios;
+    itst.open("mass_err.txt");
+    ios.open("mass_err.txt",std::ios_base::app);
 
     if ( itst.peek() == std::ofstream::traits_type::eof() ) {
-      ios << "#elems" << "  " << "#dof" << "  ";
-      for ( auto j=0; j<GDIM; j++ ) ios << "p" << j+1 << "  ";
-      ios << "L2_err" << "  " << "niter" << "  " 
-          << "resid_min" << "  " << "resid_max" <<  std::endl;
+      ios << "#elems" << "  ";
+      for ( GSIZET j=0; j<GDIM; j++ ) ios << "p" << j+1 << "  ";
+      ios <<  "ndof    area_computed    area_analytic    diff " << std::endl;
     }
     itst.close();
 
-    ios << grid_->ngelems() << "  "
-        << grid_->ndof()    << "  " ;
-        for ( auto j=0; j<GDIM; j++ ) 
-    ios << pstd[j]          << "  " ;
-    ios << err              << "  " ;
-    ios << niter            << "  " ;
-    ios << resmin           << "  " ;
-    ios << resmax           << std::endl;
+    // Get global no elements and dof:
+    GTVector<GSIZET> lsz(2), gsz(2);
+    lsz[0] = grid_->nelems();
+    lsz[1] = grid_->ndof();
+    GComm::Allreduce(lsz.data(), gsz.data(), 2, T2GCDatatype<GSIZET>() , GC_OP_SUM, comm_);
 
+
+    GFTYPE aintegral;
+    #if defined(_G_IS2D)
+    aintegral = 4.0*PI*pow(radiusi,2.0);
+    #elif defined(_G_IS3D)
+    aintegral = 4.0*PI*pow(radiusi,3.0)/3.0;
+    #endif
+    std::cout << "main: integral=" << gintegral << "; area=" << aintegral << std::endl;
+
+    err = fabs(gintegral-aintegral)/aintegral;
+
+    ios <<   gsz[0] << "  ";
+    for ( GSIZET j=0; j<GDIM; j++ ) ios << pstd[j] << "  ";
+    ios << gsz[1]     << "  "
+        << gintegral  << "  " 
+        << aintegral  << "  "
+        << fabs(gintegral-aintegral) << std::endl;
     ios.close();
+    
+    errcode = err < 1e-10 ? 0 : 1;
 
-    errcode = err < 1e-12 ? 0 : 2;
-    if ( errcode != 0 || iret != GCG<MyCGTypes>::GCGERR_NONE ) {
-      cout << serr << " Error: err=" << err << " code=" << errcode << endl;
-      cout << serr << " residuals=" << *resvec << endl;
-    }
-    assert(iret == GCG<MyCGTypes>::GCGERR_NONE  && "Solve failure");
-
-
-prerror:
-    // Accumulate error codes:
+    // Accumulate errors:
     GComm::Allreduce(&errcode, &gerrcode, 1, T2GCDatatype<GINT>() , GC_OP_MAX, comm_);
+
  
     if ( gerrcode != 0 ) {
-      cout << serr << " Error: errcode=" << gerrcode << endl;
+      cout << serr << " Error: code=" << errcode << endl;
+      cout << serr << " Error: " << err << endl;
     }
     else {
       cout << serr << " Success!" << endl;
@@ -374,7 +277,7 @@ prerror:
 // Copyright    : Copyright 2019. Colorado State University. All rights reserved.
 // Derived From : 
 //==================================================================================
-#include "gtools.h"
+//#include "gtools.h"
 
 //**********************************************************************************
 //**********************************************************************************
