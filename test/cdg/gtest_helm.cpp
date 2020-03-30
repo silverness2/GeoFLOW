@@ -11,7 +11,9 @@
 #include <cstdio>
 #include <unistd.h>
 #include <iostream>
-#include "gptl.h"
+#if defined(_G_USE_GPTL)
+  #include "gptl.h"
+#endif
 #include <memory>
 #include <cstdlib>
 #include <cassert>
@@ -122,11 +124,13 @@ int main(int argc, char **argv)
       }
     }
 
+#if defined(_G_USE_GPTL)
     // Set GTPL options:
     GPTLsetoption (GPTLcpu, 1);
 
     // Initialize GPTL:
     GPTLinitialize();
+#endif
 
 
     // Create basis:
@@ -135,17 +139,29 @@ int main(int argc, char **argv)
       gbasis [k] = new GLLBasis<GCTYPE,GFTYPE>(np);
     }
     
+
+#if defined(_G_USE_GPTL)
     GPTLstart("gen_grid");
+#endif
     // Create grid:
     grid_ = GGridFactory::build(gridptree, gbasis, comm);
+
+#if defined(_G_USE_GPTL)
     GPTLstop("gen_grid");
+#endif
 
 
+#if defined(_G_USE_GPTL)
     GPTLstart("do_gather_op");
+#endif
+
     // Initialize gather/scatter operator:
     GGFX ggfx;
     init_ggfx(ptree, *grid_, ggfx);
+
+#if defined(_G_USE_GPTL)
     GPTLstop("do_gather_op");
+#endif
 
 
     // Create state and tmp space:
@@ -246,8 +262,10 @@ int main(int argc, char **argv)
     ios.close();
 
  
+#if defined(_G_USE_GPTL)
     GPTLpr_file("timing.txt");
     GPTLfinalize();
+#endif
 
     GComm::TermComm();
     if ( grid_ != NULLPTR ) delete grid_;

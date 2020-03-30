@@ -20,20 +20,53 @@
 #include "ggrid.hpp"
 #include "gcomm.hpp"
 #include "ggfx.hpp"
+#include "glinop.hpp"
+#include "ghelmholtz.hpp"
+#include "gcg.hpp"
 #include "tbox/property_tree.hpp"
 
 
 using namespace geoflow::tbox;
 using namespace std;
 
+/*
+template< // define terrain typepack
+typename OperatorType        = GHelmholtz,
+typename PrecondType         = GLinOp,
+typename StateType           = GTVector<GTVector<GFTYPE>*>,
+typename StateCompType       = GTVector<GFTYPE>,
+typename GridType            = GGrid,
+typename ValueType           = GFTYPE,
+typename ConnectivityOpType  = GGFX<GFTYPE>
+>
+*/
+struct CGTypePack {
+        using Types            = CGTypePack;
+        using Operator         = class GHelmholtz;
+        using Preconditioner   = LinSolverBase<Types>;
+        using State            = GTVector<GTVector<GFTYPE>*>;
+        using StateComp        = GTVector<GFTYPE>;
+        using Grid             = GGrid;
+        using Value            = GFTYPE;
+        using ConnectivityOp   = GGFX<GFTYPE>;
+};
+
 class GMass;
 
 typedef GTVector<GElem_base*> GElemList;
 
-
 class GGrid 
 {
 public:
+                             using CGTypes        = CGTypePack;
+                             using Operator       = typename CGTypes::Operator;
+                             using Preconditioner = typename CGTypes::Preconditioner;
+                             using State          = typename CGTypes::State;
+                             using StateComp      = typename CGTypes::StateComp;
+                             using Grid           = typename CGTypes::Grid;
+                             using Value          = typename CGTypes::Value;
+                             using ConnectivityOp = typename CGTypes::ConnectivityOp;
+
                              GGrid() = delete;
                              GGrid(const geoflow::tbox::PropertyTree &ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GC_COMM &comm);
 
@@ -59,6 +92,7 @@ virtual void                 print(const GString &filename){}          // print 
         void                 grid_init();                             // initialize class
         void                 grid_init(GTMatrix<GINT> &p, 
                                GTVector<GTVector<GFTYPE>> &xnodes);   // initialize class for restart
+        void                 add_terrain(const State &xb, State &tmp);// add terrain 
         void                 do_typing(); // classify into types
         GElemList           &elems() { return gelems_; }              // get elem list
         GSIZET               nelems() { return gelems_.size(); }      // local num elems
@@ -97,6 +131,7 @@ virtual void                 print(const GString &filename){}          // print 
                             
 
         GMass               &massop();                                 // global mass op
+        GMass               &imassop();                                // global inv.mass op
         GTVector<GFTYPE>    &Jac();                                    // global Jacobian
         GTVector<GFTYPE>
                             &faceJac();                                // global face Jacobian
@@ -124,6 +159,7 @@ virtual void                 config_bdy(const PropertyTree &ptree,
         GGFX<GFTYPE>        &get_ggfx() { return *ggfx_; }             // get GGFX op
         void                 set_ggfx(GGFX<GFTYPE> &ggfx) 
                                { ggfx_ = &ggfx; }                      // set GGFX op    
+        GTVector<GFTYPE>    &get_mask() { return mask_; }              // get mask
 
 friend  std::ostream&        operator<<(std::ostream&, GGrid &);       // Output stream operator
  
@@ -139,6 +175,7 @@ protected:
         GFTYPE                      find_min_dist(); 
 
         GBOOL                       bInitialized_;    // object initialized?
+        GBOOL                       bInvMass_;        // inverse mass computed?
         GBOOL                       is_bdy_time_dep_; // time-dep bdy vals?
         GBOOL                       do_face_normals_; // compute elem face normals for fluxes?
         GElemType                   gtype_;         // element types comprising grid
@@ -156,6 +193,7 @@ protected:
         GTMatrix<GTVector<GFTYPE>>  dXidX_;         // matrix Rij = dXi^j/dX^i, global
         GTVector<GTVector<GFTYPE>>  xNodes_;        // Cart coords of all node points
         GMass                      *mass_;          // mass operator
+        GMass                      *imass_;         // inverse of mass operator
         GTVector<GFTYPE>            Jac_;           // interior Jacobian, global
         GTVector<GFTYPE>            faceJac_;       // face Jacobian, global
         GTVector<GTVector<GFTYPE>>  faceNormal_;    // normal to eleme faces each face node point (2d & 3d), global
@@ -167,8 +205,11 @@ protected:
         GTVector<GBdyType>          igbdyt_;        // global domain bdy types for each igbdy index
         GTVector<GTVector<GBdyType>>
                                     igbdyt_bydface_;// global domain bdy types for each igbdy index
+        GTVector<GFTYPE>            mask_;          // bdy mask
         PropertyTree                ptree_;         // main prop tree
         GGFX<GFTYPE>               *ggfx_;          // connectivity operator
+        LinSolverBase<CGTypes>::Traits
+                                    cgtraits_;      // GCG operator traits
 
 };
 

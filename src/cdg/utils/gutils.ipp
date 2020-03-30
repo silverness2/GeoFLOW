@@ -9,40 +9,38 @@
 namespace geoflow
 {
 
+
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : dopdf1d
+// METHOD : smooth
 // DESC   :
-//          Computes probability distribution function (pdf) of 
-//          scalar quantity u, and outputs it to the file specified.
-//
-// ARGS   :
-//          grid  : grid object
-//          u     : scalar field to find pdf for
-//          tmp   : tmp vector of length at least X, each
-//                  of same length as u
-//          fname : file name for pdf
-//          nbins : number of bins
-//          bfixdr: if TRUE, will use fmin/fmax as bounds for dynamic
-//                  range; else it will compute them dynamically
-//          fmin/
-//          fmax  : lowest and hight dynamic range value. This is 
-//                  read or used if bfixdr = TRUE. If bfixdr = FALSE, 
-//                  then full dynamic range of u is found, and fmin/fmax
-//                  are returned with these values
-//          dolog : if TRUE, take log of quantity magnitude when creating bins.
-//                  default is FALSE.
+//          
+// DESC   : Computes a weighted average.
+//              Calculates:
+//                u <- DSS(M_L u) / DSS(M_L),
+//          where u is the field expressed in local format;
+//          M_L is the local mass matrix (unassembled);
+//          DSS is the application of Q Q^T, or the direct stiffness operator.
+// ARGS   : 
+//          grid : GGrid object
+//          tmp  : tmp space 
+//          op   : GGFX_OP 
+//          u    : Locally expressed field to smooth
 // RETURNS: none.
-//**********************************************************************************
+//************************************************************************************
 template<typename T>
-void dopdf1d(GGrid &grid, const GTVector<T> &u, GTVector<GTVector<T>*> &tmp, const GString &fname, GINT nbins, GBOOL bfixdr, T fmin, T fmax, GBOOL dolog);
+void smooth(GGrid &grid, GGFX_OP op, GTVector<T> &tmp, GTVector<T> &u)
 {
+  GGFX<T> *ggfx = &grid.get_ggfx();
+  tmp = u;
+ 
+  u.pointProd(*(grid.massop().data()));
+  tmp = *(grid.imassop().data());
+  ggfx->doOp(tmp, op);  // DSS(mass_local)
 
+  u.pointProd(tmp);      // M_assembled u M_L
 
-
-} // end of method dopdf1d
-
-
+} // end, smooth method
 
 
 } // end, namespace

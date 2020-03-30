@@ -19,6 +19,7 @@
 #include "tbox/mpixx.hpp"
 #include "tbox/global_manager.hpp"
 #include "tbox/input_manager.hpp"
+#include "tbox/error_handler.hpp"
 #include "gcomm.hpp"
 #include "gmass.hpp"
 #include "ggfx.hpp"
@@ -94,12 +95,13 @@ int main(int argc, char **argv)
 {
     GString   serr ="main: ";
     GINT      errcode, gerrcode;
-    GFTYPE    radiusi;
+    GFTYPE    err, radiusi;
     IOBasePtr pIO;         // ptr to IOBase operator
 
     typename ObserverBase<MyTypes>::Traits
                    binobstraits;
 
+    EH_MESSAGE("main: Starting...");
 
     if ( argc > 1 ) {
       cout << "No arguments accepted" << endl;
@@ -109,6 +111,11 @@ int main(int argc, char **argv)
 
     // Initialize comm:
     GComm::InitComm(&argc, &argv);
+    mpixx::environment  env(argc,argv); // init GeoFLOW comm
+    mpixx::communicator world;
+    GlobalManager::initialize(argc,argv);
+    GlobalManager::startup();
+
 
 
     GINT myrank  = GComm::WorldRank();
@@ -121,13 +128,14 @@ int main(int argc, char **argv)
     // Initialize GPTL:
     GPTLinitialize();
 #endif
+    EH_MESSAGE("main: Read prop tree...");
 
     // Get minimal property tree:
     PropertyTree gtree, ptree; 
     GString sgrid;
     std::vector<GINT> pstd(GDIM);
 
-    ptree.load_file("icos_input.jsn");
+    ptree.load_file("mass_input.jsn");
     sgrid       = ptree.getValue<GString>("grid_type");
     pstd        = ptree.getArray<GINT>("exp_order");
     gtree       = ptree.getPropertyTree(sgrid);
@@ -142,6 +150,8 @@ int main(int argc, char **argv)
       gbasis [k] = new GLLBasis<GCTYPE,GFTYPE>(pstd[k]);
     }
 
+    EH_MESSAGE("main: Generate grid...");
+
     // Generate grid:
 #if defined(_G_USE_GPTL)
     GPTLstart("gen_grid");
@@ -153,6 +163,8 @@ int main(int argc, char **argv)
 #if defined(_G_USE_GPTL)
     GPTLstop("gen_grid");
 #endif
+
+    EH_MESSAGE("main: Initialize gather-scatter...");
 
     // Initialize gather/scatter operator:
     GGFX<GFTYPE> ggfx;
@@ -174,8 +186,9 @@ int main(int argc, char **argv)
 //  ggfx.doOp(f, GGFX_OP_SMOOTH);
     // Multiply f by inverse multiplicity:
     f.pointProd(*imult);
-cout << serr << "imult=" << *imult << endl;
 #endif
+
+    EH_MESSAGE("main: Compute integral...");
 
     GFTYPE integral;
     GFTYPE gintegral;
@@ -191,6 +204,8 @@ cout << serr << "imult=" << *imult << endl;
 #else
     gintegral = grid_->integrate(f, g);
 #endif
+
+    EH_MESSAGE("main: Write to file...");
 
     std::ifstream itst;
     std::ofstream ios;
@@ -219,6 +234,8 @@ cout << serr << "imult=" << *imult << endl;
     #endif
     std::cout << "main: integral=" << gintegral << "; area=" << aintegral << std::endl;
 
+    err = fabs(gintegral-aintegral)/aintegral;
+
     ios <<   gsz[0] << "  ";
     for ( GSIZET j=0; j<GDIM; j++ ) ios << pstd[j] << "  ";
     ios << gsz[1]     << "  "
@@ -227,6 +244,7 @@ cout << serr << "imult=" << *imult << endl;
         << fabs(gintegral-aintegral) << std::endl;
     ios.close();
     
+    errcode = err < 1e-10 ? 0 : 1;
 
     // Accumulate errors:
     GComm::Allreduce(&errcode, &gerrcode, 1, T2GCDatatype<GINT>() , GC_OP_MAX, comm_);
@@ -234,6 +252,7 @@ cout << serr << "imult=" << *imult << endl;
  
     if ( gerrcode != 0 ) {
       cout << serr << " Error: code=" << errcode << endl;
+      cout << serr << " Error: " << err << endl;
     }
     else {
       cout << serr << " Success!" << endl;

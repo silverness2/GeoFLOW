@@ -31,9 +31,10 @@ set(include_headers "")
 # - Gets library include paths from here
 set(linked_libraries 
 		tbox
-		MPI::MPI_CXX
-		OpenMP::OpenMP_CXX
-		Boost::boost
+		"$<$<BOOL:${OpenMP_FOUND}>:OpenMP::OpenMP_CXX>"
+		"$<$<BOOL:${MPI_CXX_FOUND}>:MPI::MPI_CXX>"
+		"$<$<BOOL:${Boost_SERIALIZATION_FOUND}>:Boost::serialization>"
+		"$<$<BOOL:${Boost_MPI_FOUND}>:Boost::mpi>"
 	)
 		      
 # 

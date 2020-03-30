@@ -59,6 +59,7 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid, State& u
 
 		// Set back to base type
 		base_ptr = eqn_impl;
+
 	}
 	else {
 		EH_ERROR("Requested equation not found: " << equation_name);

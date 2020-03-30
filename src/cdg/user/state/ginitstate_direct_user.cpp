@@ -54,7 +54,8 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
 
   GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
 
-  assert(grid.gtype() == GE_REGULAR && "Invalid element types");
+  assert(grid.gtype() == GE_REGULAR 
+      || grid.gtype() == GE_DEFORMED  && "Invalid element types");
 
   GTVector<GString> bc(6);
   bc[0] = boxptree.getValue<GString>("bdy_x_0");
@@ -112,7 +113,6 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
   for ( i=0; i<GDIM; i++ ) {
     *u[i] = 0.0;
   }
-
   for ( GINT ilump=0; ilump<nlump; ilump++ ) {
     r0[0]  = xinit[ilump]; r0[1]  = yinit[ilump]; 
     if ( GDIM > 2 ) r0[2]  = zinit[ilump]; 
@@ -155,7 +155,7 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
 
   return bret;
 
-} // end, impl_icosnwaveburgers
+} // end, impl_boxnwaveburgers
 
 
 //**********************************************************************************
@@ -302,7 +302,9 @@ GBOOL impl_boxdirgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
   GTPoint<GFTYPE>  r0(3), P0(3);
   GString          snut;
 
-  PropertyTree heatptree = ptree.getPropertyTree("sconfig");
+cout << "impl_boxdirgauss: sconfig=" << sconfig << endl;
+
+  PropertyTree initptree = ptree.getPropertyTree(sconfig);
   PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
   PropertyTree advptree  = ptree.getPropertyTree("pde_burgers");
   PropertyTree nuptree   = ptree.getPropertyTree("dissipation_traits");
@@ -317,7 +319,7 @@ GBOOL impl_boxdirgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
 
   std::vector<GFTYPE> cs;
   if ( bpureadv ) {
-    cs = heatptree.getArray<GFTYPE>("adv_vel");
+    cs = initptree.getArray<GFTYPE>("adv_vel");
   }
 
   for ( GSIZET j=0; j<GDIM; j++ ) c[j] = u[j+1];
@@ -335,11 +337,11 @@ GBOOL impl_boxdirgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
 
   nxy = (*xnodes)[0].size(); // same size for x, y, z
 
-  r0.x1 = heatptree.getValue<GFTYPE>("x0");
-  r0.x2 = heatptree.getValue<GFTYPE>("y0");
-  r0.x3 = heatptree.getValue<GFTYPE>("z0");
-  sig0  = heatptree.getValue<GFTYPE>("sigma");
-  E0    = heatptree.getValue<GFTYPE>("E0");
+  r0.x1 = initptree.getValue<GFTYPE>("x0");
+  r0.x2 = initptree.getValue<GFTYPE>("y0");
+  r0.x3 = initptree.getValue<GFTYPE>("z0");
+  sig0  = initptree.getValue<GFTYPE>("sigma");
+  E0    = initptree.getValue<GFTYPE>("E0");
 
   nu     = nuptree   .getValue<GFTYPE>("nu");
   snut   = nuptree   .getValue<GString>("nu_type","constant");
@@ -403,7 +405,7 @@ GBOOL impl_boxpergauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
   State            c(GDIM);
   GString          snut;
 
-  PropertyTree heatptree = ptree.getPropertyTree(sconfig);
+  PropertyTree initptree = ptree.getPropertyTree(sconfig);
   PropertyTree boxptree  = ptree.getPropertyTree("grid_box");
   PropertyTree advptree  = ptree.getPropertyTree("pde_burgers");
   PropertyTree nuptree   = ptree.getPropertyTree("dissipation_traits");
@@ -427,7 +429,7 @@ GBOOL impl_boxpergauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
 
   std::vector<GFTYPE> cs;
   if ( bpureadv ) {
-    cs = heatptree.getArray<GFTYPE>("adv_vel");
+    cs = initptree.getArray<GFTYPE>("adv_vel");
   }
 
   GTVector<GString> bc(6);
@@ -442,11 +444,11 @@ GBOOL impl_boxpergauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
 
   nxy = (*xnodes)[0].size(); // same size for x, y, z
 
-  r0.x1 = heatptree.getValue<GFTYPE>("x0");
-  r0.x2 = heatptree.getValue<GFTYPE>("y0");
-  r0.x3 = heatptree.getValue<GFTYPE>("z0");
-  sig0  = heatptree.getValue<GFTYPE>("sigma");
-  E0    = heatptree.getValue<GFTYPE>("E0");
+  r0.x1 = initptree.getValue<GFTYPE>("x0");
+  r0.x2 = initptree.getValue<GFTYPE>("y0");
+  r0.x3 = initptree.getValue<GFTYPE>("z0");
+  sig0  = initptree.getValue<GFTYPE>("sigma");
+  E0    = initptree.getValue<GFTYPE>("E0");
 
   nu    = nuptree   .getValue<GFTYPE>("nu");
   snut  = nuptree   .getValue<GString>("nu_type","constant");

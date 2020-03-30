@@ -46,10 +46,18 @@ lshapefcn_             (NULLPTR)
   irank_  = GComm::WorldRank(comm_);
   nprocs_ = GComm::WorldSize(comm_);
 
+  GINT    inorm;
   GString gname   = ptree.getValue<GString>("grid_type");
+  GString tname   = ptree.getValue<GString>("terrain_type");
+  GString snorm;
   assert(gname == "grid_box");
   geoflow::tbox::PropertyTree gridptree = ptree.getPropertyTree(gname);
 
+  // If terrain is being used, elements may not be
+  // GE_REGULAR:
+  this->gtype_ = GE_REGULAR;
+  if ( "none" != tname 
+   &&  ""     != tname ) this->gtype_ = GE_DEFORMED;
 
   gbasis_.resize(GDIM);
   gbasis_ = b;
@@ -66,6 +74,10 @@ lshapefcn_             (NULLPTR)
   for ( auto j=0; j<GDIM; j++ ) P0_[j] = spt[j];
   spt = gridptree.getArray<GFTYPE>("delxyz");
   sne = gridptree.getArray<int>("num_elems");
+  this->cgtraits_.maxit = gridptree.getValue<GDOUBLE>("maxit");
+  this->cgtraits_.tol   = gridptree.getValue<GDOUBLE>("tol");
+  snorm                 = gridptree.getValue<GString>("norm_type");
+  this->cgtraits_.normtype = LinSolverBase<CGTypePack>::str2normtype(snorm);
 
   eps_ = 100*std::numeric_limits<GFTYPE>::epsilon();
   // compute global bdy range, and global vertices:
@@ -270,7 +282,7 @@ void GGridBox::do_elems2d()
   GLONG  bcurr = 0; // current global bdy index
 
   for ( auto i=0; i<qmesh_.size(); i++ ) { // for each quad in irank's mesh
-    pelem = new GElem_base(GE_REGULAR, gbasis_);
+    pelem = new GElem_base(this->gtype_, gbasis_);
     xNodes  = &pelem->xNodes();  // node spatial data
     xiNodes = &pelem->xiNodes(); // node ref interval data
     Ni.resize(pelem->nnodes()); // tensor product shape function
@@ -380,7 +392,7 @@ void GGridBox::do_elems3d()
   GLONG  bcurr = 0; // current global bdy index
   for ( auto i=0; i<hmesh_.size(); i++ ) { // for each hex in irank's mesh
 
-    pelem = new GElem_base(GE_REGULAR, gbasis_);
+    pelem = new GElem_base(this->gtype_, gbasis_);
     xNodes  = &pelem->xNodes();  // node spatial data
     xiNodes = &pelem->xiNodes(); // node ref interval data
     Ni.resize(pelem->nnodes()); // tensor product shape function
@@ -494,7 +506,7 @@ void GGridBox::do_elems2d(GTMatrix<GINT> &p,
       gb[j] = gbasis_[iwhere];
       nvnodes *= (p(i,j) + 1);
     }
-    pelem = new GElem_base(GE_REGULAR, gb);
+    pelem = new GElem_base(this->gtype_, gb);
     xNodes  = &pelem->xNodes();  // node spatial data
     xiNodes = &pelem->xiNodes(); // node ref interval data
     bdy_ind = &pelem->bdy_indices(); // get bdy indices data member
@@ -608,7 +620,7 @@ void GGridBox::do_elems3d(GTMatrix<GINT> &p,
       nvnodes *= (p(i,j) + 1);
     }    
 
-    pelem = new GElem_base(GE_REGULAR, gbasis_);
+    pelem = new GElem_base(this->gtype_, gbasis_);
     xNodes  = &pelem->xNodes();  // node spatial data
     xiNodes = &pelem->xiNodes(); // node ref interval data
     bdy_ind = &pelem->bdy_indices(); // get bdy indices data member
@@ -952,21 +964,26 @@ void GGridBox::config_bdy(const PropertyTree &ptree,
     buniform [j] = bdyclass == "uniform" ? TRUE : FALSE;
     confmthd [j] = bdytree.getValue<GString>("bdy_config_method","");
     bperiodic    = bperiodic || bdytype[j] == GBDY_PERIODIC;
-    assert(bperiodic && buniform[j] && "GBDY_PERIODIC boundary must have bdy_class = uniform");
+    if ( bperiodic ) {
+      assert(buniform[j] && "GBDY_PERIODIC boundary must have bdy_class = uniform");
+    }
   }
 
-  if ( ndim_ == 2 ) {
-    assert( (  (bdytype[0] == GBDY_PERIODIC && bdytype[2] == GBDY_PERIODIC)
-           ||  (bdytype[3] == GBDY_PERIODIC && bdytype[1] == GBDY_PERIODIC) )
-           &&  "Incompatible GBDY_PERIODIC boundary specification");
-  }
-  else if ( ndim_ == 3 ) {
-    assert( (  (bdytype[0] == GBDY_PERIODIC && bdytype[2] == GBDY_PERIODIC)
-           ||  (bdytype[3] == GBDY_PERIODIC && bdytype[1] == GBDY_PERIODIC)  
-           ||  (bdytype[4] == GBDY_PERIODIC && bdytype[5] == GBDY_PERIODIC) )
-           &&  "Incompatible GBDY_PERIODIC boundary specification");
+  if ( bperiodic ) {
+    if ( ndim_ == 2 ) {
+      assert( (  (bdytype[0] == GBDY_PERIODIC && bdytype[2] == GBDY_PERIODIC)
+             ||  (bdytype[3] == GBDY_PERIODIC && bdytype[1] == GBDY_PERIODIC) )
+             &&  "Incompatible GBDY_PERIODIC boundary specification");
+    }
+    else if ( ndim_ == 3 ) {
+      assert( (  (bdytype[0] == GBDY_PERIODIC && bdytype[2] == GBDY_PERIODIC)
+             ||  (bdytype[3] == GBDY_PERIODIC && bdytype[1] == GBDY_PERIODIC)  
+             ||  (bdytype[4] == GBDY_PERIODIC && bdytype[5] == GBDY_PERIODIC) )
+             &&  "Incompatible GBDY_PERIODIC boundary specification");
+    }
   }
        
+cout << "GGridBox::config_bdy: 0" << endl;
   // Handle non-uniform (user-configured) bdy types first;
   // Note: If "uniform" not specified for a boundary, then
   //       user MUST supply a method to configure it.
@@ -1389,6 +1406,7 @@ void GGridBox::do_face_normals2d()
 void GGridBox::do_face_normals3d()
 {
 
+  assert(FALSE);
 
 } // end, method do_bdy_normals3d
 
@@ -1423,7 +1441,6 @@ void GGridBox::do_bdy_normals()
 //**********************************************************************************
 void GGridBox::do_bdy_normals2d()
 {
-
 } // end, method do_bdy_normals2d
 
 
@@ -1436,6 +1453,5 @@ void GGridBox::do_bdy_normals2d()
 //**********************************************************************************
 void GGridBox::do_bdy_normals3d()
 {
-
 } // end, method do_bdy_normals3d
 

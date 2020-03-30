@@ -8,11 +8,11 @@
 #ifndef SRC_PDEINT_EQUATION_BASE_HPP_
 #define SRC_PDEINT_EQUATION_BASE_HPP_
 
+#include <functional>
+
 
 namespace geoflow {
 namespace pdeint {
-
-
 
 /**
  * Base class to provided an interface for all equation types.

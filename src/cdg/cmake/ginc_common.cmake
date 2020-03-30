@@ -12,15 +12,16 @@ set(CDG_INC
           ${GHOME}/include
           ${GHOME}/blas
           ${GHOME}/comm
-          ${GHOME}/exec
           ${GHOME}/grid
           ${GHOME}/init
           ${GHOME}/io
           ${GHOME}/pdes
           ${GHOME}/sem
+          ${GHOME}/solvers
           ${GHOME}/user/bdy
           ${GHOME}/user/force
           ${GHOME}/user/state
+          ${GHOME}/user/terrain
           ${GHOME}/utils
           ${GHOME}/..
     )

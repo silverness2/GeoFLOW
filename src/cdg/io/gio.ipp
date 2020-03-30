@@ -511,7 +511,7 @@ GSIZET GIO<IOType>::write_header_coll(GString filename, StateInfo &info, Traits 
   if ( myrank_ == 0 ) {
     imulti = static_cast<GINT>(traits.multivar);
     nb = 0;
-    MPI_File_seek(fp, 0, MPI::SEEK_SET); // set to 0-displacement
+    MPI_File_seek(fp, 0, MPI_SEEK_SET); // set to 0-displacement
     
     MPI_File_write(fp, &traits.ivers   , 1   , T2GCDatatype  <GINT>(), &status); 
         MPI_Get_count(&status, MPI_BYTE, &nh);  nb += nh;
@@ -595,7 +595,7 @@ GSIZET GIO<IOType>::read_header(GString filename, StateInfo &info, Traits &trait
       MPI_File        fh;
       MPI_Status      status;
       MPI_File_open(comm_, filename.c_str(), MPI::MODE_RDWR, MPI::INFO_NULL, &fh);
-//    MPI_File_seek(fh, 0, MPI::SEEK_SET); // set to 0-displacement
+//    MPI_File_seek(fh, 0, MPI_SEEK_SET); // set to 0-displacement
       
       // Read header: 
       nh = MPI_File_read(fh, &traits.ivers     , 1   , T2GCDatatype<GINT>  (), &status); nb += nh*sizeof(GINT);

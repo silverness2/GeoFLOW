@@ -16,7 +16,8 @@
 #include "gtmatrix.hpp"
 #include "gcomm.hpp"
 
-#undef GGFX_TRACE_OUTPUT
+
+
 #define _KEEP_INDICES
 
 // GGFX reduction operation defs:
@@ -59,11 +60,11 @@ private:
                       GBOOL initSort(GNIDBuffer  &glob_index);
                       GBOOL binSort(GNIDBuffer &glob_index   , GIMatrix    &gBinMat, 
                                     GINT       &nlocfilledbins,
-                                    GINT       &maxfilledbins, GINT       &maxbinmem,
+                                    GINT       &maxfilledbins, GSIZET     &maxbinmem,
                                     GNIDMatrix &gBinBdy      , GNIDBuffer &locwork);
                       GBOOL doSendRecvWork(GNIDBuffer &, GNIDMatrix &, GIBuffer &, GNIDMatrix &, GIBuffer &, GNIDMatrix &);
                       GBOOL binWorkFill(GNIDBuffer &, GNIDMatrix &, GNIDMatrix &, GIBuffer &);
-                      GBOOL createWorkBuffs(GIMatrix &, GINT, GIBuffer &, GNIDMatrix &, GIBuffer &, GNIDMatrix &);
+                      GBOOL createWorkBuffs(GIMatrix &, GSIZET, GIBuffer &, GNIDMatrix &, GIBuffer &, GNIDMatrix &);
                       GBOOL doCommonNodeSort(GNIDBuffer &, GNIDMatrix &, GIBuffer &, GIBuffer &, GNIDMatrix &);
                       GBOOL extractOpData(GNIDBuffer &glob_index, GNIDMatrix &mySharedNodes);
  
@@ -79,6 +80,7 @@ private:
 
 // Private data:
 GBOOL              bBinSorted_   ;  // have local nodes been bin-sorted?      
+GBOOL              bdologbins_   ;  // do log binning (else, linear)?
 GBOOL              bInit_        ;  // has operator initialization occurred?
 GBOOL              bMultReq_     ;  // is (inverse) multiplicity required (e.g. for smoothing)?
 GC_COMM            comm_         ;  // communicator

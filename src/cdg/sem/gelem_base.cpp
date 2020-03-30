@@ -36,6 +36,7 @@
 #include "gshapefcn_embed.hpp"
 #include "gshapefcn_hostd.hpp"
 #include "gmtk.hpp"
+#include "tbox/error_handler.hpp"
 
 using namespace std;
 
@@ -235,7 +236,6 @@ std::ostream &operator<<(std::ostream &str, GElem_base &e)
 #if defined(G_IS3D)
 //str << " face_types : " << *(e.face_types_) << std::endl;
 #endif
-//str << " Mask       : " <<  (e.mask_) << std::endl;
   str << std::endl << "}";
 
   return str;
@@ -388,8 +388,6 @@ void GElem_base::set_size1d()
     bdyNormal_[j][0].resize(1);
   }
 #endif
-  mask_.resize(Ntot_);
-  mask_ = 1.0;
 
   // Indirection indices:
   get_indirect(gbasis_, vert_indices_, edge_indices_, face_indices_);
@@ -512,9 +510,6 @@ void GElem_base::set_size2d()
   }
 #endif
  
-  mask_.resize(Ntot_);
-  mask_ = 1.0;
-  
   // Indirection indices:
   get_indirect(gbasis_, vert_indices_, edge_indices_, face_indices_);
   Nftot_ = 0;
@@ -654,9 +649,6 @@ void GElem_base::set_size3d()
   }
 #endif
 
-  mask_.resize(Ntot_);
-  mask_ = 1.0;
-  
   // Indirection indices:
   get_indirect(gbasis_, vert_indices_, edge_indices_, face_indices_);
   Nftot_ = 0;
@@ -920,6 +912,7 @@ void GElem_base::dogeom2d(GTMatrix<GTVector<GFTYPE>> &rij, GTMatrix<GTVector<GFT
   GTVector<GFTYPE> dNi(nnodes);// shape function derivative
   GTVector<GFTYPE> tmp(nnodes);// tmp space
   GTVector<GINT>   I(2);       // tensor product index
+
 
   // Can have 'embedded' coords, so # Cartesian coordinates may be > GDIM;
   // but the total number of node points in each metrix element will 
@@ -1889,6 +1882,31 @@ void GElem_base::init(GVVFType &xNodes)
 } // end of method init
 
 
+//***********************************************************************************
+//***********************************************************************************
+// METHOD : set_nodes
+// DESC   : Set nodes, if they're modified after init, due, say to terrain
+//          mods
+// ARGS   : 
+//          xNodes: Cartesian coordinates for all node points (each
+//                  node point is in tensor product form).
+// RETURNS: none.
+//***********************************************************************************
+void GElem_base::set_nodes(GVVFType &xNodes)
+{
+  GString serr = "GElem_base::set_nodes: ";
+
+  assert( bbasis_ && "Basis or element type not set");
+
+  // Set xNodes_ data member. Note that the input array sizes may be
+  // larger than for xNodes_:
+  for ( GSIZET j=0; j<xNodes.size(); j++ ) {
+    for ( GSIZET i=0; i<xNodes_[j].size(); i++ ) xNodes_[j][i] = xNodes[j][i];
+  }
+  
+} // end of method set_nodes
+
+
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : Assignment method
@@ -1936,7 +1954,6 @@ void GElem_base::operator=(const GElem_base &e)
   face_indices_ = e.face_indices_;
   bdy_indices_  = e.bdy_indices_;
   bdy_types_    = e.bdy_types_;
-  mask_         = e.mask_;
 
 } // end, method operator=
 

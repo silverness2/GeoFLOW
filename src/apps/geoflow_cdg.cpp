@@ -87,6 +87,17 @@ int main(int argc, char **argv)
     EH_MESSAGE("geoflow: gather/scatter initialized.");
 
     //***************************************************
+    // Set grid terrain:
+    //***************************************************
+    EH_MESSAGE("geoflow: set grid terrain...");
+    GTimerStart("do_terrain");
+
+    do_terrain(ptree_, *grid_);
+
+    GTimerStop("do_terrain");
+    EH_MESSAGE("geoflow: terrain added.");
+
+    //***************************************************
     // Create equation set:
     //***************************************************
     EH_MESSAGE("geoflow: create equation...");
@@ -142,10 +153,8 @@ int main(int argc, char **argv)
     //***************************************************
     // Do benchmarking if required:
     //***************************************************
-    EH_MESSAGE("geoflow: do benchmark...");
     GTimerStart("benchmark_timer");
     do_bench("benchmark.txt", pIntegrator_->get_numsteps());
-    EH_MESSAGE("geoflow: benchmark done.");
     GTimerStop("benchmark_timer");
 
     //***************************************************
@@ -903,6 +912,7 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
     format << "c" << j+1;
     stateinfo.svars[j] = format.str();
   }
+
   pIO_->write_state("c", stateinfo, c_);
 #endif
 
@@ -966,6 +976,37 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
   for ( GINT j=0; j<ua.size(); j++ ) delete ua[j];
 
 } // end method compare
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : do_terrain
+// DESC   : Set the user-specified terrain in grid
+// ARGS   : 
+//          ptree: main prop tree
+//          grid : grid object
+// RETURNS: none.
+//**********************************************************************************
+void do_terrain(const PropertyTree &ptree, GGrid &grid)
+{
+  GBOOL bret, bterr;
+  GINT  iret, nc;
+  State xb, tmp;
+  
+  nc = grid.xNodes().size();
+  xb.resize(nc);
+  tmp.resize(utmp_.size()-nc);
+
+  // Set terrain & tmp arrays from tmp array pool:
+  for ( auto j=0; j<nc        ; j++ ) xb [j] = utmp_[j];
+  for ( auto j=0; j<tmp.size(); j++ ) tmp[j] = utmp_[j+nc];
+
+  bret = GSpecTerrainFactory<MyTypes>::spec(ptree, grid, tmp, xb, bterr);
+  assert(bret);
+
+  if ( bterr ) grid.add_terrain(xb, tmp);
+
+} // end of method do_terrain
 
 
 //**********************************************************************************

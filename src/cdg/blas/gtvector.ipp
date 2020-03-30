@@ -560,7 +560,7 @@ T &GTVector<T>::back() const
 template<class T> 
 T *GTVector<T>::data() 
 {
-  return data_; //+gindex_.beg();
+  return data_ + gindex_.beg();
 } // end, method data 
 
 
@@ -574,7 +574,7 @@ T *GTVector<T>::data()
 template<class T> 
 const T *GTVector<T>::data() const 
 {
-  return data_ ; //gindex_.beg();
+  return data_ + gindex_.beg();
 } // end, method data (const)
 
 
@@ -827,8 +827,8 @@ void GTVector<T>::updatedev()
 //**********************************************************************************
 template<class T> void GTVector<T>::transpose(GSIZET n)
 {
-  assert(std::is_arithmetic<T>::value || std::is_arithmetic<T>::value || std::is_pointer<T>::value &&
-    "Invalid template type: GMatrix<T>::transpose()");
+  assert(std::is_arithmetic<T>::value || std::is_pointer<T>::value &&
+    "Invalid template type: GTVector<T>::transpose()");
 
   T       tmp;
   GSIZET  i, j;
@@ -931,7 +931,87 @@ GTVector<T>
 GTVector<T>::operator*(const GTVector &obj)
 {
   return this->mul_impl_(obj, typename std::is_floating_point<T>::type());
-} // end, operator-
+} // end, operator*
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : dot
+// DESC   :
+// ARGS   : GTVector &
+// RETURNS: typename T
+//**********************************************************************************
+template<class T>
+T GTVector<T>::dot(const GTVector &obj)
+{
+  assert(std::is_arithmetic<T>::value &&
+    "Invalid template type: GVector<T>::dot()");
+
+  GLLONG j;
+  T ret = 0;
+  for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+    ret += this->data_[j] * obj[j];
+  }
+
+  return ret;
+
+} // end, dot
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : gdot (1)
+// DESC   : Compute dot product over all ranks
+// ARGS   : obj  : input vector
+//          comm : communicator
+// RETURNS: typename T
+//**********************************************************************************
+template<class T>
+T GTVector<T>::gdot(const GTVector &obj, GC_COMM comm)
+{
+  assert(std::is_arithmetic<T>::value &&
+    "Invalid template type: GVector<T>::gdot()");
+
+  T lret = this->dot(obj); 
+  T gret;
+
+  GComm::Allreduce(&lret, &gret, 1, T2GCDatatype<T>() , GC_OP_SUM, comm);
+
+  return gret;
+
+} // end, gdot (1)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : gdot (2)
+// DESC   : Compute dot product over all ranks:
+//              (this:b)^T . c,
+//          where : represents pointProd of operands
+// ARGS   : b : input vector
+//          c : input vector
+//          comm : communicator
+// RETURNS: typename T
+//**********************************************************************************
+template<class T>
+T GTVector<T>::gdot(const GTVector &b, const GTVector &c, GC_COMM comm)
+{
+  assert(std::is_arithmetic<T>::value &&
+    "Invalid template type: GVector<T>::gdot()");
+
+  T lret=0.0; 
+  T gret;
+
+  for ( auto j=gindex_.beg(); j<=gindex_.end(); j+=gindex_.stride() ) {
+    lret += data_[j]*b[j]*c[j];
+  }
+  
+  GComm::Allreduce(&lret, &gret, 1, T2GCDatatype<T>() , GC_OP_SUM, comm);
+
+  return gret;
+
+} // end, gdot(2)
+
 
 //**********************************************************************************
 //**********************************************************************************
@@ -1390,7 +1470,7 @@ while(1){};
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : pointProd (2)
-// DESC   : point-by-point multiplication, returned in this
+// DESC   : point-by-point multiplication, returned in *this
 // ARGS   : obj: const GTVector<>  factor
 // RETURNS: none
 //**********************************************************************************
@@ -1499,7 +1579,7 @@ template<class T>
 T
 GTVector<T>::infnorm() 
 {
-  GDOUBLE xnorm;
+  GDOUBLE xnorm=0.0;
   GLLONG j;
 
   for ( j=this->gindex_.beg(), xnorm=0; j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
@@ -1521,12 +1601,15 @@ template<class T>
 T
 GTVector<T>::Eucnorm() 
 {
-  GDOUBLE xnorm;
+  GDOUBLE n, xnorm=0.0;
   GLLONG j;
 
+  n = 0.0;
   for ( j=this->gindex_.beg(), xnorm=0; j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
     xnorm += this->data_[j]*this->data_[j];
+    n += 1.0;
   }
+  xnorm /= n;
   
   return static_cast<T>(sqrt(xnorm));
 } // end, Eucnorm
@@ -2951,7 +3034,7 @@ GTVector<T>::mul_impl_(const GTVector &obj, std::false_type d)
   #endif
 
   return vret;
-} // end, sub_impl_
+} // end, mul_impl_
 
 
 //**********************************************************************************
@@ -2966,7 +3049,7 @@ GTVector<T>
 GTVector<T>::mul_impl_(const GTVector &obj, std::true_type d)
 {
     return mul_impl_(obj,std::false_type());
-} // end, sub_impl_
+} // end, mul_impl_
 
 //**********************************************************************************
 //**********************************************************************************

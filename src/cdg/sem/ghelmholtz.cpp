@@ -34,6 +34,7 @@ using namespace std;
 //**********************************************************************************
 GHelmholtz::GHelmholtz(GGrid &grid)
 : GLinOp(grid),
+buse_metric_   (TRUE),
 bown_p_        (TRUE),
 bown_q_       (FALSE),
 bcompute_helm_(FALSE),
@@ -142,19 +143,24 @@ void GHelmholtz::def_prod(GTVector<GFTYPE> &u,
   // Compute derivatives of u:
   GMTK::compute_grefderivs(*grid_, u, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj u
 
-  // Compute Gij (D^j u). Recall, Gij contain mass: 
-  for ( GSIZET j=0; j<GDIM; j++ ) { 
-   *gdu[j] = 0.0;
-    for ( GSIZET i=0; i<GDIM; i++ ) {
-      utmp[i]->pointProd(*G_(i,j),uo); // Gij * du^j
-     *gdu[j] += uo;
+  if ( buse_metric_ ) {
+    // Compute Gij (D^j u). Recall, Gij contain mass: 
+    for ( GSIZET j=0; j<GDIM; j++ ) { 
+     *gdu[j] = 0.0;
+      for ( GSIZET i=0; i<GDIM; i++ ) {
+        utmp[i]->pointProd(*G_(i,j),uo); // Gij * du^j
+       *gdu[j] += uo;
+      }
+      // Apply mass; recall that it contains Jacobian:
+//    gdu[j]->pointProd(*massop->data());
     }
-    // Apply mass; recall that it contains Jacobian:
-//  gdu[j]->pointProd(*massop->data());
+  }
+  else {
+    for ( GSIZET j=0; j<GDIM; j++ ) *gdu[j] = *utmp[j];
   }
 
   // Apply variable p parameter ('viscosity') 
-  // before final 'dovergence':
+  // before final 'divergence':
   if ( p_ != NULLPTR ) {
     if ( p_->size() >= grid_->ndof() ) {
       for ( GSIZET j=0; j<GDIM; j++ ) {
@@ -239,14 +245,20 @@ void GHelmholtz::embed_prod(GTVector<GFTYPE> &u,
   // Compute reference-space gradient of u:
   GMTK::compute_grefderivs(*grid_, u, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj u
 
-  // Compute Gij (D^j u). Recall, Gij contain mass, Jac: 
-  for ( GSIZET j=0; j<GDIM; j++ ) {
-   *gdu[j] = 0.0;
-    for ( GSIZET i=0; i<GDIM; i++ ) { 
-      utmp[i]->pointProd(*G_(i,j), uo); // Gij * du^j
-     *gdu[j] += uo;
+  if ( buse_metric_ ) {
+    // Compute Gij (D^j u). Recall, Gij contain mass, Jac: 
+    for ( GSIZET j=0; j<GDIM; j++ ) {
+     *gdu[j] = 0.0;
+      for ( GSIZET i=0; i<GDIM; i++ ) { 
+        utmp[i]->pointProd(*G_(i,j), uo); // Gij * du^j
+       *gdu[j] += uo;
+      }
     }
   }
+  else {
+    for ( GSIZET j=0; j<GDIM; j++ ) *gdu[j] = *utmp[j];
+  }
+
 
   // Apply variable p parameter ('viscosity') 
   // before final 'divergence':
@@ -305,7 +317,7 @@ void GHelmholtz::reg_prod(GTVector<GFTYPE> &u,
 
   GTVector<GTVector<GFTYPE>*> gdu(GDIM);
   GElemList        *gelems=&grid_->elems();
-  GMass             *massop = &grid_->massop();                     
+  GMass            *massop = &grid_->massop();                     
   GElem_base       *elem;
 
   // Compute:
@@ -321,25 +333,31 @@ void GHelmholtz::reg_prod(GTVector<GFTYPE> &u,
   // Re-arrange local temp space for divergence:
   for ( GSIZET i=0; i<GDIM; i++ ) gdu[i] = utmp[i];
 
+
   // Compute deriviatives of u:
   GMTK::compute_grefderivs (*grid_, u, etmp1_, FALSE, gdu); // utmp stores tensor-prod derivatives
 
   // Multiply by (element-size const) metric factors, possibly x-dependent 
   // 'viscosity', and mass:
   GTVector<GFTYPE> *Jac = &grid_->Jac();
+
   for ( GSIZET k=0; k<GDIM; k++ ) {
-    gdu[k]->pointProd(*G_(k,0));
+    if ( buse_metric_ ) {
+      gdu[k]->pointProd(*G_(k,0));
+    }
     // Apply p parameter ('viscosity') if necessary to Laplacian:
     if ( p_ != NULLPTR ) {
       if ( p_->size() >= grid_->ndof() ) gdu[k]->pointProd(*p_);
     }
     // massop contains mass already:
-    massop->opVec_prod(*gdu[k], gdu, uo); // tmp array does nothing
+    massop->opVec_prod(*gdu[k], gdu, uo); // tmp array, gdu, dummy here
     *gdu[k] = uo;
   }
 
+
   // Take 'divergence' with D^T:
   GMTK::compute_grefdiv  (*grid_, gdu, etmp1_, TRUE, uo); // Compute 'divergence' with W^-1 D_j
+
 
   // If p_ is constant, multiply at the end:
   if ( p_ != NULLPTR ) {

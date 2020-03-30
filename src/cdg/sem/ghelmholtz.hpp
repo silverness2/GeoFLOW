@@ -22,6 +22,7 @@
 #include "gnbasis.hpp"
 #include "ggrid.hpp"
 #include "gmass.hpp"
+#include "glinop.hpp"
 
 class GHelmholtz: public GLinOp
 {
@@ -38,6 +39,7 @@ public:
         void              set_Lap_scalar(GTVector<GFTYPE> &p);                // Scalar multipliying Laplacian
         void              set_mass_scalar(GTVector<GFTYPE> &q);               // Scalar multiplying Mass
         void              init();                                             // must call after all 'sets'
+        void              use_metric(GBOOL flag) {buse_metric_ = flag;}       // set flag to use metric & Jacobian
 //      void              set_tmp(GTVector<GTVector<GFTYPE>*> &utmp) 
 //                        { utmp_.resize(utmp.size()); utmp_ = utmp; }       // Set temp space 
 
@@ -61,6 +63,7 @@ private:
         void              compute_div(GTVector<GTVector<GFTYPE>*> &, 
                                       GTVector<GFTYPE> &, GBOOL btrans=TRUE); 
 
+        GBOOL                         buse_metric_;   // use metric terms?
         GBOOL                         bown_q_;        // does object own q?
         GBOOL                         bown_p_;        // does object own p?
         GBOOL                         bown_mass_;     // does object own massop?

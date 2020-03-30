@@ -1,19 +1,19 @@
 { 
   "pde_name"             : "pde_burgers",
-  "exp_order"            : [4, 4, 4],
+  "exp_order"            : [6, 6, 6],
   "exp_order_type"       : "constant",
   "grid_type"            : "grid_box",
-  "initstate_block"      : "mystateinit",
+  "initstate_block"      : "initstate_boxnwave",
   "initforce_block"      : "",
   "use_forcing"          : false,
-  "initstate_type"       : "component",
+  "initstate_type"       : "direct",
   "initforce_type"       : "",
   "restart_index"        : 0,
   "benchmark"            : false,
   "do_comparison"        : false,
   "observer_list"        : ["gio_observer", "global_diag_basic"],
   "IO_implementation"    : "gio",
-  "terrain_type"         : "myboxterrain",
+  "terrain_type"         : "none",
   "myboxterrain": {
     "name"    : "boxgauss_range",
     "x0"      : [0.5],
@@ -51,7 +51,7 @@
     "initps"  : "zero",
     "initc"   : "zero"
   },
-  "init_lump": {
+  "initstate_boxpergauss": {
     "x0"     : 0.5,
     "y0"     : 0.5,
     "z0"     : 0.5,
@@ -59,40 +59,25 @@
     "u0"     : 1.0,
     "adv_vel": [1.0, 0.0, 0.0]
   },
-  "init_icosbell": {
-    "latitude0"  : 0.0,
-    "longitude0" :-30.0,
-    "sigma"      : 0.15,
-    "alpha"      : 20.0,
-    "u0"         : 1.0
+  "initstate_boxdirgauss": {
+    "x0"     : 0.5,
+    "y0"     : 0.5,
+    "z0"     : 0.5,
+    "sigma"  : 0.05,
+    "u0"     : 1.0,
+    "adv_vel": [1.0, 0.0, 0.0]
   },
-  "init_icosgauss": {
-    "latitude0"  : [0.0, -40.0], 
-    "longitude0" : [-90.0,-90.0],
-    "sigma"      : [0.25, 0.25],
-    "c0"         : [1.0,1.0],
-    "alpha"      : 0.0,
-    "u0"         : 1.0,
-    "nlumps"     : 1
-  },
-  "init_icosdefgauss": {
-    "latitude0"  : 60.0,
-    "longitude0" :180.0,
-    "latitude1"  :-60.0,
-    "longitude1" :180.0,
-    "sigma"      : 0.4472,
-    "u0"         : 2.4,
-    "Tper"       : 5.0
-  },
-  "init_nwave": {
-    "x0"    : 0.5,
-    "y0"    : 0.5,
-    "z0"    : 0.5,
-    "ULparm": 1.0,
-    "Re"    : 6.0,
-    "t0"    : 0.01,
-    "planar": false,
-    "prop_dir": [1.0, 2.0, 0.0]
+  "initstate_boxnwave": {
+    "x0"        : [0.5],
+    "y0"        : [0.5],
+    "z0"        : [0.5],
+    "ULparam"   : [1.0],
+    "nu"        : [0.0833],
+    "t0"        : [0.05],
+    "planar"    : [false],
+    "prop_dir_x": [0.0],
+    "prop_dir_y": [0.0],
+    "prop_dir_z": [0.0]
   },
   "pde_burgers": {
     "doheat"      : false,
@@ -107,7 +92,7 @@
     "radius"    : 1.0,
     "num_elems" : [10, 10, 10],
     "maxit"     : 128,
-    "tol"       : 1.0e-6,
+    "tol"       : 1.0e-8,
     "norm_type" : "GCG_NORM_INF"
   },
   "grid_sphere" : {
@@ -128,7 +113,7 @@
   },
   "grid_box": {
     "grid_name" : "grid_box",
-    "xyz0"      : [1.0, 1.0, 1.0],
+    "xyz0"      : [0.0, 0.0, 0.0],
     "delxyz"    : [1.0, 1.0, 1.0],
     "num_elems" : [4, 4, 1],
     "bdy_x_0"   : "my_dirichlet",
@@ -137,8 +122,8 @@
     "bdy_y_1"   : "my_dirichlet",
     "bdy_z_0"   : "my_dirichlet",
     "bdy_z_1"   : "my_dirichlet",
-    "maxit"     : 128,
-    "tol"       : 1.0e-6,
+    "maxit"     : 256,
+    "tol"       : 1.0e-7,
     "norm_type" : "GCG_NORM_INF"
   },
   "stepper_props": {
@@ -149,7 +134,7 @@
     "courant"          : 0.04 
   },
   "dissipation_traits": {
-    "nu"      : 5.0e-2,
+    "nu"      : 0.4,
     "nu_type" : "constant"
   },
   "gio": {
@@ -171,7 +156,7 @@
     "mathop"      : "curlmag"
   },
   "vmag": {
-    "state_index" : [0, 1, 2],
+    "state_index" : [0, 1],
     "names"       : ["vmag"],
     "mathop"      : "vmag"
   },
@@ -192,7 +177,7 @@
     "grid_names"         : ["xgrid", "ygrid", "zgrid"],
     "agg_state_name"     : "u",
     "agg_grid_name "     : "grid",
-    "derived_quantities" : ["curlvmag"]
+    "derived_quantities" : ["vmag"]
   },
   "global_diag_basic": {
     "observer_name"      : "global_diag_basic",
