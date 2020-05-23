@@ -191,14 +191,16 @@ protected:
         GTVector<GTVector<GSIZET>>  itype_;         // indices in elem list of each type
         GTVector<GSIZET>            ntype_;         // no. elems of each type on grid
         GTMatrix<GTVector<GFTYPE>>  dXidX_;         // matrix Rij = dXi^j/dX^i, global
+        GTMatrix<GTVector<GFTYPE>>  dXdXi_;         // matrix Bij = dX^j/dXi^i, global, used for constructing normals
         GTVector<GTVector<GFTYPE>>  xNodes_;        // Cart coords of all node points
         GMass                      *mass_;          // mass operator
         GMass                      *imass_;         // inverse of mass operator
         GTVector<GFTYPE>            Jac_;           // interior Jacobian, global
-        GTVector<GFTYPE>            faceJac_;       // face Jacobian, global
-        GTVector<GTVector<GFTYPE>>  faceNormal_;    // normal to eleme faces each face node point (2d & 3d), global
+        GTVector<GFTYPE>            faceJac_;       // face Jacobians, global
+        GTVector<GTVector<GFTYPE>>  faceNormals_;   // normal to eleme faces each face node point (2d & 3d), global
         GTVector<GSIZET>            gieface_;       // index into global field indicating elem face node
-        GTVector<GTVector<GFTYPE>>  bdyNormal_;     // normal to surface at each bdy node point (2d & 3d), global
+        GTVector<GTVector<GFTYPE>>  bdyNormals_;    // normal to surface at each bdy node point (2d & 3d), global
+        GTVector<GINT>              idepComp_;      // dependent component index at each bdy point
         GTVector<GTVector<GSIZET>>  igbdy_binned_;  // index into global field indicating a domain bdy--by type
         GTVector<GSIZET>            igbdy_;         // index into global field indicating a domain bdy
         GTVector<GTVector<GSIZET>>  igbdy_bydface_; // index into global field indicating a domain bdy face

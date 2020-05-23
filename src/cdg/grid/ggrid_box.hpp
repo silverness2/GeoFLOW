@@ -29,8 +29,8 @@ class GGridBox : public GGrid
 {
 
 public:
-        using              GGrid::faceNormal_;
-        using              GGrid::bdyNormal_;
+        using              GGrid::faceNormals_;
+        using              GGrid::bdyNormals_;
 
         // Box grid traits:
         struct Traits {
@@ -47,7 +47,6 @@ public:
         void                do_elems(GTMatrix<GINT> &p,
                               GTVector<GTVector<GFTYPE>> &xnodes);           // compute elems from restart data
         void                do_face_normals();                               // compute normals to elem faces
-        void                do_bdy_normals ();                               // compute normals to doimain bdy
         void                set_partitioner(GDD_base<GFTYPE> *d);            // set and use GDD object
         void                set_basis(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b); // set element basis
         void                periodize();                                     // periodize coords, if allowed
@@ -76,8 +75,21 @@ private:
                               GTVector<GTVector<GFTYPE>> &xnodes);          // do 3d grid restart
          void               do_face_normals2d();                            // compute normals to elem faces in 2d
          void               do_face_normals3d();                            // compute normals to elem faces in 3d
-         void               do_bdy_normals2d();                             // compute normals to doimain bdy in 2d
-         void               do_bdy_normals3d();                             // compute normals to doimain bdy in 3d
+         void               do_bdy_normals  (GTVector<GTVector>> &dXdXi,
+                                             GTVector<GSIZET>    &igbdy
+                                             GINT                 iface
+                                             GTVector<GTVector>> &normals,
+                                             GTVector<GNT>       &idepComp);// compute normals entry point
+         void               do_bdy_normals2d(GTVector<GTVector>> &dXdXi,
+                                             GTVector<GSIZET>    &igbdy
+                                             GINT                 iface
+                                             GTVector<GTVector>> &normals,
+                                             GTVector<GNT>       &idepComp);// compute normals to doimain bdy in 2d
+         void               do_bdy_normals3d(GTVector<GTVector>> &dXdXi,
+                                             GTVector<GSIZET>    &igbdy
+                                             GINT                 iface
+                                             GTVector<GTVector>> &normals,
+                                             GTVector<GNT>       &idepComp);// compute normals to doimain bdy in 3d
          void               find_subdomain();                               // find task's default subdomain
          void               find_bdy_ind2d(GINT, GBOOL, GTVector<GSIZET> &);// find global bdy indices for specified bdy in 2d
          void               find_bdy_ind3d(GINT, GBOOL, GTVector<GSIZET> &);// find global bdy indices for specified bdy in 3d

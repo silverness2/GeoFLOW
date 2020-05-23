@@ -565,27 +565,26 @@ void GGrid::def_geom_init()
 
    GString serr = "GGrid::def_geom_init: ";
    GSIZET nxy = gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
-   GTMatrix<GTVector<GFTYPE>> rijtmp;
    GTVector<GTVector<GFTYPE>> *xe;
 
    // Resize geometric quantities to global size:
    dXidX_.resize(nxy,nxy);
-   rijtmp.resize(nxy,nxy);
+   dXdXi_.resize(nxy,nxy);
    for ( GSIZET j=0; j<nxy; j++ ) {
      for ( GSIZET i=0; i<nxy; i++ )  {
        dXidX_(i,j).resize(ndof());
-       rijtmp(i,j).resize(ndof());
+       dXdXi_(i,j).resize(ndof());
      }
    }
    Jac_.resize(ndof());
    faceJac_.resize(nfacedof());
 
    // Resize surface-point-wise normals:
-   faceNormal_.resize(nxy); // no. coords for each normal at each face point
-   bdyNormal_.resize(nxy); // no. coords for each normal at each domain bdy point
-   for ( GSIZET i=0; i<bdyNormal_.size(); i++ ) {
-     faceNormal_[i].resize(nfacedof());
-     bdyNormal_ [i].resize(nbdydof());
+   faceNormals_.resize(nxy); // no. coords for each normal at each face point
+   bdyNormals_.resize(nxy); // no. coords for each normal at each domain bdy point
+   for ( GSIZET i=0; i<bdyNormals_.size(); i++ ) {
+     faceNormals_[i].resize(nfacedof());
+     bdyNormals_ [i].resize(nbdydof());
    }
 
    // Now, set the geometry/metric quanties from the elements:
@@ -603,7 +602,7 @@ void GGrid::def_geom_init()
      for ( GSIZET j=0; j<nxy; j++ ) {
        for ( GSIZET i=0; i<nxy; i++ )  {
          dXidX_(i,j).range(ibeg, iend);
-         rijtmp(i,j).range(ibeg, iend);
+         dXdXi_(i,j).range(ibeg, iend);
        }
      }
      Jac_.range(ibeg, iend);
@@ -611,10 +610,10 @@ void GGrid::def_geom_init()
 
      // Set the geom/metric quantities using element data:
      if ( GDIM == 2 ) {
-       gelems_[e]->dogeom2d(rijtmp, dXidX_, Jac_, faceJac_);
+       gelems_[e]->dogeom2d(dXdXi_, dXidX_, Jac_, faceJac_);
      }
      else if ( GDIM == 3 ) {
-       gelems_[e]->dogeom3d(rijtmp, dXidX_, Jac_, faceJac_);
+       gelems_[e]->dogeom3d(dXdXi_, dXidX_, Jac_, faceJac_);
      }
 
      // Zero-out local xe; only global allowed now:
@@ -625,13 +624,13 @@ void GGrid::def_geom_init()
    for ( GSIZET j=0; j<nxy; j++ )  {
      for ( GSIZET i=0; i<nxy; i++ )  {
        dXidX_(i,j).range_reset();
-       rijtmp(i,j).range_reset();
+       dXdXi_(i,j).range_reset();
      }
    }
    Jac_.range_reset();
    faceJac_.range_reset();
 
-   do_normals();
+// do_normals();
 
    GComm::Synch(comm_);
    
@@ -654,26 +653,26 @@ void GGrid::reg_geom_init()
 
    GString serr = "GridIcos::reg_geom_init: ";
    GSIZET nxy = GDIM;
-   GTMatrix<GTVector<GFTYPE>>  rijtmp;
+   GTMatrix<GTVector<GFTYPE>>  dXdXi_;
    GTVector<GTVector<GFTYPE>> *xe;
 
    // Resize geometric quantities to global size:
    dXidX_.resize(nxy,1);
-   rijtmp.resize(nxy,1);
+   dXdXi_.resize(nxy,1);
    for ( GSIZET i=0; i<nxy; i++ ) {
      dXidX_(i,0).resize(ndof());
-     rijtmp(i,0).resize(ndof());
+     dXdXi_(i,0).resize(ndof());
    }
    Jac_.resize(ndof());
    faceJac_.resize(nfacedof());
 
 
    // Resize surface-point-wise normals:
-   faceNormal_.resize(nxy); // no. coords for each normal at each face point
-   bdyNormal_ .resize(nxy); // no. coords for each normal at each bdy point
+   faceNormals_.resize(nxy); // no. coords for each normal at each face point
+   bdyNormals_ .resize(nxy); // no. coords for each normal at each bdy point
    for ( GSIZET i=0; i<nxy; i++ ) {
-     faceNormal_[i].resize(nfacedof());
-     bdyNormal_ [i].resize(nbdydof());
+     faceNormals_[i].resize(nfacedof());
+     bdyNormals_ [i].resize(nbdydof());
    }
 
 
@@ -690,8 +689,8 @@ void GGrid::reg_geom_init()
 
      // Restrict global data to local scope:
      for ( GSIZET j=0; j<nxy; j++ ) {
-       faceNormal_[j].range(ifbeg, ifend); 
-//     bdyNormal_ [j].range(ibbeg, ibend); 
+       faceNormals_[j].range(ifbeg, ifend); 
+//     bdyNormals_ [j].range(ibbeg, ibend); 
      }
      for ( GSIZET j=0; j<dXidX_.size(2); j++ ) {
        for ( GSIZET i=0; i<dXidX_.size(1); i++ )  {
@@ -703,10 +702,10 @@ void GGrid::reg_geom_init()
 
      // Set the geom/metric quantities using element data:
      if ( GDIM == 2 ) {
-       gelems_[e]->dogeom2d(rijtmp, dXidX_, Jac_, faceJac_); 
+       gelems_[e]->dogeom2d(dXdXi_, dXidX_, Jac_, faceJac_); 
      } 
      else if ( GDIM == 3 ) {
-       gelems_[e]->dogeom3d(rijtmp, dXidX_, Jac_, faceJac_);
+       gelems_[e]->dogeom3d(dXdXi_, dXidX_, Jac_, faceJac_);
      }
       
      // Zero-out local xe; only global allowed now:
@@ -716,8 +715,8 @@ void GGrid::reg_geom_init()
 
    // Reset global scope:
    for ( GSIZET j=0; j<nxy; j++ ) {
-     faceNormal_[j].range_reset();
-     bdyNormal_ [j].range_reset();
+     faceNormals_[j].range_reset();
+     bdyNormals_ [j].range_reset();
    }
    for ( GSIZET j=0; j<dXidX_.size(2); j++ )  {
      for ( GSIZET i=0; i<dXidX_.size(1); i++ )  {
@@ -762,7 +761,7 @@ void GGrid::do_normals()
   }
   
   // Set domain boundary node normals:
-  do_bdy_normals();
+//do_bdy_normals();
   
    
 } // end of method do_normals
@@ -905,7 +904,7 @@ GTVector<GFTYPE> &GGrid::faceJac()
 GTVector<GTVector<GFTYPE>> &GGrid::bdyNormal()
 {
    assert(bInitialized_ && "Object not inititaized");
-   return bdyNormal_;
+   return bdyNormals_;
 
 } // end of method bdyNormal
 
@@ -1170,7 +1169,7 @@ void GGrid::init_bc_info()
   nind = 0;
   for ( auto j=0; j<igbdy_bydface_.size(); j++ ) {
     for ( auto i=0; i<igbdy_bydface_[j].size(); i++ ) {
-      igbdy_ [nind  ] = igbdy_bydface_ [j][i];
+      igbdy_   [nind] = igbdy_bydface_ [j][i];
       igbdyt_[nind++] = igbdyt_bydface_[j][i];
     }
   }

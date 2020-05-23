@@ -983,7 +983,6 @@ void GGridBox::config_bdy(const PropertyTree &ptree,
     }
   }
        
-cout << "GGridBox::config_bdy: 0" << endl;
   // Handle non-uniform (user-configured) bdy types first;
   // Note: If "uniform" not specified for a boundary, then
   //       user MUST supply a method to configure it.
@@ -1030,7 +1029,6 @@ cout << "GGridBox::config_bdy: 0" << endl;
       }
     }
 
-
     // Set type for each bdy index:
     btmp.resize(itmp.size());
     for ( auto i=0; i<itmp.size(); i++ ) {
@@ -1042,6 +1040,11 @@ cout << "GGridBox::config_bdy: 0" << endl;
     btmp.clear();
 
   } // end, global bdy face loop
+
+  // Compute global boundary normals and associated data:
+  for ( auto j=0; j<2*GDIM; j++ ) { // for each global bdy face 
+    do_bdy_normals(igbdy[j], j, this->bdyNormals_, this->idepComp_))
+  }
 
 
 } // end of method config_bdy
@@ -1393,7 +1396,7 @@ void GGridBox::do_face_normals2d()
 #endif
 
 
-} // end, method do_bdy_normals2d
+} // end, method do_face_normals2d
 
 
 //**********************************************************************************
@@ -1408,17 +1411,28 @@ void GGridBox::do_face_normals3d()
 
   assert(FALSE);
 
-} // end, method do_bdy_normals3d
+} // end, method do_face_normals3d
 
 
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : do_bdy_normals
 // DESC   : Compute normals to each domain bdy 
-// ARGS   : none 
+// ARGS   : 
+//          igbdy   : vector of bdy indices
+//          iface   : which global face igbdy list represents
+//          normals : vector of normal components
+//          idepComp: vector index dependent on the other indices (first 
+//                    component index whose normal component is nonzero)
+//          Note:
+//          dXdXi   : matrix of dX_i/dXi_j matrix elements, s.t.
+//                    dXdXi(i,j) = dx^j/dxi^i
 // RETURNS: none
 //**********************************************************************************
-void GGridBox::do_bdy_normals()
+void GGridBox::do_bdy_normals(GTVector<GSIZET>    &igbdy
+                              GINT                 iface
+                              GTVector<GTVector>> &normals,
+                              GTVector<GNT>       &idepComp
 {
 
   #if defined(_G_IS2D)
@@ -1435,23 +1449,160 @@ void GGridBox::do_bdy_normals()
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : do_bdy_normals2d
-// DESC   : Compute normals to each domain bdy in 2d
-// ARGS   : none 
+// DESC   : Compute normals to each domain bdy in 2d. Also
+//          provide the vector component index for the dependent
+//          component, so that we can easily enforce, say, the constraint
+//                hat(n) \cdot \vec{u} = 0
+//          for the correct \vec{u} component. We must
+//          keep in mind that there may be terrain on the boundary,
+//          so we cannot rely on alignment of bdy surface with
+//          coordinate directions. This method should be called 
+//          after terrain is added.
+// ARGS   : 
+//          igbdy   : vector of bdy indices
+//          iface   : which global face igbdy list represents
+//          normals : vector of normal components
+//          idepComp: vector index dependent on the other indices (first 
+//                    component index whose normal component is nonzero)
+//          Note:
+//          dXdXi_  : matrix of dX_i/dXi_j matrix elements, s.t.
+//                    dXdXi(i,j) = dx^j/dxi^i
 // RETURNS: none
 //**********************************************************************************
-void GGridBox::do_bdy_normals2d()
+void GGridBox::do_bdy_normals2d(GTVector<GSIZET>    &igbdy
+                                GINT                 iedge
+                                GTVector<GTVector>> &normals,
+                                GTVector<GNT>       &idepComp
 {
+   GSIZET          ib, ic, ip; 
+   GFTYPE          tiny;
+   GFTYPE          xm;
+   GTPoint<GFTYPE> kp(3), xp(3), p1(3), p2(3);
+
+   tiny  = 100.0*std::numeric_limits<T>::epsilon(); 
+   kp    = 0.0;
+   kp[2] = 1.0; // k-vector
+
+   // Normals depend on element type:
+   if ( this->gtype_ == GE_REGULAR ) {
+     // All normal components are 0, except the one
+     // perp. to iedge:
+     ip = (iedge+1)%2; // perp component
+     for ( auto j=0; j<igbdy.size(); j++ ) { // all points on iedge
+       ib = igbdy[j];
+       xm = iedge == 1 || iedge == 2 ? -1.0 : 1.0;
+       for ( auto i=0; i<normals.size(); i++ ) {
+         normals[i][ib] = 0.0; 
+       }
+       normals[ip][ib] = xm;
+       idepComp[ib]    = ip; // dependent component
+     }
+   }
+   else if ( this->gtype_ == GE_DEFORMED ) {
+     // Bdy normal is hat{k} X dvec{X} / dxi_iedge,
+     // for edge iedge:
+     for ( auto j=0; j<igbdy.size(); j++ ) { // all points on iedge
+       ib = igbdy[j];
+       xm = iedge == 1 || iedge == 2 ? -1.0 : 1.0;
+       for ( auto i=0; i<this->dXdXi_.size(2); i++ ) { // over _X_
+         p1[i] = this->dXdXi_(iedge%2,i)[ib]; 
+       }
+       kp.cross(p1, xp);   // xp = k X p1
+       xp.unit();
+       for ( ic=0; ic<GDIM; ic++ ) if ( fabs(xp[ic]) > tiny ) break;
+       assert(ic >= GDIM); // no normal components > 0
+       for ( auto i=0; i<normals.size(); i++ ) normals[i][ib] = xp[i];
+       idepComp[ib] = ic;  // dependent component
+     }
+   }
+   else if ( this->gtype_ == GE_2DEMBEDDED ) {
+     // Bdy normal is dvec{X} / dxi_xi X dvec{X} / dxi_eta
+     for ( auto j=0; j<igbdy.size(); j++ ) { // all points on iedge
+       ib = igbdy[j];
+       for ( auto i=0; i<this->dXdXi_.size(2); i++ ) { // d_X_/dXi
+         p1[i] = this->dXdXi_(0,i)[ib]; // d_X_/dxi
+         p2[i] = this->dXdXi_(1,i)[ib]; // d_X_/deta
+       }
+       p1.cross(p2, xp);   // xp = p1 X p2
+       xp.unit();
+       for ( ic=0; ic<xp.dim(); ic++ ) if ( fabs(xp[ic]) > tiny ) break;
+       assert(ic >= GDIM); // no normal components > 0
+       for ( auto i=0; i<normals.size(); i++ ) normals[i][ib] = xp[i];
+       idepComp[ib] = ic;  // dependent component
+     }
+   }
+
 } // end, method do_bdy_normals2d
 
 
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : do_bdy_normals3d
-// DESC   : Compute normals to each domain bdy in 3d
-// ARGS   : none 
+// DESC   : Compute normals to each domain bdy in 2d. Also
+//          provide the vector component index for the dependent
+//          component, so that we can easily enforce, say, the constraint
+//                hat(n) \cdot \vec{u} = 0
+//          for the correct \vec{u} component. We must
+//          keep in mind that there may be terrain on the boundary,
+//          so we cannot rely on alignment of bdy surface with
+//          coordinate directions. This method should be called 
+//          after terrain is added.
+// ARGS   : 
+//          igbdy   : vector of bdy indices
+//          iface   : which global face igbdy list represents
+//          normals : vector of normal components
+//          idepComp: vector index dependent on the other indices (first 
+//                    component index whose normal component is nonzero)
+//          Note:
+//          dXdXi_  : matrix of dX_i/dXi_j matrix elements, s.t.
+//                    dXdXi(i,j) = dx^j/dxi^i
 // RETURNS: none
 //**********************************************************************************
-void GGridBox::do_bdy_normals3d()
+void GGridBox::do_bdy_normals3d(GTVector<GSIZET>    &igbdy
+                                GINT                 iface
+                                GTVector<GTVector>> &normals,
+                                GTVector<GNT>       &idepComp
 {
+   GSIZET          ib, ic, ip; 
+   GINT            ixi[6][] = { {0,2}, {1,2}, {0,2}, 
+                              {1,2}, {0,1}, {0,1} };
+   GFTYPE          xsgn  [] = { 1.0, -1.0, -1.0, 1.0, 1.0, -1.0};
+   GFTYPE          tiny;
+   GFTYPE          xm;
+   GTPoint<GFTYPE> xp(3), p1(3), p2(3);
+   tiny  = 100.0*std::numeric_limits<T>::epsilon(); 
+
+   // Normals depend on element type:
+   if ( this->gtype_ == GE_REGULAR ) {
+     // All normal components are 0, except the one
+     // perp. to face:
+     ip = iface < 4 ? (iface+1)%2 : 2; // perp component
+     xm = iface == 1 || iface == 2 || iface == 5 ? -1.0 : 1.0;
+     for ( auto j=0; j<igbdy.size(); j++ ) { // all points on face
+       ib = igbdy[j];
+       for ( auto i=0; i<normals.size(); i++ ) {
+         normals[i][ib] = 0.0; 
+       }
+       normals[ip][ib] = xm;
+       idepComp[ib]    = ip; // dependent component
+     }
+   }
+   else if ( this->gtype_ == GE_DEFORMED ) {
+     // Bdy normal is dvec{X} / dxi_xi X dvec{X} / dxi_eta
+     for ( auto j=0; j<igbdy.size(); j++ ) { // all points on iedge
+       ib = igbdy[j];
+       for ( auto i=0; i<this->dXdXi_.size(2); i++ ) { // over _X_
+         p1[i] = this->dXdXi_(ixi[iface][0],i)[ib]; // d_X_/dxi
+         p2[i] = this->dXdXi_(ixi[iface][1],i)[ib]; // d_X_/deta
+       }
+       p1.cross(p2, xp);   // xp = p1 X p2
+       xp.unit(); 
+       for ( ic=0; ic<xp.dim(); ic++ ) if ( fabs(xp[ic]) > tiny ) break;
+       assert(ic >= GDIM); // no normal components > 0
+       for ( auto i=0; i<normals.size(); i++ ) normals[i][ib] = xp[i];
+       idepComp[ib] = ic;  // dependent component
+     }
+   }
+
 } // end, method do_bdy_normals3d
 
