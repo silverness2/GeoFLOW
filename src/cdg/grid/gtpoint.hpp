@@ -70,6 +70,9 @@ public:
   norm()  // Euclidean norm
   { T xn=0; for (GINT i=0; i<gdim_; i++ ) xn += ((*px_[i])*(*px_[i])); return sqrt(xn); }
 
+  inline void unit()  // Make into unit vector
+  { T xn=this->norm(); for (GINT i=0; i<gdim_; i++ ) px_[i]/sqrt(xn); 
+
   inline GBOOL    operator!=(const GTPoint<T> &p) 
   { return !this->operator==(p); }
 
@@ -138,6 +141,23 @@ public:
       GTPoint ret(*this);
       ret *= a;
       return ret;
+  }
+
+  inline T cross2(const GTPoint<T> &p)
+  {
+      // Compute ret_z = this X p for 2d vectors
+      // (there's only a z-component)
+       return (x1*p.x2 - x2*p.x1;);
+  }
+
+  inline void cross(const GTPoint<T> &p, GTPoint<T> &ret)
+  {
+      assert(gdim_ == 3 && p.dim() == 3 && ret.dim() == 3 );
+
+      // Compute ret = this X p
+      ret.x1 = x2 * p.x3 - x3 * p.x2;
+      ret.x2 = x3 * p.x1 - x1 * p.x3;
+      ret.x3 = x1 * p.x2 - x2 * p.x1;
   }
 
   inline void  operator*=(const T a)
