@@ -76,8 +76,6 @@ virtual                       ~GGrid();
 virtual void                 do_elems() = 0;                            // compute grid for irank
 virtual void                 do_elems(GTMatrix<GINT> &p,
                                GTVector<GTVector<GFTYPE>> &xnodes) = 0; // compute grid on restart
-virtual void                 do_face_normals()=0;                       // compute normals to elem faces 
-virtual void                 do_bdy_normals ()=0;                       // compute normals to doimain bdy
 //virtual void                 set_partitioner(GDD_base<GTICOS> *d) = 0;   // set and use GDD object
 
 #if 0
@@ -149,7 +147,9 @@ virtual void                 print(const GString &filename){}          // print 
                             &igbdyt_bydface(){ return igbdyt_bydface_;}  // global dom bdy type for each face
         GTVector<GSIZET>
                             &igbdy() { return igbdy_;}                 // global dom bdy indices into u
-
+        GTVector<GVector<GFTYPE>>
+                            &bdyNormals() { return bdyNormals_; }      // bdy normals
+                            &idepComp  () { return idepComp_; }        // dependent vector components on bdy 
         GC_COMM              get_comm() { return comm_; }              // get communicator
 
 virtual void                 config_bdy(const PropertyTree &ptree, 
@@ -166,6 +166,8 @@ friend  std::ostream&        operator<<(std::ostream&, GGrid &);       // Output
 
 protected:
        
+virtual void                        do_face_normals()=0;              // compute normals to elem faces 
+virtual void                        do_bdy_normals ()=0;              // compute normals to doimain bdy
         void                        init_local_face_info();           // get local face info
         void                        globalize_coords();               // create global coord vecs from elems
         void                        init_bc_info();                   // configure bdys
