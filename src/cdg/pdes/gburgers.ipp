@@ -623,6 +623,7 @@ void GBurgers<TypePack>::apply_bc_impl(const Time &t, State &u, const State &ub)
   // differential operators themselves, though the node
   // points in the operators may still be set from ub
  
+  GSIZET   ib;
   GBdyType itype; 
   for ( GSIZET m=0; m<igbdy->size(); m++ ) { // for each type of bdy in gtypes.h
     itype = static_cast<GBdyType>(m);
@@ -634,10 +635,33 @@ void GBurgers<TypePack>::apply_bc_impl(const Time &t, State &u, const State &ub)
     for ( GSIZET k=0; k<u.size(); k++ ) { // for each state component
       if ( ub[k] == NULLPTR ) continue;
       for ( GSIZET j=0; j<(*igbdy)[m].size(); j++ ) { // set Dirichlet-like value
-        (*u[k])[(*igbdy)[m][j]] = (*ub[k])[j];
+        ib = (*igbdy)[m][j];
+        (*u[k])[ib] = (*ub[k])[j];
       } 
     } 
   } 
+
+  // Handle 0-Flux bdy conditions:
+  // Note: We may want to switch the order of the
+  //       following loops to have a better chance
+  //       of vectorization. Unrolling likely
+  //       won't occur:
+  GINT                         id;
+  GFTYPE                       sum, xn;
+  GTVector<GTVector<GFTYPE>>  *n    = &grid_->bdy_normals();
+  GTVector<GINT>              *idep = &grid_->depComp    ();
+  itype = GBDY_0FLUX;
+  for ( auto j=0; j<(*igbdy)[itype].size(); j++ ) { 
+    ib = (*igbdy)[itype][j];
+    id = (*idep)[ib];
+    xn = (*n)[id][ib]; // n_id 
+    sum = 0.0;
+    for ( auto k=0; k<u.size(); k++ ) { // for each vector component
+      if ( k != (*idep)[ib] ) sum -= (*n)[k][ib] * (*u[k])[ib]
+    }
+    (*u[id])[ib] = sum / xn;
+  }
+
   
 } // end of method apply_bc_impl
 
