@@ -3,6 +3,9 @@
  *
  *  Created on: Jun 7, 2019
  *      Author: bryan.flynt
+ *
+ *  This code is a direct translation into C++
+ *  from the Fortran code provided by Yonggang Yu.
  */
 
 #ifndef SRC_IFV_SW_TEST_INIT_HPP_

@@ -3,6 +3,9 @@
  *
  *  Created on: Jun 6, 2019
  *      Author: bflynt
+ *
+ *  This code is a direct translation into C++
+ *  from the Fortran code provided by Yonggang Yu.
  */
 
 #ifndef SRC_IFV_GRID_HPP_
