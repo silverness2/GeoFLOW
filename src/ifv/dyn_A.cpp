@@ -4,8 +4,10 @@
  *  Created on: Jun 11, 2019
  *      Author: bflynt
  *
- *  This code is a direct translation into C++
- *  from the Fortran code provided by Yonggang Yu.
+ *  NOTE:
+ *	This code is a C++ representation of Fortran code
+ *	provided by Yonggang Yu (CIRES/NOAA) to solve the
+ *	2-D Shallow Water Equations on a sphere.
  */
 
 
