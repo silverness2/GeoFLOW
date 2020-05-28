@@ -613,6 +613,7 @@ template<typename TypePack>
 void GBurgers<TypePack>::apply_bc_impl(const Time &t, State &u, const State &ub)
 {
   GTVector<GTVector<GSIZET>>  *igbdy = &grid_->igbdy_binned();
+  GTVector<GTVector<GSIZET>>  *ilbdy = &grid_->ilbdy_binned();
 
   // Use indirection to set the global field node values
   // with domain boundary data. ub must be updated outside 
@@ -641,23 +642,29 @@ void GBurgers<TypePack>::apply_bc_impl(const Time &t, State &u, const State &ub)
     } 
   } 
 
-  // Handle 0-Flux bdy conditions:
+  // Handle 0-Flux bdy conditions. This
+  // is computed by solving
+  //    vec{n} \cdot vec{u} = 0
+  // for 'dependent' component set in grid.
+  //
   // Note: We may want to switch the order of the
   //       following loops to have a better chance
   //       of vectorization. Unrolling likely
   //       won't occur:
   GINT                         id;
+  GSIZET                       il;
   GFTYPE                       sum, xn;
   GTVector<GTVector<GFTYPE>>  *n    = &grid_->bdy_normals();
   GTVector<GINT>              *idep = &grid_->depComp    ();
   itype = GBDY_0FLUX;
   for ( auto j=0; j<(*igbdy)[itype].size(); j++ ) { 
-    ib = (*igbdy)[itype][j];
-    id = (*idep)[ib];
-    xn = (*n)[id][ib]; // n_id 
+    ib = (*igbdy)[itype][j]; // index into vector array
+    il = (*ilbdy)[itype][j]; // index into bdy array (for normals, e.g.)
+    id = (*idep)[ib];        // dependent vector component
+    xn = (*n)[id][ib];       // n_id == normal component for dependent vector comp
     sum = 0.0;
     for ( auto k=0; k<u.size(); k++ ) { // for each vector component
-      if ( k != (*idep)[ib] ) sum -= (*n)[k][ib] * (*u[k])[ib]
+      if ( k != (*idep)[ib] ) sum -= (*n)[k][il] * (*u[k])[ib]
     }
     (*u[id])[ib] = sum / xn;
   }
