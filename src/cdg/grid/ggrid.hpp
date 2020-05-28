@@ -142,9 +142,9 @@ virtual void                 print(const GString &filename){}          // print 
         GTVector<GTVector<GSIZET>>
                             &igbdy_binned() { return igbdy_binned_;}   // global dom bdy indices binned into GBdyType
         GTVector<GTVector<GSIZET>>
-                            &igbdy_bydface() { return igbdy_bydface_;}   // global dom bdy indices for each face
+                            &igbdy_bdyface() { return igbdy_bdyface_;} // global dom bdy indices for each face
         GTVector<GTVector<GBdyType>>
-                            &igbdyt_bydface(){ return igbdyt_bydface_;}  // global dom bdy type for each face
+                            &igbdyt_bdyface(){ return igbdyt_bdyface_;}// global dom bdy type for each face
         GTVector<GSIZET>
                             &igbdy() { return igbdy_;}                 // global dom bdy indices into u
         GTVector<GVector<GFTYPE>>
@@ -167,7 +167,13 @@ friend  std::ostream&        operator<<(std::ostream&, GGrid &);       // Output
 protected:
        
 virtual void                        do_face_normals()=0;              // compute normals to elem faces 
-virtual void                        do_bdy_normals ()=0;              // compute normals to doimain bdy
+virtual void                        do_bdy_normals(GTMatrix<GTVector<GFTYPE>>
+                                                                       &dXdXi,
+                                                   GTVector<GSIZET>    &igbdy
+                                                   GTVector<GTVector>> &normals,
+                                                   GTVector<GNT>       &idepComp)=0;
+                                                                      // compute bdy normals entry point
+
         void                        init_local_face_info();           // get local face info
         void                        globalize_coords();               // create global coord vecs from elems
         void                        init_bc_info();                   // configure bdys
@@ -205,10 +211,10 @@ virtual void                        do_bdy_normals ()=0;              // compute
         GTVector<GINT>              idepComp_;      // dependent component index at each bdy point
         GTVector<GTVector<GSIZET>>  igbdy_binned_;  // index into global field indicating a domain bdy--by type
         GTVector<GSIZET>            igbdy_;         // index into global field indicating a domain bdy
-        GTVector<GTVector<GSIZET>>  igbdy_bydface_; // index into global field indicating a domain bdy face
+        GTVector<GTVector<GSIZET>>  igbdy_bdyface_; // index into global field indicating a domain bdy face
         GTVector<GBdyType>          igbdyt_;        // global domain bdy types for each igbdy index
         GTVector<GTVector<GBdyType>>
-                                    igbdyt_bydface_;// global domain bdy types for each igbdy index
+                                    igbdyt_bdyface_;// global domain bdy types for each igbdy index
         GTVector<GFTYPE>            mask_;          // bdy mask
         PropertyTree                ptree_;         // main prop tree
         GGFX<GFTYPE>               *ggfx_;          // connectivity operator

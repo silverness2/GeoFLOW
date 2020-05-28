@@ -58,7 +58,12 @@ public:
         void                do_elems(GTMatrix<GINT> &p,
                               GTVector<GTVector<GFTYPE>> &xnodes);        // compute elems from restart data)
         void                do_face_normals();                            // compute normals to elem faces
-        void                do_bdy_normals ();                            // compute normals to doimain bd
+        void                do_bdy_normals(
+                              GTMatrix<GTVector<GFTYPE>>    &dXdXi,
+                              GTVector<GTVector<GSIZET>>    &igbdy_face,
+                              GTVector<GTVector<GFTYPE>>>   &normals,
+                              GTVector<GTVector<GINT>>      &idepComp);   // compute normals to domain bdy
+
         void                set_partitioner(GDD_base<GTICOS> *d);         // set and use GDD object
         GTVector<GTriangle<GTICOS>> 
                            &get_tmesh(){ return tmesh_;}                  // get complete triang. mesh
@@ -146,12 +151,13 @@ friend  std::ostream&       operator<<(std::ostream&, GGridIcos &);       // Out
                             GTVector<GTVector<GBdyType>> &igbdyt); // configure bdy
          void               find_bdy_ind3d(GFTYPE radius, 
                                            GTVector<GSIZET> &ibdy);// find bdy indices for bdy=radius
-         void               do_face_normals2d();                            // compute normals to elem faces in 2d
-         void               do_bdy_normals3d(GTVector<GTVector>> &dXdXi,
-                                             GTVector<GSIZET>    &igbdy
-                                             GINT                 iface
-                                             GTVector<GTVector>> &normals,
-                                             GTVector<GNT>       &idepComp);// compute normals to doimain bdy in 3d
+         void               do_face_normals2d();                   // compute normals to elem faces in 2d
+         void               do_bdy_normals3d(
+                              GTMatrix<GTVector<GFTYPE>>    &dXdXi,
+                              GTVector<GSIZET>              &igbdy,
+                              GINT                           iface,
+                              GTVector<GTVector>>         &normals,
+                              GTVector<GNT>               &idepComp);// compute normals to doimain bdy in 3d
 
          GString            sreftype_;      // subdivision/refinement type
          GINT               ilevel_;        // refinement level (>= 0)

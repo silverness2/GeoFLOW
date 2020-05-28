@@ -630,7 +630,7 @@ void GGrid::def_geom_init()
    Jac_.range_reset();
    faceJac_.range_reset();
 
-// do_normals();
+   do_normals();
 
    GComm::Synch(comm_);
    
@@ -736,7 +736,7 @@ void GGrid::reg_geom_init()
 //**********************************************************************************
 // METHOD : do_normals
 // DESC   : Compute normals to elem faces, and to domain boundary 
-//          nodes
+//          nodes. Note: init_bc_info must be called prior to entry.
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
@@ -761,8 +761,7 @@ void GGrid::do_normals()
   }
   
   // Set domain boundary node normals:
-//do_bdy_normals();
-  
+  do_bdy_normals(dXdXi_, igbdy_binned_, bdyNormals_, idepComp_);
    
 } // end of method do_normals
 
@@ -1148,44 +1147,46 @@ void GGrid::init_bc_info()
 
   // Find boundary indices & types from config file 
   // specification, for _each_ natural/canonical domain face:
-  config_bdy(ptree_, igbdy_bydface_, igbdyt_bydface_);
+  config_bdy(ptree_, igbdy_bdyface_, igbdyt_bdyface_);
 
-#if 0
-  // Do a consistency check of no. global bdy indices:
-  GSIZET nebdy=0;
-  for ( auto j=0; j<gelems_.size(); j++ ) { 
-    nebdy += gelems_[j]->bdy_indices().size();
-  }
-#endif
 
   // Flatten these 2 bdy index & types indirection arrays:
   GSIZET      nind=0, nw=0;
-  for ( auto j=0; j<igbdy_bydface_.size(); j++ ) {
-    nind += igbdy_bydface_[j].size(); // by-domain-face
+  for ( auto j=0; j<igbdy_bdyface_.size(); j++ ) {
+    nind += igbdy_bdyface_[j].size(); // by-domain-face
   }
 
   igbdy_ .resize(nind);
   igbdyt_.resize(nind);
   nind = 0;
-  for ( auto j=0; j<igbdy_bydface_.size(); j++ ) {
-    for ( auto i=0; i<igbdy_bydface_[j].size(); i++ ) {
-      igbdy_   [nind] = igbdy_bydface_ [j][i];
-      igbdyt_[nind++] = igbdyt_bydface_[j][i];
+  for ( auto j=0; j<igbdy_bdyface_.size(); j++ ) {
+    for ( auto i=0; i<igbdy_bdyface_[j].size(); i++ ) {
+      igbdy_   [nind] = igbdy_bdyface_ [j][i];
+      igbdyt_[nind++] = igbdyt_bdyface_[j][i];
     }
   }
 
 
   // Create bdy type bins (one bin for each GBdyType), and
   // for each type, set the indirection indices into global
-  // vectors that have that type:
+  // vectors that have that type. Also find for each type
+  // the index of that point in the bdy arrays:
   GBdyType         itype;
   GSIZET    *ind=NULLPTR;
-  igbdy_binned_.resize(GBDY_MAX); // set of bdy indices for each type
+  GSIZET               n;
+  igbdy_binned_.resize(GBDY_MAX); // set of bdy indices in global arrays
+  ilbdy_binned_.resize(GBDY_MAX); // set of bdy indices in bdy arrays
+  n = 0;
   for ( auto k=0; k<GBDY_MAX; k++ ) { // cycle over each bc type
     itype = static_cast<GBdyType>(k);
     nind = igbdyt_.contains(itype, ind, nw);
-    igbdy_binned_[k].resize(nind);
-    for ( auto j=0; j<nind; j++ ) igbdy_binned_[k][j] = igbdy_[ind[j]];
+    igbdy_binned_[k].resize(nind); // index into global arrays
+    ilbdy_binned_[k].resize(nind); // index into bdy arrays for each bdy type
+    for ( auto j=0; j<nind; j++ ) {
+      igbdy_binned_[k][j] = igbdy_[ind[j]];
+      ilbdy_binned_[k][j] = n;     
+      n++;
+    }
     nind = 0;
   } // end, element loop
 
