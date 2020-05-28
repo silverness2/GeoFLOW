@@ -80,6 +80,7 @@ set(MY_PROJECT_PREFIX ${PROJECT_SOURCE_DIR})
 set(MY_PROJECT_INCDIR ${MY_PROJECT_PREFIX}/src)
 set(MY_PROJECT_SRCDIR ${MY_PROJECT_PREFIX}/src)
 set(MY_PROJECT_TSTDIR ${MY_PROJECT_PREFIX}/test)
+set(MY_PROJECT_DOCDIR ${MY_PROJECT_PREFIX}/docs)
 
 # Where to place all libraries
 set(MY_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
@@ -89,6 +90,7 @@ set(MY_INSTALL_SRCDIR ${MY_INSTALL_PREFIX}/src)
 set(MY_INSTALL_LIBDIR ${MY_INSTALL_PREFIX}/lib)
 set(MY_INSTALL_TSTDIR ${MY_INSTALL_PREFIX}/test)
 set(MY_INSTALL_EXADIR ${MY_INSTALL_PREFIX}/examples)
+set(MY_INSTALL_DOCDIR ${MY_INSTALL_PREFIX}/docs)
 
 message(VERBOSE " ")
 message(VERBOSE "Using Directories:")
@@ -140,6 +142,8 @@ endif()
 if(USE_PAPI)
 	find_package(PAPI REQUIRED)
 endif()
+
+find_package(Doxygen)
 
 
 #
@@ -206,5 +210,9 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
+# Build Documentation (DOxygen)
+if(DOXYGEN_FOUND)
+	add_subdirectory(docs)
+endif()
 
 
