@@ -16,6 +16,16 @@ clean:
 	cd ../../build ; \
 	make clean  ; \
 	cd ../test/cdg
+cleanall:  
+	cd ../../build ; \
+	/bin/rm -r  *; \
+	cd ../test/cdg
+docs:
+	/bin/rm -rf ../../build/* ; \
+	cd ../../build            ; \
+	cmake -D GCONF=duane        \
+              ../                 ; \
+	make docs
 dist: 
 	/bin/rm -rf ../../build/* ; \
 	cd ../../build            ; \
