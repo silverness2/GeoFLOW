@@ -826,14 +826,14 @@ setting:
   in src/cdg/blas/gmtk.cpp by adding a new description, a new calculation, and doing
   basic checks for the number of input and output arrays.
 
-  Note that all derived quantities are output with the same file name formats and cadence as for the
+  Note that all derived quantities are written with the same file name formats and cadence as for the
   the PDE state varialbes, "state_names", and using the same "IO_implementation". These files
   are __not__ required on restart.
 
 ### (ii) Diagnostic output observers:
 
   There is a rudimetary diagnostics package availble that produces simple text data 
-  diagnostics at a configuratble cadence, possibly  different from that used for binary IO.
+  diagnostics at a configurable cadence, possibly  different from that used for binary IO.
   In the above example the following parameters are used:
 
   | expression     | description                                     |
@@ -850,7 +850,7 @@ setting:
   Currently, there are two diagnostics produced: those that consider globally sptially integrated
   (quasi-) conserved quantities, and those that consider the infinity norm of the
   same quantities. These lead to the productino of two files: "gbalance.txt" and "gmax.txt" containing
-  these diagnostics in different columns. At this time, these are a description of the columns of the
+  these diagnostics in different columns. The following table provides a description of the columns of the
   diagnostics files:
 
   | column number  | description                                     |
@@ -865,8 +865,8 @@ setting:
 
   At this time, these diagnostics are always computed. In the future we will likely allow
   the user to configure additional diagnostics to be provided in the diagnostics files,
-  although we will continue to insist that dianostics of conserved quantities in a 
-  pariculr set of PDEs be produced, since these are required
+  although we will continue to insist that diagnostics of conserved quantities in a 
+  particular set of PDEs be produced, since these are required
   to diagnose the progress of a run. Expect changes to this description of diagnostic output!
 
 ## H. Configure external forcing.
