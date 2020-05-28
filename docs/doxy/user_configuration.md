@@ -154,13 +154,13 @@ discretizations.
     "num_radial_elems"  : 10,
     "bdy_inner"         : "dirichlet_fixed",
     "bdy_outer"         : "sponge_layer",
-    "use_state_init"    : false
+    "use_state_init"    : false,
     "bdy_init_method  " : "",
-    "bdy_update_method" : "",
+    "bdy_update_method" : ""
   },
   "fully_periodic": {
-    "base_type"        : "GBDY_PERIODIC"
-    "bdy_class"        : "uniform"
+    "base_type"        : "GBDY_PERIODIC",
+    "bdy_class"        : "uniform",
     "bdy_config_method": ""
   },
   "compound_inflow_example": {
@@ -399,8 +399,8 @@ setting:
   to use a "fully_peridoc" boundary condition in each direction via a statement like:
       
 ```json
-  "bdy_x_0"           : "fully_periodic"
-  "bdy_x_1"           : "fully_periodic"
+  "bdy_x_0"           : "fully_periodic",
+  "bdy_x_1"           : "fully_periodic",
 ```
 
   The name on the right specifies a self-referenced configuration block in the 
@@ -412,8 +412,8 @@ setting:
 
 ```json
        "fully_periodic": {
-         "base_type"        : "GBDY_PERIODIC"
-         "bdy_class"        : "uniform"
+         "base_type"        : "GBDY_PERIODIC",
+         "bdy_class"        : "uniform",
          "bdy_config_method": ""
        },
 ```
@@ -447,7 +447,7 @@ setting:
 
 ```json
   "bdy_x_0"   : "fully_periodic",
-  "bdy_x_1"   : "burgers_inflow".
+  "bdy_x_1"   : "burgers_inflow",
 ```
 
   Note that if the user wants "bdy_class" to be "uniform", since this is the default,
@@ -532,7 +532,7 @@ setting:
         "num_radial_elems"  : 10,
         "bdy_inner"         : "dirichlet_fixed",
         "bdy_outer"         : "sponge_layer",
-        "use_state_init"    : false
+        "use_state_init"    : false,
         "bdy_init_method  " : "",
         "bdy_update_method" : "",
       },
@@ -898,7 +898,7 @@ setting:
     "name"    : "boxgauss_range",
     "x0"      : [0.25, 0.75],
     "y0"      : [0.0, 0.0],
-    "xsigma"  : [0.1, 0.2]
+    "xsigma"  : [0.1, 0.2],
     "ysigma"  : [0.1, 0.2],
     "h0"      : [0.15, 0.4]
   },
