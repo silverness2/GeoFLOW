@@ -655,7 +655,7 @@ void GBurgers<TypePack>::apply_bc_impl(const Time &t, State &u, const State &ub)
   GSIZET                       il;
   GFTYPE                       sum, xn;
   GTVector<GTVector<GFTYPE>>  *n    = &grid_->bdy_normals();
-  GTVector<GINT>              *idep = &grid_->depComp    ();
+  GTVector<GINT>              *idep = &grid_->idepComp    ();
   itype = GBDY_0FLUX;
   for ( auto j=0; j<(*igbdy)[itype].size(); j++ ) { 
     ib = (*igbdy)[itype][j]; // index into vector array

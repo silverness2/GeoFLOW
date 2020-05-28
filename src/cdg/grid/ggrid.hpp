@@ -142,6 +142,8 @@ virtual void                 print(const GString &filename){}          // print 
         GTVector<GTVector<GSIZET>>
                             &igbdy_binned() { return igbdy_binned_;}   // global dom bdy indices binned into GBdyType
         GTVector<GTVector<GSIZET>>
+                            &ilbdy_binned() { return ilbdy_binned_;}   // indices into bdy arrays binned into GBdyType
+        GTVector<GTVector<GSIZET>>
                             &igbdy_bdyface() { return igbdy_bdyface_;} // global dom bdy indices for each face
         GTVector<GTVector<GBdyType>>
                             &igbdyt_bdyface(){ return igbdyt_bdyface_;}// global dom bdy type for each face
@@ -210,6 +212,7 @@ virtual void                        do_bdy_normals(GTMatrix<GTVector<GFTYPE>>
         GTVector<GTVector<GFTYPE>>  bdyNormals_;    // normal to surface at each bdy node point (2d & 3d), global
         GTVector<GINT>              idepComp_;      // dependent component index at each bdy point
         GTVector<GTVector<GSIZET>>  igbdy_binned_;  // index into global field indicating a domain bdy--by type
+        GTVector<GTVector<GSIZET>>  ilbdy_binned_;  // index into bdy arrays--by type
         GTVector<GSIZET>            igbdy_;         // index into global field indicating a domain bdy
         GTVector<GTVector<GSIZET>>  igbdy_bdyface_; // index into global field indicating a domain bdy face
         GTVector<GBdyType>          igbdyt_;        // global domain bdy types for each igbdy index
