@@ -10,7 +10,7 @@
 
 #include "tbox/property_tree.hpp"
 #include "gcomm.hpp"
-#include "gtvector.hpp"
+#include "gstateinfo.hpp"
 #include "ggrid.hpp"
 #include "ginitbdy_user.hpp"
 
@@ -27,15 +27,16 @@ class GInitBdyFactory
         using EqnBase       = EquationBase<EquationType>;
         using EqnBasePtr    = std::shared_ptr<EqnBase>;
         using State         = typename Equation::State;
+        using StateInfo     = typename Equation::StateInfo;
         using Grid          = typename Equation::Grid;
         using Value         = typename Equation::Value;
         using Time          = typename Equation::Time;
 
 
-	static GBOOL init              (const geoflow::tbox::PropertyTree& ptree, GGrid &grid,  EqnBasePtr &peqn, Time &time, State &utmp, State &u, State &ub);
+	static GBOOL init              (const geoflow::tbox::PropertyTree& ptree, GGrid &grid,  StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub);
 
   private:
-        static void  setbdy_from_state(const geoflow::tbox::PropertyTree& ptree, GGrid &grid, Time &time, State &utmp, State &u, State &ub);
+        static void  setbdy_from_state(const geoflow::tbox::PropertyTree& ptree, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub);
 
 }; // class GInitBdyFactory
 

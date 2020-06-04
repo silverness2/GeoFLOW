@@ -11,6 +11,8 @@
 // METHOD : update
 // DESC   : Do bdy update
 // ARGS   : ptree  : main property tree
+//          grid   : GGrid operator
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          u      : state to be initialized. 
@@ -18,13 +20,15 @@
 // RETURNS: none.
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GUpdateBdyFactory<EquationType>::update(const PropertyTree& ptree, GGrid &grid, EqnBasePtr &peqn, Time &time, State &utmp, State &u, State &ub)
+GBOOL GUpdateBdyFactory<EquationType>::update(const PropertyTree& ptree, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub)
 {
   GBOOL         bret = FALSE, use_inits;
   Time          tt;
   State         uu(u.size());
   GString       sgrid, supdate;
   PropertyTree  gtree;
+  std::function<void(const Time &t, State &u, State &ub)>
+                mycallback;
 
   sgrid    = ptree.getValue<GString>("grid_type");
   gtree    = ptree.getPropertyTree(sgrid);
@@ -43,14 +47,32 @@ GBOOL GUpdateBdyFactory<EquationType>::update(const PropertyTree& ptree, GGrid &
       uu[i] = utmp[u.size()+i];
      *uu[i] = *u[i];
     }
-    bret = GInitStateFactory<EquationType>::init(ptree, grid, peqn, tt, utmp, ub, uu);
     if ( bret ) {
-      setbdy_from_state(ptree, grid, tt, utmp, uu, ub);
+       mycallback =
+                    [this](
+                     const geoflow::tbox::PropertyTree& ptree,GString &sconfig, GGrid &grid, 
+                     StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub)
+                     {set_bdy_from_state(ptree, supdate, grid, stinfo, tt, utmp, u, ub);};
+      grid.set_update_bdy_callback(mycallback);
     }
 
   }
   else if ( "simple_outflow" == supdate ) {
-    bret = gupdatebdy::impl_simple_outflow (ptree, grid, tt, utmp, u, ub);
+//  bret = gupdatebdy::impl_simple_outflow (ptree, grid, tt, utmp, u, ub);
+    mycallback =
+                  [](
+                  const geoflow::tbox::PropertyTree& ptree, GString &sconfig, GGrid &grid, 
+                  StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub)
+                  {gupdatebdy::impl_simple_outflow(ptree, supdate, grid, stinfo, tt, utmp, u, ub);};
+    grid.set_update_bdy_callback(mycallback);
+  }
+  else if ( "sphere_sponge" == supdate ) {
+    bdy_update_callback
+         = [](
+           const geoflow::tbox::PropertyTree& ptree, GString &supdate, GGrid &grid, 
+           StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub)
+           {gupdatebdy::impl_sphere_sponge(ptree, supdate, grid, stinfo, tt, utmp, u, ub);};
+    grid.set_update_bdy_callback(bdy_update_callback);
   }
   else {
     assert(FALSE && "Specified bdy update method unknown");
@@ -63,9 +85,12 @@ GBOOL GUpdateBdyFactory<EquationType>::update(const PropertyTree& ptree, GGrid &
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : setbdy_from_state
+// METHOD : set_bdy_from_state
 // DESC   : use state var, u, to set bdy, ub
 // ARGS   : ptree  : main property tree
+//          sconfig: config block name
+//          grid   : GGrid operator
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          u      : state to be initialized. 
@@ -73,7 +98,7 @@ GBOOL GUpdateBdyFactory<EquationType>::update(const PropertyTree& ptree, GGrid &
 // RETURNS: none.
 //**********************************************************************************
 template<typename EquationType>
-void GUpdateBdyFactory<EquationType>::setbdy_from_state(const geoflow::tbox::PropertyTree& ptree, GGrid &grid, Time &time, State &utmp, State &u, State &ub)
+void GUpdateBdyFactory<EquationType>::set_bdy_from_state(const geoflow::tbox::PropertyTree& ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub)
 {
   GBOOL         bret=FALSE;
   GBOOL         use_inits; // use state init method to set bdy?
@@ -81,6 +106,8 @@ void GUpdateBdyFactory<EquationType>::setbdy_from_state(const geoflow::tbox::Pro
   GString       sgrid, supdate;
 
   GTVector<GTVector<GSIZET>> *igbdy = &grid.igbdy_binned();
+
+  bret = GInitStateFactory<EquationType>::init(ptree, grid, stinfo, time, utmp, ub, uu);
 
   // Set from State vector, u and others that we _can_ set:
   for ( auto k=0; k<u.size(); k++ ) {
@@ -98,5 +125,5 @@ void GUpdateBdyFactory<EquationType>::setbdy_from_state(const geoflow::tbox::Pro
     }
   }
 
-} // end, setbdy_from_state
+} // end, set_bdy_from_state
 

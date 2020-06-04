@@ -11,6 +11,7 @@
 
 #include "tbox/property_tree.hpp"
 #include "gtypes.h"
+#include "gstateinfo.hpp"
 #include "gtvector.hpp"
 #include "ggrid.hpp"
 
@@ -20,12 +21,14 @@ using namespace geoflow::tbox;
 
 typedef GFTYPE                      Time;
 typedef GTVector<GTVector<GFTYPE>*> State;
+typedef GStateInfo                  StateInfo;
 
 
 namespace gupdatebdy
 {
 
-GBOOL impl_simple_outflow          (const PropertyTree& stree, GGrid &grid,  Time &time, State &utmp, State &u, State &ub);
+GBOOL impl_simple_outflow          (const PropertyTree& stree, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub);
+GBOOL impl_sphere_sponge           (const PropertyTree& stree, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub);
 
 };
 

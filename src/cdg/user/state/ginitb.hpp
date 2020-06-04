@@ -10,6 +10,7 @@
 
 #include "tbox/property_tree.hpp"
 #include "gtypes.h"
+#include "gstateinfo.hpp"
 #include "gtvector.hpp"
 #include "ggrid.hpp"
 #include "gutils.hpp"
@@ -20,12 +21,14 @@ using namespace geoflow::tbox;
 
 typedef GFTYPE                      Time;
 typedef GTVector<GTVector<GFTYPE>*> State;
+typedef GStateInfo                  StateInfo;
+
 
 
 namespace ginitb
 {
 
-GBOOL impl_rand      (const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u);
+GBOOL impl_rand      (const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u);
 
 };
 

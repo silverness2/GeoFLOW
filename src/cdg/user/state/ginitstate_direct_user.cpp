@@ -25,13 +25,14 @@ namespace ginitstate {
 // ARGS   : ptree  : main prop tree
 //          sconfig: ptree block name containing variable config
 //          grid   : grid
+//          stinfo : StateInfo
 //          t      : time
 //          utmp   : tmp arrays
 //          ub     : bdy vectors (one for each state element)
 //          u      : current state
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
+GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GString          serr = "impl_boxnwaveburgers: ";
   GBOOL            bret = TRUE, brot = FALSE;
@@ -165,13 +166,14 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
 // ARGS   : ptree  : main prop tree
 //          sconfig: ptree block name containing variable config
 //          grid   : grid
+//          stinfo : StateInfo
 //          t      : time
 //          utmp   : tmp arrays
 //          ub     : bdy vectors (one for each state element)
 //          u      : current state
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
+GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GString          serr = "impl_icosnwaveburgers: ";
   GBOOL            bret;
@@ -284,13 +286,14 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
 // ARGS   : ptree  : main prop tree
 //          sconfig: ptree block name containing variable config
 //          grid   : grid
+//          stinfo : StateInfo
 //          time   : time
 //          utmp   : tmp arrays
 //          ub     : bdy vectors (one for each state element)
 //          u      : current state
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL impl_boxdirgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
+GBOOL impl_boxdirgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GString          serr = "impl_boxdirgauss: ";
   GBOOL            bContin;
@@ -385,13 +388,14 @@ cout << "impl_boxdirgauss: sconfig=" << sconfig << endl;
 // ARGS   : stree  : main prop tree
 //          sconfig: ptree block name containing variable config
 //          grid   : grid
+//          stinfo : StateInfo
 //          t      : time
 //          utmp   : tmp arrays
 //          ub     : bdy vectors (one for each state element)
 //          u      : current state
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL impl_boxpergauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
+GBOOL impl_boxpergauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GString          serr = "impl_boxpergauss: ";
   GBOOL            bContin;
@@ -508,13 +512,14 @@ GBOOL impl_boxpergauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
 // ARGS   : ptree  : main prop tree
 //          sconfig: ptree block name containing variable config
 //          grid   : grid
+//          stinfo : StateInfo
 //          t      : time
 //          utmp   : tmp arrays
 //          ub     : bdy vectors (one for each state element)
 //          u      : current state
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL impl_icosgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
+GBOOL impl_icosgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
 
   GString          serr = "impl_icosgauss: ";

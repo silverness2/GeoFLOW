@@ -19,15 +19,16 @@ namespace ginitbdy {
 // METHOD : impl_mybdyinit
 // DESC   : Initialize bdy using state initialization method 
 //          specified by ptree
-// ARGS   : ptree: main prop tree
-//          grid : grid
-//          t    : time
-//          utmp : tmp arrays
-//          u    : current state, overwritten here
-//          ub   : bdy vectors (one for each state element)
+// ARGS   : ptree : main prop tree
+//          grid  : grid
+//          stinfo: StateInfo
+//          t     : time
+//          utmp  : tmp arrays
+//          u     : current state, overwritten here
+//          ub    : bdy vectors (one for each state element)
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL impl_mybdyinit(const PropertyTree &ptree, GGrid &grid, Time &time, State &utmp, State &u, State &ub)
+GBOOL impl_mybdyinit(const PropertyTree &ptree, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub)
 {
 #if 0
   Time             tt = t;
