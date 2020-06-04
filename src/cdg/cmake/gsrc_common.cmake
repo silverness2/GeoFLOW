@@ -20,7 +20,7 @@
                     ${GHOME}/grid/ggrid_box.cpp
     )
 
- set(CDG_INIT_SRC   ${GHOME}/init/gspecbdy_factory.cpp 
+ set(CDG_INIT_SRC   ${GHOME}/config/gspecbdy_factory.cpp 
     )
 
 #set(CDG_IO_SRC     ${GHOME}/io/gio.cpp
