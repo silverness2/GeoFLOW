@@ -670,8 +670,17 @@ void GBurgers<TypePack>::apply_bc_impl(const Time &t, State &u, const State &ub)
     (*u[id])[ib] = sum / xn;
   }
 
-  
+  // Handle no-slip bdy conditions.
+  itype = GBDY_NOSLIP;
+  for ( auto k=0; k<u.size(); k++ ) { // for each velocity component
+    for ( auto j=0; j<(*igbdy)[itype].size(); j++ ) { 
+      ib = (*igbdy)[itype][j]; // index into vector array
+      (*u[k])[ib] = 0.0;
+    }
+  }
+
 } // end of method apply_bc_impl
+
 
 //**********************************************************************************
 //**********************************************************************************
