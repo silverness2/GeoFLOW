@@ -35,6 +35,7 @@
 #include "pdeint/io_base.hpp"
 #include "gio_observer.hpp"
 #include "gio.hpp"
+#include "gstateinfo.hpp"
 #include "pdeint/equation_base.hpp"
 #include "pdeint/equation_factory.hpp"
 #include "pdeint/integrator.hpp"
@@ -60,28 +61,11 @@ using namespace geoflow::pdeint;
 using namespace geoflow::tbox;
 using namespace std;
 
-struct stStateInfo {
-  GINT        sttype  = 1;       // state type index (grid=0 or state=1)
-  GINT        gtype   = 0;       // check src/cdg/include/gtypes.h
-  GSIZET      index   = 0;       // time index
-  GSIZET      nelems  = 0;       // num elems
-  GSIZET      cycle   = 0;       // continuous time cycle
-  GFTYPE      time    = 0.0;     // state time
-  std::vector<GString>
-              svars;             // names of state members
-  GTVector<GStateCompType>
-              icomptype;         // encoding of state component types    
-  GTMatrix<GINT>
-              porder;            // if ivers=0, is 1 X GDIM; else nelems X GDIM;
-  GString     idir;              // input directory
-  GString     odir;              // output directory
-};
-
 
 template< // Complete typepack
 typename StateType     = GTVector<GTVector<GFTYPE>*>,
 typename StateCompType = GTVector<GFTYPE>,
-typename StateInfoType = stStateInfo,
+typename StateInfoType = GStateInfo,
 typename GridType      = GGrid,
 typename ValueType     = GFTYPE,
 typename DerivType     = StateType,
@@ -102,7 +86,7 @@ struct TypePack {
         using Jacobian   = JacoType;
         using Size       = SizeType;
 };
-using StateInfo     = stStateInfo;
+using StateInfo     = GStateInfo;
 using MyTypes       = TypePack<>;           // Define grid types used
 using Grid          = GGrid;           
 using EqnBase       = EquationBase<MyTypes>;    // Equation Base type
