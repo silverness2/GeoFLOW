@@ -33,6 +33,8 @@ using namespace std;
 GGrid::GGrid(const geoflow::tbox::PropertyTree &ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GC_COMM &comm)
 :
 bInitialized_                   (FALSE),
+bapplybc_                       (FALSE),
+bupdatebc_                      (FALSE),
 do_face_normals_                (FALSE),
 nprocs_        (GComm::WorldSize(comm)),
 ngelems_                            (0),
@@ -44,7 +46,9 @@ comm_                            (comm),
 mass_                         (NULLPTR),
 imass_                        (NULLPTR),
 ggfx_                         (NULLPTR),
-ptree_                          (ptree)
+ptree_                          (ptree),
+bdy_apply_callback_           (NULLPTR),
+bdy_update_callback_          (NULLPTR)
 {
 } // end of constructor method (1)
 
@@ -1144,6 +1148,7 @@ void GGrid::init_bc_info()
   GSIZET                       ibeg, iend; // beg, end indices for global array
   GTVector<GINT>              *iebdy;  // domain bdy indices
   GTVector<GTVector<GINT>>    *ieface; // domain face indices
+  GTVector<GTVector<GINT>>    igbdycf; // canonical bdy face
 
   // Find boundary indices & types from config file 
   // specification, for _each_ natural/canonical domain face:
@@ -1156,13 +1161,16 @@ void GGrid::init_bc_info()
     nind += igbdy_bdyface_[j].size(); // by-domain-face
   }
 
-  igbdy_ .resize(nind);
-  igbdyt_.resize(nind);
+  igbdy_  .resize(nind); // indices of bdy nodes in volume
+  igbdyt_ .resize(nind); // type of each of igbdy
+  igbdycf .resize(nind); // canonical face each igbdy resides on
   nind = 0;
   for ( auto j=0; j<igbdy_bdyface_.size(); j++ ) {
     for ( auto i=0; i<igbdy_bdyface_[j].size(); i++ ) {
-      igbdy_   [nind] = igbdy_bdyface_ [j][i];
-      igbdyt_[nind++] = igbdyt_bdyface_[j][i];
+      igbdy_  [nind] = igbdy_bdyface_ [j][i];
+      igbdyt_ [nind] = igbdyt_bdyface_[j][i];
+      igbdycf [nind] = j;
+      nind++;
     }
   }
 
@@ -1174,17 +1182,20 @@ void GGrid::init_bc_info()
   GBdyType         itype;
   GSIZET    *ind=NULLPTR;
   GSIZET               n;
-  igbdy_binned_.resize(GBDY_MAX); // set of bdy indices in global arrays
-  ilbdy_binned_.resize(GBDY_MAX); // set of bdy indices in bdy arrays
+  igbdy_binned_ .resize(GBDY_MAX); // set of bdy indices in volume arrays
+  igbdcf_binned_.resize(GBDY_MAX); // canonical face of igbdy_binned
+  ilbdy_binned_ .resize(GBDY_MAX); // set of bdy indices in bdy arrays
   n = 0;
   for ( auto k=0; k<GBDY_MAX; k++ ) { // cycle over each bc type
     itype = static_cast<GBdyType>(k);
     nind = igbdyt_.contains(itype, ind, nw);
-    igbdy_binned_[k].resize(nind); // index into global arrays
-    ilbdy_binned_[k].resize(nind); // index into bdy arrays for each bdy type
+    igbdy_binned_  [k].resize(nind); // index into global arrays
+    ilbdy_binned_  [k].resize(nind); // index into bdy arrays for each bdy type
+    igbdycf_binned_[k].resize(nind); // canonical face of igbdy_binned
     for ( auto j=0; j<nind; j++ ) {
-      igbdy_binned_[k][j] = igbdy_[ind[j]];
-      ilbdy_binned_[k][j] = n;     
+      igbdy_binned_  [k][j] = igbdy_[ind[j]];
+      ilbdy_binned_  [k][j] = n;     
+      igbdycf_binned_[k][j] = igbdycf[ind[j]];
       n++;
     }
     nind = 0;

@@ -103,6 +103,17 @@ virtual void                 print(const GString &filename){}          // print 
         GElemType            gtype() { return gtype_; }               // get unique elem type on grid       
         void                 deriv(GTVector<GFTYPE> &u, GINT idir, GTVector<GFTYPE> &tmp,
                                    GTVector<GFTYPE> &du );            // derivative of global vector
+        void                 set_update_bdy_callback(
+                             std::function<void(const Time &t, State &u,
+                                         GTVector<GTVector<T>*> &ub)> callback)
+                                         { bdy_update_callback_ =  callback;
+                                           bupdatebc_ = TRUE; }       // set bdy-update callback
+        void                 set_apply_bdy_callback(
+                             std::function<void(const Time &t, State &u,
+                                         State &ub)> callback)
+                                         { bdy_apply_callback_ = callback;
+                                           bapplybc_ = TRUE; }        // set bdy-application callback
+
         GFTYPE               integrate(GTVector<GFTYPE> &u,
                                        GTVector<GFTYPE> &tmp, 
 				       GBOOL bglobal = TRUE);         // spatial integration of global vector
@@ -143,6 +154,8 @@ virtual void                 print(const GString &filename){}          // print 
                             &igbdy_binned() { return igbdy_binned_;}   // global dom bdy indices binned into GBdyType
         GTVector<GTVector<GSIZET>>
                             &ilbdy_binned() { return ilbdy_binned_;}   // indices into bdy arrays binned into GBdyType
+        GTVector<GTVector<GINT>>
+                            &igbdycf_binned() { return igbdycf_binned_;} // canonical faces that igbdy_binned reside on
         GTVector<GTVector<GSIZET>>
                             &igbdy_bdyface() { return igbdy_bdyface_;} // global dom bdy indices for each face
         GTVector<GTVector<GBdyType>>
@@ -184,9 +197,9 @@ virtual void                        do_bdy_normals(GTMatrix<GTVector<GFTYPE>>
         void                        do_normals();                     // compute normals to elem faces and domain bdy
         GFTYPE                      find_min_dist(); 
 
-        GBOOL                       bInitialized_;    // object initialized?
-        GBOOL                       bInvMass_;        // inverse mass computed?
-        GBOOL                       is_bdy_time_dep_; // time-dep bdy vals?
+        GBOOL                       bInitialized_;  // object initialized?
+        GBOOL                       bapplybc_;      // bc apply callback set
+        GBOOL                       bupdatebc_;     // bc update callback set
         GBOOL                       do_face_normals_; // compute elem face normals for fluxes?
         GElemType                   gtype_;         // element types comprising grid
         GINT                        irank_;         // MPI task id
@@ -223,6 +236,13 @@ virtual void                        do_bdy_normals(GTMatrix<GTVector<GFTYPE>>
         GGFX<GFTYPE>               *ggfx_;          // connectivity operator
         LinSolverBase<CGTypes>::Traits
                                     cgtraits_;      // GCG operator traits
+
+        std::function<void(const Time &t, State &u, State &ub)>
+                                    bdy_apply_callback_;            
+                                                    // bdy apply callback
+        std::function<void(const Time &t, State &u, State &ub)>
+                                    bdy_update_callback_;            
+                                                    // bdy update callback
 
 };
 
