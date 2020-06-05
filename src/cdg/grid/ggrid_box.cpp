@@ -1425,14 +1425,14 @@ void GGridBox::do_face_normals3d()
 //**********************************************************************************
 void GGridBox::do_bdy_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
                               GTVector<GTVector<GSIZET>>    &igbdy_face,
-                              GTVector<GTVector<GFTYPE>>>   &normals,
-                              GTVector<GTVector<GINT>>      &idepComp)
+                              GTVector<GTVector<GFTYPE>>    &normals,
+                              GTVector<GINT>                &idepComp)
 {
 
   GSIZET icurr, nbdy, nface;
 
   nbdy = 0;
-  for ( auto j=0; j<igndy_face.size(); j++ ) {
+  for ( auto j=0; j<igbdy_face.size(); j++ ) {
     nbdy += igbdy_face[j].size();
   }
   idepComp.resize(nbdy);
@@ -1469,7 +1469,7 @@ void GGridBox::do_bdy_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 
   // Reset vector ranges:
   idepComp.range_reset();
-  for ( auto j=0; j<normals.size(); j++ ) normals[j].range_reset()
+  for ( auto j=0; j<normals.size(); j++ ) normals[j].range_reset();
 
 
 } // end, method do_bdy_normals
@@ -1504,15 +1504,15 @@ void GGridBox::do_bdy_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 void GGridBox::do_bdy_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
                                 GTVector<GSIZET>              &igbdy,
                                 GINT                           iedge,
-                                GTVector<GTVector>>         &normals,
-                                GTVector<GNT>              &idepComp)
+                                GTVector<GTVector<GFTYPE>>    &normals,
+                                GTVector<GINT>               &idepComp)
 {
    GSIZET          ib, ic, ip; 
    GFTYPE          tiny;
    GFTYPE          xm;
    GTPoint<GFTYPE> kp(3), xp(3), p1(3), p2(3);
 
-   tiny  = 100.0*std::numeric_limits<T>::epsilon(); 
+   tiny  = 100.0*std::numeric_limits<GFTYPE>::epsilon(); 
    kp    = 0.0;
    kp[2] = 1.0; // k-vector
 
@@ -1525,7 +1525,7 @@ void GGridBox::do_bdy_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        xm = iedge == 1 || iedge == 2 ? -1.0 : 1.0;
        for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = 0.0; 
        normals[ip][j] = xm;
-       idepComp[jl]    = ip; // dependent component
+       idepComp[j]    = ip; // dependent component
      }
    }
    else if ( this->gtype_ == GE_DEFORMED ) {
@@ -1590,17 +1590,17 @@ void GGridBox::do_bdy_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 void GGridBox::do_bdy_normals3d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
                                 GTVector<GSIZET>              &igbdy,
                                 GINT                           iface,
-                                GTVector<GTVector>>         &normals,
-                                GTVector<GNT>              &idepComp)
+                                GTVector<GTVector<GFTYPE>>   &normals,
+                                GTVector<GINT>             &idepComp)
 {
    GSIZET          ib, ic, ip; 
-   GINT            ixi[6][] = { {0,2}, {1,2}, {0,2}, 
-                              {1,2}, {0,1}, {0,1} };
+   GINT            ixi[6][2] = { {0,2}, {1,2}, {0,2}, 
+                               {1,2}, {0,1}, {0,1} };
    GFTYPE          xsgn  [] = { 1.0, -1.0, -1.0, 1.0, 1.0, -1.0};
    GFTYPE          tiny;
    GFTYPE          xm;
    GTPoint<GFTYPE> xp(3), p1(3), p2(3);
-   tiny  = 100.0*std::numeric_limits<T>::epsilon(); 
+   tiny  = 100.0*std::numeric_limits<GFTYPE>::epsilon(); 
 
    // Normals depend on element type:
    if ( this->gtype_ == GE_REGULAR ) {

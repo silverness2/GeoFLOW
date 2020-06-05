@@ -15,7 +15,6 @@
 // DESC   : Make call to to do bdy initialization
 // ARGS   : ptree  : main property tree
 //          grid   : Grid object
-//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          u      : state to be initialized. 
@@ -45,7 +44,7 @@ GBOOL GInitBdyFactory<EquationType>::init(const geoflow::tbox::PropertyTree& ptr
   else if ( use_inits ) { // initialize from state initialization
     bret = GInitStateFactory<EquationType>::GInitStateFactory::init(ptree, grid, stinfo, tt, utmp, ub, u);
     if ( bret ) {
-      setbdy_from_state(ptree, grid, tt, utmp, u, ub);
+      set_bdy_from_state(ptree, grid, stinfo, tt, utmp, u, ub);
     }
   }
   else if ( "mybdyinit" == sinit ) { // initialize from user-specified fcn
@@ -61,9 +60,10 @@ GBOOL GInitBdyFactory<EquationType>::init(const geoflow::tbox::PropertyTree& ptr
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : setbdy_from_state
+// METHOD : set_bdy_from_state
 // DESC   : use state var, u, to set bdy, ub
 // ARGS   : ptree  : main property tree
+//          grid   : GGrid object
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          u      : state to be initialized. 
@@ -71,7 +71,7 @@ GBOOL GInitBdyFactory<EquationType>::init(const geoflow::tbox::PropertyTree& ptr
 // RETURNS: none.
 //**********************************************************************************
 template<typename EquationType>
-void GInitBdyFactory<EquationType>::setbdy_from_state(const geoflow::tbox::PropertyTree& ptree, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub)
+void GInitBdyFactory<EquationType>::set_bdy_from_state(const geoflow::tbox::PropertyTree& ptree, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub)
 {
   GTVector<GTVector<GSIZET>> *igbdy = &grid.igbdy_binned();
 
@@ -85,10 +85,6 @@ void GInitBdyFactory<EquationType>::setbdy_from_state(const geoflow::tbox::Prope
        && ub[k] != NULLPTR; j++ ) {
       (*ub[k])[j] = (*u[k])[(*igbdy)[GBDY_INFLOWT][j]];
     }
-    for ( auto j=0; j<(*igbdy)[GBDY_NOSLIP].size()
-       && ub[k] != NULLPTR; j++ ) {
-      (*ub[k])[j] = 0.0;
-    }
   }
 
-} // end, setbdy_from_state
+} // end, set_bdy_from_state

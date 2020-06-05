@@ -578,7 +578,7 @@ void init_state(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &
 {
   GBOOL bret;
 
-  bret = GInitStateFactory<MyTypes>::init(ptree, grid, peqn, t, utmp, ub, u);
+  bret = GInitStateFactory<MyTypes>::init(ptree, grid, peqn->stateinfo(), t, utmp, ub, u);
 
   assert(bret && "state initialization failed");
 
@@ -601,7 +601,7 @@ void init_force(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &
 {
   GBOOL bret;
 
-  bret = GInitForceFactory<MyTypes>::init(ptree, grid, peqn, t, utmp, u, uf);
+  bret = GInitForceFactory<MyTypes>::init(ptree, grid, peqn->stateinfo(), t, utmp, u, uf);
 
   assert(bret && "forcing initialization failed");
   
@@ -624,7 +624,7 @@ void init_bdy(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t,
 {
   GBOOL bret;
 
-  bret = GInitBdyFactory<MyTypes>::init(ptree, grid, peqn, t, utmp, u, ub);
+  bret = GInitBdyFactory<MyTypes>::init(ptree, grid, peqn->stateinfo(), t, utmp, u, ub);
 
   assert(bret && "boundary initialization failed");
   
@@ -646,7 +646,7 @@ void update_boundary(const Time &t, State &u, State &ub)
   GBOOL  bret;
   GFTYPE tt = t;
 
-  bret = GUpdateBdyFactory<MyTypes>::update(ptree_, *grid_, pEqn_, tt, utmp_, u, ub);
+  bret = GUpdateBdyFactory<MyTypes>::update(ptree_, *grid_, pEqn_->stateinfo(), tt, utmp_, u, ub);
   
   assert(bret && "boundary update failed");
   
@@ -853,7 +853,7 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
 
 
   tt = 0.0;
-  bret = GInitStateFactory<MyTypes>::init(ptree, grid, peqn, tt, utmp, ub, ua);
+  bret = GInitStateFactory<MyTypes>::init(ptree, grid, peqn->stateinfo(), tt, utmp, ub, ua);
   assert(bret && "state initialization failed");
   for ( GSIZET j=0; j<nsolve_; j++ ) { // local errors
    *utmp [1] = *ua [j]; utmp [1]->rpow(2);
@@ -869,7 +869,7 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
 
   // Compute analytic solution at t:
   tt = t;
-  bret = GInitStateFactory<MyTypes>::init(ptree, grid, peqn, tt, utmp, ub, ua);
+  bret = GInitStateFactory<MyTypes>::init(ptree, grid, peqn->stateinfo(), tt, utmp, ub, ua);
   assert(bret && "state initialization failed");
 
 #if 1

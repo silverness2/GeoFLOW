@@ -32,10 +32,10 @@ class GUpdateBdyFactory
         using Time          = typename Equation::Time;
 
 
-	static GBOOL update(const PropertyTree& ptree, GGrid &grid, StateInfo&stinfo, Time &time, State &utmp, State &u, State &ub);
+	static GBOOL update            (const PropertyTree& ptree, Grid &grid, StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub);
 
   private:
-        static void  set_bdy_from_state(const PropertyTree& ptree, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub);
+        static void  set_bdy_from_state(const PropertyTree& ptree, GString &sconfig, Grid &grid, StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub);
 
 }; // class GUpdateBdyFactory
 

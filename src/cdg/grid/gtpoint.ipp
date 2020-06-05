@@ -3,11 +3,9 @@
 // Date         : 7/1/18 (DLR)
 // Description  : Encapsulates the access methods and data associated with
 //                defining template 'point' object.
-// Copyright    : Copyright 2018. Colorado State University. All rights reserved
+// Copyright    : Copyright 2018. Colorado State University. All rights reserved.
 // Derived From : none.
 //==================================================================================
-#include <limits>
-#include "gtpoint.hpp"
 
 //**********************************************************************************
 //**********************************************************************************

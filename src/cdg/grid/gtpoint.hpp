@@ -3,9 +3,12 @@
 // Date         : 7/1/18 (DLR)
 // Description  : Encapsulates the access methods and data associated with
 //                defining template 'point' object.
-// Copyright    : Copyright 2018. Colorado State University. All rights reserved
+// Copyright    : Copyright 2018. Colorado State University. All rights reserved.
 // Derived From : none.
 //==================================================================================
+#if !defined(GTPOINT_HPP)
+#define GTPOINT_HPP
+
 #include "gtypes.h"
 #include <cstdlib>
 #include <cmath>
@@ -15,11 +18,9 @@
 #include "gtvector.hpp"
 
 
-template <typename T> class GTPoint;
-template<typename T> std::ostream &operator<<(std::ostream &, GTPoint<T> &);
+template <typename U> class GTPoint;
+template<typename U> std::ostream &operator<<(std::ostream &, GTPoint<U> &);
 
-#if !defined(GTPOINT_HPP)
-#define GTPOINT_HPP
 
 template<typename T> class GTPoint
 {
@@ -49,7 +50,7 @@ public:
 
   inline GINT     size() 
   { return gdim_;}
-  inline GINT     dim() 
+  inline GINT     dim() const 
   { return gdim_;}
 
 
@@ -68,34 +69,34 @@ public:
 
   template<typename U=T> typename std::enable_if<std::is_floating_point<U>::value, T>::type
   norm()  // Euclidean norm
-  { T xn=0; for (GINT i=0; i<gdim_; i++ ) xn += ((*px_[i])*(*px_[i])); return sqrt(xn); }
+  { T xn=0; for ( auto i=0; i<gdim_; i++ ) xn += ((*px_[i])*(*px_[i])); return sqrt(xn); }
 
   inline void unit()  // Make into unit vector
-  { T xn=this->norm(); for (GINT i=0; i<gdim_; i++ ) px_[i]/sqrt(xn); 
+  { T xn=this->norm(); for ( auto i=0; i<gdim_; i++ ) (*px_[i]) /= sqrt(xn); }
 
   inline GBOOL    operator!=(const GTPoint<T> &p) 
   { return !this->operator==(p); }
 
   inline void  operator=(const GTPoint<T> &p)
   { assert(p.gdim_ == gdim_ );
-    eps_ = p.eps_; for ( GINT j=0; j<gdim_; j++ ) *px_[j] = p[j];
+    eps_ = p.eps_; for ( auto j=0; j<gdim_; j++ ) *px_[j] = p[j];
     if ( gdim_>0) x1 = p[0]; if ( gdim_>1) x2 = p[1]; if (gdim_>2) x3 = p[2]; if ( gdim_>3) x4 = p[3];}
 
   inline void  operator=(const std::vector<T> &p)
   { assert(p.size() >= gdim_ );
-    for ( GINT j=0; j<gdim_; j++ ) *px_[j] = p[j];
+    for ( auto j=0; j<gdim_; j++ ) *px_[j] = p[j];
     if ( gdim_>0) x1 = p[0]; if ( gdim_>1) x2 = p[1]; if (gdim_>2) x3 = p[2]; if ( gdim_>3) x4 = p[3];}
 
   inline void  operator=(const GTVector<T> &p)
   { assert(p.size() == gdim_ );
-    for ( GINT j=0; j<gdim_; j++ ) *px_[j] = p[j];
+    for ( auto j=0; j<gdim_; j++ ) *px_[j] = p[j];
     if ( gdim_>0) x1 = p[0]; if ( gdim_>1) x2 = p[1]; if (gdim_>2) x3 = p[2]; if ( gdim_>3) x4 = p[3];}
 
   inline GTPoint<T> &operator=(T f)
   { x1 = f;  x2 = f;  x3 = f;  x4 = f; return *this;}
 
   inline void assign(GTVector<GTVector<T>> &v, GSIZET i)
-  { for ( GINT j=0; j<gdim_; j++ ) *px_[j] = v[j][i];
+  { for ( auto j=0; j<gdim_; j++ ) *px_[j] = v[j][i];
     if ( gdim_>0) x1 = v[0][i]; if ( gdim_>1) x2 = v[1][i]; if (gdim_>2) x3 = v[2][i]; if ( gdim_>3) x4 = v[3][i];}
 
   inline GTPoint<T> operator-(T f) {
@@ -111,10 +112,10 @@ public:
   }
 
   inline void  operator-=(T a)
-  { for ( GINT j=0; j<gdim_; j++ ) *px_[j] -= a; }
+  { for ( auto j=0; j<gdim_; j++ ) *px_[j] -= a; }
 
   inline void  operator-=(const GTPoint<T> &a)
-  { for ( GINT j=0; j<gdim_; j++ ) *px_[j] -= a[j]; }
+  { for ( auto j=0; j<gdim_; j++ ) *px_[j] -= a[j]; }
 
   inline GTPoint<T> operator+(const T f)
   {
@@ -131,10 +132,10 @@ public:
   }
 
   inline void  operator+=(const T a)
-  { for ( GINT j=0; j<gdim_; j++ ) *px_[j] += a; }
+  { for ( auto j=0; j<gdim_; j++ ) *px_[j] += a; }
 
   inline void  operator+=(const GTPoint<T> &a)
-  { for ( GINT j=0; j<gdim_; j++ ) *px_[j] += a[j]; }
+  { for ( auto j=0; j<gdim_; j++ ) *px_[j] += a[j]; }
 
   inline GTPoint<T> operator*(const T a)
   {
@@ -147,7 +148,7 @@ public:
   {
       // Compute ret_z = this X p for 2d vectors
       // (there's only a z-component)
-       return (x1*p.x2 - x2*p.x1;);
+       return (x1*p.x2 - x2*p.x1);
   }
 
   inline void cross(const GTPoint<T> &p, GTPoint<T> &ret)
@@ -161,10 +162,10 @@ public:
   }
 
   inline void  operator*=(const T a)
-  { for ( GINT j=0; j<gdim_; j++ ) *px_[j] *= a; }
+  { for ( auto j=0; j<gdim_; j++ ) *px_[j] *= a; }
 
   inline void  operator/=(const T a)
-  { for ( GINT j=0; j<gdim_; j++ ) *px_[j] /= a; }
+  { for ( auto j=0; j<gdim_; j++ ) *px_[j] /= a; }
 
   inline T &operator()(const GINT i)
   { 
@@ -193,11 +194,11 @@ public:
 #endif
     return *px_[i]; }
 
-  inline T mag() { T v=0.0; for ( GINT j=0; j<gdim_; j++ ) v += pow(*px_[j],2.0); return sqrt(v); }
+  inline T mag() { T v=0.0; for ( auto j=0; j<gdim_; j++ ) v += pow(*px_[j],2.0); return sqrt(v); }
 
   friend std::ostream &operator<<(std::ostream &str, GTPoint<T> &obj) {
     str << "("  << *obj.px_[0];
-    for ( GINT i=1; i<obj.gdim_; i++ ) {
+    for ( auto i=1; i<obj.gdim_; i++ ) {
     str << ", " << *obj.px_[i];} str << ")";
     return str;
   } // end, operator<<

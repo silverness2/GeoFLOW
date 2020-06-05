@@ -33,10 +33,10 @@ class GInitBdyFactory
         using Time          = typename Equation::Time;
 
 
-	static GBOOL init              (const geoflow::tbox::PropertyTree& ptree, GGrid &grid,  StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub);
+	static GBOOL init               (const geoflow::tbox::PropertyTree& ptree, GGrid &grid,  StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub);
 
   private:
-        static void  setbdy_from_state(const geoflow::tbox::PropertyTree& ptree, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub);
+        static void  set_bdy_from_state(const geoflow::tbox::PropertyTree& ptree, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub);
 
 }; // class GInitBdyFactory
 

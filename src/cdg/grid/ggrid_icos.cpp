@@ -1048,13 +1048,13 @@ void GGridIcos::do_face_normals3d()
 //**********************************************************************************
 void GGridIcos::do_bdy_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
                                GTVector<GTVector<GSIZET>>    &igbdy_face,
-                               GTVector<GTVector>>           &normals,
-                               GTVector<GNT>                 &idepComp)
+                               GTVector<GTVector<GFTYPE>>    &normals,
+                               GTVector<GINT>                &idepComp)
 {
   GSIZET icurr, nbdy, nface;
 
   nbdy = 0;
-  for ( auto j=0; j<igndy_face.size(); j++ ) {
+  for ( auto j=0; j<igbdy_face.size(); j++ ) {
     nbdy += igbdy_face[j].size();
   }
   idepComp.resize(nbdy);
@@ -1079,7 +1079,7 @@ void GGridIcos::do_bdy_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 
   // Reset vector ranges:
   idepComp.range_reset();
-  for ( auto j=0; j<normals.size(); j++ ) normals[j].range_reset()
+  for ( auto j=0; j<normals.size(); j++ ) normals[j].range_reset();
 
 
 } // end, method do_bdy_normals
@@ -1110,14 +1110,14 @@ void GGridIcos::do_bdy_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 void GGridIcos::do_bdy_normals3d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
                                  GTVector<GSIZET>              &igbdy,
                                  GINT                           iface,
-                                 GTVector<GTVector>>         &normals,
-                                 GTVector<GNT>              &idepComp)
+                                 GTVector<GTVector<GFTYPE>>  &normals,
+                                 GTVector<GINT>             &idepComp)
 {
    GSIZET          ib, ic, ip; 
    GFTYPE          tiny;
    GFTYPE          xm;
    GTPoint<GFTYPE> xp(3), p1(3), p2(3);
-   tiny  = 100.0*std::numeric_limits<T>::epsilon(); 
+   tiny  = 100.0*std::numeric_limits<GFTYPE>::epsilon(); 
 
    xm = iface == 1 ? -1.0 : 1.0;
 

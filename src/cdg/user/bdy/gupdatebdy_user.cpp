@@ -74,7 +74,7 @@ GBOOL impl_sphere_sponge(const PropertyTree &ptree, GString &sconfig, GGrid &gri
   Time             tt = time;
   GINT             idstate;
   GFTYPE           beta, exponent, ifact, ro, rs, sig0;
-  GFTYPE           x, y, z;
+  GFTYPE           r, x, y, z;
   State            uu(u.size());
   std::vector<GINT>
                    istate;
@@ -94,12 +94,12 @@ GBOOL impl_sphere_sponge(const PropertyTree &ptree, GString &sconfig, GGrid &gri
 
   // Get parameters from ptree:
   sptree   = ptree.getPropertyTree(sconfig);
-  ro       = gridptree.getValue<GFTYPE>("radiuso");    // outer grid radius
-  rs       = sptree.getArray<GFTYPE>("layer_radius");  // inner sponge radius
-  exponent = sptree.getArray<GFTYPE>("exponent", 4);   // exponent 
-  sig0     = sptree.getArray<GFTYPE>("sigma", 1.0);    // diffusion constant
+  ro       = sptree.getValue<GFTYPE>("radiuso");       // outer grid radius
+  rs       = sptree.getValue<GFTYPE>("layer_radius");  // inner sponge radius
+  exponent = sptree.getValue<GFTYPE>("exponent", 4);   // exponent 
+  sig0     = sptree.getValue<GFTYPE>("sigma", 1.0);    // diffusion constant
   istate   = sptree.getArray  <GINT>("state_index");   // state ids to 'sponge'
-  farfield = sptree.getArray  <GINT>("far_field");     // far-field state values
+  farfield = sptree.getArray<GFTYPE>("far_field");     // far-field state values
 
   ifact    = 1.0/(ro - rs);
 
@@ -115,9 +115,9 @@ GBOOL impl_sphere_sponge(const PropertyTree &ptree, GString &sconfig, GGrid &gri
   //       and u_infinity is the far-field solution
   // Note: We may have to re-form this scheme if we use semi-implicit
   //       or implicit time stepping methods!
-  for ( auto k=0; k<istate; k++ ) { // for each state component
+  for ( auto k=0; k<istate.size(); k++ ) { // for each state component
     idstate = istate[k];
-    for ( auto j=0; j<(*igbdy)[GBDY_SPONGE].size(); j++ ) {
+    for ( auto j=0; j<u[idstate]->size(); j++ ) {
       x    = (*xnodes)[0][k]; y = (*xnodes)[1][k]; z = (*xnodes)[2][k];
       r    = sqrt(x*x + y*y + z*z); 
 //    igb  = (*igbdy)  [GBDY_SPONGE][j];

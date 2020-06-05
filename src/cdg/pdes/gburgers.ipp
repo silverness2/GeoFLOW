@@ -654,8 +654,8 @@ void GBurgers<TypePack>::apply_bc_impl(const Time &t, State &u, const State &ub)
   GINT                         id;
   GSIZET                       il;
   GFTYPE                       sum, xn;
-  GTVector<GTVector<GFTYPE>>  *n    = &grid_->bdy_normals();
-  GTVector<GINT>              *idep = &grid_->idepComp    ();
+  GTVector<GTVector<GFTYPE>>  *n    = &grid_->bdyNormals();
+  GTVector<GINT>              *idep = &grid_->idepComp  ();
 
   itype = GBDY_0FLUX;
   for ( auto j=0; j<(*igbdy)[itype].size(); j++ ) { 
@@ -665,7 +665,7 @@ void GBurgers<TypePack>::apply_bc_impl(const Time &t, State &u, const State &ub)
     xn = (*n)[id][ib];       // n_id == normal component for dependent vector comp
     sum = 0.0;
     for ( auto k=0; k<u.size(); k++ ) { // for each vector component
-      if ( k != (*idep)[ib] ) sum -= (*n)[k][il] * (*u[k])[ib]
+      if ( k != (*idep)[ib] ) sum -= (*n)[k][il] * (*u[k])[ib];
     }
     (*u[id])[ib] = sum / xn;
   }

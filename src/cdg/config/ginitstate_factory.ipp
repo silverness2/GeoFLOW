@@ -29,10 +29,10 @@ GBOOL GInitStateFactory<EquationType>::init(const PropertyTree& ptree, GGrid &gr
   stype = ptree.getValue<GString>("initstate_type","");
   if ( "direct"   == stype 
     || ""         == stype ) {
-    bret = set_by_direct(ptree, grid, peqn, time, utmp, ub, u);
+    bret = set_by_direct(ptree, grid, stinfo, time, utmp, ub, u);
   }
   else if ( "component" == stype ) {
-    bret = set_by_comp  (ptree, grid, peqn, time, utmp, ub, u);
+    bret = set_by_comp  (ptree, grid, stinfo, time, utmp, ub, u);
   }
   else {
     assert(FALSE && "Invalid state initialization type");
@@ -71,19 +71,19 @@ GBOOL GInitStateFactory<EquationType>::set_by_direct(const PropertyTree& ptree, 
     } 
   }
   else if ( "initstate_icosgaussburgers"  == sinit ) {
-    bret = ginitstate::impl_icosgauss       (ptree, sinit, grid, time, utmp, ub, u);
+    bret = ginitstate::impl_icosgauss       (ptree, sinit, grid, stinfo, time, utmp, ub, u);
   }
   else if ( "initstate_boxdirgauss"       == sinit ) {
-    bret = ginitstate::impl_boxdirgauss     (ptree, sinit, grid, time, utmp, ub, u);
+    bret = ginitstate::impl_boxdirgauss     (ptree, sinit, grid, stinfo, time, utmp, ub, u);
   }
   else if ( "initstate_boxpergauss"       == sinit ) {
-    bret = ginitstate::impl_boxpergauss     (ptree, sinit, grid, time, utmp, ub, u);
+    bret = ginitstate::impl_boxpergauss     (ptree, sinit, grid, stinfo, time, utmp, ub, u);
   }
   else if ( "initstate_boxnwave"          == sinit ) {
-    bret = ginitstate::impl_boxnwaveburgers (ptree, sinit, grid, time, utmp, ub, u);
+    bret = ginitstate::impl_boxnwaveburgers (ptree, sinit, grid, stinfo, time, utmp, ub, u);
   }
   else if ( "initstate_icosnwave"          == sinit ) {
-    bret = ginitstate::impl_icosnwaveburgers (ptree, sinit, grid, time, utmp, ub, u);
+    bret = ginitstate::impl_icosnwaveburgers (ptree, sinit, grid, stinfo, time, utmp, ub, u);
   }
   else                                        {
     assert(FALSE && "Specified state initialization method unknown");
@@ -122,7 +122,7 @@ GBOOL GInitStateFactory<EquationType>::set_by_comp(const PropertyTree& ptree, GG
   PropertyTree    vtree     = ptree.getPropertyTree(sblk);
   State           comp;
   GStateCompType *pct;
-  CompDesc       *icomptype = &peqn->stateinfo().icomptype;
+  CompDesc       *icomptype = &stinfo.icomptype;
   CompDesc        cdesc;
 
   GTVector<GSIZET>   itmp;

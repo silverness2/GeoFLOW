@@ -765,7 +765,7 @@ void GGrid::do_normals()
   }
   
   // Set domain boundary node normals:
-  do_bdy_normals(dXdXi_, igbdy_binned_, bdyNormals_, idepComp_);
+  do_bdy_normals(dXdXi_, igbdy_bdyface_, bdyNormals_, idepComp_);
    
 } // end of method do_normals
 
@@ -896,20 +896,6 @@ GTVector<GFTYPE> &GGrid::faceJac()
 
 } // end of method faceJac
 
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : bdyNormal
-// DESC   : Return global vector of normals at bdy nodes
-// ARGS   : none
-// RETURNS: GTVector<GTVector<GFTYPE>> &
-//**********************************************************************************
-GTVector<GTVector<GFTYPE>> &GGrid::bdyNormal()
-{
-   assert(bInitialized_ && "Object not inititaized");
-   return bdyNormals_;
-
-} // end of method bdyNormal
 
 //**********************************************************************************
 //**********************************************************************************
@@ -1148,7 +1134,7 @@ void GGrid::init_bc_info()
   GSIZET                       ibeg, iend; // beg, end indices for global array
   GTVector<GINT>              *iebdy;  // domain bdy indices
   GTVector<GTVector<GINT>>    *ieface; // domain face indices
-  GTVector<GTVector<GINT>>    igbdycf; // canonical bdy face
+  GTVector<GINT>               igbdycf; // canonical bdy face
 
   // Find boundary indices & types from config file 
   // specification, for _each_ natural/canonical domain face:
@@ -1183,7 +1169,7 @@ void GGrid::init_bc_info()
   GSIZET    *ind=NULLPTR;
   GSIZET               n;
   igbdy_binned_ .resize(GBDY_MAX); // set of bdy indices in volume arrays
-  igbdcf_binned_.resize(GBDY_MAX); // canonical face of igbdy_binned
+  igbdycf_binned_.resize(GBDY_MAX); // canonical face of igbdy_binned
   ilbdy_binned_ .resize(GBDY_MAX); // set of bdy indices in bdy arrays
   n = 0;
   for ( auto k=0; k<GBDY_MAX; k++ ) { // cycle over each bc type

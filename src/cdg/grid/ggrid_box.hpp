@@ -54,11 +54,11 @@ public:
         void                config_bdy(const PropertyTree &ptree,
                               GTVector<GTVector<GSIZET>>   &igbdy, 
                               GTVector<GTVector<GBdyType>> &igbdyt);         // config bdy
-        void                do_bdy_normals  (GTMatrix<GTVector<GFTYPE>>
-                                                                 &dXdXi,
-        void                                 GTVector<GSIZET>    &igbdy,
-                                             GTVector<GTVector>> &normals,
-                                             GTVector<GNT>       &idepComp);// compute normals entry point
+        void                do_bdy_normals  (
+                               GTMatrix<GTVector<GFTYPE>> &dXdXi,
+                               GTVector<GTVector<GSIZET>> &igbdy,
+                               GTVector<GTVector<GFTYPE>> &normals,
+                               GTVector<GINT>             &idepComp);        // compute normals entry point
 const    GTPoint<GFTYPE>   &getP0() {return P0_; }                           // get blob bdy point 
 const    GTPoint<GFTYPE>   &getP1() {return P1_; }                           // get blob bdy point 
 
@@ -80,18 +80,18 @@ private:
                               GTVector<GTVector<GFTYPE>> &xnodes);          // do 3d grid restart
          void               do_face_normals2d();                            // compute normals to elem faces in 2d
          void               do_face_normals3d();                            // compute normals to elem faces in 3d
-         void               do_bdy_normals2d(GTMatrix<GTVector<GFTYPE>>
-                                                                 &dXdXi,
-                                             GTVector<GSIZET>    &igbdy,
-                                             GINT                 iface,
-                                             GTVector<GTVector>> &normals,
-                                             GTVector<GNT>       &idepComp);// compute normals to doimain bdy in 2d
-         void               do_bdy_normals3d(GTMatrix<GTVector<GFTYPE>>
-                                                                 &dXdXi,
-         void                                GTVector<GSIZET>    &igbdy,
-                                             GINT                 iface,
-                                             GTVector<GTVector>> &normals,
-                                             GTVector<GNT>       &idepComp);// compute normals to doimain bdy in 3d
+         void               do_bdy_normals2d(
+                              GTMatrix<GTVector<GFTYPE>> &dXdXi,
+                              GTVector<GSIZET>           &igbdy,
+                              GINT                        iface,
+                              GTVector<GTVector<GFTYPE>> &normals,
+                              GTVector<GINT>             &idepComp);       // compute normals to doimain bdy in 2d
+         void               do_bdy_normals3d(
+                              GTMatrix<GTVector<GFTYPE>> &dXdXi,
+                              GTVector<GSIZET>           &igbdy,
+                              GINT                        iface,
+                              GTVector<GTVector<GFTYPE>> &normals,
+                              GTVector<GINT>             &idepComp);        // compute normals to doimain bdy in 3d
          void               find_subdomain();                               // find task's default subdomain
          void               find_bdy_ind2d(GINT, GBOOL, GTVector<GSIZET> &);// find global bdy indices for specified bdy in 2d
          void               find_bdy_ind3d(GINT, GBOOL, GTVector<GSIZET> &);// find global bdy indices for specified bdy in 3d
