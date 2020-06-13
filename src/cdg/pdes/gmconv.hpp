@@ -1,0 +1,189 @@
+//==================================================================================
+// Module       : gmconv.hpp
+// Date         : 6/11/20 (DLR)
+// Description  : Object defining a moist convection solver:
+//
+//                PDEs:
+//                     TBD
+//
+//                This solver can be built in 2D or 3D for box grids,
+//                but is valid only for 3D spherical grids.
+//
+//                The State vector consists of the following:
+//                  vx/sx   : x-velocity or momentum density 
+//                  vy/sy   : y-velocity or momentum density 
+//                  vz/sz   : z-velocity or momentum density 
+//                  rho_tot : total density or dry density, if no moisture
+//                  qvapor  : water vapor mass fraction
+//                  q_liq_0 : liquid substance 0 mass fraction |
+//                  q_liq_1 : liquid substance 1 mass fraction |  'liquid' sector
+//                  q_liq_2 : liquid substance 2 mass fraction |
+//                   ...
+//                  q_ice_0 : 'ice' substance 0 mass fraction  |
+//                  q_ice_1 : 'ice' substance 1 mass fraction  |  'ice' sector
+//                  q_ice_2 : 'ice' substance 2 mass fraction  |
+// 
+// 
+// Copyright    : Copyright 2020. Colorado State University. All rights reserved.
+// Derived From : EquationBase.
+//==================================================================================
+#if !defined(_GMCONV_HPP)
+#define _GMCONV_HPP
+
+#include "gtypes.h"
+#include <functional>
+#include <cstdlib>
+#include <memory>
+#include <cmath>
+#include "gtvector.hpp"
+#include "gdd_base.hpp"
+#include "ggrid.hpp"
+#include "gab.hpp"
+#include "gext.hpp"
+#include "gbdf.hpp"
+#include "gpdv.hpp"
+#include "gmass.hpp"
+#include "gadvect.hpp"
+#include "ghelmholtz.hpp"
+//#include "gflux.hpp"
+#include "gexrk_stepper.hpp"
+#include "gbutcherrk.hpp"
+#include "ggfx.hpp"
+#include "pdeint/equation_base.hpp"
+
+using namespace geoflow::pdeint;
+using namespace std;
+
+template<typename TypePack>
+class GMConv : public EquationBase<TypePack>
+{
+public:
+        using Interface  = EquationBase<TypePack>;
+        using Base       = Interface;
+        using State      = typename Interface::State;
+        using Grid       = typename Interface::Grid;
+        using Value      = typename Interface::Value;
+        using Derivative = typename Interface::Derivative;
+        using Time       = typename Interface::Time;
+        using CompDesc   = typename Interface::CompDesc;
+        using Jacobian   = typename Interface::Jacobian;
+        using Size       = typename Interface::Size;
+
+        static_assert(std::is_same<State,GTVector<GTVector<GFTYPE>*>>::value,
+               "State is of incorrect type");
+        static_assert(std::is_same<Derivative,GTVector<GTVector<GFTYPE>*>>::value,
+               "Derivative is of incorrect type");
+        static_assert(std::is_same<Grid,GGrid>::value,
+               "Grid is of incorrect type");
+
+        // Burgers solver traits:
+        struct Traits {
+          GBOOL          doheat      = FALSE;
+          GBOOL          bpureadv    = FALSE;
+          GBOOL          bconserved  = FALSE;
+          GBOOL          bforced     = FALSE;
+          GBOOL          variabledt  = FALSE;
+          GINT           nstate      = GDIM; // no. vars in state vec
+          GINT           nsolve      = GDIM; // no. vars to solve for
+          GINT           ntmp        = 8;
+          GINT           itorder     = 2;
+          GINT           inorder     = 2;
+          GFTYPE         courant     = 0.5;
+          GFTYPE         nu          = 0.0;
+          GTVector<GINT> iforced;
+          GString        ssteptype;
+        };
+
+        GMConv() = delete; 
+        GMConv(Grid &grid, GMConv<TypePack>::Traits &traits, GTVector<GTVector<GFTYPE>*> &tmp);
+       ~GMConv();
+        GMConv(const GMConv &bu) = default;
+        GMConv &operator=(const GMConv &bu) = default;
+
+        GTVector<GFTYPE>    &get_nu() { return nu_; };                       // Set nu/viscosity
+
+        void                 set_bdy_update_callback(
+                             std::function<void(
+                              const geoflow::tbox::PropertyTree& ptree,
+                              GString &supdate, Grid &grid, StateInfo &stinfo, 
+                              Time &time, State &utmp, State &u, State &ub)> callback)
+                             { this->update_bdy_callback_ = callback; bupdatebc_ = TRUE;
+                               if ( gexrk_ != NULLPTR ) 
+                                 gexrk_->set_bdy_update_callback(callback);} // set bdy-update callback
+
+        void                set_steptop_callback(
+                            std::function<void(const Time &t, State &u, 
+                                               const Time &dt)> callback) 
+                             { steptop_callback_ = callback; bsteptop_ = TRUE;}
+                                            
+
+protected:
+        void                step_impl(const Time &t, State &uin, State &uf, State &ub, 
+                                      const Time &dt);                    // Take a step
+        void                step_impl(const Time &t, const State &uin, State &uf, State &ub,
+                                      const Time &dt, State &uout);       // Take a step
+        GBOOL               has_dt_impl() const {return bvariabledt_;}    // Has dynamic dt?
+        void                dt_impl(const Time &t, State &u, Time &dt);   // Get dt
+        void                apply_bc_impl(const Time &t, State &u, 
+                                          const State &ub);               // Apply bdy conditions
+private:
+
+        void                init(GMConv::Traits &);                       // initialize 
+        GINT                req_tmp_size();                               // required tmp size
+        void                dudt_impl  (const Time &t, const State &u, const State &uf, const State &ub,
+                                        const Time &dt, Derivative &dudt);
+        void                step_exrk  (const Time &t, State &uin, State &uf, State &ub,
+                                        const Time &dt, State &uout);
+        void                step_multistep(const Time &t, State &uin, State &uf, State &ub,
+                                           const Time &dt);
+        void                cycle_keep(State &u);
+       
+
+        GBOOL               doheat_;        // flag to do heat equation alone
+        GBOOL               bpureadv_;      // do pure (linear) advection?
+        GBOOL               bconserved_;    // use conservation form?
+        GBOOL               bforced_;       // use forcing vectors
+        GBOOL               bupdatebc_;     // bdy update callback set?
+        GBOOL               bsteptop_;      // is there a top-of-step callback?
+        GBOOL               bvariabledt_;   // is dt allowed to vary?
+        GStepperType        isteptype_;     // stepper type
+        GINT                nsteps_ ;       // num steps taken
+        GINT                itorder_;       // time deriv order
+        GINT                inorder_;       // nonlin term order
+        GFTYPE              courant_;       // Courant number if dt varies
+        GTVector<GFTYPE>    tcoeffs_;       // coeffs for time deriv
+        GTVector<GFTYPE>    acoeffs_;       // coeffs for NL adv term
+        GTVector<GFTYPE>    dthist_;        // coeffs for NL adv term
+        GTVector<GTVector<GFTYPE>*>  
+                            uevolve_;       // helper array to specify evolved sstate components
+        State               utmp_;
+        State               uold_;          // helper arrays set from utmp
+        State               urhstmp_;       // helper arrays set from utmp
+        State               uoptmp_;        // helper arrays set from utmp
+        State               urktmp_;        // helper arrays set from utmp
+        State               c_;             // linear velocity if bpureadv = TRUE
+        GTVector<State>     ukeep_;         // state at prev. time levels
+        GTVector<GString>
+                            valid_types_;   // valid stepping methods supported
+        GTVector<GFTYPE>    nu_   ;         // dissipoation
+        GGrid              *grid_;          // GGrid object
+        GExRKStepper<GFTYPE>
+                           *gexrk_;         // ExRK stepper, if needed
+        GMass              *gmass_;         // mass op
+        GMass              *gimass_;        // inverse mass op
+        GAdvect            *gadvect_;       // advection op
+        GHelmholtz         *ghelm_;         // Helmholz and Laplacian op
+        GpdV               *gpdv_;          // pdV op
+//      GFlux              *gflux_;         // flux op
+        GC_COMM             comm_;          // communicator
+        GGFX<GFTYPE>       *ggfx_;          // gather-scatter operator
+
+        std::function<void(const Time &t, State &u, const Time &dt)>
+                           steptop_callback_;
+
+
+};
+
+#include "gburgers.ipp"
+
+#endif
