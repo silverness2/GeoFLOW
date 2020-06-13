@@ -99,12 +99,15 @@ public:
         GBurgers &operator=(const GBurgers &bu) = default;
 
         GTVector<GFTYPE>    &get_nu() { return nu_; };                       // Set nu/viscosity
+
         void                 set_bdy_update_callback(
-                             std::function<void(const Time &t, State &u,
-                                           State &ub)> callback) 
+                             std::function<void(
+                              const geoflow::tbox::PropertyTree& ptree,
+                              GString &supdate, Grid &grid, StateInfo &stinfo, 
+                              Time &time, State &utmp, State &u, State &ub)> callback)
                              { this->update_bdy_callback_ = callback; bupdatebc_ = TRUE;
                                if ( gexrk_ != NULLPTR ) 
-                                 gexrk_->set_update_bdy_callback(callback);} // set bdy-update callback
+                                 gexrk_->set_bdy_update_callback(callback);} // set bdy-update callback
 
         void                set_steptop_callback(
                             std::function<void(const Time &t, State &u, 

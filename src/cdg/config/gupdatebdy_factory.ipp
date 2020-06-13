@@ -51,7 +51,7 @@ GBOOL GUpdateBdyFactory<EquationType>::update(const PropertyTree& ptree, Grid &g
                      const geoflow::tbox::PropertyTree& ptree,GString &supdate, Grid &grid, 
                      StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub)
                      {set_bdy_from_state(ptree, supdate, grid, stinfo, time, utmp, u, ub);};
-      grid.set_update_bdy_callback(mycallback);
+      grid.set_bdy_update_callback(mycallback);
     }
 
   }
@@ -62,7 +62,7 @@ GBOOL GUpdateBdyFactory<EquationType>::update(const PropertyTree& ptree, Grid &g
                   const geoflow::tbox::PropertyTree& ptree, GString &supdate, Grid &grid, 
                   StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub)
                   {gupdatebdy::impl_simple_outflow(ptree, supdate, grid, stinfo, time, utmp, u, ub);};
-    grid.set_update_bdy_callback(mycallback);
+    grid.set_bdy_update_callback(mycallback);
   }
   else if ( "sphere_sponge" == supdate ) {
     mycallback
@@ -70,7 +70,7 @@ GBOOL GUpdateBdyFactory<EquationType>::update(const PropertyTree& ptree, Grid &g
            const geoflow::tbox::PropertyTree& ptree, GString &supdate, Grid &grid, 
            StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub)
            {gupdatebdy::impl_sphere_sponge(ptree, supdate, grid, stinfo, time, utmp, u, ub);};
-    grid.set_update_bdy_callback(mycallback);
+    grid.set_bdy_update_callback(mycallback);
   }
   else {
     assert(FALSE && "Specified bdy update method unknown");
