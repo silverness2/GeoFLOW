@@ -88,10 +88,13 @@ grid_                    (&grid),
 ggfx_         (&grid.get_ggfx()),
 steptop_callback_      (NULLPTR)
 {
+
+  GGridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
+
   static_assert(std::is_same<State,GTVector<GTVector<GFTYPE>*>>::value,
                 "State is of incorrect type"); 
   assert(tmp.size() >= req_tmp_size() && "Insufficient tmp space provided");
-  assert(!(doheat_ && bpureadv_) && "Invalid PDE configuration");
+  assert(!(GDIM==2 && icos!=NULLPTR && 2D spherical grid not allowed");
 
   // Check if specified stepper type is valid:
   GBOOL  bfound;

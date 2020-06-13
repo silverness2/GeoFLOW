@@ -155,8 +155,8 @@ private:
         void                cycle_keep(State &u);
        
 
-        GBOOL               doheat_;        // flag to do heat equation alone
-        GBOOL               bpureadv_;      // do pure (linear) advection?
+        GBOOL               dodry_;         // do dry dynamics only?
+        GBOOL               dofallout_;     // do hydrometeor fallout?
         GBOOL               bconserved_;    // use conservation form?
         GBOOL               bforced_;       // use forcing vectors
         GBOOL               bupdatebc_;     // bdy update callback set?
