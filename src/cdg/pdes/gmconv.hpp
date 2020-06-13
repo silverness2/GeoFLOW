@@ -94,6 +94,7 @@ public:
         struct Traits {
           GBOOL          dodry       = TRUE;
           GBOOL          dofallout   = FALSE;
+          GBOOL          bconserved  = FALSE;
           GBOOL          bforced     = FALSE;
           GBOOL          variabledt  = FALSE;
           GINT           nstate      = GDIM+2; // no. vars in state vec
