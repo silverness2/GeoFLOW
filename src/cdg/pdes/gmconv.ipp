@@ -16,12 +16,26 @@
 //                  rho_tot : total density or dry density, if no moisture
 //                  qvapor  : water vapor mass fraction
 //                  q_liq_0 : liquid substance 0 mass fraction |
-//                  q_liq_1 : liquid substance 1 mass fraction |  'liquid' sector
+//                  q_liq_1 : liquid substance 1 mass fraction |  'liquid' mass sector
 //                  q_liq_2 : liquid substance 2 mass fraction |
 //                   ...
 //                  q_ice_0 : 'ice' substance 0 mass fraction  |
-//                  q_ice_1 : 'ice' substance 1 mass fraction  |  'ice' sector
+//                  q_ice_1 : 'ice' substance 1 mass fraction  |  'ice' mass sector
 //                  q_ice_2 : 'ice' substance 2 mass fraction  |
+//                   ...
+//                  w_liq_0 : liquid substance 2 term velocity |
+//                  w_liq_1 : liquid substance 2 term velocity | 'liquid' term vel. sector
+//                  w_liq_2 : liquid substance 2 term velocity |
+
+//                  w_ice_0 : 'ice' substance 2 term velocity  |
+//                  w_ice_1 : liquid substance 2 term velocity | 'ice' term vel. sector
+//                  w_ice_2 : 'ice' substance 2 term velocity  |
+//                   ...
+//
+//                The terminal velocities in this state are prescribed,
+//                if used; all others are evolved. If hydrometeor fallout
+//                is specified, then terminal velocities for all hydrometeors
+//                must be provided
 // 
 // 
 // Copyright    : Copyright 2020. Colorado State University. All rights reserved.
@@ -40,8 +54,7 @@ using namespace std;
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : Constructor method  (1)
-// DESC   : Instantiate with grid + state + tmp. Use for fully nonlinear
-//          Burgers equation, heat equation.
+// DESC   : Instantiate with grid + state + tmp. 
 //          grid      : grid object
 //          traits    : GMConv:Traits struct
 //          tmp       : Array of tmp vector pointers, pointing to vectors
