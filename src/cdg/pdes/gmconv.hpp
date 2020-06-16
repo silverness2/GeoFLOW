@@ -13,6 +13,7 @@
 //                  vx/sx   : x-velocity or momentum density 
 //                  vy/sy   : y-velocity or momentum density 
 //                  vz/sz   : z-velocity or momentum density 
+//                  e       : internal or total energy density
 //                  rho_tot : total density or dry density, if no moisture
 //                  qvapor  : water vapor mass fraction
 //                  q_liq_0 : liquid substance 0 mass fraction |
