@@ -136,6 +136,8 @@ template <class T> class GTVector
     void               operator-=(const T b);
     #pragma acc routine vector
     void               operator*=(const T b);
+    #pragma acc routine vector
+    void               operator/=(const T b);
 
     #pragma acc routine vector 
     void               operator+=(const GTVector &b);

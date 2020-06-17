@@ -1153,6 +1153,30 @@ GTVector<T>::operator*=(const GTVector &b)
 
 //**********************************************************************************
 //**********************************************************************************
+// METHOD : operator /= (1)
+// DESC   : point-by-point division: this = this/b
+// ARGS   : GTVector &
+// RETURNS: void
+//**********************************************************************************
+template<class T>
+void
+GTVector<T>::operator/=(const GTVector &b)
+{
+  GLLONG j;
+  T *p = b.data();
+  for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+    this->data_[j] /= p[j-this->gindex_.beg()];
+  }
+
+  #if defined(_G_AUTO_UPDATE_DEV)
+  updatedev();
+  #endif
+
+} // end, operator/= (1)
+
+
+//**********************************************************************************
+//**********************************************************************************
 // METHOD : isfinite (1)
 // DESC   : Find if a nan or inf exists in vector
 // ARGS   : 
