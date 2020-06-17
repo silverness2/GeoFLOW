@@ -381,5 +381,61 @@ void zero(GTVector<GTVector<T>> &u)
 } // end of method zero (2)
 
 
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : maxbyelem
+// DESC   : Find max of q on each element, return in max array
+//
+// ARGS   : grid: GGrid object
+//          q   : field over all elems.
+//          max : max of q on each element. Allocated if necessary.
+// RETURNS: none.
+//**********************************************************************************
+template<typename T>
+void maxbyelem(GGrid &grid, GTVector<T> &q, GTVector<T> &max)
+{
+  GSIZET     ibeg, iend;
+  GElemList *elems = &grid.elems();
+
+  max.resizem(grid.nelems());
+
+  for ( auto e=0; e<grid.nelems(); e++ ) {
+    ibeg = (*elems)[e]->igbeg(); iend = (*elems)[e]->igend();
+    q.range(ibeg, iend); // restrict global vecs to local range
+    max[i] = q.amax();
+  } // end, elem loop
+  q.range_reset();
+
+} // end of method maxbyelem
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : minbyelem
+// DESC   : Find min of q on each element, return in min array
+//
+// ARGS   : grid: GGrid object
+//          q   : field over all elems.
+//          min : min of q on each element. Allocated if necessary.
+// RETURNS: none.
+//**********************************************************************************
+template<typename T>
+void minbyelem(GGrid &grid, GTVector<T> &q, GTVector<T> &min)
+{
+  GSIZET ibeg, iend;
+  GElemList *elems = &grid.elems();
+
+  min.resizem(grid.nelems());
+
+  for ( auto e=0; e<grid.nelems(); e++ ) {
+    ibeg = (*elems)[e]->igbeg(); iend = (*elems)[e]->igend();
+    q.range(ibeg, iend); // restrict global vecs to local range
+    min[i] = q.amin();
+  } // end, elem loop
+  q.range_reset();
+
+} // end of method maxbyelem
+
+
 
 } // end, namespace GMTK

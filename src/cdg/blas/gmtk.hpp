@@ -55,6 +55,12 @@ namespace GMTK
                     GINT isgn, GTVector<GTVector<T>*> &C);
 
   template<typename T>
+  void maxbyelem   (GTVector<T> &q, GTVector<T> &max);
+
+  template<typename T>
+  void minbyelem   (GTVector<T> &q, GTVector<T> &min);
+
+  template<typename T>
   void cross_prod_k(GTVector<T> &Ax, GTVector<T> &Ay,
                     GINT *iind, GINT nind, GINT isgn,
                     GTVector<T> &Cx, GTVector<T> &Cy);
