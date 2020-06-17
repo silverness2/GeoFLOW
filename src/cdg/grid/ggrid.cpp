@@ -263,39 +263,46 @@ GSIZET GGrid::nbdydof()
 //**********************************************************************************
 // METHOD : minlength
 // DESC   : Find elem length separation
-// ARGS   : none
+// ARGS   : dx : vector that gives the min length for each element;
+//               filled if non-NULL
 // RETURNS: GFTYPE separation
 //**********************************************************************************
-GFTYPE GGrid::minlength()
+GFTYPE GGrid::minlength(GTVector<GFTYPE> *dx)
 {
    assert(gelems_.size() > 0 && "Elements not set");
 
-   GFTYPE lmin, gmin;
+   GFTYPE emin, lmin, gmin;
    GTPoint<GFTYPE> dr;
    GTVector<GTPoint<GFTYPE>> *xverts;
+  
+   if ( dx != NULLPTR ) dx->resizem(gelems_.nelems());
 
-   lmin = std::numeric_limits<GFTYPE>::max();
-   for ( GSIZET i=0; i<gelems_.size(); i++ ) {
+   lmin = std::numeric_limits<GFTYPE>::max(); // min over all local elements
+   for ( auto i=0; i<gelems_.size(); i++ ) {
      xverts = &gelems_[i]->xVertices();
      #if defined(_G_IS2D)
-     for ( GSIZET j=0; j<xverts->size(); j++ ) {
+     emin = std::numeric_limits<GFTYPE>::max(); // min within an element
+     for ( auto j=0; j<xverts->size(); j++ ) {
        dr = (*xverts)[(j+1)%xverts->size()] - (*xverts)[j];
-       lmin = MIN(lmin,dr.norm());
+       emin = MIN(emin,dr.norm());
      }
      #elif defined(_G_IS3D)
-     for ( GSIZET j=0; j<4; j++ ) { // bottom
+     emin = std::numeric_limits<GFTYPE>::max();
+     for ( auto j=0; j<4; j++ ) { // bottom
        dr = (*xverts)[(j+1)%xverts->size()] - (*xverts)[j];
-       lmin = MIN(lmin,dr.norm());
+       lmin = MIN(emin,dr.norm());
      }
-     for ( GSIZET j=4; j<8; j++ ) { // top
+     for ( auto j=4; j<8; j++ ) { // top
        dr = (*xverts)[(j+1)%xverts->size()] - (*xverts)[j];
-       lmin = MIN(lmin,dr.norm());
+       emin = MIN(emin,dr.norm());
      }
-     for ( GSIZET j=0; j<4; j++ ) { // vertical edges
+     for ( auto j=0; j<4; j++ ) { // vertical edges
        dr = (*xverts)[j+4] - (*xverts)[j];
-       lmin = MIN(lmin,dr.norm());
+       emin = MIN(emin,dr.norm());
      }
      #endif
+     lmin = MIN(lmin,emin);
+     if ( dx != NULLPTR ) (*dx)[i] = emin; 
    }
 
    GComm::Allreduce(&lmin, &gmin, 1, T2GCDatatype<GFTYPE>() , GC_OP_MIN, comm_);
@@ -308,39 +315,46 @@ GFTYPE GGrid::minlength()
 //**********************************************************************************
 // METHOD : maxlength
 // DESC   : Find max elem length 
-// ARGS   : none
+// ARGS   : dx : vector that gives the max length for each element;
+//               filled if non-NULL
 // RETURNS: GFTYPE length
 //**********************************************************************************
-GFTYPE GGrid::maxlength()
+GFTYPE GGrid::maxlength(GTVector<GFTYPE> *dx)
 {
    assert(gelems_.size() > 0 && "Elements not set");
 
-   GFTYPE lmax, gmax;
+   GFTYPE emax, lmax, gmax;
    GTPoint<GFTYPE> dr;
    GTVector<GTPoint<GFTYPE>> *xverts;
 
-   lmax = 0.0;
-   for ( GSIZET i=0; i<gelems_.size(); i++ ) {
+   if ( dx != NULLPTR ) dx->resizem(gelems_.nelems());
+
+   lmax = 0.0;  // max over all local elements
+   for ( auto i=0; i<gelems_.size(); i++ ) {
      xverts = &gelems_[i]->xVertices();
      #if defined(_G_IS2D)
-     for ( GSIZET j=0; j<xverts->size(); j++ ) {
+     emax = 0.0;  // max within an element
+     for ( auto j=0; j<xverts->size(); j++ ) {
        dr = (*xverts)[(j+1)%xverts->size()] - (*xverts)[j];
-       lmax = MAX(lmax,dr.norm());
+       emax = MAX(emax,dr.norm());
      }
      #elif defined(_G_IS3D)
-     for ( GSIZET j=0; j<4; j++ ) { // bottom
+     emax = 0.0;
+     for ( auto j=0; j<4; j++ ) { // bottom
        dr = (*xverts)[(j+1)%xverts->size()] - (*xverts)[j];
-       lmax = MAX(lmax,dr.norm());
+       emax = MAX(emax,dr.norm());
      }
-     for ( GSIZET j=4; j<8; j++ ) { // top
+     for ( auto j=4; j<8; j++ ) { // top
        dr = (*xverts)[(j+1)%xverts->size()] - (*xverts)[j];
-       lmax = MAX(lmax,dr.norm());
+       emax = MAX(emax,dr.norm());
      }
-     for ( GSIZET j=0; j<4; j++ ) { // vertical edges
+     for ( auto j=0; j<4; j++ ) { // vertical edges
        dr = (*xverts)[j+4] - (*xverts)[j];
-       lmax = MAX(lmax,dr.norm());
+       emax = MAX(emax,dr.norm());
      }
      #endif
+     lmax = MAX(lmax,emax);
+     if ( dx != NULLPTR ) (*dx)[i] = emax; 
    }
 
    GComm::Allreduce(&lmax, &gmax, 1, T2GCDatatype<GFTYPE>() , GC_OP_MAX, comm_);
