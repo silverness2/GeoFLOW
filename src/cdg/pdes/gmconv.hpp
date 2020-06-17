@@ -105,6 +105,7 @@ public:
           GINT           ntmp        = 8;
           GINT           itorder     = 2;
           GINT           inorder     = 2;
+          GStepperType   isteptype   = GSTEPPER_EXRK;
           GFTYPE         courant     = 0.5;
           GFTYPE         nu          = 0.0;
           GTVector<GINT> iforced;
@@ -139,13 +140,13 @@ protected:
                                       const Time &dt);                    // Take a step
         void                step_impl(const Time &t, const State &uin, State &uf, State &ub,
                                       const Time &dt, State &uout);       // Take a step
-        GBOOL               has_dt_impl() const {return bvariabledt_;}    // Has dynamic dt?
+        GBOOL               has_dt_impl() const {return traits_variabledt;}    // Has dynamic dt?
         void                dt_impl(const Time &t, State &u, Time &dt);   // Get dt
         void                apply_bc_impl(const Time &t, State &u, 
                                           const State &ub);               // Apply bdy conditions
 private:
 
-        void                init(GMConv::Traits &);                       // initialize 
+        void                init();                                       // initialize 
         GINT                req_tmp_size();                               // required tmp size
         void                dudt_impl  (const Time &t, const State &u, const State &uf, const State &ub,
                                         const Time &dt, Derivative &dudt);
@@ -156,18 +157,10 @@ private:
         void                cycle_keep(State &u);
        
 
-        GBOOL               dodry_;         // do dry dynamics only?
-        GBOOL               dofallout_;     // do hydrometeor fallout?
-        GBOOL               bconserved_;    // use conservation form?
         GBOOL               bforced_;       // use forcing vectors
         GBOOL               bupdatebc_;     // bdy update callback set?
         GBOOL               bsteptop_;      // is there a top-of-step callback?
-        GBOOL               bvariabledt_;   // is dt allowed to vary?
         GStepperType        isteptype_;     // stepper type
-        GINT                nsteps_ ;       // num steps taken
-        GINT                itorder_;       // time deriv order
-        GINT                inorder_;       // nonlin term order
-        GFTYPE              courant_;       // Courant number if dt varies
         GTVector<GFTYPE>    tcoeffs_;       // coeffs for time deriv
         GTVector<GFTYPE>    acoeffs_;       // coeffs for NL adv term
         GTVector<GFTYPE>    dthist_;        // coeffs for NL adv term
@@ -178,11 +171,12 @@ private:
         State               urhstmp_;       // helper arrays set from utmp
         State               uoptmp_;        // helper arrays set from utmp
         State               urktmp_;        // helper arrays set from utmp
-        State               c_;             // linear velocity if bpureadv = TRUE
         GTVector<State>     ukeep_;         // state at prev. time levels
         GTVector<GString>
                             valid_types_;   // valid stepping methods supported
         GTVector<GFTYPE>    nu_   ;         // dissipoation
+        GTVector<GFTYPE>    dxmin_ ;        // element face mins
+        GTVector<GFTYPE>    maxbyelem_ ;    // element-based maxima for dt
         GGrid              *grid_;          // GGrid object
         GExRKStepper<GFTYPE>
                            *gexrk_;         // ExRK stepper, if needed
@@ -194,6 +188,8 @@ private:
 //      GFlux              *gflux_;         // flux op
         GC_COMM             comm_;          // communicator
         GGFX<GFTYPE>       *ggfx_;          // gather-scatter operator
+        GMConv<TypePack>::Traits 
+                            traits_;        // traits structure
 
         std::function<void(const Time &t, State &u, const Time &dt)>
                            steptop_callback_;

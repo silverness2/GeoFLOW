@@ -66,59 +66,36 @@ using namespace std;
 template<typename TypePack>
 GMConv<TypePack>::GMConv(Grid &grid, GMConv<TypePack>::Traits &traits, GTVector<GTVector<GFTYPE>*> &tmp) :
 EquationBase<TypePack>(),
-doheat_          (traits.doheat),
-bpureadv_      (traits.bpureadv),
-bconserved_  (traits.bconserved),
-bforced_        (traits.bforced),
 bupdatebc_               (FALSE),
 bsteptop_                (FALSE),
-bvariabledt_ (traits.variabledt),
-isteptype_       (GSTEPPER_EXRK),
-nsteps_                      (0),
-itorder_        (traits.itorder),
-inorder_        (traits.inorder),
-courant_        (traits.courant),
 gmass_                 (NULLPTR),
 gimass_                (NULLPTR),
-//gflux_                 (NULLPTR),
+/*
+gflux_                 (NULLPTR),
+*/
 ghelm_                 (NULLPTR),
 gadvect_               (NULLPTR),
 gexrk_                 (NULLPTR),
 gpdv_                  (NULLPTR),
 grid_                    (&grid),
+comm_         (ggfx_->getComm()),
 ggfx_         (&grid.get_ggfx()),
 steptop_callback_      (NULLPTR)
 {
 
-  GGridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
+  GridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
 
   static_assert(std::is_same<State,GTVector<GTVector<GFTYPE>*>>::value,
                 "State is of incorrect type"); 
   assert(tmp.size() >= req_tmp_size() && "Insufficient tmp space provided");
   assert(!(GDIM==2 && icos!=NULLPTR && 2D spherical grid not allowed");
 
-  // Check if specified stepper type is valid:
-  GBOOL  bfound;
-  GSIZET itype;
-  valid_types_.resize(4);
-  valid_types_[0] = "GSTEPPER_EXRK";
-  valid_types_[1] = "GSTEPPER_BDFAB";
-  valid_types_[2] = "GSTEPPER_BDFEXT";
-  bfound = valid_types_.contains(traits.ssteptype, itype);
-  isteptype_ = static_cast<GStepperType>(itype);
-  assert( bfound && "Invalid stepping method specified");
-
-  // Set dissipation from traits. Note that
-  // this is set to be constant, based on configuration,
-  // even though the solver can accommodate spatially 
-  // variable dissipation:
-  nu_.resize(1);
-  nu_ = traits.nu; 
-
-  comm_ = ggfx_->getComm();
+  traits_.iforced.resize(traits.iforced.size());
+  traits_ = traits;
 
   utmp_.resize(tmp.size()); utmp_ = tmp;
-  init(traits);
+
+  init();
   
 } // end of constructor method (1)
 
@@ -165,44 +142,62 @@ void GMConv<TypePack>::dt_impl(const Time &t, State &u, Time &dt)
    GElemList *gelems = &grid_->elems();
    GTVector<GNBasis<GCTYPE,GFTYPE>*> *gbasis;
 
-   // This is an estimate. The minimum length on each element,
-   // computed in GGrid object is divided by the maximum of
-   // the state variable on each element:
+   // This is an estimate. We assume the timestep is
+   // is governed by fast sonic waves with speed
+   //  |v| + c,
+   // where 
+   //   c^2 = p/rho_dry; p ~ Rd e / Cv,
+   // and e is int. energy density, and
+   //   Cv = Cvd qd + Cvv qv + Sum_i(Cl_i ql_i) + Sum_j(Ci_j qi_j).
+   // Then, dt is computed element-by-element from
+   //   dt = dx_min/(v + c)_max
+   // where min and max are computed over the element.
+   
    dtmin = std::numeric_limits<GFTYPE>::max();
 
-   if ( bpureadv_ ) { // pure (linear) advection
-     for ( auto k=1; k<u.size(); k++ ) { // each advecting u
-       for ( auto e=0; e<gelems->size(); e++ ) { // for each element
-         ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
-         gbasis = &(*gelems)[e]->gbasis();
-         pmax = 0;
-         for ( auto j=0; j<gbasis->size(); j++ ) MAX(pmax, (*gbasis)[j]->getOrder());
-         u[k]->range(ibeg, iend);
-         umax = u[k]->amax();
-         dtmin = MIN(dtmin, drmin / (pmax*pmax*umax));
-       }
-       u[k]->range_reset();
-     }
+   // Compute Cv:
+   utmp_[1] =           1.0;  
+   utmp_[1] -= (*u[GDIM+1]);     // running total 1- Sum_k q_k
+   utmp_[0] = (*u[GDIM+1])*CVV;  // Cv = Cvv * q_vapor
+   for ( auto k=GDIM+3; k<traits_.nlsector+1; k++ ) { // vapor & liquids
+     *utmp_[1] -= *u[k];         // subtract in ql_k
+     *utmp_[0] += (*u[k]) * CVL; // add in Cvl * ql_k
    }
-   else {             // nonlinear advection
-     for ( auto k=0; k<u.size(); k++ ) { // each advecting u
-       for ( auto e=0; e<gelems->size(); e++ ) { // for each element
-         ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
-         gbasis = &(*gelems)[e]->gbasis();
-         pmax = 0;
-         for ( auto j=0; j<gbasis->size(); j++ ) MAX(pmax, (*gbasis)[j]->getOrder());
-         u[k]->range(ibeg, iend);
-         umax = u[k]->amax();
-         dtmin = MIN(dtmin, drmin / (pmax*pmax*umax));
-       }
-       u[k]->range_reset();
-     }
+   for ( auto k=GDIM+3+traits_.nlsector; k<traits_.nisector; k++ ) { // ice
+     *utmp_[1] -= *u[k];         // subtract in qi_k
+     *utmp_[0] += (*u[k]) * CVI; // add in Cvi * qi_k
+   }
+   // After subtracting q_i, final result is qd=q_dry, so:
+   *utmp_[0] += (*utmp_[1])*CVD; // Final Cv += Cvd * qd
+
+   // Compute v^2:
+   *utmp[1] = *u[0]; utmp[0]->rpow(2);
+   for ( auto k=1; k<u.size(); k++ ) { // each advecting v 
+     *utmp[2] = *u[k]; utmp[2]->rpow(2);
+     *utmp[1] += (*utmp[2]);           // v^2 += v_k^2
+   }
+  
+   // Compute sound speed: c^2 = p/rho_dry; p ~ Rd e / Cv,
+   *utmp[2]  = (*u[GDIM]);   // utmp = e
+   *utmp[2] /= *utmp[0];     // e / Cv
+   *utmp[2] *= RD;           // c^2 = Rd e / Cv
+   *utmp[2] += *utmp[1];     // v^2 + c^2
+   GMTK::maxbyelem<GFTYPE>(*grid_, *utmp[2], maxbyelem_);
+   
+   // Note: maxbyelem_ is an array with the max of v^2 + c^2 
+   //       on each element
+
+   // Find estimate of smallest dt on this task:
+   for ( auto e=1; e<dxmin_.size(); e++ ) { // check each element
+     dt1 = dxmin_[e] / maxbyelem_[e]; // this dt^2
+     dtmin = MIN(dtmin, sqrt(dt1)); 
    }
 
+   // Find minimum dt over all tasks:
    GComm::Allreduce(&dtmin, &dt1, 1, T2GCDatatype<GFTYPE>() , GC_OP_MIN, comm_);
 
    // Limit any timestep-to-timestep increae to 10%:
-   dt = MIN(dt1*courant_, 1.1*dt);
+   dt = MIN(dt1*traits_.courant, 1.1*dt);
 
 } // end of method dt_impl
 
@@ -227,7 +222,7 @@ void GMConv<TypePack>::dt_impl(const Time &t, State &u, Time &dt)
 template<typename TypePack>
 void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,  const State &ub, const Time &dt, Derivative &dudt)
 {
-  assert(!bconserved_ &&
+  assert(!traits_.bconserved &&
          "conservation not yet supported"); 
 
   GString serr = "GMConv<TypePack>::dudt_impl: ";
@@ -245,7 +240,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
       ghelm_->opVec_prod(*u[k], uoptmp_, *urhstmp_[0]); // apply diffusion
      *urhstmp_[0] *= -1.0; // weak Lap op is neg on RHS
       gimass_->opVec_prod(*urhstmp_[0], uoptmp_, *dudt[k]); // apply M^-1
-      if ( bforced_ && uf[k] != NULLPTR ) *dudt[k] += *uf[k];
+      if ( traits_.bforced && uf[k] != NULLPTR ) *dudt[k] += *uf[k];
     }
     return;
   }
@@ -266,7 +261,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
     ghelm_->opVec_prod(*u[0], uoptmp_, *urhstmp_[0]);  // apply diffusion
     GMTK::saxpby<GFTYPE>(*urhstmp_[0], -1.0, *dudt[0], -1.0);
     gimass_->opVec_prod(*urhstmp_[0], uoptmp_, *dudt[0]); // apply M^-1
-    if ( bforced_ && uf[0] != NULLPTR ) *dudt[0] += *uf[0];
+    if ( traits_.bforced && uf[0] != NULLPTR ) *dudt[0] += *uf[0];
   }
   else {             // nonlinear advection
     for ( auto k=0; k<GDIM; k++ ) {
@@ -274,7 +269,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
       ghelm_->opVec_prod(*u[k], uoptmp_, *urhstmp_[0]); // apply diffusion
       GMTK::saxpby<GFTYPE>(*urhstmp_[0], -1.0, *dudt[k], -1.0);
       gimass_->opVec_prod(*urhstmp_[0], uoptmp_, *dudt[k]); // apply M^-1
-      if ( bforced_ && uf[k] != NULLPTR ) *dudt[k] += *uf[k];
+      if ( traits_.bforced && uf[k] != NULLPTR ) *dudt[k] += *uf[k];
     }
   }
   
@@ -324,7 +319,7 @@ void GMConv<TypePack>::step_impl(const Time &t, State &uin, State &uf, State &ub
     for ( auto j=0; j<uin.size(); j++ ) uevolve_ [j] = uin[j];
   }
 
-  switch ( isteptype_ ) {
+  switch ( traits_.isteptype ) {
     case GSTEPPER_EXRK:
       for ( auto j=0; j<uold_.size(); j++ ) *uold_[j] = *uevolve_[j];
       step_exrk(t, uold_, uf, ub, dt, uevolve_);
@@ -427,50 +422,73 @@ void GMConv<TypePack>::step_exrk(const Time &t, State &uin, State &uf, State &ub
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::init(GMConv::Traits &traits)
+void GMConv<TypePack>::init()
 {
   GString serr = "GMConv<TypePack>::init: ";
 
   GBOOL      bmultilevel = FALSE;
-  GSIZET     n, nsolve = bpureadv_ || doheat_ ? 1 : GDIM;
+  GSIZET     n;
   GSIZET     nc = grid_->gtype() == GE_2DEMBEDDED ? 3 : GDIM;
   GINT       nop;
   CompDesc *icomptype = &this->stateinfo().icomptype;
 
-  if ( !bpureadv_ &&  !doheat_ ) {
-    nsolve = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
+  // Check if specified stepper type is valid:
+  GBOOL  bfound;
+  GSIZET itype;
+  valid_types_.resize(1);
+  valid_types_[0] = "GSTEPPER_EXRK";
+/*
+  valid_types_[1] = "GSTEPPER_BDFAB";
+  valid_types_[2] = "GSTEPPER_BDFEXT";
+*/
+  bfound = valid_types_.contains(traits_.ssteptype, itype);
+  traits_.isteptype = static_cast<GStepperType>(itype);
+  assert( bfound && "Invalid stepping method specified");
+
+  // Set dissipation from traits. Note that
+  // this is set to be constant, based on configuration,
+  // even though the solver can accommodate spatially
+  // variable dissipation:
+  nu_.resize(1);
+  nu_ = traits_.nu;
+
+  // Find no. state and solve members, and component types:
+  for( auto j=0; j<GDIM; j++ ) icomptype->push_back(GSC_KINETIC); 
+  icomptype->push_back(GSC_TOTDENSITY); 
+  icomptype->push_back(GSC_INTENERGY); 
+  if ( traits_.dodry  {
+    traits_.nsolve = GDIM + 2;
+    traits_.nstate = traits_.nsolve;
+  }
+  else {
+    n = traits_.nlsector + traits_.nisector;
+    traits_.nsolve = GDIM + 2 + n;
+    traits_.nstate = traits_.nsolve;
+    for( auto j=0; j<traits_.nlsector; j++ ) icomptype->push_back(GSC_LIQDENSITY); 
+    for( auto j=0; j<traits_.nisector; j++ ) icomptype->push_back(GSC_ICEDENSITY); 
+    if traits_.dofallout ) { // include terminal velocities:
+      traits_.nstate += 
+                     traits_.nlsector + traits_.nisector;
+    for( auto j=0; j<n; j++ ) icomptype->push_back(GSC_PRESCRIBED); 
+    }
   }
 
   // Find multistep/multistage time stepping coefficients:
   GMultilevel_coeffs_base<GFTYPE> *tcoeff_obj=NULLPTR; // time deriv coeffs
   GMultilevel_coeffs_base<GFTYPE> *acoeff_obj=NULLPTR; // adv op. coeffs
 
-  // If doing pure advection, set advection 
-  // components from input state vector, so
-  // allocate size:
-  uevolve_.resize(nsolve); // state var to evolve
-  if ( bpureadv_ || doheat_ ) {
-    c_.resize(nc);    // adevective vel components
-    icomptype->push_back(GSC_KINETIC); // 1st comp is the solved-for field
-    if ( bpureadv_ ) { // remaining fields are adv vel--not solved for
-      for( GSIZET j=0; j<nc; j++ ) icomptype->push_back(GSC_PRESCRIBED); 
-    }
-  }
-  else { // all fields represent kinetic components:
-    for( GSIZET j=0; j<nsolve; j++ ) icomptype->push_back(GSC_KINETIC);
-  }
 
   std::function<void(const Time &t,                    // RHS callback function
                      const State  &uin,
                      const State  &uf,
                      const State  &ub,
-                     const Time &dt,
+                     const Time   &dt,
                      State &dudt)> rhs
                   = [this](const Time &t,           
                      const State  &uin, 
                      const State  &uf, 
                      const State  &ub, 
-                     const Time &dt,
+                     const Time   &dt,
                      State &dudt){dudt_impl(t, uin, uf, ub, dt, dudt);}; 
 
   std::function<void(const Time &t,                    // Bdy apply callback function
@@ -480,43 +498,45 @@ void GMConv<TypePack>::init(GMConv::Traits &traits)
                      State  &uin, 
                      State &ub){apply_bc_impl(t, uin, ub);}; 
 
-  switch ( isteptype_ ) {
+  // Configure time stepping:
+  switch ( traits_.isteptype ) {
     case GSTEPPER_EXRK:
-      gexrk_ = new GExRKStepper<GFTYPE>(*grid_, itorder_);
+      gexrk_ = new GExRKStepper<GFTYPE>(*grid_, traits_.itorder);
       gexrk_->setRHSfunction(rhs);
       gexrk_->set_apply_bdy_callback(applybc);
       gexrk_->set_ggfx(ggfx_);
       // Set 'helper' tmp arrays from main one, utmp_, so that
       // we're sure there's no overlap:
-      uold_   .resize(nsolve); // solution at time level n
-      urktmp_ .resize(nsolve*(itorder_+1)+1); // RK stepping work space
+      uold_   .resize(traits_.nsolve); // solution at time level n
+      urktmp_ .resize(traits_.nsolve*(traits_.itorder+1)+1); // RK stepping work space
       urhstmp_.resize(1); // work space for RHS
       nop = utmp_.size()-uold_.size()-urktmp_.size()-urhstmp_.size();
       assert(nop > 0 && "Invalid operation tmp array specification");
       uoptmp_ .resize(nop); // RHS operator work space
       // Make sure there is no overlap between tmp arrays:
       n = 0;
-      for ( GSIZET j=0; j<nsolve         ; j++, n++ ) uold_   [j] = utmp_[n];
+      for ( GSIZET j=0; j<traits_.nsolve ; j++, n++ ) uold_   [j] = utmp_[n];
       for ( GSIZET j=0; j<urktmp_ .size(); j++, n++ ) urktmp_ [j] = utmp_[n];
       for ( GSIZET j=0; j<urhstmp_.size(); j++, n++ ) urhstmp_[j] = utmp_[n];
       for ( GSIZET j=0; j<uoptmp_ .size(); j++, n++ ) uoptmp_ [j] = utmp_[n];
       break;
+/*
     case GSTEPPER_BDFAB:
-      dthist_.resize(MAX(itorder_,inorder_));
-      tcoeff_obj = new G_BDF<GFTYPE>(itorder_, dthist_);
-      acoeff_obj = new G_AB<GFTYPE> (inorder_, dthist_);
+      dthist_.resize(MAX(traits_.itorder,traits_.inorder));
+      tcoeff_obj = new G_BDF<GFTYPE>(traits_.itorder, dthist_);
+      acoeff_obj = new G_AB<GFTYPE> (traits_.inorder, dthist_);
       tcoeffs_.resize(tcoeff_obj->getCoeffs().size());
       acoeffs_.resize(acoeff_obj->getCoeffs().size());
       tcoeffs_ = tcoeff_obj->getCoeffs(); 
       acoeffs_ = acoeff_obj->getCoeffs();
-      uold_   .resize(nsolve); // solution at time level n
-      for ( GSIZET j=0; j<nsolve; j++ ) uold_[j] = utmp_[j];
+      uold_   .resize(traits_.nsolve); // solution at time level n
+      for ( GSIZET j=0; j<traits_.nsolve; j++ ) uold_[j] = utmp_[j];
       bmultilevel = TRUE;
       break;
     case GSTEPPER_BDFEXT:
-      dthist_.resize(MAX(itorder_,inorder_));
-      tcoeff_obj = new G_BDF<GFTYPE>(itorder_, dthist_);
-      acoeff_obj = new G_EXT<GFTYPE>(inorder_, dthist_);
+      dthist_.resize(MAX(traits_.itorder,traits_.inorder));
+      tcoeff_obj = new G_BDF<GFTYPE>(traits_.itorder, dthist_);
+      acoeff_obj = new G_EXT<GFTYPE>(traits_.inorder, dthist_);
       tcoeffs_.resize(tcoeff_obj->getCoeffs().size());
       acoeffs_.resize(acoeff_obj->getCoeffs().size());
       tcoeffs_ = tcoeff_obj->getCoeffs(); 
@@ -525,6 +545,7 @@ void GMConv<TypePack>::init(GMConv::Traits &traits)
       for ( GSIZET j=0; j<utmp_.size(); j++ ) urhstmp_[j] = utmp_[j];
       bmultilevel = TRUE;
       break;
+*/
     default:
       assert(FALSE && "Invalid stepper type");
   }
@@ -538,17 +559,17 @@ void GMConv<TypePack>::init(GMConv::Traits &traits)
   ghelm_->set_Lap_scalar(nu_);
 
   
-  if ( isteptype_ ==  GSTEPPER_EXRK ) {
+  if ( traits_.isteptype ==  GSTEPPER_EXRK ) {
     gimass_ = new GMass(*grid_, TRUE); // create inverse of mass
   }
 
   // If doing semi-implicit time stepping; handle viscous term 
   // (linear) inplicitly, which implies using full Helmholtz operator:
-  if ( isteptype_ == GSTEPPER_BDFAB || isteptype_ == GSTEPPER_BDFEXT ) {
+  if ( traits_.isteptype == GSTEPPER_BDFAB || traits_.isteptype == GSTEPPER_BDFEXT ) {
     assert(FALSE && "Implicit time stepping not yet supported");
   }
 
-  if ( bconserved_ && !doheat_ ) {
+  if ( traits_.bconserved && !doheat_ ) {
     assert(FALSE && "Conservation not yet supported");
     gpdv_  = new GpdV(*grid_,*gmass_);
 //  gflux_ = new GFlux(*grid_);
@@ -556,7 +577,7 @@ void GMConv<TypePack>::init(GMConv::Traits &traits)
           && ghelm_   != NULLPTR
           && gpdv_    != NULLPTR) && "1 or more operators undefined");
   }
-  if ( !bconserved_ && !doheat_ ) {
+  if ( !traits_.bconserved && !doheat_ ) {
     gadvect_ = new GAdvect(*grid_);
     assert( (gmass_   != NULLPTR
           && ghelm_   != NULLPTR
@@ -566,12 +587,17 @@ void GMConv<TypePack>::init(GMConv::Traits &traits)
   // If doing a multi-step method, instantiate (deep) space for 
   // required time levels for state:
   if ( bmultilevel ) {
-    ukeep_ .resize(itorder_);
-    for ( auto i=0; i<itorder_-1; i++ ) { // for each time level
-      ukeep_[i].resize(nsolve);
-      for ( auto j=0; j<nsolve; j++ ) ukeep_[i][j] = new GTVector<GFTYPE>(grid_->ndof());
+    ukeep_ .resize(traits_.itorder);
+    for ( auto i=0; i<traits_.itorder-1; i++ ) { // for each time level
+      ukeep_[i].resize(traits_.nsolve);
+      for ( auto j=0; j<traits_.nsolve; j++ ) ukeep_[i][j] = new GTVector<GFTYPE>(grid_->ndof());
     }
   }
+
+  // Find minimum element edge/face lengths for 
+  // timestep computation:
+  maxbyelem_.resize(grid_->nelems());
+  ggrid_->minlength(&dxmin_);
 
 } // end of method init
 
@@ -593,8 +619,8 @@ void GMConv<TypePack>::cycle_keep(State &u)
   //   ukeep[0] <--> time level n (most recent)
   //   ukeep[1] <--> time level n-1
   //   ukeep[2] <--> time level n-2 ...
-  ukeep_ .resize(itorder_);
-  for ( auto i=itorder_-1; i>=1; i-- ) ukeep_[i] = ukeep_[i+1];
+  ukeep_ .resize(traits_.itorder);
+  for ( auto i=traits_.itorder-1; i>=1; i-- ) ukeep_[i] = ukeep_[i+1];
   ukeep_[0] = u;
 
 } // end of method cycle_keep
@@ -712,14 +738,11 @@ template<typename TypePack>
 GINT GMConv<TypePack>::req_tmp_size()
 {
   GINT isize = 0;
-  GINT nstate = 0;
  
   isize  = 2*GDIM + 3;
-  nstate = GDIM;
-  if ( doheat_ || bpureadv_ ) nstate = 1;
 
-  if ( isteptype_ == GSTEPPER_EXRK ) {
-    isize += nstate * itorder_; 
+  if ( traits_.isteptype == GSTEPPER_EXRK ) {
+    isize += traits_.nstate * traits_.itorder; 
   }
 
   return isize;
