@@ -15,34 +15,65 @@
 #include "gnbasis.hpp"
 #include "ggrid.hpp"
 #include "gmass.hpp"
+#include "gtmatrix.hpp"
+#include "gmtk.hpp"
 
-class GpdV
+
+template<typename TypePack>
+classGpdv 
 {
+public:
+        using Interface  = EquationBase<TypePack>;
+        using Base       = Interface;
+        using State      = typename Interface::State;
+        using StateComp  = typename Interface::StateComp;
+        using Grid       = typename Interface::Grid;
+        using Mass       = typename Interface::Mass;
+        using Value      = typename Interface::Value;
+        using Derivative = typename Interface::Derivative;
+        using Time       = typename Interface::Time;
+        using CompDesc   = typename Interface::CompDesc;
+        using Jacobian   = typename Interface::Jacobian;
+        using Size       = typename Interface::Size;
+
+        static_assert(std::is_same<State,GTVector<GTVector<Value>*>>::value,
+               "State is of incorrect type");
+        static_assert(std::is_same<StateComp,GTVector<Value>::value,
+               "StateComp is of incorrect type");
+        static_assert(std::is_same<Derivative,GTVector<GTVector<Value>*>>::value,
+               "Derivative is of incorrect type");
+        static_assert(std::is_same<Grid,GGrid>::value,
+               "Grid is of incorrect type");
 
 public:
 
-                          GpdV(GGrid &grid, GMass &massop);
+                          GpdV(Grid &grid, Mass &massop);
                           GpdV(const GpdV &);
                          ~GpdV();
 
-        void              apply(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &utmp, GTVector<GTVector<GFTYPE>*> &u, 
-                                GTVector<GFTYPE> &po);                       // Operator-field evaluation
+        void              apply(StateComp &p, State &u, State  &utmp, 
+                                StateComp &po);                              // Operator-field evaluation
         void              init();                                            // must call after all 'sets'
 
 private:
         void              def_init();
         void              reg_init();
-        void              def_prod(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &utmp, GTVector<GTVector<GFTYPE>*> &u, 
-                                   GTVector<GFTYPE> &po);
-        void              reg_prod(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &utmp,  GTVector<GTVector<GFTYPE>*> &u, 
-                                   GTVector<GFTYPE> &po);
+        void              def_prod(StateComp &p State &u, State *utmp,
+                                   StateComp &po);
+        void              reg_prod(StateComp &p, State &u,  State &utmp, 
+                                   StateComp &po);
 
-        GBOOL                         bInitialized_;
-        GTVector<GFTYPE>              etmp1_;  // elem-based (non-global) tmp vector
-        GTVector<GTVector<GFTYPE>*>   G_;      // metric components
-        GMass                        *massop_; // mass matrix, required
-        GGrid                        *grid_;   // grid set on construction
+        GBOOL                        bInitialized_;
+        StateComp                    etmp1_;  // elem-based (non-global) tmp vector
+        State                        G_;      // metric components
+        Mass                         *massop_; // mass matrix, required
+        Grid                         *grid_;   // grid set on construction
 
 
 };
+
+
+#include "gpdV.ipp"
+
+
 #endif

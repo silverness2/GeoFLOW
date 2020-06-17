@@ -1,5 +1,5 @@
 //==================================================================================
-// Module       : gpdv.hpp
+// Module       : gpdv.ipp
 // Date         : 11/11/18 (DLR)
 // Description  : Represents the SEM discretization of the 'pdV' operator:
 //                p Div u. This is a nonlinear operator, so should not derive 
@@ -9,14 +9,6 @@
 // Derived From : GLinOp
 //==================================================================================
 
-#include <cstdlib>
-#include <memory>
-#include <cmath>
-#include "gpdv.hpp"
-#include "gtmatrix.hpp"
-#include "gmtk.hpp"
-
-
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : Constructor method (1)
@@ -24,7 +16,8 @@
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
-GpdV::GpdV(GGrid &grid, GMass &massop)
+template<typename TypePack>
+gpdV<TypePack>::GpdV(GGrid &grid, Mass &massop)
 :
 bInitialized_   (FALSE),
 grid_           (&grid),
@@ -40,7 +33,8 @@ massop_       (&massop)
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
-GpdV::~GpdV()
+template<typename TypePack>
+gpdV<TypePack>::~GpdV()
 {
 } // end, destructor
 
@@ -57,7 +51,8 @@ GpdV::~GpdV()
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GpdV::apply(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, GTVector<GTVector<GFTYPE>*> &utmp, GTVector<GFTYPE> &po) 
+template<typename TypePack>
+void gpdV<TypePack>::apply(StateComp &p, State &u, State &utmp, StateComp &po) 
 {
   assert(bInitialized_ && "Operator not initialized");
     
@@ -84,7 +79,8 @@ void GpdV::apply(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, GTVector<G
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GpdV::def_prod(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, GTVector<GTVector<GFTYPE>*> &utmp, GTVector<GFTYPE> &po) 
+template<typename TypePack>
+void gpdV<TypePack>::def_prod(StateComp &p, State &u, State &utmp, StateComp &po) 
 {
   assert( utmp.size() >= GDIM+1
        && "Insufficient temp space specified");
@@ -101,7 +97,7 @@ void GpdV::def_prod(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, GTVecto
 
   // Compute po += Gj (D^j u_j): 
   po = 0.0;
-  for ( GSIZET j=0; j<GDIM; j++ ) { 
+  for ( auto j=0; j<GDIM; j++ ) { 
     GMTK::compute_grefdiv(*grid_, u, etmp1_, FALSE, *utmp[0]); 
     utmp[0]->pointProd(*G_[j],*utmp[1]); // Gj * du^j. Mass included in Gj
     po += *utmp[1];
@@ -126,7 +122,8 @@ void GpdV::def_prod(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, GTVecto
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GpdV::reg_prod(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, GTVector<GTVector<GFTYPE>*> &utmp, GTVector<GFTYPE> &po) 
+template<typename TypePack>
+void gpdV<TypePack>::reg_prod(StateComp &p, State &u, State &utmp, StateComp &po) 
 {
 
   assert( utmp.size() >= GDIM+1
@@ -149,7 +146,7 @@ void GpdV::reg_prod(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, GTVecto
 
   // Compute po += Gj (D^j u_j): 
   po = 0.0;
-  for ( GSIZET j=0; j<GDIM; j++ ) { 
+  for ( auto j=0; j<GDIM; j++ ) { 
     GMTK::compute_grefdiv(*grid_, u, etmp1_, FALSE, *utmp[0]); 
     *utmp[0] *= (*G_[j])[0]; // remember, mass not included in G here
     po += *utmp[0];
@@ -172,7 +169,7 @@ void GpdV::reg_prod(GTVector<GFTYPE> &p, GTVector<GTVector<GFTYPE>*> &u, GTVecto
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
-void GpdV::init()
+void gpdV<TypePack>::init()
 {
   assert(grid_->ntype().multiplicity(0) == GE_MAX-1 
         && "Only a single element type allowed on grid");
@@ -197,7 +194,8 @@ void GpdV::init()
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
-void GpdV::def_init()
+template<typename TypePack>
+void gpdV<TypePack>::def_init()
 {
 
   if ( grid_->itype(GE_2DEMBEDDED).size() == 0 
@@ -205,9 +203,9 @@ void GpdV::def_init()
 
 
   GTVector<GSIZET>             N(GDIM);
-  GTMatrix<GTVector<GFTYPE>>  *dXidX;    // element-based dXi/dX matrix
-  GTVector<GTVector<GFTYPE>*>  W(GDIM);  // element-based weights
-  GTVector<GFTYPE>            *Jac;      // element-based Jacobian
+  GTMatrix<StateComp>  *dXidX;    // element-based dXi/dX matrix
+  GTVector<StateComp*>  W(GDIM);  // element-based weights
+  StateComp            *Jac;      // element-based Jacobian
   GElemList                   *gelems = &grid_->elems();
 
   // Compute 'metric' components:
@@ -216,8 +214,8 @@ void GpdV::def_init()
   GSIZET ibeg, iend; // beg, end indices for global array
   G_ .resize(nxy);
   G_ = NULLPTR;
-  for ( GSIZET j=0; j<nxy; j++ ) {
-    G_ [j] = new GTVector<GFTYPE>(grid_->ndof());
+  for ( auto j=0; j<nxy; j++ ) {
+    G_ [j] = new StateComp(grid_->ndof());
   }
 
   Jac = &grid_->Jac();
@@ -225,25 +223,25 @@ void GpdV::def_init()
 
 
   // Cycle through all elements; fill metric elements
-  for ( GSIZET e=0; e<grid_->elems().size(); e++ ) {
+  for ( auto e=0; e<grid_->elems().size(); e++ ) {
     if ( (*gelems)[e]->elemtype() != GE_DEFORMED 
       && (*gelems)[e]->elemtype() != GE_2DEMBEDDED ) continue;
 
     ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
-    for ( GSIZET j=0; j<GDIM; j++ ) {
+    for ( auto j=0; j<GDIM; j++ ) {
       W[j]= (*gelems)[e]->gbasis(j)->getWeights();
       N[j]= (*gelems)[e]->size(j);
     }
     Jac->range(ibeg, iend);
-    for ( GSIZET j=0; j<nxy; j++ )
-      for ( GSIZET i=0; i<nxy; i++ ) (*dXidX)(i,j).range(ibeg, iend);
+    for ( auto j=0; j<nxy; j++ )
+      for ( auto i=0; i<nxy; i++ ) (*dXidX)(i,j).range(ibeg, iend);
 
 #if defined(_G_IS2D)
 
-    for ( GSIZET j=0; j<nxy; j++ ) { // G vector element 
+    for ( auto j=0; j<nxy; j++ ) { // G vector element 
       (*G_[j]).range(ibeg, iend); // restrict global vec to local range
-      for ( GSIZET m=0, n=0; m<N[1]; m++ ) {
-        for ( GSIZET l=0; l<N[0]; l++,n++ ) {
+      for ( auto m=0, n=0; m<N[1]; m++ ) {
+        for ( auto l=0; l<N[0]; l++,n++ ) {
           (*G_[j])[n] = (*dXidX)(j,j)[n] 
                       * (*W[0])[l] * (*W[1])[m] * (*Jac)[n];
         }
@@ -253,11 +251,11 @@ void GpdV::def_init()
 
 #else
 
-    for ( GSIZET j=0; j<nxy; j++ ) { // G vector element 
+    for ( auto j=0; j<nxy; j++ ) { // G vector element 
       (*G_[j]).range(ibeg, iend); // restrict global vec to local range
-        for ( GSIZET p=0, n=0; p<N[2]; p++ ) {
-          for ( GSIZET m=0; m<N[1]; m++ ) {
-            for ( GSIZET l=0; l<N[0]; l++,n++ ) {
+        for ( auto p=0, n=0; p<N[2]; p++ ) {
+          for ( auto m=0; m<N[1]; m++ ) {
+            for ( auto l=0; l<N[0]; l++,n++ ) {
               (*G_[j])[n] = (*dXidX)(j,j)[n] 
                           * (*W[0])[l] * (*W[1])[m] * (*W[2])[p] * (*Jac)[n];
             }
@@ -271,8 +269,8 @@ void GpdV::def_init()
 
   // Reset ranges to global scope:
   Jac->range_reset();
-  for ( GSIZET j=0; j<nxy; j++ )
-    for ( GSIZET i=0; i<nxy; i++ ) (*dXidX)(i,j).range_reset();
+  for ( auto j=0; j<nxy; j++ )
+    for ( auto i=0; i<nxy; i++ ) (*dXidX)(i,j).range_reset();
 
 
 } // end of method def_init
@@ -286,14 +284,15 @@ void GpdV::def_init()
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
-void GpdV::reg_init()
+template<typename TypePack>
+void gpdV<TypePack>::reg_init()
 {
   if ( grid_->itype(GE_REGULAR).size() <= 0 ) return; 
 
 
   GTVector<GSIZET>             N(GDIM);
-  GTMatrix<GTVector<GFTYPE>>  *dXidX;    // element-based dXi/dX matrix
-  GTVector<GFTYPE>            *Jac;      // element-based Jacobian
+  GTMatrix<StateComp>  *dXidX;    // element-based dXi/dX matrix
+  StateComp            *Jac;      // element-based Jacobian
   GElemList                   *gelems = &grid_->elems();
 
   // Compute 'metric' components:
@@ -322,16 +321,16 @@ void GpdV::reg_init()
   GSIZET ibeg, iend; // beg, end indices for global array
   G_ .resize(nxy);
   G_ = NULLPTR;
-  for ( GSIZET j=0; j<nxy; j++ ) {
-    G_ [j] = new GTVector<GFTYPE>(grid_->ndof());
+  for ( auto j=0; j<nxy; j++ ) {
+    G_ [j] = new StateComp(grid_->ndof());
   }
 
 
   // Cycle through all elements; fill metric elements
-  for ( GSIZET e=0; e<grid_->elems().size(); e++ ) {
+  for ( auto e=0; e<grid_->elems().size(); e++ ) {
     if ( (*gelems)[e]->elemtype() != GE_REGULAR ) continue;
 
-    for ( GSIZET j=0; j<GDIM; j++ ) {
+    for ( auto j=0; j<GDIM; j++ ) {
      *G_[j] = (*dXidX)(j,0);
       G_[j]->pointProd(*Jac);
     }
