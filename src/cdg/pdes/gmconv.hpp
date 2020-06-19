@@ -76,6 +76,7 @@ public:
         using Interface  = EquationBase<TypePack>;
         using Base       = Interface;
         using State      = typename Interface::State;
+        using StateComp  = typename Interface::StateComp;
         using Grid       = typename Interface::Grid;
         using Value      = typename Interface::Value;
         using Derivative = typename Interface::Derivative;
@@ -86,6 +87,8 @@ public:
 
         static_assert(std::is_same<State,GTVector<GTVector<GFTYPE>*>>::value,
                "State is of incorrect type");
+        static_assert(std::is_same<StateComp,GTVector<GFTYPE>>::value,
+               "StatCompe is of incorrect type");
         static_assert(std::is_same<Derivative,GTVector<GTVector<GFTYPE>*>>::value,
                "Derivative is of incorrect type");
         static_assert(std::is_same<Grid,GGrid>::value,
@@ -93,32 +96,34 @@ public:
 
         // MConv solver traits:
         struct Traits {
-          GBOOL          dodry       = TRUE;
-          GBOOL          dofallout   = FALSE;
-          GBOOL          bconserved  = FALSE;
-          GBOOL          bforced     = FALSE;
-          GBOOL          variabledt  = FALSE;
-          GINT           nstate      = GDIM+2; // no. vars in state vec
-          GINT           nsolve      = GDIM+2; // no. vars to solve for
-          GINT           nlsector    = 0;      // no. vars in liq-sector
-          GINT           nisector    = 0;      // no. vars in ice-sector
-          GINT           ntmp        = 8;
-          GINT           itorder     = 2;
-          GINT           inorder     = 2;
-          GStepperType   isteptype   = GSTEPPER_EXRK;
-          GFTYPE         courant     = 0.5;
-          GFTYPE         nu          = 0.0;
-          GTVector<GINT> iforced;
-          GString        ssteptype;
+          GBOOL           dodry       = TRUE;   // do dry dynamics?
+          GBOOL           docoriolis  = FALSE;  // use Coriolis force?
+          GBOOL           dofallout   = FALSE;  // allow precip fallout?
+          GBOOL           bconserved  = FALSE;  // use conserved form?
+          GBOOL           bforced     = FALSE;  // use forcing?
+          GBOOL           variabledt  = FALSE;  // use variable timestep?
+          GINT            nstate      = GDIM+2; // no. vars in state vec
+          GINT            nsolve      = GDIM+2; // no. vars to solve for
+          GINT            nlsector    = 0;      // no. vars in liq-sector
+          GINT            nisector    = 0;      // no. vars in ice-sector
+          GINT            ntmp        = 8;
+          GINT            itorder     = 2;
+          GINT            inorder     = 2;
+          GStepperType    isteptype   = GSTEPPER_EXRK;
+          GFTYPE          courant     = 0.5;    // Courant factor
+          GFTYPE          nu          = 0.0;    // viscosity constant
+          GTVector<GINT>  iforced;              // state comps to foce
+          GTVector<Value> omega;                // rotation rate vector
+          GString         ssteptype;            // stepping method
         };
 
         GMConv() = delete; 
-        GMConv(Grid &grid, GMConv<TypePack>::Traits &traits, GTVector<GTVector<GFTYPE>*> &tmp);
+        GMConv(Grid &grid, GMConv<TypePack>::Traits &traits, State &tmp);
        ~GMConv();
         GMConv(const GMConv &bu) = default;
         GMConv &operator=(const GMConv &bu) = default;
 
-        GTVector<GFTYPE>    &get_nu() { return nu_; };                       // Set nu/viscosity
+        StateComp           &get_nu() { return nu_; };                       // Set nu/viscosity
 
         void                 set_bdy_update_callback(
                              std::function<void(
@@ -164,8 +169,7 @@ private:
         GTVector<GFTYPE>    tcoeffs_;       // coeffs for time deriv
         GTVector<GFTYPE>    acoeffs_;       // coeffs for NL adv term
         GTVector<GFTYPE>    dthist_;        // coeffs for NL adv term
-        GTVector<GTVector<GFTYPE>*>  
-                            uevolve_;       // helper array to specify evolved sstate components
+        State               uevolve_;       // helper array to specify evolved sstate components
         State               utmp_;
         State               uold_;          // helper arrays set from utmp
         State               urhstmp_;       // helper arrays set from utmp

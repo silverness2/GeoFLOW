@@ -64,7 +64,7 @@ using namespace std;
 // RETURNS: none
 //**********************************************************************************
 template<typename TypePack>
-GMConv<TypePack>::GMConv(Grid &grid, GMConv<TypePack>::Traits &traits, GTVector<GTVector<GFTYPE>*> &tmp) :
+GMConv<TypePack>::GMConv(Grid &grid, GMConv<TypePack>::Traits &traits, State &tmp) :
 EquationBase<TypePack>(),
 bupdatebc_               (FALSE),
 bsteptop_                (FALSE),
@@ -85,8 +85,6 @@ steptop_callback_      (NULLPTR)
 
   GridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
 
-  static_assert(std::is_same<State,GTVector<GTVector<GFTYPE>*>>::value,
-                "State is of incorrect type"); 
   assert(tmp.size() >= req_tmp_size() && "Insufficient tmp space provided");
   assert(!(GDIM==2 && icos!=NULLPTR && 2D spherical grid not allowed");
 
@@ -206,17 +204,12 @@ void GMConv<TypePack>::dt_impl(const Time &t, State &u, Time &dt)
 //**********************************************************************************
 // METHOD : dudt_impl
 // DESC   : Compute RHS for explicit schemes
-// ARGS   : t  : time
-//          u  : state. If doing full nonlinear problem, the
-//               u[0] = u[1] = u[2] are nonlinear fields.
-//               If doing pure advection, only the first
-//               element is the field being advected; the
-//               remainder of the State elements are the 
-//               (linear) velocity components that are not
-//               updated.
-//          uf : forcing tendency state vector
-//          ub : bdy state vector
-//          dt : time step
+// ARGS   : t   : time
+//          u   : state. 
+//          uf  : forcing tendency state vector
+//          ub  : bdy state vector
+//          dt  : time step
+//          dudt: accelerations, returned
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
@@ -225,52 +218,49 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   assert(!traits_.bconserved &&
          "conservation not yet supported"); 
 
+  GINT    ibeg, , nmfrac;
   GString serr = "GMConv<TypePack>::dudt_impl: ";
 
   // NOTE:
   // Make sure that, in init(), Helmholtz op is using only
-  // weak Laplacian (q * mass isn't being used), or there will 
+  // weak Laplacian (q * mass term isn't being used), or there will 
   // be problems. This is required for explicit schemes, for
   // which this method is called.
-  // Do heat equation RHS:
-  //     du/dt = nu nabla^2 u -->
-  //     du/dt = -nu L u (in descrete form) 
-  if ( doheat_ ) {
-    for ( auto k=0; k<u.size(); k++ ) {
-      ghelm_->opVec_prod(*u[k], uoptmp_, *urhstmp_[0]); // apply diffusion
-     *urhstmp_[0] *= -1.0; // weak Lap op is neg on RHS
-      gimass_->opVec_prod(*urhstmp_[0], uoptmp_, *dudt[k]); // apply M^-1
-      if ( traits_.bforced && uf[k] != NULLPTR ) *dudt[k] += *uf[k];
-    }
-    return;
-  }
 
-  // Do linear/nonlinear advection + dissipation RHS:
+  assert( !traits_.bsonserved ); // don't allow conservative form yet
+
+  nmfrac = traits_.dodry ? 0 : traits_.nlsector + traits_.nisector + 1;
 
   // If non-conservative, compute RHS from:
   //     du/dt = -c(u).Grad u + nu nabla^2 u 
   // for each u, where c may be indep of u (pure advection):
 
-  if ( bpureadv_ ) { // pure linear advection
-    // Remember: adv. velocity, c_ should already be set in
-    //           main entry point, step_impl() method:
-    GTimerStart("advection_time");
-    gadvect_->apply   (*u[0], c_ , uoptmp_, *dudt[0]); // apply advection
-    GTimerStop("advection_time");
+  *urhstmp_[0] = *u[GDIM+1]; urhstmp[0]->rpow(-1.0) // 1/total mass
 
-    ghelm_->opVec_prod(*u[0], uoptmp_, *urhstmp_[0]);  // apply diffusion
-    GMTK::saxpby<GFTYPE>(*urhstmp_[0], -1.0, *dudt[0], -1.0);
-    gimass_->opVec_prod(*urhstmp_[0], uoptmp_, *dudt[0]); // apply M^-1
-    if ( traits_.bforced && uf[0] != NULLPTR ) *dudt[0] += *uf[0];
+  // Mass fraction equations. These are:
+  //   d rho_T + Div (rho_T v) = 0, 
+  // for total mass
+  //   d (dhot_T q_v) + Div (rho_T q_v v) = dot(s_v), 
+  // for vapor mass fraction
+  //   d (dhot_T q_i) + Div (rho_T q_i v) = dot(s_i) - , 
+  // for vapor mass fraction
+  // For non-conserved mass fractions, we solve
+  //  df/dt u.Grad f = dot(s)/rho_tot
+  ibeg   = GDIM + 2;
+  for ( auto k=ibeg; k<ibeg+nmfrac; k++ ) {
+    // Multiply mass frac by total den:
+    *urhstmp_[1] = (*u[k]) * (*urhstmp[0]); // rho_T * q_i
+    
   }
-  else {             // nonlinear advection
-    for ( auto k=0; k<GDIM; k++ ) {
-      gadvect_->apply(*u[k], u, uoptmp_, *dudt[k]);     // apply advection
-      ghelm_->opVec_prod(*u[k], uoptmp_, *urhstmp_[0]); // apply diffusion
-      GMTK::saxpby<GFTYPE>(*urhstmp_[0], -1.0, *dudt[k], -1.0);
-      gimass_->opVec_prod(*urhstmp_[0], uoptmp_, *dudt[k]); // apply M^-1
-      if ( traits_.bforced && uf[k] != NULLPTR ) *dudt[k] += *uf[k];
-    }
+  
+  // Energy equation:
+  // Momentum equations:
+  for ( auto k=0; k<GDIM; k++ ) {
+    gadvect_->apply(*u[k], u, uoptmp_, *dudt[k]);     // apply advection
+    ghelm_->opVec_prod(*u[k], uoptmp_, *urhstmp_[0]); // apply diffusion
+    GMTK::saxpby<GFTYPE>(*urhstmp_[0], -1.0, *dudt[k], -1.0);
+    gimass_->opVec_prod(*urhstmp_[0], uoptmp_, *dudt[k]); // apply M^-1
+    if ( traits_.bforced && uf[k] != NULLPTR ) *dudt[k] += *uf[k];
   }
   
 } // end of method dudt_impl
@@ -748,4 +738,146 @@ GINT GMConv<TypePack>::req_tmp_size()
   return isize;
   
 } // end of method req_tmp_size
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : compute_cv
+// DESC   : Copmpute total specific heat at const vol, Cv
+//             Cv = Cvd qd + Cvv qv + Sum_i(Cl_i ql_i) + Sum_j(Ci_j qi_j).
+//          where ql are the liquid mass fractions, and qi are the ice
+//          mass fractions. 
+// ARGS   : u    : state
+//          utmp : tmp vectors; at least 1 required
+//          cv   : cv field
+// RETURNS: none.
+//**********************************************************************************
+template<typename TypePack>
+void GMConv<TypePack>::compute_cv(State &u, State &utmp, StateComp &cv)
+{
+   GString    serr = "GMConv<TypePack>::compute_cv: ";
+   GINT       ibeg;
+
+   // Compute Cv:
+   if ( traits_.dodry ) { // if dry dynamics only
+     utmp[0] = CVD;  
+     return;
+   }
+
+   utmp[0] =           1.0;  
+   utmp[0] -= (*u[GDIM+1]);      // running total 1- Sum_k q_k
+   cv       = (*u[GDIM+1])*CVV;  // Cv = Cvv * q_vapor
+   ibeg = GDIM + 3;
+   for ( auto k=ibeg; k<ibeg+traits_.nlsector+1; k++ ) { // liquids
+     *utmp[0] -= *u[k];         // subtract in ql_k
+     *cv      += (*u[k]) * CVL; // add in Cvl * ql_k
+   }
+   ibeg = GDIM + 3 + traits_.nlsector;;
+   for ( auto k=ibeg; k<ibeg+traits_.nisector; k++ ) { // ices
+     *utmp[0] -= *u[k];         // subtract in qi_k
+     cv       += (*u[k]) * CVI; // add in Cvi * qi_k
+   }
+   // After subtracting q_i, final result is qd=q_dry, so:
+   cv  += (*utmp_[0])*CVD; // Final Cv += Cvd * qd
+
+} // end of method compute_cv
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : compute_qd
+// DESC   : Copmpute dry mass fraction from other mass fractions:
+//             Cv = 1 - Sum_i q_i
+// ARGS   : u    : state
+//          utmp : tmp vectors; at least 1 required
+//          qd   : dry mass fraction field
+// RETURNS: none.
+//**********************************************************************************
+template<typename TypePack>
+void GMConv<TypePack>::compute_qd(State &u, State &utmp, StateComp &qd)
+{
+   GString    serr = "GMConv<TypePack>::compute_qd: ";
+   GINT       ibeg;
+
+   // Compute qd:
+   if ( traits_.dodry ) { // if dry dynamics only
+     qd = 1.0;  
+     return;
+   }
+
+   qd  =           1.0;  
+   qd -= (*u[GDIM+1]);      // running total 1- Sum_k q_k
+   ibeg = GDIM + 3;
+   for ( auto k=ibeg; k<ibeg+traits_.nlsector+1; k++ ) { // liquids
+     qd -= *u[k];         // subtract in ql_k
+   }
+   ibeg = GDIM + 3 + traits_.nlsector;;
+   for ( auto k=ibeg; k<ibeg+traits_.nisector; k++ ) { // ices
+     qd  -= *u[k];         // subtract in qi_k
+   }
+
+} // end of method compute_qd
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : compute_temp
+// DESC   : Copmpute temperature from state
+//             T = eps / Cv = e_s /( rho' * Cv ),
+//          with e_s the sensible internal energy density, 
+//          rho' = total density fluctuations,
+//             Cv = Cvd qd + Cvv qv + Sum_i(Cl_i ql_i) + Sum_j(Ci_j qi_j).
+// ARGS   : u    : state
+//          utmp : tmp vectors; at least 2 required
+//          temp : temperature field
+// RETURNS: none.
+//**********************************************************************************
+template<typename TypePack>
+void GMConv<TypePack>::compute_temp(State &u, State &utmp, StateComp &temp)
+{
+   GString    serr = "GMConv<TypePack>::compute_temp: ";
+   StateComp *cv, *d, *e; 
+
+   // Set int energy and density:
+   e  = u[GDIM];   // sensible internal energy density
+   d  = u[GDIM+1]; // total density fluctuation
+   cv = utmp[1];   // Cv
+
+   // Get Cv:
+   compute_cv(u, utmp, *cv); // utmp[0] only used in call
+
+   // Compute temperature:
+   for ( auto j=0; j<es->size(); j++ ) {
+     temp[j] = (*e)[j] / ( (*d)[j] * (*cv)[j] );
+   }
+
+} // end of method compute_temp
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : compute_p
+// DESC   : Copmpute total pressure fluctuations from state
+//              p' = rho' ( qd Rd + qv Rv ) T,
+//          with total density fluctuation, rho', qd, qv the
+//          dry and vapor mass fractions, Rd, Rv, the dry and vapor
+//          gas constants, and T the temperature.
+// ARGS   : u    : state
+//          utmp : tmp vectors; at least 2 required
+//          p    : pressure fluctuation field
+// RETURNS: none.
+//**********************************************************************************
+template<typename TypePack>
+void GMConv<TypePack>::compute_temp(State &u, State &utmp, StateComp &p)
+{
+   GString    serr = "GMConv<TypePack>::compute_p: ";
+   StateComp *qd, *qv, *t; 
+
+   // Set int energy and density:
+   es = u[GDIM];   // sensible internal energy density
+   d  = u[GDIM+1]; // total density fluctuation
+   qv = utmp[1];   // Cv
+
+
+} // end of method compute_p
 
