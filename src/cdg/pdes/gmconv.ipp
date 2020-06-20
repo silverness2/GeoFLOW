@@ -743,12 +743,12 @@ GINT GMConv<TypePack>::req_tmp_size()
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : compute_cv
-// DESC   : Copmpute total specific heat at const vol, Cv
+// DESC   : Compute total specific heat at const vol, Cv
 //             Cv = Cvd qd + Cvv qv + Sum_i(Cl_i ql_i) + Sum_j(Ci_j qi_j).
 //          where ql are the liquid mass fractions, and qi are the ice
 //          mass fractions. 
 // ARGS   : u    : state
-//          utmp : tmp vectors; at least 1 required
+//          utmp : tmp vectors; at least 1 required; only first one used
 //          cv   : cv field
 // RETURNS: none.
 //**********************************************************************************
@@ -786,10 +786,10 @@ void GMConv<TypePack>::compute_cv(State &u, State &utmp, StateComp &cv)
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : compute_qd
-// DESC   : Copmpute dry mass fraction from other mass fractions:
+// DESC   : Compute dry mass fraction from other mass fractions:
 //             Cv = 1 - Sum_i q_i
 // ARGS   : u    : state
-//          utmp : tmp vectors; at least 1 required
+//          utmp : tmp vectors; at least 1 required; only first one used
 //          qd   : dry mass fraction field
 // RETURNS: none.
 //**********************************************************************************
@@ -798,6 +798,8 @@ void GMConv<TypePack>::compute_qd(State &u, State &utmp, StateComp &qd)
 {
    GString    serr = "GMConv<TypePack>::compute_qd: ";
    GINT       ibeg;
+
+   assert(utmp.size() >= 1);
 
    // Compute qd:
    if ( traits_.dodry ) { // if dry dynamics only
@@ -822,13 +824,13 @@ void GMConv<TypePack>::compute_qd(State &u, State &utmp, StateComp &qd)
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : compute_temp
-// DESC   : Copmpute temperature from state
+// DESC   : Compute temperature from state
 //             T = eps / Cv = e_s /( rho' * Cv ),
 //          with e_s the sensible internal energy density, 
 //          rho' = total density fluctuations,
 //             Cv = Cvd qd + Cvv qv + Sum_i(Cl_i ql_i) + Sum_j(Ci_j qi_j).
 // ARGS   : u    : state
-//          utmp : tmp vectors; at least 2 required
+//          utmp : tmp vectors; at least 2 required; only first two used
 //          temp : temperature field
 // RETURNS: none.
 //**********************************************************************************
@@ -837,6 +839,8 @@ void GMConv<TypePack>::compute_temp(State &u, State &utmp, StateComp &temp)
 {
    GString    serr = "GMConv<TypePack>::compute_temp: ";
    StateComp *cv, *d, *e; 
+
+   assert(utmp.size() >= 2);
 
    // Set int energy and density:
    e  = u[GDIM];   // sensible internal energy density
@@ -857,27 +861,113 @@ void GMConv<TypePack>::compute_temp(State &u, State &utmp, StateComp &temp)
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : compute_p
-// DESC   : Copmpute total pressure fluctuations from state
+// DESC   : Compute total pressure fluctuations from state
 //              p' = rho' ( qd Rd + qv Rv ) T,
 //          with total density fluctuation, rho', qd, qv the
 //          dry and vapor mass fractions, Rd, Rv, the dry and vapor
 //          gas constants, and T the temperature.
 // ARGS   : u    : state
-//          utmp : tmp vectors; at least 2 required
+//          utmp : tmp vectors; at least 3 required; only first 3 used
 //          p    : pressure fluctuation field
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::compute_temp(State &u, State &utmp, StateComp &p)
+void GMConv<TypePack>::compute_p(State &u, State &utmp, StateComp &p)
 {
    GString    serr = "GMConv<TypePack>::compute_p: ";
    StateComp *qd, *qv, *t; 
 
+
+   assert(utmp.size() >= 3);
+
    // Set int energy and density:
    es = u[GDIM];   // sensible internal energy density
    d  = u[GDIM+1]; // total density fluctuation
-   qv = utmp[1];   // Cv
 
+   t = utmp[2];    // temp
+   compute_temp(u, utmp, *t);  // first 2 utmp arrays used
+  
+   if ( traits_.dodry ) { // if dry dynamics only
+     // p' = rho'  Rd T:
+     for ( auto j=0; j<p.size(); j++ ) {
+       p[j] = (*d)[j] * RD  * (*t)[j];
+     }
+     return;
+   }
+
+   // Set vapor mass fraction:
+   qv = u[GDIM+2]; // qv, from state
+
+   // Get dry mass fraction:
+   qd = utmp[1];
+   compute_qd(u, utmp, *qd); // first utmp array used 
+
+   // p' = rho' ( qd Rd + qv Rv ) T:
+   for ( auto j=0; j<p.size(); j++ ) {
+     p[j] = (*d)[j] * ( (*qd)[j]*RD + (*qv)[j]*RV ) * (*t)[j];
+   }
 
 } // end of method compute_p
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : compute_fallout
+// DESC   : Compute total effect due on q to fallout. q may be a density,
+//          mass fraction, energy or a momentum component:
+//            r = - Sum_i Div (q vector(W_i) )
+//          where vector(W_i) is the fallout terminal velocity for precipitating
+//          species i (from either liquid or ice sectors of state).
+// ARGS   : q    : quantiy to fall out ('flux-out')
+//          utmp : tmp vectors; at least 3 required; only first 3 used
+//          r    : pressure fluctuation field
+// RETURNS: none.
+//**********************************************************************************
+template<typename TypePack>
+void GMConv<TypePack>::compute_fallout(StateComp &q, State &utmp, StateComp &r)
+{
+   GString    serr = "GMConv<TypePack>::compute_fallout: ";
+   StateComp *qd, *qv, *t; 
+
+   assert(utmp.size() >= 3);
+
+   // Compute:
+   //    r = -Sum_i Div (q vector(W_i) )
+   // Set int energy and density:
+
+   if ( traits_.bconserved ) {
+     assert(FALSE); // conserved form not available yet
+   }
+   else {
+     
+   }
+
+
+   es = u[GDIM];   // sensible internal energy density
+   d  = u[GDIM+1]; // total density fluctuation
+
+   t = utmp[2];    // temp
+   compute_temp(u, utmp, *t);  // first 2 utmp arrays used
+  
+   if ( traits_.dodry ) { // if dry dynamics only
+     // p' = rho'  Rd T:
+     for ( auto j=0; j<p.size(); j++ ) {
+       p[j] = (*d)[j] * RD  * (*t)[j];
+     }
+     return;
+   }
+
+   // Set vapor mass fraction:
+   qv = u[GDIM+2]; // qv, from state
+
+   // Get dry mass fraction:
+   qd = utmp[1];
+   compute_qd(u, utmp, *qd); // first utmp array used 
+
+   // p' = rho' ( qd Rd + qv Rv ) T:
+   for ( auto j=0; j<p.size(); j++ ) {
+     p[j] = (*d)[j] * ( (*qd)[j]*RD + (*qv)[j]*RV ) * (*t)[j];
+   }
+  }
+} // end of method compute_fallout
 

@@ -98,6 +98,7 @@ public:
         struct Traits {
           GBOOL           dodry       = TRUE;   // do dry dynamics?
           GBOOL           docoriolis  = FALSE;  // use Coriolis force?
+          GBOOL           dograv      = TRUE;   // use gravitational force?
           GBOOL           dofallout   = FALSE;  // allow precip fallout?
           GBOOL           bconserved  = FALSE;  // use conserved form?
           GBOOL           bforced     = FALSE;  // use forcing?
@@ -159,7 +160,12 @@ private:
                                         const Time &dt, State &uout);
         void                step_multistep(const Time &t, State &uin, State &uf, State &ub,
                                            const Time &dt);
-        void                cycle_keep(State &u);
+        void                cycle_keep  (State &u);
+        void                compute_cv  (State &u, State &utmp, StateComp &cv);
+        void                compute_qd  (State &u, State &utmp, StateComp &qd);
+        void                compute_temp(State &u, State &utmp, StateComp &t );
+        void                compute_p   (State &u, State &utmp, StateComp &p );
+        void                compute_fallout(State &u, State &utmp, StateComp &r );
        
 
         GBOOL               bforced_;       // use forcing vectors
