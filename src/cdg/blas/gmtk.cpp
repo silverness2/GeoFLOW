@@ -3084,7 +3084,7 @@ void cart2latlon(const GTVector<GTVector<GFTYPE>*> &cart, GTVector<GTVector<GFTY
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : cart2spherical
+// METHOD : rcart2sphere
 // DESC   : Convert Cartesian position vectors to radius-lat-longcoords
 //
 // ARGS     cart    : x, y, z coords; only first 3 vectors are read
@@ -3093,7 +3093,7 @@ void cart2latlon(const GTVector<GTVector<GFTYPE>*> &cart, GTVector<GTVector<GFTY
 // RETURNS: none
 //**********************************************************************************
 template<>
-void cart2spherical(const GTVector<GTVector<GFTYPE>*> &cart, GTVector<GTVector<GFTYPE>*> &rlatlon)
+void rcart2sphere(const GTVector<GTVector<GFTYPE>*> &cart, GTVector<GTVector<GFTYPE>*> &rlatlon)
 {
 
   assert( cart.size() >= 3 && rlatlon.size() >= 3 && "Must have correct array sizes");
@@ -3113,7 +3113,7 @@ void cart2spherical(const GTVector<GTVector<GFTYPE>*> &cart, GTVector<GTVector<G
     (*rlatlon[2])[j] = phi;
   }
 
-} // end of method cart2spherical
+} // end of method rcart2sphere
 
 
 //**********************************************************************************

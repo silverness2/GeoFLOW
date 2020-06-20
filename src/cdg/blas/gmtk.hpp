@@ -136,7 +136,7 @@ namespace GMTK
   template<typename T>  
   void    cart2latlon(const GTVector<GTVector<T>*> &vcart, GTVector<GTVector<T>*> &latlon);
   template<typename T>  
-  void    cart2spherical(const GTVector<GTVector<T>*> &vcart, GTVector<GTVector<T>*> &rlatlon);
+  void    rcart2sphere(const GTVector<GTVector<T>*> &vcart, GTVector<GTVector<T>*> &rlatlon);
   template<typename T>  
   void    zero(GTVector<T> &v);
   template<typename T>  
