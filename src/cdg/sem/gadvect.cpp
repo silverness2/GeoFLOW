@@ -139,7 +139,10 @@ void GAdvect::def_prod(GTVector<GFTYPE> &p, const GTVector<GTVector<GFTYPE>*> &u
       *utmp[nxy+1] += *utmp[nxy];
     }
     utmp[nxy+1]->pointProd(*Jac); // J Rij  Dj p
-    utmp[nxy+1]->pointProd(*u[j]); // do uj J Rij Dj p
+    if ( u[j] > 1 )
+      utmp [nxy+1]->pointProd(*u[j]); // do uj * (Gj * Dj p)
+    else
+     *utmp [nxy+1] *= (*u[j])[0];
     po += *utmp[nxy+1];
   }
 
@@ -186,7 +189,10 @@ void GAdvect::reg_prod(GTVector<GFTYPE> &p, const GTVector<GTVector<GFTYPE>*> &u
   for ( GSIZET j=1; j<GDIM; j++ ) { 
     if ( u[j] == NULLPTR ) continue;
     utmp [j]->pointProd(*G_[j]);// remember, mass & Jac included in G
-    utmp [j]->pointProd(*u[j]); // do uj * (Gj * Dj p)
+    if ( u[j] > 1 )
+      utmp [j]->pointProd(*u[j]); // do uj * (Gj * Dj p)
+    else
+     *utmp [j] *= (*u[j])[0];
     po += *utmp[j];
   }
 
