@@ -103,6 +103,7 @@ void GAdvect::def_prod(GTVector<GFTYPE> &p, const GTVector<GTVector<GFTYPE>*> &u
 {
   GSIZET nxy = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
 
+  assert( u.size() == nxy );
   assert( utmp.size() >= nxy+1
        && "Insufficient temp space specified");
 
@@ -128,11 +129,12 @@ void GAdvect::def_prod(GTVector<GFTYPE> &p, const GTVector<GTVector<GFTYPE>*> &u
   GMTK::compute_grefderivsW(*grid_, p, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj p
 
 
-  // Compute po += ui Rij (D^j p): 
+  // Compute po += ui Rij (D^j p).
+  // Note: if u[j]=NULL, assume it's 0:
   po = 0.0;
   for ( GSIZET j=0; j<nxy; j++ ) { 
     *utmp[nxy+1]=0.0;
-    for ( GSIZET i=0; i<nxy; i++ ) {
+    for ( GSIZET i=0; i<nxy && u[j] != NULLPTR; i++ ) {
       (*dXidX)(i,j).pointProd(*utmp[i],*utmp[nxy]); // Rij Dj p
       *utmp[nxy+1] += *utmp[nxy];
     }
@@ -176,11 +178,13 @@ void GAdvect::reg_prod(GTVector<GFTYPE> &p, const GTVector<GTVector<GFTYPE>*> &u
   // Get reference derivatives:
   GMTK::compute_grefderivsW(*grid_, p, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj p
 
-  // Compute po += Gj uj D^j p): 
+  // Compute po += Gj uj D^j p.
+  // Note: if u[j]==NULL, assume it's 0:
   po = *utmp[0];
   po.pointProd(*G_[0]);// remember, mass & Jac included in G
   po.pointProd(*u[0]); // do uj * (Gj * Dj p)
   for ( GSIZET j=1; j<GDIM; j++ ) { 
+    if ( u[j] == NULLPTR ) continue;
     utmp [j]->pointProd(*G_[j]);// remember, mass & Jac included in G
     utmp [j]->pointProd(*u[j]); // do uj * (Gj * Dj p)
     po += *utmp[j];
