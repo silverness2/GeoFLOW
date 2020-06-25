@@ -115,6 +115,9 @@ GMConv<TypePack>::~GMConv()
   if ( gadvect_ != NULLPTR ) delete gadvect_;
   if ( gpdv_    != NULLPTR ) delete gpdv_;
   if ( gexrk_   != NULLPTR ) delete gexrk_;
+  if ( traits_.usemomden ) {
+    for ( auto j=0; j<GDIM; j++ ) delete v_[j];
+  }
 
 } // end, destructor
 
@@ -589,6 +592,16 @@ void GMConv<TypePack>::init()
   maxbyelem_.resize(grid_->nelems());
   ggrid_->minlength(&dxmin_);
 
+  // Allocate--or not--velocity components:
+  for ( auto j=0; j<GDIM; j++ ) {
+    if ( traits_.usemomden ) {
+      v_[j] = new StateComp ( resize(grid.ndof()) );
+    }
+    else {
+      v_[j] = NULLPTR;
+    }
+  }
+
 } // end of method init
 
 
@@ -939,10 +952,8 @@ void GMConv<TypePack>::compute_div(StateComp &q, State &v, State &utmp, StateCom
      assert(gadvect_ != NULLPTR && gpdv_ != NULLPTR);    
      for ( auto j=0; j<GDIM; j++ ) tmp[j] = utmp[j];
      gadvect->apply(q, v, tmp, div); 
-     if ( v[0]->size() > 1 ) { // check if v is constant
-       gpdv   ->apply(q, v, tmp, *utmp[GDIM+1]); 
-       div += *utmp[GDIM+1];
-     }
+     gpdv   ->apply(q, v, tmp, *utmp[GDIM]); 
+     div += *utmp[GDIM];
    }
 
 } // end of method compute_div
@@ -950,57 +961,104 @@ void GMConv<TypePack>::compute_div(StateComp &q, State &v, State &utmp, StateCom
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : compute_falloutsrc
-// DESC   : Compute total effect due on q to fallout. q may be a density,
-//          mass fraction, energy, or a momentum component:
-//            r = Sum_i Div [rho_t q_i vector(W_i)] 
-//          where vector(W_i) is the fallout terminal velocity for precipitating
-//          species i (from either liquid or ice sectors of state). 
-// ARGS   : q    : quantiy to fall out ('flux-out')
-//          jexcl: which hydrometeor index to exclude from sum. If jexcl<0,
-//                 exclude none
-//          utmp : tmp vectors; at least 3 required; only first 3 used
-//          r    : fallout src field
-// RETURNS: none.
+// METHOD : compute_v
+// DESC   : Compute velocity from momentum density in state vector.
+//             v_i = s_i/rhot,
+//          where v_i is the member data array.
+// ARGS   : u    : state
+//          utmp : tmp vectors; first array used. If traits.usemomden==FALSE,
+//                 then no tmp arrays are required
+// RETURNS: none. Member data, v_, is set here
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::compute_falloutsrc(State &u, GINT jexcl, State &utmp, StateComp &r)
+void GMConv<TypePack>::compute_v(State &u, State &utmp)
 {
-   GString     serr = "GMConv<TypePack>::compute_falloutsrc: ";
-   StateComp  *t; 
+   GString    serr = "GMConv<TypePack>::compute_v: ";
+   State     *tmp(GDIM);
+   StateComp *irhot, *rhot
 
-   assert(utmp.size() >= 3);
+   assert(utmp.size() >= 1);
 
-   // Compute:
-   //    r = -Sum_i Div (q vector(W_i) )
-   // Set int energy and density:
-
-   r = 0.0;
-   
-   if ( !traits_.dofallout ) return;
-
-   t = utmp[2];    // temp
-  
-   if ( traits_.dodry ) { // if dry dynamics only
-     // p' = rho'  Rd T:
-     for ( auto j=0; j<p.size(); j++ ) {
-       p[j] = (*d)[j] * RD  * (*t)[j];
+   if ( !traits_.usemomden ) {
+     // State uses velocity form already so 
+     // do pointer assignment:
+     for ( auto j=0; j<GDIM; j++ ) { // v_i = u_i
+       v_[j] = u[j];
      }
      return;
    }
 
-   // Set vapor mass fraction:
-   qv = u[GDIM+2]; // qv, from state
+   // Compute inverse mass:
+   rhot  = u[GDIM+1]; 
+   irhot = utmp[0];
+   for ( auto j=0; j<rhot->size(); j++ ) (*irhot)[j] = 1.0/(*rhot)[j];
 
-   // Get dry mass fraction:
-   qd = utmp[1];
-   compute_qd(u, utmp, *qd); // first utmp array used 
-
-   // p' = rho' ( qd Rd + qv Rv ) T:
-   for ( auto j=0; j<p.size(); j++ ) {
-     p[j] = (*d)[j] * ( (*qd)[j]*RD + (*qv)[j]*RV ) * (*t)[j];
+   // Find velocity from momentum density:
+   
+   for ( auto j=0; j<GDIM; j++ ) {
+     *v_[j]  = *u[j];    // deep copy
+     *v_[j] *= (*irhot); // divide by density
    }
-  }
+
+} // end of method compute_v
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : compute_falloutsrc
+// DESC   : Compute total effect due to fallout of density quantity, g. 
+//            r = Sum_i Div [q_i g vector(W_i)] 
+//          where vector(W_i) is the fallout terminal velocity for precipitating
+//          species i (from either liquid or ice sectors of state). 
+// ARGS   : 
+//          g    : quantiy to fall out ('flux-out'). May be: total density,
+//                 momentum density component, internal energy density
+//          qi   : hydrometeor mass fractions
+//          tvi  : terminal velocity vector for qi hydrometeor
+//          jexcl: which hydrometeor index to exclude from sum. If jexcl<0,
+//                 exclude none
+//          utmp : tmp vectors; at least 2*GDIM+3 required
+//          r    : fallout src field
+// RETURNS: none.
+//**********************************************************************************
+template<typename TypePack>
+void GMConv<TypePack>::compute_falloutsrc(StateComp &g, State &qi, State &tvi, GINT jexcl, State &utmp, StateComp &r)
+{
+   GString     serr = "GMConv<TypePack>::compute_falloutsrc: ";
+   GINT        nhydro; // no. hydrometeors
+   StateComp  *div, *qg; 
+   State       vterm(GDIM);
+
+   assert(tvi.size() == qi.size());
+   assert(utmp.size() >= 2*GDIM+1);
+
+   // Compute:
+   //    r = -Sum_i Div (rho_t q_i vector(W)_i )
+
+   r = 0.0;
+   if ( !traits_.dofallout || traits_.dodry ) return;
+
+   nhydro = traits_.nlsector + traits_.nisector;
+
+   vterm = NULLPTR;
+   for ( auto j=0; j<GDIM; j++ ) vterm[j] = utmp[GDIM+3+j];
+
+   qg    = utmp[GDIM+1];    // temp
+   div   = utmp[GDIM+2];    // temp
+   for ( auto j=0; j<nhydro; j++ ) {
+     if ( j == jexcl ) continue;  
+
+     *qg = g; (*qg) *= (*qi[j]); // compute g q_i
+
+     // Convert terminal velocities to required 
+     // (Cartesian) components:
+     compute_vterm(*tvi[j], utmp, vterm);
+
+     // Compute i_th contribution to source term:
+     compute_div(*qg, vterm, utmp, *div);
+     r += *div;
+   }
+
 } // end of method compute_falloutsrc
 
 

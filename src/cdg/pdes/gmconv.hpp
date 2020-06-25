@@ -102,6 +102,7 @@ public:
           GBOOL           dofallout   = FALSE;  // allow precip fallout?
           GBOOL           bconserved  = FALSE;  // use conserved form?
           GBOOL           bforced     = FALSE;  // use forcing?
+          GBOOL           usemomden   = TRUE;   // use momentum density form?
           GBOOL           variabledt  = FALSE;  // use variable timestep?
           GINT            nstate      = GDIM+2; // no. vars in state vec
           GINT            nsolve      = GDIM+2; // no. vars to solve for
@@ -166,8 +167,9 @@ inline  void                compute_qd  (State &u, State &utmp, StateComp &qd);
 inline  void                compute_temp(State &u, State &utmp, StateComp &t );
 inline  void                compute_p   (State &u, State &utmp, StateComp &p );
 inline  void                compute_fallout
-                                        (State &u, State &utmp, StateComp &r );
+                                        (StateComp &g, State &qi, State &v, GINT jexcl, State &utmp, StateComp &r );
 inline  void                compute_div (StateComp &q, State &v, State &utmp, StateComp &div );
+inline  void                compute_v   (State &u, State &utmp);
        
 
         GBOOL               bforced_;       // use forcing vectors
@@ -183,6 +185,7 @@ inline  void                compute_div (StateComp &q, State &v, State &utmp, St
         State               urhstmp_;       // helper arrays set from utmp
         State               uoptmp_;        // helper arrays set from utmp
         State               urktmp_;        // helper arrays set from utmp
+        State               v_(GDIM);       // velocity components
         GTVector<State>     ukeep_;         // state at prev. time levels
         GTVector<GString>
                             valid_types_;   // valid stepping methods supported
