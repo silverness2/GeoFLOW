@@ -161,11 +161,13 @@ private:
         void                step_multistep(const Time &t, State &uin, State &uf, State &ub,
                                            const Time &dt);
         void                cycle_keep  (State &u);
-        void                compute_cv  (State &u, State &utmp, StateComp &cv);
-        void                compute_qd  (State &u, State &utmp, StateComp &qd);
-        void                compute_temp(State &u, State &utmp, StateComp &t );
-        void                compute_p   (State &u, State &utmp, StateComp &p );
-        void                compute_fallout(State &u, State &utmp, StateComp &r );
+inline  void                compute_cv  (State &u, State &utmp, StateComp &cv);
+inline  void                compute_qd  (State &u, State &utmp, StateComp &qd);
+inline  void                compute_temp(State &u, State &utmp, StateComp &t );
+inline  void                compute_p   (State &u, State &utmp, StateComp &p );
+inline  void                compute_fallout
+                                        (State &u, State &utmp, StateComp &r );
+inline  void                compute_div (StateComp &q, State &v, State &utmp, StateComp &div );
        
 
         GBOOL               bforced_;       // use forcing vectors

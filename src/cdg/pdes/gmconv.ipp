@@ -912,22 +912,62 @@ void GMConv<TypePack>::compute_p(State &u, State &utmp, StateComp &p)
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : compute_fallout
-// DESC   : Compute total effect due on q to fallout. q may be a density,
-//          mass fraction, energy or a momentum component:
-//            r = - Sum_i Div (q vector(W_i) )
-//          where vector(W_i) is the fallout terminal velocity for precipitating
-//          species i (from either liquid or ice sectors of state).
-// ARGS   : q    : quantiy to fall out ('flux-out')
-//          utmp : tmp vectors; at least 3 required; only first 3 used
-//          r    : pressure fluctuation field
+// METHOD : compute_div
+// DESC   : Compute flux divergence  of quantity q:
+//             Div ( q v)
+//          with the intent of handling this conservatively or not.  
+// ARGS   : q    : quantiy whose flux we compute divergence of
+//          v    : vector of velocity components
+//          utmp : tmp vectors; at least GDIM+1 required; only first GDIM+1 used
+//          div  : divergence result
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::compute_fallout(StateComp &q, State &utmp, StateComp &r)
+void GMConv<TypePack>::compute_div(StateComp &q, State &v, State &utmp, StateComp &div)
 {
-   GString    serr = "GMConv<TypePack>::compute_fallout: ";
+   GString    serr = "GMConv<TypePack>::compute_div: ";
+   State     *tmp(GDIM);
    StateComp *qd, *qv, *t; 
+
+   assert(utmp.size() >= GDIM+1);
+
+   if ( traits_.bconserved ) {
+     assert(FALSE); // conserved form not available yet
+   }
+   else {
+     //   Div (q v) = q Div v + v.Grad q 
+     assert(gadvect_ != NULLPTR && gpdv_ != NULLPTR);    
+     for ( auto j=0; j<GDIM; j++ ) tmp[j] = utmp[j];
+     gadvect->apply(q, v, tmp, div); 
+     if ( v[0]->size() > 1 ) { // check if v is constant
+       gpdv   ->apply(q, v, tmp, *utmp[GDIM+1]); 
+       div += *utmp[GDIM+1];
+     }
+   }
+
+} // end of method compute_div
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : compute_falloutsrc
+// DESC   : Compute total effect due on q to fallout. q may be a density,
+//          mass fraction, energy, or a momentum component:
+//            r = Sum_i Div [rho_t q_i vector(W_i)] 
+//          where vector(W_i) is the fallout terminal velocity for precipitating
+//          species i (from either liquid or ice sectors of state). 
+// ARGS   : q    : quantiy to fall out ('flux-out')
+//          jexcl: which hydrometeor index to exclude from sum. If jexcl<0,
+//                 exclude none
+//          utmp : tmp vectors; at least 3 required; only first 3 used
+//          r    : fallout src field
+// RETURNS: none.
+//**********************************************************************************
+template<typename TypePack>
+void GMConv<TypePack>::compute_falloutsrc(State &u, GINT jexcl, State &utmp, StateComp &r)
+{
+   GString     serr = "GMConv<TypePack>::compute_falloutsrc: ";
+   StateComp  *t; 
 
    assert(utmp.size() >= 3);
 
@@ -935,19 +975,11 @@ void GMConv<TypePack>::compute_fallout(StateComp &q, State &utmp, StateComp &r)
    //    r = -Sum_i Div (q vector(W_i) )
    // Set int energy and density:
 
-   if ( traits_.bconserved ) {
-     assert(FALSE); // conserved form not available yet
-   }
-   else {
-     
-   }
-
-
-   es = u[GDIM];   // sensible internal energy density
-   d  = u[GDIM+1]; // total density fluctuation
+   r = 0.0;
+   
+   if ( !traits_.dofallout ) return;
 
    t = utmp[2];    // temp
-   compute_temp(u, utmp, *t);  // first 2 utmp arrays used
   
    if ( traits_.dodry ) { // if dry dynamics only
      // p' = rho'  Rd T:
@@ -969,5 +1001,6 @@ void GMConv<TypePack>::compute_fallout(StateComp &q, State &utmp, StateComp &r)
      p[j] = (*d)[j] * ( (*qd)[j]*RD + (*qv)[j]*RV ) * (*t)[j];
    }
   }
-} // end of method compute_fallout
+} // end of method compute_falloutsrc
+
 
