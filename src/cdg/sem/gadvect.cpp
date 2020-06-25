@@ -70,6 +70,11 @@ void GAdvect::apply(GTVector<GFTYPE> &p, const GTVector<GTVector<GFTYPE>*> &u, G
 
   assert(u.size() >= nxy && "Insufficient number of velocity components");
 
+  if ( p.size() <= 1 ) { // p is a constant 
+    po = 0.0;
+    return;
+  }
+
   if ( grid_->gtype() == GE_REGULAR ) {
     reg_prod(p, u, utmp, po);
   }

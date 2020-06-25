@@ -104,7 +104,12 @@ void gpdV<TypePack>::def_prod(StateComp &p, State &u, State &utmp, StateComp &po
   }
 
   // Point-multiply by p:
-  po.pointProd(p);
+  if ( p.size() > 1 ) {
+    po.pointProd(p,*utmp[0]);
+  }
+  else {
+    po *= p[0];
+  }
 
 } // end of method def_prod
 
@@ -153,7 +158,12 @@ void gpdV<TypePack>::reg_prod(StateComp &p, State &u, State &utmp, StateComp &po
   }
 
   // Point-multiply by p:
-  po.pointProd(p,*utmp[0]);
+  if ( p.size() > 1 ) {
+    po.pointProd(p,*utmp[0]);
+  }
+  else {
+    po *= p[0];
+  }
 
   // apply mass:
   massop_->opVec_prod(*utmp[0], utmp, po); // last arg is unused
