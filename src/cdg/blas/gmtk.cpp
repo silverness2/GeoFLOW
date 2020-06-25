@@ -2543,7 +2543,8 @@ void compute_grefderivsW(GGrid &grid, GTVector<GFTYPE> &u, GTVector<GFTYPE> &etm
 //          u      : input vector field whose divergence we want, allocated globally 
 //                   (e.g., for all elements). Must have GDIM components, unless
 //                   we're using an embedded grid, when GDIM=2, when it should have
-//                   3 components. Will not be altered on exit.
+//                   3 components. Will not be altered on exit. If a component is
+//                   NULL, we assume it's 0 here.
 //          etmp   : tmp array (possibly resized here) for element-based ops.
 //                   Is not global.
 //          dotrans: flag telling us to tak transpose of deriv operators (TRUE) or
@@ -2582,15 +2583,19 @@ void compute_grefdiv(GGrid &grid, GTVector<GTVector<GFTYPE>*> &u, GTVector<GFTYP
     // restrict global vecs to local range
     ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
     divu.range(ibeg,iend); 
-    for ( GSIZET k=0; k<u.size(); k++ ) u[k]->range(ibeg, iend); 
+    for ( GSIZET k=0; k<u.size(); k++ ) if ( u[k]!=NULLPTR) u[k]->range(ibeg, iend); 
     for ( GSIZET k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
     Di[0] = (*gelems)[e]->gbasis(0)->getDerivMatrix (dotrans);
     Di[1] = (*gelems)[e]->gbasis(1)->getDerivMatrix(!dotrans);
     etmp.resizem((*gelems)[e]->nnodes());
-    GMTK::I2_X_D1(*Di[0], *u[0], N[0], N[1], etmp); // D1 u1
-    divu += etmp;
-    GMTK::D2_X_I1(*Di[1], *u[1], N[0], N[1], etmp); // D2 u2
-    divu += etmp;
+    if ( u[0] != NULLPTR )
+      GMTK::I2_X_D1(*Di[0], *u[0], N[0], N[1], etmp); // D1 u1
+      divu += etmp;
+    }
+    if ( u[1] != NULLPTR )
+      GMTK::D2_X_I1(*Di[1], *u[1], N[0], N[1], etmp); // D2 u2
+      divu += etmp;
+    }
 #if 0
     if ( bembedded ) divu += *u[2]; // D3 acts as I
 #endif
@@ -2603,19 +2608,25 @@ void compute_grefdiv(GGrid &grid, GTVector<GTVector<GFTYPE>*> &u, GTVector<GFTYP
   for ( GSIZET e=0; e<grid.elems().size(); e++ ) {
     ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
     divu.range(ibeg,iend); 
-    for ( GSIZET k=0; k<u.size(); k++ ) u[k]->range(ibeg, iend); 
+    for ( GSIZET k=0; k<u.size(); k++ ) if (u[k]!=NULLPTR) u[k]->range(ibeg, iend); 
     for ( GSIZET k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
     etmp.resizem((*gelems)[e]->nnodes());
     Di[0] = (*gelems)[e]->gbasis(0)->getDerivMatrix (dotrans); 
     Di[1] = (*gelems)[e]->gbasis(1)->getDerivMatrix(!dotrans); 
     Di[2] = (*gelems)[e]->gbasis(1)->getDerivMatrix(!dotrans); 
 
-    GMTK::I3_X_I2_X_D1(*Di[0], *u[0], N[0], N[1], N[2], etmp); // D1 u1
-    divu += etmp;
-    GMTK::I3_X_D2_X_I1(*Di[1], *u[1], N[0], N[1], N[2], etmp); // D2 u2
-    divu += etmp;
-    GMTK::D3_X_I2_X_I1(*Di[2], *u[2], N[0], N[1], N[2], etmp); // D3 u3
-    divu += etmp;
+    if ( u[0] != NULLPTR )
+      GMTK::I3_X_I2_X_D1(*Di[0], *u[0], N[0], N[1], N[2], etmp); // D1 u1
+      divu += etmp;
+    }
+    if ( u[1] != NULLPTR )
+      GMTK::I3_X_D2_X_I1(*Di[1], *u[1], N[0], N[1], N[2], etmp); // D2 u2
+      divu += etmp;
+    }
+    if ( u[2] != NULLPTR )
+      GMTK::D3_X_I2_X_I1(*Di[2], *u[2], N[0], N[1], N[2], etmp); // D3 u3
+      divu += etmp;
+    }
   }
   divu.range_reset();  // reset range to global scope
   for ( GSIZET k=0; k<u.size(); k++ ) u[k]->range_reset(); 
@@ -2626,6 +2637,7 @@ void compute_grefdiv(GGrid &grid, GTVector<GTVector<GFTYPE>*> &u, GTVector<GFTYP
 } // end, method compute_grefdiv
 
 
+/*
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : compute_grefdiviW
@@ -2686,6 +2698,7 @@ void compute_grefdiviW(GGrid &grid, GTVector<GTVector<GFTYPE>*> &u, GTVector<GFT
     Di[0] = (*gelems)[e]->gbasis(0)->getDerivMatrixiW (dotrans);
     Di[1] = (*gelems)[e]->gbasis(1)->getDerivMatrixiW(!dotrans);
     etmp.resizem((*gelems)[e]->nnodes());
+    if ( u[0] != NULLPTR )
     GMTK::Dg2_X_D1(*Di[0], *iW[1], *u[0], etmp, divu); // W X W^-1 D1 u1
     GMTK::D2_X_Dg1(*iW[0], *Di[1], *u[1], etmp, *u[0]); // W^^-1 D2 X W u2
     divu += *u[0];
@@ -2728,6 +2741,7 @@ void compute_grefdiviW(GGrid &grid, GTVector<GTVector<GFTYPE>*> &u, GTVector<GFT
 
 
 } // end, method compute_grefdiviW
+*/
 
 
 
