@@ -36,7 +36,10 @@
 //                The terminal velocities in this state are prescribed,
 //                if used; all others are evolved. If hydrometeor fallout
 //                is specified, then terminal velocities for all hydrometeors
-//                must be provided
+//                must be provided. Each vector may be either of length 1, 
+//                for which it's assumed to be a constant, or it may be 
+//                space-dependent, for which it provides the terminal 
+//                velocity in the preferred diection at all spatial locaions.
 // 
 // 
 // Copyright    : Copyright 2020. Colorado State University. All rights reserved.
@@ -68,6 +71,7 @@ GMConv<TypePack>::GMConv(Grid &grid, GMConv<TypePack>::Traits &traits, State &tm
 EquationBase<TypePack>(),
 bupdatebc_               (FALSE),
 bsteptop_                (FALSE),
+bvterm_                  (FALSE),
 gmass_                 (NULLPTR),
 gimass_                (NULLPTR),
 /*
@@ -83,6 +87,7 @@ ggfx_         (&grid.get_ggfx()),
 steptop_callback_      (NULLPTR)
 {
 
+  GINT      nexcl;
   GridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
 
   assert(tmp.size() >= req_tmp_size() && "Insufficient tmp space provided");
@@ -91,7 +96,31 @@ steptop_callback_      (NULLPTR)
   traits_.iforced.resize(traits.iforced.size());
   traits_ = traits;
 
-  utmp_.resize(tmp.size()); utmp_ = tmp;
+  v_.resize(GDIM); v_ = NULLPTR;
+  W_.resize(GDIM); W_ = NULLPTR;
+
+  nexcl = 0;
+  
+  // Set space for state velocity, if needed:
+  if ( traits_.usemomden ) {
+    for ( auto j=0; j<GDIM; j++ ) {
+      v_[j] = tmp[j];
+      nexcl++;
+    }
+  }
+  // Set space for terminal velocity, if needed:
+  if ( icos != NULLPTR ) {
+    for ( auto j=0; j<GDIM; j++ ) {
+      W_[j] = tmp[j+v_.size()];
+      nexcl++;
+    }
+  }
+
+  // Set up tmp pool:
+  utmp_.resize(tmp.size()-nexcl); 
+  for ( auto j=nexcl; j<tmp.size(); j++ ) {
+    utmp_[j] = tmp[j];
+  }
 
   init();
   
@@ -115,9 +144,6 @@ GMConv<TypePack>::~GMConv()
   if ( gadvect_ != NULLPTR ) delete gadvect_;
   if ( gpdv_    != NULLPTR ) delete gpdv_;
   if ( gexrk_   != NULLPTR ) delete gexrk_;
-  if ( traits_.usemomden ) {
-    for ( auto j=0; j<GDIM; j++ ) delete v_[j];
-  }
 
 } // end, destructor
 
@@ -299,18 +325,7 @@ void GMConv<TypePack>::step_impl(const Time &t, State &uin, State &uf, State &ub
 
   // Set evolved state vars from input state.
   // These are not deep copies:
-  if ( doheat_ ) {
-    uevolve_[0] = uin[0]; 
-  }
-  else if ( bpureadv_ ) {
-    uevolve_[0] = uin[0]; 
-    if ( bpureadv_ ) {
-      for ( auto j=0; j<c_.size(); j++ ) c_ [j] = uin[j+1];
-    }
-  }
-  else {
-    for ( auto j=0; j<uin.size(); j++ ) uevolve_ [j] = uin[j];
-  }
+  for ( auto j=0; j<uin.size(); j++ ) uevolve_ [j] = uin[j];
 
   switch ( traits_.isteptype ) {
     case GSTEPPER_EXRK:
@@ -395,14 +410,11 @@ void GMConv<TypePack>::step_exrk(const Time &t, State &uin, State &uf, State &ub
 {
   assert(gexrk_ != NULLPTR && "GExRK operator not instantiated");
 
-  // If non-conservative, compute RHS from:
-  //     du/dt = M^-1 ( -u.Grad u + nu nabla u ):
-  // for each u
 
   // GExRK stepper steps entire state over one dt:
   gexrk_->step(t, uin, uf, ub, dt, urktmp_, uout);
 
-  GMTK::constrain2sphere(*grid_, uout);
+//GMTK::constrain2sphere(*grid_, uout);
 
 } // end of method step_exrk
 
@@ -428,15 +440,14 @@ void GMConv<TypePack>::init()
   // Check if specified stepper type is valid:
   GBOOL  bfound;
   GSIZET itype;
-  valid_types_.resize(1);
-  valid_types_[0] = "GSTEPPER_EXRK";
+  valid_types_.push_back("GSTEPPER_EXRK");
 /*
-  valid_types_[1] = "GSTEPPER_BDFAB";
-  valid_types_[2] = "GSTEPPER_BDFEXT";
+  valid_types_.push_back("GSTEPPER_BDFAB");
+  valid_types_.push_back("GSTEPPER_BDFEXT");
 */
   bfound = valid_types_.contains(traits_.ssteptype, itype);
-  traits_.isteptype = static_cast<GStepperType>(itype);
   assert( bfound && "Invalid stepping method specified");
+  traits_.isteptype = static_cast<GStepperType>(itype);
 
   // Set dissipation from traits. Note that
   // this is set to be constant, based on configuration,
@@ -591,16 +602,6 @@ void GMConv<TypePack>::init()
   // timestep computation:
   maxbyelem_.resize(grid_->nelems());
   ggrid_->minlength(&dxmin_);
-
-  // Allocate--or not--velocity components:
-  for ( auto j=0; j<GDIM; j++ ) {
-    if ( traits_.usemomden ) {
-      v_[j] = new StateComp ( resize(grid.ndof()) );
-    }
-    else {
-      v_[j] = NULLPTR;
-    }
-  }
 
 } // end of method init
 
@@ -968,10 +969,11 @@ void GMConv<TypePack>::compute_div(StateComp &q, State &v, State &utmp, StateCom
 // ARGS   : u    : state
 //          utmp : tmp vectors; first array used. If traits.usemomden==FALSE,
 //                 then no tmp arrays are required
+//          v    : velocity state; components may change on exit
 // RETURNS: none. Member data, v_, is set here
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::compute_v(State &u, State &utmp)
+void GMConv<TypePack>::compute_v(State &u, State &utmp, State &v)
 {
    GString    serr = "GMConv<TypePack>::compute_v: ";
    State     *tmp(GDIM);
@@ -983,7 +985,7 @@ void GMConv<TypePack>::compute_v(State &u, State &utmp)
      // State uses velocity form already so 
      // do pointer assignment:
      for ( auto j=0; j<GDIM; j++ ) { // v_i = u_i
-       v_[j] = u[j];
+       v[j] = u[j];
      }
      return;
    }
@@ -996,11 +998,88 @@ void GMConv<TypePack>::compute_v(State &u, State &utmp)
    // Find velocity from momentum density:
    
    for ( auto j=0; j<GDIM; j++ ) {
-     *v_[j]  = *u[j];    // deep copy
-     *v_[j] *= (*irhot); // divide by density
+      v[j]  = v_[j];    // set to allocated member data
+     *v[j]  = *u[j];    // deep copy
+     *v[j] *= (*irhot); // divide by density
    }
 
 } // end of method compute_v
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : compute_vterm
+// DESC   : Compute 'terminal' velocity state vector velocity components  from 
+//          prescribed terminal velocity data and store for use in W_ member array
+// ARGS   : u     : total state vector
+//          ihydro: index of hydrometeor (0 to nliquids + nices - 1)
+//          utmp  : tmp vector array
+// RETURNS: none. Member data, W_, is set here
+//**********************************************************************************
+template<typename TypePack>
+void GMConv<TypePack>::compute_vterm(State &u, GINT ihydro, State &utmp)
+{
+   GString    serr = "GMConv<TypePack>::compute_vterm: ";
+   GINT       ibeg = GDIM+3, nhydro;
+   Value      r, x, y, z;
+   Value      lat, long;
+   GTVector<GTVector<GFTYPE>> 
+             *xnodes = &grid.xNodes();
+   StateComp *tvi; // ihydro-th terminal velocity
+
+   GGridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
+   GGridIcos *box  = dynamic_cast <GGridBox*>(grid_);
+
+   nhydro = traits_.nlsector + traits_.nisector;
+   if ( nhydro == 0 ) return; // return if there are no hydrometeors
+
+   assert( ihydro >= 0 && ihydro < nhydro );
+
+   // Check if already computed:
+   if ( traits_.bvarvterm && bvterm_ ) return;
+
+
+   // Specify components for Cartesian grid:
+   if ( box != NULLPTR ) {
+     // In Cartesian coords, select the 'z' direction
+     // as preferred 'fallout' direction. In 2d, this
+     // will be the 2-coord; in 3d, the 3-coord:
+     W_[GDIM-1] = &tvi; 
+     bvterm_ = TRUE; // term vel. computed
+     return;
+   }
+
+   // Specify components for spherical grid. Here,
+   // the preferred direction is along radial, and
+   // we assume that the prescribed term velocity
+   // is the radial component only, which must be
+   // transformed into Cartesian components:
+
+   
+   tvi = u[ibeg+ihydro];
+   for ( auto i=0; i<(*xnodes)[0].size(); i++ ) {
+      x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
+      r     = sqrt(x*x + y*y + z*z);
+      lat   = asin(z/r);
+      long  = atan2(y,x);
+
+     *W_[0]  = cos(lat)*cos(long);
+     *W_[1]  = cos(lat)*sin(long);
+     *W_[2]  = sin(lat);
+   }
+
+   for ( auto j=0; j<W_.size(); j++ ) {
+     if ( tvi->size() == 1 ) {
+       *W_[j] *= (*tvi)[0];
+     }
+     else {
+       *W_[j] *= (*tvi);
+     } 
+   }
+
+   bvterm_ = TRUE;
+
+} // end of method compute_vterm
 
 
 //**********************************************************************************
@@ -1014,9 +1093,10 @@ void GMConv<TypePack>::compute_v(State &u, State &utmp)
 //          g    : quantiy to fall out ('flux-out'). May be: total density,
 //                 momentum density component, internal energy density
 //          qi   : hydrometeor mass fractions
-//          tvi  : terminal velocity vector for qi hydrometeor
+//          tvi  : terminal velocity vector for each qi hydrometeor
 //          jexcl: which hydrometeor index to exclude from sum. If jexcl<0,
-//                 exclude none
+//                 exclude none. This index must be the 0-starting index of
+//                 the hydrometeor in the qi array.
 //          utmp : tmp vectors; at least 2*GDIM+3 required
 //          r    : fallout src field
 // RETURNS: none.
@@ -1027,10 +1107,11 @@ void GMConv<TypePack>::compute_falloutsrc(StateComp &g, State &qi, State &tvi, G
    GString     serr = "GMConv<TypePack>::compute_falloutsrc: ";
    GINT        nhydro; // no. hydrometeors
    StateComp  *div, *qg; 
-   State       vterm(GDIM);
+   State       vterm(GDIM); // term velocity vector
 
    assert(tvi.size() == qi.size());
    assert(utmp.size() >= 2*GDIM+1);
+   assert(jexcl < 0 || (jexcl >=0 && jexcl < qi.size()));
 
    // Compute:
    //    r = -Sum_i Div (rho_t q_i vector(W)_i )
@@ -1051,7 +1132,8 @@ void GMConv<TypePack>::compute_falloutsrc(StateComp &g, State &qi, State &tvi, G
      *qg = g; (*qg) *= (*qi[j]); // compute g q_i
 
      // Convert terminal velocities to required 
-     // (Cartesian) components:
+     // (Cartesian) components. vterm may point
+     // to tvi, or to v_ member data, or may be NULL:
      compute_vterm(*tvi[j], utmp, vterm);
 
      // Compute i_th contribution to source term:
