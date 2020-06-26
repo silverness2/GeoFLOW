@@ -1,11 +1,23 @@
 //==================================================================================
-// Module       : gmconv.hpp
+// Module       : gmconv.ipp
 // Date         : 6/11/20 (DLR)
 // Description  : Object defining a moist convection solver:
 //
 //                PDEs:
-//                     TBD
+//                  d_t rho_T + Div (rho_T v) = -Ltot, total mass
+//                  d_t q_v + v.Grad q_v      = q_v Ltot/rho_T + dot(s_v)/rho_T
+//                  d_t q_h + v.Grad q_i      = q_h Ltot/rho_T - Div(rho_T q_h W_i)/rho_T
+//                                            + dot(s_h)/rho_T
 //
+//                where 
+//                  Ltot = Sum_h Div(rhoT q_h vector(W)_i), 
+//                is the total mass loss due to hydrometeor fallout, and              
+//                and q_h are the hydrometeor (liquid and ice) mass
+//                fractions. The dry mass fraction is:
+//                  q_d = 1 - Sum_h q_h.
+//                Note:
+//                  Sum_i dot(s_i) = 0, where sum is over all densities,
+//                and dot(s_i) are the mass sources for vapor, and hydrometeors.
 //                This solver can be built in 2D or 3D for box grids,
 //                but is valid only for 3D spherical grids.
 //
@@ -137,8 +149,6 @@ steptop_callback_      (NULLPTR)
 template<typename TypePack>
 GMConv<TypePack>::~GMConv()
 {
-  if ( gmass_   != NULLPTR ) delete gmass_;
-  if ( gimass_  != NULLPTR ) delete gimass_;
 //if ( gflux_   != NULLPTR ) delete gflux_;
   if ( ghelm_   != NULLPTR ) delete ghelm_;
   if ( gadvect_ != NULLPTR ) delete gadvect_;
@@ -260,24 +270,19 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
 
   nmfrac = traits_.dodry ? 0 : traits_.nlsector + traits_.nisector + 1;
 
-  // If non-conservative, compute RHS from:
-  //     du/dt = -c(u).Grad u + nu nabla^2 u 
-  // for each u, where c may be indep of u (pure advection):
-
   *urhstmp_[0] = *u[GDIM+1]; urhstmp[0]->rpow(-1.0) // 1/total mass
 
-  // Mass fraction equations. These are:
-  //   d rho_T + Div (rho_T v) = 0, 
-  // for total mass
-  //   d (dhot_T q_v) + Div (rho_T q_v v) = dot(s_v), 
-  // for vapor mass fraction
-  //   d (dhot_T q_i) + Div (rho_T q_i v) = dot(s_i) - , 
-  // for vapor mass fraction
+  // Mass fraction equations:
   // For non-conserved mass fractions, we solve
-  //  df/dt u.Grad f = dot(s)/rho_tot
+  //  df/dt u.Grad q_i = dot(s)/rho_tot 
   ibeg   = GDIM + 2;
-  for ( auto k=ibeg; k<ibeg+nmfrac; k++ ) {
+  for ( auto j=ibeg; j<ibeg+nmfrac; j++ ) {
     // Multiply mass frac by total den:
+    gadvect_->apply(*u[k], u, uoptmp_, *dudt[k]);     // apply advection
+    GMTK::saxpby<GFTYPE>(*urhstmp_[0], -1.0, *dudt[k], -1.0);
+    gimass_->opVec_prod(*urhstmp_[0], uoptmp_, *dudt[k]); // apply M^-1
+    if ( bforced_ && uf[k] != NULLPTR ) *dudt[k] += *uf[k];
+
     *urhstmp_[1] = (*u[k]) * (*urhstmp[0]); // rho_T * q_i
     
   }
@@ -301,10 +306,6 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
 // DESC   : Step implementation method entry point
 // ARGS   : t   : time
 //          uin : input state, modified on output with update
-//                If doing pure advection, this state contains the *unevolved*
-//                advection velocities, ci, which must be separated from the 
-//                single evolved state variable:
-//                     uin = [u_evolve, c1, c2, c3]
 //          uf  : force-tendency vector
 //          ub  : bdy vector
 //          dt  : time step
@@ -354,9 +355,6 @@ void GMConv<TypePack>::step_impl(const Time &t, State &uin, State &uf, State &ub
 // DESC   : Step implementation method entry point
 // ARGS   : t   : time
 //          uin : input state, modified on output with update
-//                If doing pure advection, this state contains the *unevolved*
-//                advection velocities, which must be separated from the 
-//                single evolved state variable.
 //          ub  : bdy vector
 //          dt  : time step
 //          uout: output state
@@ -557,14 +555,13 @@ void GMConv<TypePack>::init()
   if ( acoeff_obj != NULLPTR ) delete acoeff_obj;
   
   // Instantiate spatial discretization operators:
-  gmass_   = new GMass(*grid_);
+  gmass_   = &grid_->massop();
   ghelm_   = new GHelmholtz(*grid_);
 
   ghelm_->set_Lap_scalar(nu_);
 
-  
   if ( traits_.isteptype ==  GSTEPPER_EXRK ) {
-    gimass_ = new GMass(*grid_, TRUE); // create inverse of mass
+    gimass_ = &grid_->imassop();
   }
 
   // If doing semi-implicit time stepping; handle viscous term 
@@ -573,7 +570,7 @@ void GMConv<TypePack>::init()
     assert(FALSE && "Implicit time stepping not yet supported");
   }
 
-  if ( traits_.bconserved && !doheat_ ) {
+  if ( traits_.bconserved ) {
     assert(FALSE && "Conservation not yet supported");
     gpdv_  = new GpdV(*grid_,*gmass_);
 //  gflux_ = new GFlux(*grid_);
@@ -581,10 +578,12 @@ void GMConv<TypePack>::init()
           && ghelm_   != NULLPTR
           && gpdv_    != NULLPTR) && "1 or more operators undefined");
   }
-  if ( !traits_.bconserved && !doheat_ ) {
+  else {
     gadvect_ = new GAdvect(*grid_);
+    gpdv_    = new GpdV(*grid_);
     assert( (gmass_   != NULLPTR
           && ghelm_   != NULLPTR
+          && gpdv_    != NULLPTR
           && gadvect_ != NULLPTR) && "1 or more operators undefined");
   }
 
