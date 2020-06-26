@@ -5,7 +5,7 @@
 //                p Div u. This is a nonlinear operator, so should not derive 
 //                from GLinOp. This operator requires that grid consist of
 //                elements of only one type.
-// Copyright    : Copyright 2018. Colorado State University. All rights reserved
+// Copyright    : Copyright 2018. Colorado State University. All rights reserved.
 // Derived From : GLinOp
 //==================================================================================
 
@@ -17,11 +17,11 @@
 // RETURNS: none
 //**********************************************************************************
 template<typename TypePack>
-gpdV<TypePack>::GpdV(GGrid &grid, Mass &massop)
+GpdV<TypePack>::GpdV(GGrid &grid)
 :
 bInitialized_   (FALSE),
 grid_           (&grid),
-massop_       (&massop)
+massop_       (&grid.massop())
 {
 } // end of constructor method (1)
 
@@ -34,7 +34,7 @@ massop_       (&massop)
 // RETURNS: none
 //**********************************************************************************
 template<typename TypePack>
-gpdV<TypePack>::~GpdV()
+GpdV<TypePack>::~GpdV()
 {
 } // end, destructor
 
@@ -52,7 +52,7 @@ gpdV<TypePack>::~GpdV()
 // RETURNS:  none
 //**********************************************************************************
 template<typename TypePack>
-void gpdV<TypePack>::apply(StateComp &p, State &u, State &utmp, StateComp &po) 
+void GpdV<TypePack>::apply(StateComp &p, State &u, State &utmp, StateComp &po) 
 {
   assert(bInitialized_ && "Operator not initialized");
     
@@ -80,7 +80,7 @@ void gpdV<TypePack>::apply(StateComp &p, State &u, State &utmp, StateComp &po)
 // RETURNS:  none
 //**********************************************************************************
 template<typename TypePack>
-void gpdV<TypePack>::def_prod(StateComp &p, State &u, State &utmp, StateComp &po) 
+void GpdV<TypePack>::def_prod(StateComp &p, State &u, State &utmp, StateComp &po) 
 {
   assert( utmp.size() >= GDIM+1
        && "Insufficient temp space specified");
@@ -128,7 +128,7 @@ void gpdV<TypePack>::def_prod(StateComp &p, State &u, State &utmp, StateComp &po
 // RETURNS:  none
 //**********************************************************************************
 template<typename TypePack>
-void gpdV<TypePack>::reg_prod(StateComp &p, State &u, State &utmp, StateComp &po) 
+void GpdV<TypePack>::reg_prod(StateComp &p, State &u, State &utmp, StateComp &po) 
 {
 
   assert( utmp.size() >= GDIM+1
@@ -179,7 +179,7 @@ void gpdV<TypePack>::reg_prod(StateComp &p, State &u, State &utmp, StateComp &po
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
-void gpdV<TypePack>::init()
+void GpdV<TypePack>::init()
 {
   assert(grid_->ntype().multiplicity(0) == GE_MAX-1 
         && "Only a single element type allowed on grid");
@@ -205,7 +205,7 @@ void gpdV<TypePack>::init()
 // RETURNS: none
 //**********************************************************************************
 template<typename TypePack>
-void gpdV<TypePack>::def_init()
+void GpdV<TypePack>::def_init()
 {
 
   if ( grid_->itype(GE_2DEMBEDDED).size() == 0 
@@ -295,7 +295,7 @@ void gpdV<TypePack>::def_init()
 // RETURNS: none
 //**********************************************************************************
 template<typename TypePack>
-void gpdV<TypePack>::reg_init()
+void GpdV<TypePack>::reg_init()
 {
   if ( grid_->itype(GE_REGULAR).size() <= 0 ) return; 
 

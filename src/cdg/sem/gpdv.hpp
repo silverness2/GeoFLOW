@@ -5,7 +5,7 @@
 //                p Div u. This is a nonlinear operator, so should not derive 
 //                from GLinOp. This operator requires that grid consist of
 //                elements of only one type.
-// Copyright    : Copyright 2018. Colorado State University. All rights reserved
+// Copyright    : Copyright 2018. Colorado State University. All rights reserved.
 // Derived From : none
 //==================================================================================
 
@@ -20,7 +20,7 @@
 
 
 template<typename TypePack>
-classGpdv 
+class GpdV 
 {
 public:
         using Interface  = EquationBase<TypePack>;
@@ -47,7 +47,7 @@ public:
 
 public:
 
-                          GpdV(Grid &grid, Mass &massop);
+                          GpdV(Grid &grid);
                           GpdV(const GpdV &);
                          ~GpdV();
 

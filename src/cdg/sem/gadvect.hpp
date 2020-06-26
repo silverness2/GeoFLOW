@@ -5,7 +5,7 @@
 //                u.Grad p  This is a nonlinear operator, so should not derive 
 //                from GLinOp. This operator requires that grid consist of
 //                elements of only one type.
-// Copyright    : Copyright 2018. Colorado State University. All rights reserved
+// Copyright    : Copyright 2018. Colorado State University. All rights reserved.
 // Derived From : none
 //==================================================================================
 
