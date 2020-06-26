@@ -106,6 +106,9 @@ virtual void                 print(const GString &filename){}          // print 
         GElemType            gtype() { return gtype_; }               // get unique elem type on grid       
         void                 deriv (GTVector<GFTYPE> &u, GINT idir, GTVector<GFTYPE> &tmp,
                                     GTVector<GFTYPE> &du );            // derivative of global vector
+        void                 wderiv(GTVector<GFTYPE> &q  , GINT idir, GBOOL bwghts,  
+                                    GTVector<GFTYPE> &tmp,
+                                    GTVector<GFTYPE> &du );            // derivative of global vector
 
         void                 set_bdy_update_callback(
                              std::function<void(const geoflow::tbox::PropertyTree &ptree,
