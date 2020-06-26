@@ -104,10 +104,8 @@ virtual void                 print(const GString &filename){}          // print 
                             &itype() { return itype_; }               // indices for all types
         GTVector<GSIZET>    &itype(GElemType i) { return itype_[i]; } // indices for type i    
         GElemType            gtype() { return gtype_; }               // get unique elem type on grid       
-        void                 deriv(GTVector<GFTYPE> &u, GINT idir, GTVector<GFTYPE> &tmp,
-                                   GTVector<GFTYPE> &du );            // derivative of global vector
-//std::function<void(const geoflow::tbox::PropertyTree& ptree,GString &supdate, Grid &grid,
-//                   StateInfo &stinfo, Time &time, State &utmp, State &u, State &ub)>
+        void                 deriv (GTVector<GFTYPE> &u, GINT idir, GTVector<GFTYPE> &tmp,
+                                    GTVector<GFTYPE> &du );            // derivative of global vector
 
         void                 set_bdy_update_callback(
                              std::function<void(const geoflow::tbox::PropertyTree &ptree,
