@@ -167,7 +167,7 @@ inline  void                compute_cv   (State &u, State &utmp, StateComp &cv);
 inline  void                compute_qd   (State &u, State &utmp, StateComp &qd);
 inline  void                compute_temp (State &u, State &utmp, StateComp &t );
 inline  void                compute_p    (State &u, State &utmp, StateComp &p );
-inline  void                compute_fallout
+inline  void                compute_falloutsrc
                                          (StateComp &g, State &qi, State &v, GINT jexcl, State &utmp, StateComp &r );
 inline  void                compute_div  (StateComp &q, State &v, State &utmp, StateComp &div );
 inline  void                compute_v    (State &u, State &utmp);
@@ -178,6 +178,8 @@ inline  void                compute_vterm(State &u, GINT ihydro, State &utmp);
         GBOOL               bupdatebc_;     // bdy update callback set?
         GBOOL               bsteptop_;      // is there a top-of-step callback?
         GBOOL               bvterm_;        // teminal vel. computed?
+        GINT                nhydro_;        // num hydrometeors
+        GINT                nmoist_;        // number of moist components
         GStepperType        isteptype_;     // stepper type
         GTVector<GFTYPE>    tcoeffs_;       // coeffs for time deriv
         GTVector<GFTYPE>    acoeffs_;       // coeffs for NL adv term
@@ -188,6 +190,8 @@ inline  void                compute_vterm(State &u, GINT ihydro, State &utmp);
         State               urhstmp_;       // helper arrays set from utmp
         State               uoptmp_;        // helper arrays set from utmp
         State               urktmp_;        // helper arrays set from utmp
+        State               qi_;            // mass fraction vector
+        State               tvi_;           // term vel. vector for all qi
         State               v_;             // state velocity components
         State               W_;             // terminal velocity components
         GTVector<State>     ukeep_;         // state at prev. time levels

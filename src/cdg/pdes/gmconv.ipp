@@ -1,13 +1,13 @@
-//==================================================================================
+ for timestep//==================================================================================
 // Module       : gmconv.ipp
 // Date         : 6/11/20 (DLR)
 // Description  : Object defining a moist convection solver:
 //
 //                PDEs:
-//                  d_t rho_T + Div (rho_T v) = -Ltot, total mass
-//                  d_t q_v + v.Grad q_v      = q_v Ltot/rho_T + dot(s_v)/rho_T
-//                  d_t q_h + v.Grad q_i      = q_h Ltot/rho_T - Div(rho_T q_h W_i)/rho_T
-//                                            + dot(s_h)/rho_T
+//                  d_t rhoT + Div (rhoT v)   = -Ltot, total mass
+//                  d_t q_v + v.Grad q_v      = q_v Ltot/rhoT + dot(s_v)/rhoT
+//                  d_t q_h + v.Grad q_i      = q_h Ltot/rhoT - Div(rhoT q_h W_i)/rhoT
+//                                            + dot(s_h)/rhoT
 //
 //                where 
 //                  Ltot = Sum_h Div(rhoT q_h vector(W)_i), 
@@ -257,8 +257,9 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   assert(!traits_.bconserved &&
          "conservation not yet supported"); 
 
-  GINT    ibeg, , nmfrac;
-  GString serr = "GMConv<TypePack>::dudt_impl: ";
+  GString    serr = "GMConv<TypePack>::dudt_impl: ";
+  GINT       ibeg ;
+  StateComp *Ltot, *irhoT;
 
   // NOTE:
   // Make sure that, in init(), Helmholtz op is using only
@@ -268,26 +269,81 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
 
   assert( !traits_.bsonserved ); // don't allow conservative form yet
 
-  nmfrac = traits_.dodry ? 0 : traits_.nlsector + traits_.nisector + 1;
+  qi_  = NULLPTR;
+  tvi_ = NULLPTR;
+  for ( auto j=0; j<nhydro_; j++ ) { //
+    qi_ [j] = u[GDIM+3+j]; // set mass frac vector
+    tvi_[j] = u[GDIM+3+nhydro_+j]; // set term speed for each qi
+  }
 
   *urhstmp_[0] = *u[GDIM+1]; urhstmp[0]->rpow(-1.0) // 1/total mass
 
-  // Mass fraction equations:
-  // For non-conserved mass fractions, we solve
-  //  df/dt u.Grad q_i = dot(s)/rho_tot 
-  ibeg   = GDIM + 2;
-  for ( auto j=ibeg; j<ibeg+nmfrac; j++ ) {
-    // Multiply mass frac by total den:
-    gadvect_->apply(*u[k], u, uoptmp_, *dudt[k]);     // apply advection
-    GMTK::saxpby<GFTYPE>(*urhstmp_[0], -1.0, *dudt[k], -1.0);
-    gimass_->opVec_prod(*urhstmp_[0], uoptmp_, *dudt[k]); // apply M^-1
-    if ( bforced_ && uf[k] != NULLPTR ) *dudt[k] += *uf[k];
+  // Set tmp pool for RHS computations:
+  Ltot  = urhstmp_[urhstmp_.size()-1];
+  irhoT = urhstmp_[urhstmp_.size()-2];
 
-    *urhstmp_[1] = (*u[k]) * (*urhstmp[0]); // rho_T * q_i
-    
+  // Compute velocity for timestep:
+  compute_v(u, utmp); // stored in v_
+
+  // Get 1/rhoT:
+  *irhoT = *u[GDIM+1];
+  irhoT->rpow(-1.0);
+  
+//void GMConv<TypePack>::compute_falloutsrc(StateComp &g, State &qi, State &tvi, GINT jexcl, State &utmp, StateComp &r)
+
+  // Total density RHS:
+  compute_div(*u[GDIM+1], v_, urhstmp_, *dudt[GDIM+1]); 
+  compute_falloutsrc(*u[GDIM+1], qi_, tvi_, -1, uoptmp_, *Ltot);
+//GMTK::saxpby<Value>(*dudt[GDIM+1], -1.0, *fallout, -1.0);  // update RHS for rhoT
+  if ( uf[GDIM+1] != NULLPTR ) *dudt[GDIM+1] += *uf[GDIM+1]; // add in rhoT source term
+  
+  // First, compute all RHS as tho they are on the LHS...
+
+  // Mass fraction equations (vapor + all hyrodmeteors):
+  // We solve
+  //  dq_i/dt+ u.Grad q_i = -div(q_i rhoT W_i)/rhoT + q_i/rhoT Ltot + dot(s_i)/rhoT
+  // where Ltot is total fallout source
+  ibeg   = GDIM + 2;
+  for ( auto j=0; j<nmoist_; j++ ) {
+    gadvect_->apply(*qi[j], v_, uoptmp_, *dudt[ibeg+j]); // apply advection
+    compute_vterm(*tvi_[j], urhstmp_, W_);
+    *tmp1 = (*qi[k]) * (*rhoT);                // q_i rhoT
+    compute_div(*tmp1, W_, urhstmp_, *tmp2);   // Div(q_i rhoT W)
+    *tmp2 *= *irhoT;                           // Div(q_i rhoT W)/rhoT
+    *dudt[ibeg+j] += *tmp2;                    // dudt += Div(q_i rhoT W)/rhoT
+    *tmp1  = (*Ltot) * (*irhoT); *tmp1 *= (qi[j]) // q_i/rhoT Ltot
+    *dudt[ibeg+j] -= *tmp1;                    // dudt += -q_i/rhoT Ltot
+    if ( uf[ibeg+j] != NULLPTR ) {             // add in sdot(s_i)/rhoT
+      *tmp1 = *uf[ibeg+1]; *tmp1 *= *irhoT;    // dot(s)/rhoT 
+      GMTK::saxpby<Value>(*dudt[ibeg+j], 1.0, *tmp1, -1.0); 
+                                               // dudt -= dot(s)/rhoT
+    }
+//  dudt[k]->pointProd(-1.0, *gimass_->data());// dudt -> -M^-1 dudt
   }
   
-  // Energy equation:
+  // Energy equationu RHS:
+  compute_div(*u[GDIM+1], v_, urhstmp_, *dudt[GDIM+1]); 
+  compute_falloutsrc(*u[GDIM+1], qi_, tvi_, -1, uoptmp_, *Ltot);
+//GMTK::saxpby<Value>(*dudt[GDIM+1], -1.0, *fallout, -1.0);  // update RHS for rhoT
+  if ( uf[GDIM+1] != NULLPTR ) *dudt[GDIM+1] += *uf[GDIM+1]; // add in rhoT source term
+
+  for ( auto j=0; j<nmoist_; j++ ) {
+    gadvect_->apply(*qi[j], v_, uoptmp_, *dudt[ibeg+j]); // apply advection
+    compute_vterm(*tvi_[j], urhstmp_, W_);
+    *tmp1 = (*qi[k]) * (*rhoT);                // q_i rhoT
+    compute_div(*tmp1, W_, urhstmp_, *tmp2);   // Div(q_i rhoT W)
+    *tmp2 *= *irhoT;                           // Div(q_i rhoT W)/rhoT
+    *dudt[ibeg+j] += *tmp2;                    // dudt += Div(q_i rhoT W)/rhoT
+    *tmp1  = (*Ltot) * (*irhoT); *tmp1 *= (qi[j]) // q_i/rhoT Ltot
+    *dudt[ibeg+j] -= *tmp1;                    // dudt += -q_i/rhoT Ltot
+    if ( uf[ibeg+j] != NULLPTR ) {             // add in sdot(s_i)/rhoT
+      *tmp1 = *uf[ibeg+1]; *tmp1 *= *irhoT;    // dot(s)/rhoT 
+      GMTK::saxpby<Value>(*dudt[ibeg+j], 1.0, *tmp1, -1.0); 
+                                               // dudt -= dot(s)/rhoT
+    }
+//  dudt[k]->pointProd(-1.0, *gimass_->data());// dudt -> -M^-1 dudt
+  }
+
   // Momentum equations:
   for ( auto k=0; k<GDIM; k++ ) {
     gadvect_->apply(*u[k], u, uoptmp_, *dudt[k]);     // apply advection
@@ -601,6 +657,16 @@ void GMConv<TypePack>::init()
   // timestep computation:
   maxbyelem_.resize(grid_->nelems());
   ggrid_->minlength(&dxmin_);
+
+  // Set size of mass frac and term vel vectors:
+  nhyrdo_ = traits_.dodry ? 0 : traits_.nlsector + traits_.nisector + 1;
+  nmoist_ = traits_.dodry ? 0 : nhydro_ + 1;
+  if ( nmoist_ > 0 ) {
+    qi_ .resize(nmoist_);
+    tvi_.resize(nmoist_);
+    qi_   = NULLPTR;
+    tvi_ = NULLPTR;
+  }
 
 } // end of method init
 
