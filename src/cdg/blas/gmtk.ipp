@@ -38,7 +38,7 @@ void cross_prod_k(GTVector<GTVector<T>*> &A, GINT *iind, GINT nind, GINT isgn, G
   GSIZET n;
   T      fact = isgn < 0 ? -1.0 : 1.0;
   if ( iind != NULLPTR ) {
-    for ( GSIZET k=0; k<nind; k++ ) { // cycle over all coord pairs
+    for ( auto k=0; k<nind; k++ ) { // cycle over all coord pairs
       n = iind[k];
       C[0][k] =  (*A[1])[n]*fact;
       C[1][k] = -(*A[0])[n]*fact;
@@ -46,7 +46,7 @@ void cross_prod_k(GTVector<GTVector<T>*> &A, GINT *iind, GINT nind, GINT isgn, G
     }
   }
   else {
-    for ( GSIZET n=0; n<A[0]->size(); n++ ) { // cycle over all coord pairs
+    for ( auto n=0; n<A[0]->size(); n++ ) { // cycle over all coord pairs
       C[0][n] =  (*A[1])[n]*fact;
       C[1][n] = -(*A[0])[n]*fact;
       if ( C.size() > 2 ) C[2][n] = 0.0;
@@ -81,14 +81,14 @@ void cross_prod_k(GTVector<T> &Ax, GTVector<T> &Ay,
   GSIZET n;
   T      fact = isgn < 0 ? -1.0 : 1.0;
   if ( iind != NULLPTR ) {
-    for ( GSIZET k=0; k<nind; k++ ) { // cycle over all coord pairs
+    for ( auto k=0; k<nind; k++ ) { // cycle over all coord pairs
       n = iind[k];
       Cx[k] =  Ay[n]*fact;
       Cy[k] = -Ax[n]*fact;
     }
   }
   else {
-    for ( GSIZET n=0; n<Ax.size(); n++ ) { // cycle over all coord pairs
+    for ( auto n=0; n<Ax.size(); n++ ) { // cycle over all coord pairs
       Cx[n] =  Ay[n]*fact;
       Cy[n] = -Ax[n]*fact;
     }
@@ -129,7 +129,7 @@ void cross_prod(GTVector<GTVector<T>*> &A, GTVector<GTVector<T>*> &B,
   T      x2, y2, z2;
 
   if ( iind != NULLPTR ) {
-    for ( GSIZET k=0; k<nind; k++ ) { // cycle over all coord pairs
+    for ( auto k=0; k<nind; k++ ) { // cycle over all coord pairs
       n = iind[k];
       x1 = (*A[0])[n]; y1 = (*A[1])[n]; z1 = (*A[2])[n];
       x2 = (*B[0])[n]; y2 = (*B[1])[n]; z2 = (*B[2])[n];
@@ -139,7 +139,7 @@ void cross_prod(GTVector<GTVector<T>*> &A, GTVector<GTVector<T>*> &B,
     }
   }
   else {
-    for ( GSIZET n=0; n<A[0]->size(); n++ ) { // cycle over all coord pairs
+    for ( auto n=0; n<A[0]->size(); n++ ) { // cycle over all coord pairs
       x1 = (*A[0])[n]; y1 = (*A[1])[n]; z1 = (*A[2])[n];
       x2 = (*B[0])[n]; y2 = (*B[1])[n]; z2 = (*B[2])[n];
       C[0][n] = y1*z2 - z1*y2; 
@@ -180,7 +180,7 @@ void cross_prod(GTVector<T> &Ax, GTVector<T> &Ay, GTVector<T> &Az,
   T      x2, y2, z2;
 
   if ( iind != NULLPTR ) {
-    for ( GSIZET k=0; k<nind; k++ ) { // cycle over all coord pairs
+    for ( auto k=0; k<nind; k++ ) { // cycle over all coord pairs
       n = iind[k];
       x1 = Ax[n]; y1 = Ay[n]; z1 = Az[n];
       x2 = Bx[n]; y2 = By[n]; z2 = Bz[n];
@@ -190,7 +190,7 @@ void cross_prod(GTVector<T> &Ax, GTVector<T> &Ay, GTVector<T> &Az,
     }
   }
   else {
-    for ( GSIZET n=0; n<Ax.size(); n++ ) { // cycle over all coord pairs
+    for ( auto n=0; n<Ax.size(); n++ ) { // cycle over all coord pairs
       x1 = Ax[n]; y1 = Ay[n]; z1 = Az[n];
       x2 = Bx[n]; y2 = By[n]; z2 = Bz[n];
       Cx[n] = y1*z2 - z1*y2; 
@@ -230,18 +230,18 @@ void normalize_euclidean(GTVector<GTVector<T>*> &x, GINT *iind, GINT nind, T x0)
   //       each coordinate for all tuples.
   xn = 0.0;
   if ( iind != NULLPTR ) {
-    for ( GSIZET k=0; k<nind; k++ ) { // cycle over all n-tuples
+    for ( auto k=0; k<nind; k++ ) { // cycle over all n-tuples
       n = iind[k];
-      for ( GSIZET l=0, xn=0.0; l<x.size(); l++ ) xn += (*x[l])[n]*(*x[l])[n];
+      for ( auto l=0, xn=0.0; l<x.size(); l++ ) xn += (*x[l])[n]*(*x[l])[n];
       xn = x0/pow(xn,0.5);
-      for ( GSIZET l=0; l<x.size(); l++ ) (*x[l])[n] *= xn;
+      for ( auto l=0; l<x.size(); l++ ) (*x[l])[n] *= xn;
     }
   }
   else {
-    for ( GSIZET n=0; n<x[0]->size(); n++ ) { // cycle over all n-tuples
-      for ( GSIZET l=0, xn=0.0; l<x.size(); l++ ) xn += (*x[l])[n]*(*x[l])[n];
+    for ( auto n=0; n<x[0]->size(); n++ ) { // cycle over all n-tuples
+      for ( auto l=0, xn=0.0; l<x.size(); l++ ) xn += (*x[l])[n]*(*x[l])[n];
       xn = x0/pow(xn,0.5);
-      for ( GSIZET l=0; l<x.size(); l++ ) (*x[l])[n] *= xn;
+      for ( auto l=0; l<x.size(); l++ ) (*x[l])[n] *= xn;
     }
   }
 
@@ -250,7 +250,7 @@ void normalize_euclidean(GTVector<GTVector<T>*> &x, GINT *iind, GINT nind, T x0)
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD :    saxpby
+// METHOD :    saxpby (1)
 // DESC   : 
 //             compute x = ax + by
 //          
@@ -265,10 +265,34 @@ template<typename T>
 void saxpby(GTVector<T> &x, T a, GTVector<T> &y, T b) 
 {
   assert(x.size() == y.size() && "Incompatible array sizes");
-  for ( GSIZET j=0; j<x.size(); j++ ) { 
+  for ( auto j=0; j<x.size(); j++ ) { 
     x[j] = a*x[j] + b*y[j];
   }
-} // end of method saxpby
+} // end of method saxpby (1)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD :    saxpby (2)
+// DESC   : 
+//             compute z = ax + by
+//          
+// ARGS   : z : vector, updated
+//          x : summand vector
+//          a : const multiplying x
+//          y : vector, must be same size as x
+//          b : const multiplying y
+//          
+// RETURNS: GTVector & 
+//**********************************************************************************
+template<typename T>
+void saxpby(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y, T b) 
+{
+  assert(x.size() == y.size() && "Incompatible array sizes");
+  for ( auto j=0; j<x.size(); j++ ) { 
+    z[j] = a*x[j] + b*y[j];
+  }
+} // end of method saxpby (1)
 
 
 //**********************************************************************************

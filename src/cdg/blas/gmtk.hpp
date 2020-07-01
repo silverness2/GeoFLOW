@@ -84,6 +84,9 @@ namespace GMTK
   template<typename T>
   void saxpby(GTVector<T> &x, T a, GTVector<T> &y, T b); 
 
+  template<typename T>
+  void saxpby(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y, T b); 
+
   template<typename T>  
   void     add(GTVector<T> &vret, const GTVector<T> &va, const GTVector<T> &vb, T a, T b);
 
