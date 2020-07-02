@@ -167,6 +167,7 @@ inline  void                compute_cv   (State &u, State &utmp, StateComp &cv);
 inline  void                compute_qd   (State &u, State &utmp, StateComp &qd);
 inline  void                compute_temp (State &u, State &utmp, StateComp &t );
 inline  void                compute_p    (State &u, State &utmp, StateComp &p );
+inline  void                compute_ptemp(State &u, State &utmp, StateComp &temp, StateComp &p );
 inline  void                compute_falloutsrc
                                          (StateComp &g, State &qi, State &v, GINT jexcl, State &utmp, StateComp &r );
 inline  void                compute_div  (StateComp &q, State &v, State &utmp, StateComp &div );
@@ -178,6 +179,7 @@ inline  void                compute_vterm(State &u, GINT ihydro, State &utmp);
         GBOOL               bupdatebc_;     // bdy update callback set?
         GBOOL               bsteptop_;      // is there a top-of-step callback?
         GBOOL               bvterm_;        // teminal vel. computed?
+        GINT                nevolve_;       // num StateComp's evolved
         GINT                nhydro_;        // num hydrometeors
         GINT                nmoist_;        // number of moist components
         GStepperType        isteptype_;     // stepper type
@@ -190,8 +192,12 @@ inline  void                compute_vterm(State &u, GINT ihydro, State &utmp);
         State               urhstmp_;       // helper arrays set from utmp
         State               uoptmp_;        // helper arrays set from utmp
         State               urktmp_;        // helper arrays set from utmp
-        State               qi_;            // mass fraction vector
+        State               qi_;            // full mass fraction vector
+        State               qice_;          // ice mass fraction vector
+        State               qliq_;          // liquid mass fraction vector
         State               tvi_;           // term vel. vector for all qi
+        State               tvice_;         // term vel. vector for all qice
+        State               tvliq_;         // term vel. vector for all qliq
         State               v_;             // state velocity components
         State               W_;             // terminal velocity components
         GTVector<State>     ukeep_;         // state at prev. time levels

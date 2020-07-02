@@ -258,8 +258,10 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
          "conservation not yet supported"); 
 
   GString    serr = "GMConv<TypePack>::dudt_impl: ";
-  GINT       ibeg ;
+  GINT       ibeg, nliq ;
   StateComp *Ltot, *irhoT;
+  StateComp *p, *T;
+  StateComp *tmp1, *tmp2;
 
   // NOTE:
   // Make sure that, in init(), Helmholtz op is using only
@@ -281,6 +283,8 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   // Set tmp pool for RHS computations:
   Ltot  = urhstmp_[urhstmp_.size()-1];
   irhoT = urhstmp_[urhstmp_.size()-2];
+  tmp1  = urhstmp_[urhstmp_.size()-3];
+  tmp2  = urhstmp_[urhstmp_.size()-4];
 
   // Compute velocity for timestep:
   compute_v(u, utmp); // stored in v_
@@ -289,17 +293,17 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   *irhoT = *u[GDIM+1];
   irhoT->rpow(-1.0);
   
-//void GMConv<TypePack>::compute_falloutsrc(StateComp &g, State &qi, State &tvi, GINT jexcl, State &utmp, StateComp &r)
 
   // Total density RHS:
   compute_div(*u[GDIM+1], v_, urhstmp_, *dudt[GDIM+1]); 
   compute_falloutsrc(*u[GDIM+1], qi_, tvi_, -1, uoptmp_, *Ltot);
-//GMTK::saxpby<Value>(*dudt[GDIM+1], -1.0, *fallout, -1.0);  // update RHS for rhoT
-  if ( uf[GDIM+1] != NULLPTR ) *dudt[GDIM+1] += *uf[GDIM+1]; // add in rhoT source term
+  GMTK::saxpby<Value>(*dudt[GDIM+1], 1.0, *Ltot, 1.0);   // += Ltot
+  if ( uf[GDIM+1] != NULLPTR ) *dudt[GDIM+1] -= *uf[GDIM+1]; += sdot(s_rhoT)
   
-  // First, compute all RHS as tho they are on the LHS...
+  // First, compute all RHS as tho they are on the LHS, then
+  // change the sign and add Mass at the very end....
 
-  // Mass fraction equations (vapor + all hyrodmeteors):
+  // Mass fraction equations (vapor + all hyrodmeteors) RHS:
   // We solve
   //  dq_i/dt+ u.Grad q_i = -div(q_i rhoT W_i)/rhoT + q_i/rhoT Ltot + dot(s_i)/rhoT
   // where Ltot is total fallout source
@@ -318,39 +322,53 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
       GMTK::saxpby<Value>(*dudt[ibeg+j], 1.0, *tmp1, -1.0); 
                                                // dudt -= dot(s)/rhoT
     }
-//  dudt[k]->pointProd(-1.0, *gimass_->data());// dudt -> -M^-1 dudt
   }
   
-  // Energy equationu RHS:
-  compute_div(*u[GDIM+1], v_, urhstmp_, *dudt[GDIM+1]); 
-  compute_falloutsrc(*u[GDIM+1], qi_, tvi_, -1, uoptmp_, *Ltot);
-//GMTK::saxpby<Value>(*dudt[GDIM+1], -1.0, *fallout, -1.0);  // update RHS for rhoT
-  if ( uf[GDIM+1] != NULLPTR ) *dudt[GDIM+1] += *uf[GDIM+1]; // add in rhoT source term
+  p = urhstmp_[urhstmp_.size()-1]; // holds pressure
+  T = urhstmp_[urhstmp_.size()-2]; // holds temperature
 
-  for ( auto j=0; j<nmoist_; j++ ) {
-    gadvect_->apply(*qi[j], v_, uoptmp_, *dudt[ibeg+j]); // apply advection
-    compute_vterm(*tvi_[j], urhstmp_, W_);
-    *tmp1 = (*qi[k]) * (*rhoT);                // q_i rhoT
-    compute_div(*tmp1, W_, urhstmp_, *tmp2);   // Div(q_i rhoT W)
-    *tmp2 *= *irhoT;                           // Div(q_i rhoT W)/rhoT
-    *dudt[ibeg+j] += *tmp2;                    // dudt += Div(q_i rhoT W)/rhoT
-    *tmp1  = (*Ltot) * (*irhoT); *tmp1 *= (qi[j]) // q_i/rhoT Ltot
-    *dudt[ibeg+j] -= *tmp1;                    // dudt += -q_i/rhoT Ltot
-    if ( uf[ibeg+j] != NULLPTR ) {             // add in sdot(s_i)/rhoT
-      *tmp1 = *uf[ibeg+1]; *tmp1 *= *irhoT;    // dot(s)/rhoT 
-      GMTK::saxpby<Value>(*dudt[ibeg+j], 1.0, *tmp1, -1.0); 
-                                               // dudt -= dot(s)/rhoT
-    }
-//  dudt[k]->pointProd(-1.0, *gimass_->data());// dudt -> -M^-1 dudt
+  // Energy equationu RHS:
+  nliq = traits_.nlsector;
+  for ( auto j=0; j<traits_.nlsector; j++ ) qliq_[j] = u[GDIM+2+j];
+  for ( auto j=0; j<traits_.nisector; j++ ) qice_[j] = u[GDIM+2+nliq+j];
+
+  compute_div(*u[GDIM], v_, urhstmp_, *dudt[GDIM]); 
+ *tmp1 = *u[GDIM+1]; *tmp1.pointProd(CPL, *T);     // tmp1 = CP_liq rhoT T
+  compute_falloutsrc(*tmp1, qliq_, tvliq_, 1.0, uoptmp_, *Ltot);
+ *dudt[GDIM] += *Ltot;
+ *tmp1 = *u[GDIM+1]; *tmp1.pointProd(CPI, *T);     // tmp1 = CP_ice rhoT T
+  compute_falloutsrc(*tmp1, qice_, tvice_, 1.0, uoptmp_, *Ltot); //
+  compute_div(*u[GDIM], v_, urhstmp_, *tmp2);      // Div (h v);
+ *dudt[GDIM] += *tmp2;
+  gadvect_->apply(*p, v_, uoptmp_, *tmp1);         // v.Grad p
+ *dudt[GDIM] += *tmp2;                             // += v . Grad p
+  if ( uf[GDIMj] != NULLPTR ) {                    // add in sdot(s_i)/rhoT
+    *tmp1 = *uf[ibeg+1]; *tmp1 *= *irhoT;          // dot(s)/rhoT 
+    GMTK::saxpby<Value>(*dudt[ibeg+j], 1.0, *tmp1, -1.0); 
+                                                   // dudt -= dot(s)/rhoT
   }
 
-  // Momentum equations:
+ *dudt[GDIM] += *Ltot;
+//void GMConv<TypePack>::compute_temp(State &u, State &utmp, StateComp &temp)
+  compute_ptemp(u, uoptmp_, *T, *p);
+ *tmp1 = *u[GDIM+2]; *tmp1.pointProd(CPL, *T);     // tmp1 = CP_liq T
+  GMTK::saxpby<Value>(*tmp1,  -1.0, *dudt[k], -1.0);
+  compute_falloutsrc(*u[GDIM+1], qi_, tvi_, -1, uoptmp_, *Ltot);
+  compute_vterm(*tvi_[j], urhstmp_, W_);
+
+
+  // Momentum equations RHS:
   for ( auto k=0; k<GDIM; k++ ) {
     gadvect_->apply(*u[k], u, uoptmp_, *dudt[k]);     // apply advection
     ghelm_->opVec_prod(*u[k], uoptmp_, *urhstmp_[0]); // apply diffusion
     GMTK::saxpby<GFTYPE>(*urhstmp_[0], -1.0, *dudt[k], -1.0);
     gimass_->opVec_prod(*urhstmp_[0], uoptmp_, *dudt[k]); // apply M^-1
     if ( traits_.bforced && uf[k] != NULLPTR ) *dudt[k] += *uf[k];
+  }
+
+  // Multiply RHS by -M^-1:
+  for ( auto j=0; j<nevolve_; j++ ) {
+    dudt[j]->pointProd(-1.0, *gimass_->data());// dudt -> -M^-1 dudt
   }
   
 } // end of method dudt_impl
@@ -661,12 +679,20 @@ void GMConv<TypePack>::init()
   // Set size of mass frac and term vel vectors:
   nhyrdo_ = traits_.dodry ? 0 : traits_.nlsector + traits_.nisector + 1;
   nmoist_ = traits_.dodry ? 0 : nhydro_ + 1;
-  if ( nmoist_ > 0 ) {
-    qi_ .resize(nmoist_);
-    tvi_.resize(nmoist_);
-    qi_   = NULLPTR;
-    tvi_ = NULLPTR;
-  }
+  nevolve_ = GDIM + 2 + nmoist_;
+  qi_   .resize(nmoist_);
+  tvi_  .resize(nmoist_);
+  qliq_ .resize(traits_.nlsector);
+  tvliq_.resize(traits_.nlsector);
+  qice_ .resize(traits_.nisector);
+  tvice_.resize(traits_.nisector);
+
+  qi_   = NULLPTR;
+  tvi_  = NULLPTR;
+  qliq_ = NULLPTR;
+  tvliq_= NULLPTR;
+  qice_ = NULLPTR;
+  tvice_= NULLPTR;
 
 } // end of method init
 
@@ -939,7 +965,7 @@ void GMConv<TypePack>::compute_temp(State &u, State &utmp, StateComp &temp)
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : compute_p
+// METHOD : compute_p 
 // DESC   : Compute total pressure fluctuations from state
 //              p' = rho' ( qd Rd + qv Rv ) T,
 //          with total density fluctuation, rho', qd, qv the
@@ -986,7 +1012,62 @@ void GMConv<TypePack>::compute_p(State &u, State &utmp, StateComp &p)
      p[j] = (*d)[j] * ( (*qd)[j]*RD + (*qv)[j]*RV ) * (*t)[j];
    }
 
-} // end of method compute_p
+} // end of method compute_p 
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : compute_ptemp 
+// DESC   : Compute total pressure & temperature fluctuations from state
+//              p' = rho' ( qd Rd + qv Rv ) T,
+//          with total density fluctuation, rho', qd, qv the
+//          dry and vapor mass fractions, Rd, Rv, the dry and vapor
+//          gas constants, and T the temperature:
+//             T = eps / Cv = e_s /( rho' * Cv ),
+//          where e_s is the sensible internal energy density
+// ARGS   : u    : state
+//          utmp : tmp vectors; at least 2 required; only first 2 used
+//          temp : array to hold temperature
+//          p    : pressure fluctuation field
+// RETURNS: none.
+//**********************************************************************************
+template<typename TypePack>
+void GMConv<TypePack>::compute_ptemp(State &u, State &utmp, StateComp &temp, StateComp &p)
+{
+   GString    serr = "GMConv<TypePack>::compute_ptemp: ";
+   StateComp *qd, *qv, *t; 
+
+
+   assert(utmp.size() >= 3);
+
+   // Set int energy and density:
+   es = u[GDIM];   // sensible internal energy density
+   d  = u[GDIM+1]; // total density fluctuation
+
+   t = &temp;    // temp
+   compute_temp(u, utmp, *t);  // first 2 utmp arrays used
+  
+   if ( traits_.dodry ) { // if dry dynamics only
+     // p' = rho'  Rd T:
+     for ( auto j=0; j<p.size(); j++ ) {
+       p[j] = (*d)[j] * RD  * (*t)[j];
+     }
+     return;
+   }
+
+   // Set vapor mass fraction:
+   qv = u[GDIM+2]; // qv, from state
+
+   // Get dry mass fraction:
+   qd = utmp[1];
+   compute_qd(u, utmp, *qd); // first utmp array used 
+
+   // p' = rho' ( qd Rd + qv Rv ) T:
+   for ( auto j=0; j<p.size(); j++ ) {
+     p[j] = (*d)[j] * ( (*qd)[j]*RD + (*qv)[j]*RV ) * (*t)[j];
+   }
+
+} // end of method compute_ptemp
 
 
 //**********************************************************************************
@@ -1184,7 +1265,7 @@ void GMConv<TypePack>::compute_falloutsrc(StateComp &g, State &qi, State &tvi, G
    r = 0.0;
    if ( !traits_.dofallout || traits_.dodry ) return;
 
-   nhydro = traits_.nlsector + traits_.nisector;
+   nhydro = qi.size(); // traits_.nlsector + traits_.nisector;
 
    vterm = NULLPTR;
    for ( auto j=0; j<GDIM; j++ ) vterm[j] = utmp[GDIM+3+j];
