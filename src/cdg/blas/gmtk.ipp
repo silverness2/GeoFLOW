@@ -122,7 +122,7 @@ template<typename T>
 void cross_prod(GTVector<GTVector<T>*> &A, GTVector<GTVector<T>*> &B, 
                 GINT *iind, GINT nind, GTVector<GTVector<T>*> &C)
 {
-  assert( A.size() >= 3 && B.size() && C.size() >= 3 && "Incompatible dimensionality");
+  assert( A.size() >= 3 && B.size() && C.size() >= 3 && "Incompatible input vectors");
 
   GSIZET n;
   T      x1, y1, z1;
@@ -201,6 +201,153 @@ void cross_prod(GTVector<T> &Ax, GTVector<T> &Ay, GTVector<T> &Az,
 
 } // end of method cross_prod (2)
 
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : cross_prod (3)
+// DESC   : compute idir component of cross/vector product 
+//             C = A X B
+//          
+// ARGS   : A    : array of pointers to vectors; must each have at least 3
+//                 elements for 3-d vector product. All vector elements must
+//                 have the same length if non-NULL. May have NULL components, 
+//                 which are treated as 0
+//          B    : array of pointers to vectors; must each have at least 3
+//                 elements for 3-d vector product. All vector elements must
+//                 have the same length. All components must be non-NULL
+//          iind : pointer to indirection array, used if non_NULLPTR.
+//          nind : number of indices in iind. This is the number of cross products
+//                 that will be computed, if iind is non-NULLPTR
+//          idir : which component to compute
+//          C    : idir component
+// RETURNS: GTVector & 
+//**********************************************************************************
+template<typename T>
+void cross_prod(GTVector<GTVector<T>*> &A, GTVector<GTVector<T>*> &B, 
+                GINT idir, GTVector<T> &C)
+{
+  assert( (A.size() == 2 || A.size() == 3) && "Incompatible dimensionality");
+  assert( A.size() == B.size() && "Incompatible input vectors");
+
+  T      x1, y1, z1;
+  T      x2, y2, z2;
+
+  if ( A.size() == 2 ) { // 2d vector
+    if ( idir != 3 ) { // only a 3-component
+      C = 0.0;
+      return;
+    }
+    if ( A[0] != NULLPTR && A[1] != NULLPTR ) {
+      for ( auto n=0; n<A[0]->size(); n++ ) { // cycle over all elemsnts
+        x1 = (*A[0])[n]; y1 = (*A[1])[n]; 
+        x2 = (*B[0])[n]; y2 = (*B[1])[n]; 
+        C[n] = x1*y2 - x2*y1;
+      }
+    }
+    else if ( A[0] != NULLPTR && A[1] == NULLPTR ) {
+      for ( auto n=0; n<A[0]->size(); n++ ) { // cycle over all elemsnts
+        x1 = (*A[0])[n]; 
+        y2 = (*B[1])[n]; 
+        C[n] = x1*y2;
+      }
+    }
+    else if ( A[0] == NULLPTR && A[1] != NULLPTR ) {
+      for ( auto n=0; n<A[1]->size(); n++ ) { // cycle over all elemsnts
+        y1 = (*A[1])[n]; 
+        x2 = (*B[0])[n]; 
+        C[n] = -x2*y1;
+      }
+    }
+    else {
+      assert(FALSE);
+    }
+  }
+  else { // 3d vectors
+    switch ( idir ) {
+    case 1:
+      if ( A[1] != NULLPTR && A[2] != NULLPTR ) {
+        for ( auto n=0; n<A[1]->size(); n++ ) { // cycle over all coord pairs
+          y1 = (*A[1])[n]; z1 = (*A[2])[n];
+          y2 = (*B[1])[n]; z2 = (*B[2])[n];
+          C[n] = y1*z2 - z1*y2; 
+        }
+      }
+      else if ( A[1] != NULLPTR && A[2] == NULLPTR ) {
+        for ( auto n=0; n<A[0]->size(); n++ ) { // cycle over all coord pairs
+          y1 = (*A[1])[n]; 
+          z2 = (*B[2])[n];
+          C[n] = y1*z2;
+        }
+      }
+      else if ( A[1] == NULLPTR && A[2] != NULLPTR ) {
+        for ( auto n=0; n<A[2]->size(); n++ ) { // cycle over all coord pairs
+          z1 = (*A[2])[n];
+          y2 = (*B[1])[n]; 
+          C[n] =  -z1*y2; 
+        }
+      }
+      else {
+        assert(FALSE);
+      }
+      break;
+    case 2:
+      if ( A[0] != NULLPTR && A[2] != NULLPTR ) {
+        for ( auto n=0; n<A[0]->size(); n++ ) { // cycle over all coord pairs
+          x1 = (*A[0])[n]; z1 = (*A[2])[n];
+          x2 = (*B[0])[n]; z2 = (*B[2])[n];
+          C[n] = z1*x2 - z2*x1; 
+        }
+      }
+      else if ( A[0] != NULLPTR && A[2] == NULLPTR ) {
+        for ( auto n=0; n<A[0]->size(); n++ ) { // cycle over all coord pairs
+          x1 = (*A[0])[n]; 
+          z2 = (*B[2])[n]; 
+          C[n] = -z2*x1; 
+        }
+      }
+      else if ( A[0] == NULLPTR && A[2] != NULLPTR ) {
+        for ( auto n=0; n<A[2]->size(); n++ ) { // cycle over all coord pairs
+          z1 = (*A[2])[n];
+          x2 = (*B[0])[n]; 
+          C[n] = z1*x2;
+        }
+      }
+      else {
+        assert(FALSE);
+      }
+      break;
+    case 3:
+      if ( A[0] != NULLPTR && A[1] != NULLPTR ) {
+        for ( auto n=0; n<A[0]->size(); n++ ) { // cycle over all coord pairs
+          x1 = (*A[0])[n]; y1 = (*A[1])[n];
+          x2 = (*B[0])[n]; y2 = (*B[1])[n];
+          C[n] = x1*y2 - x2*y1;
+        }
+      }
+      else if ( A[0] != NULLPTR && A[1] == NULLPTR ) {
+        for ( auto n=0; n<A[0]->size(); n++ ) { // cycle over all coord pairs
+          x1 = (*A[0])[n]; 
+          y2 = (*B[1])[n];
+          C[n] = x1*y2;
+        }
+      }
+      else if ( A[0] == NULLPTR && A[1] != NULLPTR ) {
+        for ( auto n=0; n<A[1]->size(); n++ ) { // cycle over all coord pairs
+          y1 = (*A[1])[n];
+          x2 = (*B[0])[n]; 
+          C[n] = -x2*y1;
+        }
+      }
+      else {
+        assert(FALSE);
+      }
+      break;
+    default:
+      assert(FALSE);
+    }
+  }
+
+} // end of method cross_prod (3)
 
 //**********************************************************************************
 //**********************************************************************************

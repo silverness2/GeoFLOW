@@ -75,6 +75,11 @@ namespace GMTK
                   GINT *iind, GINT nind,
                   GTVector<T> &Cx, GTVector<T> &Cy, GTVector<T> &Cz);
 
+  template<typename T>
+  void cross_prod(GTVector<GTVector<T>*> &A, GTVector<GTVector<T>*> &B,
+                  GINT idir, GTVector<T> &C);
+
+
   template<typename T>  
   void    normalize_euclidean(GTVector<GTVector<T>*> &x, GINT *iind, GINT nind, T x0=1);
 
