@@ -262,6 +262,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   StateComp *irhoT, *Ltot;
   StateComp *e, *p, *rhoT, *T; // energy den, pressure, temperature
   StateComp *tmp1, *tmp2;
+  State      g(GDIM); 
 
   // NOTE:
   // Make sure that, in init(), Helmholtz op is using only
@@ -274,7 +275,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   // Assign qi, tvi, qice, qliq, tvice, tvliq:
   assign_helpers(u);
 
-  *urhstmp_[0] = *u[GDIM+1]; urhstmp[0]->rpow(-1.0) // 1/total mass
+ *urhstmp_[0] = *u[GDIM+1]; urhstmp[0]->rpow(-1.0) // 1/total mass
 
   // Set tmp pool for RHS computations:
   Ltot  = urhstmp_[urhstmp_.size()-1];
@@ -286,8 +287,8 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   compute_v(u, utmp); // stored in v_
 
   // Get 1/rhoT:
-   rhoT  =  u[GDIM+1];
-  *irhoT = *u[GDIM+1];
+  rhoT  =  u[GDIM+1];
+ *irhoT = *u[GDIM+1];
   irhoT->rpow(-1.0);
   
 
@@ -337,20 +338,19 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   
   compute_ptemp(u, uoptmp_, *T, *p);               // find p, T
 
+  GMTK::saxpby<Ftype>(*tmp1, *e, 1.0, *p, 1.0);    // h = p+e, enthalpy density
+  compute_div(*tmp1 v_, uoptmp_, *dudt[GDIM]);     // Div (h v);
+
   if ( traits_.dofallout || traits_.dodry ) {
    *tmp1 = *rhoT; *tmp1.pointProd(CPL, *T);        // tmp1 = CP_liq rhoT T
-    compute_falloutsrc(*tmp1, qliq_, tvliq_, 1.0, uoptmp_, *Ltot);
+    compute_falloutsrc(*tmp1, qliq_, tvliq_, -1.0, uoptmp_, *Ltot);
                                                    // liquid fallout src
    *dudt[GDIM] += *Ltot;                           // += L_liq
    *tmp1 = *rhoT; *tmp1.pointProd(CPI, *T);        // tmp1 = CP_ice rhoT T
-    compute_falloutsrc(*tmp1, qice_, tvice_, 1.0, uoptmp_, *Ltot); 
+    compute_falloutsrc(*tmp1, qice_, tvice_, -1.0, uoptmp_, *Ltot); 
                                                    // ice fallout src
    *dudt[GDIM] += *Ltot;                           // += L_ice
   }
-
-  GMTK::saxpby<Ftype>(*tmp1, *e, 1.0, *p, 1.0);    // h = p+e, enthalpy density
-  compute_div(*tmp1 v_, uoptmp_, *tmp2);           // Div (h v);
- *dudt[GDIM] += *tmp2;                             // += Div (h v)
 
   gadvect_->apply(*p, v_, uoptmp_, *tmp1);         // v.Grad p
  *dudt[GDIM] -= *tmp1;                             // -= v . Grad p
@@ -368,30 +368,41 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
                                                    // -= q_heat
   }
 
-
   // *************************************************************
   // Momentum equations RHS:
   // *************************************************************
   if ( traits_.dograv) {
+    *tmp1 = -GG; // set constant grav accel
+     for ( auto j=0; j<GDIM; j++ ) g[j] = utmp[j];
+     compute_vterm(*tmp1, g); // compute grav vector components
   }
 
   for ( auto j=0; k<GDIM; j++ ) {
-    gadvect_->apply(*u[j], v_, uoptmp_, *dudt[j]);    // v.Grad s_j
+
+    gadvect_->apply(*s_[j], v_, uoptmp_, *dudt[j]);   // v.Grad s_j
+    if ( traits_.dofallout || traits_.dodry ) {
+      compute_falloutsrc(*u[j], qli_, tvli_,-1.0, uoptmp_, *Ltot);
+                                                      // hydrometeor fallout src
+     *dudt[GDIM] += *Ltot;                            // += L_tot
+    }
     grid_->wderiv(*u[j], j+1, TRUE, uoptmp_, *tmp1);  // Grad p
    *dudt[GDIM] += *tmp1;                              // += Grad p
     ghelm_->opVec_prod(*u[j], uoptmp_, *tmp1);        // nu Laplacian s_j
    *dudt[GDIM] -= *tmp1;                              // -= nu Laplacian s_j
     if ( traits_.docoriolis ) {
+      GMTK::cross_prod(g, j+1, s_);
+      GMTK::saxpby<Ftype>(*dudt[j], 1.0, *uf[j], 2.0);// += 2 Omega X (thooT v) 
     }
-    if ( traits_.dograv) {
-           
+    if ( traits_.dograv && g[j] != NULLPTR ) {
+      g[j]->pointProd(*rhotT, *tmp1);
+     *dudt[GDIM] -= *tmp1;                            // -= rhoT g
     }
-    
     if ( traits_.forced && uf[j] != NULLPTR ) {                    
       GMTK::saxpby<Ftype>(*dudt[j], 1.0, *uf[j], -1.0); 
-                                                   // -= f_v
+                                                      // -= f_v
     }
-  }
+
+  } // end, momentum loop
 
   // Multiply RHS by -M^-1:
   for ( auto j=0; j<nevolve_; j++ ) {
@@ -717,6 +728,7 @@ void GMConv<TypePack>::init()
   qice_ .resize(traits_.nisector);
   tvice_.resize(traits_.nisector);
   fk_   .resize(GDIM); 
+  s_   . resize(GDIM); 
 
   qi_   = NULLPTR;
   tvi_  = NULLPTR;
@@ -725,6 +737,7 @@ void GMConv<TypePack>::init()
   qice_ = NULLPTR;
   tvice_= NULLPTR;
   fk_   = NULLPTR;
+  s_    = NULLPTR;
 
 } // end of method init
 
@@ -1189,8 +1202,8 @@ void GMConv<TypePack>::compute_v(State &u, State &utmp, State &v)
 // METHOD : compute_vterm
 // DESC   : Transform 'terminal' (preferred) direction component specified into
 //          Cartesian compoments, W.
-// ARGS   : tvi   : terminal velocoty magnitude, must point to a 'permanent'
-//                  state component
+// ARGS   : tvi   : terminal velocity or gravity magnitude in preferred
+//                  direction
 //          W     : Cartesian vector field. Components may be set to NULL if not
 //                  needed.
 // RETURNS: none. 
@@ -1227,10 +1240,10 @@ void GMConv<TypePack>::compute_vterm(StateComp &tvi, State &W)
    // transformed into Cartesian components:
 
    for ( auto i=0; i<(*xnodes)[0].size(); i++ ) {
-      x = (*xnodes)[0][i]; y = (*xnodes)[1][i]; z = (*xnodes)[2][i];
-      r     = sqrt(x*x + y*y + z*z);
-      lat   = asin(z/r);
-      long  = atan2(y,x);
+     x = (*xnodes)[0][i]; y = (*xnodes)[1][i]; z = (*xnodes)[2][i];
+     r     = sqrt(x*x + y*y + z*z);
+     lat   = asin(z/r);
+     long  = atan2(y,x);
 
      (*W[0])[i] = cos(lat)*cos(long);
      (*W[1])[i] = cos(lat)*sin(long);
@@ -1396,7 +1409,7 @@ void GMConv<TypePack>::compute_pe(StateComp &rhoT, State &qi, State &tvi, State 
    for ( auto j=0; j<GDIM; j++ ) g[j] = utmp[j];
   
    // Compute Cartersian components of gravity vector field:
-  *tmp1 = GG;
+  *tmp1 = -GG;
    compute_vterm(*tmp1, g);
 
    r = 0.0;
@@ -1436,6 +1449,7 @@ void GMConv<TypePack>::assign_helpers(State &u, State &uf)
    }
    for ( auto j=0; j<GDIM; j++ ) fk_[j] = uf[j]; // kinetic forcing vector
 
+   for ( auto j=0; j<GDIM            ; j++ ) s_    [j] = u[j];
    for ( auto j=0; j<traits_.nlsector; j++ ) qliq_ [j] = u[GDIM+3+j];
    for ( auto j=0; j<traits_.nisector; j++ ) qice_ [j] = u[GDIM+3+nliq+j];
    for ( auto j=0; j<traits_.nlsector; j++ ) tvliq_[j] = u[GDIM+3+  nliq+nice+j];

@@ -202,6 +202,7 @@ inline  void                compute_pe   (StateComp &rhoT, State &qi, State &tvi
         State               tvi_;           // term vel. vector for all qi
         State               tvice_;         // term vel. vector for all qice
         State               tvliq_;         // term vel. vector for all qliq
+        State               s_;             // state momentum components
         State               v_;             // state velocity components
         State               W_;             // terminal velocity components
         GTVector<State>     ukeep_;         // state at prev. time levels
