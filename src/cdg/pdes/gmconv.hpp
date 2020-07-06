@@ -78,7 +78,7 @@ public:
         using State      = typename Interface::State;
         using StateComp  = typename Interface::StateComp;
         using Grid       = typename Interface::Grid;
-        using Value      = typename Interface::Value;
+        using Ftype      = typename Interface::Value;
         using Derivative = typename Interface::Derivative;
         using Time       = typename Interface::Time;
         using CompDesc   = typename Interface::CompDesc;
@@ -116,7 +116,7 @@ public:
           GFTYPE          courant     = 0.5;    // Courant factor
           GFTYPE          nu          = 0.0;    // viscosity constant
           GTVector<GINT>  iforced;              // state comps to foce
-          GTVector<Value> omega;                // rotation rate vector
+          GTVector<Ftype> omega;                // rotation rate vector
           GString         ssteptype;            // stepping method
         };
 
@@ -172,8 +172,11 @@ inline  void                compute_falloutsrc
                                          (StateComp &g, State &qi, State &v, GINT jexcl, State &utmp, StateComp &r );
 inline  void                compute_div  (StateComp &q, State &v, State &utmp, StateComp &div );
 inline  void                compute_v    (State &u, State &utmp);
-inline  void                compute_vterm(State &u, GINT ihydro, State &utmp);
-       
+inline  void                compute_vterm(StateComp &tv, State &W);
+inline  void                compute_fv   (State &uf, State &v, StateComp &tmp, StateComp &rate);
+inline  void                assign_helpers();
+inline  void                compute_pe   (StateComp &rhoT, State &qi, State &tvi, State &utmp, StateComp      &r);
+ 
 
         GBOOL               bforced_;       // use forcing vectors
         GBOOL               bupdatebc_;     // bdy update callback set?
@@ -192,6 +195,7 @@ inline  void                compute_vterm(State &u, GINT ihydro, State &utmp);
         State               urhstmp_;       // helper arrays set from utmp
         State               uoptmp_;        // helper arrays set from utmp
         State               urktmp_;        // helper arrays set from utmp
+        State               fk_;            // kinetic forcing vector
         State               qi_;            // full mass fraction vector
         State               qice_;          // ice mass fraction vector
         State               qliq_;          // liquid mass fraction vector
