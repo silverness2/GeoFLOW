@@ -1,10 +1,17 @@
 //==================================================================================
 // Module      : gtvector.ipp
 // Date        : 1/1/2018 (DLR)
-// Description : Basic template vector class, provides
-//               access to contiguous memory. This program unit is
-//               included after the header in gtvector.hpp, to resolve
-//               'normal' template functions (those not requiring SFINAE).
+// Description  : Encapsulates the methods and data associated with
+//                a template vector object, with contiguous memory
+//                for basic types.
+//                NOTE: Partial support for generalized 'index' that
+//                      yields, start, stop, stride, pad indices.
+//                The implementation file, gtvector.ipp, is not included
+//                in this file, just the declarations.
+//                NOTE: Math operations that accept a GTVector object
+//                      argument may be treated as constant, by having
+//                      size of input argument = 1, and taking as the
+//                      operand only the first element.
 // Copyright   : Copyright 2018. Colorado State University. All rights reserved
 // Derived from: none.
 //==================================================================================
@@ -1095,8 +1102,13 @@ template<class T>
 void
 GTVector<T>::operator+=(const GTVector &obj)
 {
-  for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    this->data_[j] += obj[j-this->gindex_.beg()];
+  if ( obj.size() > 1 ) {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      this->data_[j] += obj[j-this->gindex_.beg()];
+  }
+  else {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      this->data_[j] += obj[0];
   }
 
   #if defined(_G_AUTO_UPDATE_DEV)
@@ -1116,11 +1128,16 @@ GTVector<T>::operator+=(const GTVector &obj)
 #pragma acc routine vector
 template<class T>
 void
-GTVector<T>::operator-=(const GTVector &b)
+GTVector<T>::operator-=(const GTVector &obj)
 {
 
-  for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    this->data_[j] -= b[j-this->gindex_.beg()];
+  if ( obj.size() > 1 ) {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      this->data_[j] -= obj[j-this->gindex_.beg()];
+  }
+  else {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      this->data_[j] -= obj[0];
   }
 
   #if defined(_G_AUTO_UPDATE_DEV)
@@ -1140,17 +1157,17 @@ GTVector<T>::operator-=(const GTVector &b)
 //**********************************************************************************
 template<class T>
 void
-GTVector<T>::operator*=(const GTVector &b)
+GTVector<T>::operator*=(const GTVector &obj)
 {
   T *p = b.data();
   if ( b.size() > 1 ) {
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-      this->data_[j] *= p[j-this->gindex_.beg()];
+      this->data_[j] *= obj[j-this->gindex_.beg()];
     }
   }
   else {
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-      this->data_[j] *= p[0];
+      this->data_[j] *= obj[0];
     }
   }
 
@@ -1170,11 +1187,18 @@ GTVector<T>::operator*=(const GTVector &b)
 //**********************************************************************************
 template<class T>
 void
-GTVector<T>::operator/=(const GTVector &b)
+GTVector<T>::operator/=(const GTVector &obj)
 {
   T *p = b.data();
-  for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    this->data_[j] /= p[j-this->gindex_.beg()];
+  if ( obj.size() > 1 ) {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      this->data_[j] /= obj[j-this->gindex_.beg()];
+    }
+  }
+  else {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      this->data_[j] /= obj[0];
+    }
   }
 
   #if defined(_G_AUTO_UPDATE_DEV)
@@ -2996,9 +3020,16 @@ GTVector<T>::add_impl_(const GTVector<T> &obj, std::false_type d)
 
   T a = static_cast<T>(1);
   T b = static_cast<T>(1);
-  for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-      vret[j] = this->data_[j] + obj[j];
-  } 
+  if ( obj.size() > 1 ) {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+        vret[j] = this->data_[j] + obj[j];
+    } 
+  }
+  else {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+        vret[j] = this->data_[j] + obj[0];
+    } 
+  }
   
 
   #if defined(_G_AUTO_UPDATE_DEV)
@@ -3047,8 +3078,15 @@ GTVector<T>::sub_impl_(const GTVector &obj, std::false_type d)
 
   T a = static_cast<T>(1);
   T b = static_cast<T>(-1);
-  for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    vret[j] = this->data_[j] - obj[j];
+  if ( obj.size() > 1 ) {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      vret[j] = this->data_[j] - obj[j];
+    }
+  }
+  else {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      vret[j] = this->data_[j] - obj[0];
+    }
   }
 
   #if defined(_G_AUTO_UPDATE_DEV)
@@ -3098,8 +3136,15 @@ GTVector<T>::mul_impl_(const GTVector &obj, std::false_type d)
 
   T a = static_cast<T>(1);
   T b = static_cast<T>(-1);
-  for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    vret[j] = this->data_[j] * obj[j];
+  if ( obj.size() > 1 ) {
+    for ( autop j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      vret[j] = this->data_[j] * obj[j];
+    }
+  }
+  else {
+    for ( autop j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      vret[j] = this->data_[j] * obj[0];
+    }
   }
 
   #if defined(_G_AUTO_UPDATE_DEV)

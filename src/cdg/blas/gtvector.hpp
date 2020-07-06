@@ -8,6 +8,10 @@
 //                      yields, start, stop, stride, pad indices.
 //                The implementation file, gtvector.ipp, is not included
 //                in this file, just the declarations.
+//                NOTE: Math operations that accept a GTVector object
+//                      argument may be treated as constant, by having
+//                      size of input argument = 1, and taking as the
+//                      operand only the first element.
 // Copyright    : Copyright 2018. Colorado State University. All rights reserved
 // Derived From : none.
 //==================================================================================
