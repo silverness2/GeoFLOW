@@ -1509,15 +1509,22 @@ void
 GTVector<T>::pointProd(const GTVector<T> &obj, GTVector<T> &ret ) 
 {
   #if defined(_G_BOUNDS_CHK)
-  if ( obj.size() < this->size() || ret.size() < this->size() ) {
+  if ( (obj.size() > 1 && obj.size() < this->size()) || ret.size() < this->size() ) {
     std::cout << "pointProd(1): " << "incompatible size" << std::endl;
 while(1){};
     exit(1);
   }
   #endif
 
-  for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    ret[j] = this->data_[j-gindex_.beg()] * obj[j-gindex_.beg()];
+  if ( obj.size() > 1 ) {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      ret[j] = this->data_[j-gindex_.beg()] * obj[j-gindex_.beg()];
+    }
+  }
+  else {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      ret[j] = this->data_[j-gindex_.beg()] * obj[0];
+    }
   }
 
 } // end, pointProd (1)
@@ -1539,15 +1546,22 @@ void
 GTVector<T>::pointProd(const T a, const GTVector<T> &obj, GTVector<T> &ret ) 
 {
   #if defined(_G_BOUNDS_CHK)
-  if ( obj.size() < this->size() || ret.size() < this->size() ) {
+  if ( (obj.size() > 1 && obj.size() < this->size()) || ret.size() < this->size() ) {
     std::cout << "pointProd(1): " << "incompatible size" << std::endl;
 while(1){};
     exit(1);
   }
   #endif
 
-  for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    ret[j] = a * this->data_[j-gindex_.beg()] * obj[j-gindex_.beg()];
+  if ( obj.size() > 1 ) {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      ret[j] = a * this->data_[j-gindex_.beg()] * obj[j-gindex_.beg()];
+    }
+  }
+  else {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      ret[j] = a * this->data_[j-gindex_.beg()] * obj[0];
+    }
   }
 
 } // end, pointProd (2)
@@ -1565,15 +1579,22 @@ void
 GTVector<T>::pointProd(const GTVector<T> &obj)
 {
   #if defined(_G_BOUNDS_CHK)
-  if ( obj.size() < this->size() ) {
+  if ( obj.size() > 1 && obj.size() < this->size() ) {
     std::cout << "pointProd(2): " << "incompatible size" << std::endl;
 while(1){};
     exit(1);
   }
   #endif
 
-  for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    data_[j] *= obj[j-gindex_.beg()];
+  if ( obj.size() > 1 ) {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      data_[j] *= obj[j-gindex_.beg()];
+    }
+  }
+  else {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      data_[j] *= obj[0];
+    }
   }
 
 } // end, pointProd (3)
@@ -1592,15 +1613,22 @@ void
 GTVector<T>::pointProd(const T, const GTVector<T> &obj)
 {
   #if defined(_G_BOUNDS_CHK)
-  if ( obj.size() < this->size() ) {
+  if ( obj.size() > 1 && obj.size() < this->size() ) {
     std::cout << "pointProd(2): " << "incompatible size" << std::endl;
 while(1){};
     exit(1);
   }
   #endif
 
-  for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    data_[j] *= a * obj[j-gindex_.beg()];
+  if () obj.size() > 1 ) {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      data_[j] *= a * obj[j-gindex_.beg()];
+    }
+  }
+  else {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+      data_[j] *= a * obj[0];
+    }
   }
 
 } // end, pointProd (4)
