@@ -261,6 +261,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   GINT       ibeg, nice, nliq ;
   StateComp *irhoT, *Ltot;
   StateComp *e, *p, *rhoT, *T; // energy den, pressure, temperature
+  StateComp *Jac, *Mass;
   StateComp *tmp1, *tmp2;
   State      g(GDIM); 
 
@@ -323,6 +324,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
     *dudt[ibeg+j] -= *tmp1;                    // += -q_i/rhoT Ltot
     if ( uf[ibeg+j] != NULLPTR ) {             // add in sdot(s_i)/rhoT
       *tmp1 = *uf[ibeg+1]; *tmp1 *= *irhoT;    // dot(s)/rhoT 
+      *tmp1 *= *Jac ; *tmp1 *= *Mass;
       GMTK::saxpby<Ftype>(*dudt[ibeg+j], 1.0, *tmp1, -1.0); 
                                                // -= dot(s)/rhoT
     }
@@ -364,13 +366,16 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
  *dudt[GDIM] += *tmp1;                             // += f_kinetic . v
 
   if ( uf[GDIM] != NULLPTR ) {                    
-    GMTK::saxpby<Ftype>(*dudt[GDIM], 1.0, *uf[GDIM], -1.0); 
+    *tmp1 = *uf[GDIM]; *tmp1 *= *Jac ; *tmp1 *= *Mass;
+    GMTK::saxpby<Ftype>(*dudt[GDIM], 1.0, *tmp1, -1.0); 
                                                    // -= q_heat
   }
 
   // *************************************************************
   // Momentum equations RHS:
   // *************************************************************
+  Jac = &grid_->Jac();
+  Mass = grid_->massop().data();
   if ( traits_.dograv) {
     *tmp1 = -GG; // set constant grav accel
      for ( auto j=0; j<GDIM; j++ ) g[j] = utmp[j];
@@ -390,21 +395,25 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
     ghelm_->opVec_prod(*u[j], uoptmp_, *tmp1);        // nu Laplacian s_j
    *dudt[GDIM] -= *tmp1;                              // -= nu Laplacian s_j
     if ( traits_.docoriolis ) {
-      GMTK::cross_prod(g, j+1, s_);
-      GMTK::saxpby<Ftype>(*dudt[j], 1.0, *uf[j], 2.0);// += 2 Omega X (thooT v) 
+      GMTK::cross_prod(g, s_, j+1, *tmp1);
+     *tmp1 *= *Jac; *tmp1 *= *Mass;             
+      GMTK::saxpby<Ftype>(*dudt[j], 1.0, *tmp1, 2.0); // += 2 Omega X (thooT v) M J
     }
     if ( traits_.dograv && g[j] != NULLPTR ) {
       g[j]->pointProd(*rhotT, *tmp1);
-     *dudt[GDIM] -= *tmp1;                            // -= rhoT g
+     *tmp1 *= *Jac; *tmp1 *= *Mass;             
+     *dudt[GDIM] -= *tmp1;                            // -= rhoT g M J
     }
     if ( traits_.forced && uf[j] != NULLPTR ) {                    
-      GMTK::saxpby<Ftype>(*dudt[j], 1.0, *uf[j], -1.0); 
+      *tmp1 = *uf[j]; *tmp1 *= *Jac ; *tmp1 *= *Mass;
+      GMTK::saxpby<Ftype>(*dudt[j], 1.0, *tmp1, -1.0); 
                                                       // -= f_v
     }
 
   } // end, momentum loop
 
-  // Multiply RHS by -M^-1:
+  // Multiply RHS by -M^-1 to (1) place all terms on the 'RHS',
+  // and (2) to account for factor of M on du/dt term:
   for ( auto j=0; j<nevolve_; j++ ) {
     dudt[j]->pointProd(-1.0, *gimass_->data());// dudt -> -M^-1 dudt
   }
