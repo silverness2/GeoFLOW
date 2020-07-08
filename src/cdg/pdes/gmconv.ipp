@@ -597,6 +597,8 @@ void GMConv<TypePack>::init()
     for( auto j=0; j<n; j++ ) icomptype->push_back(GSC_PRESCRIBED); 
     }
   }
+  this->stateinfo.nevolve = traits_.solve;
+  this->stateinfo.presc   = traits_.nstate - traits_.solve;
 
   // Find multistep/multistage time stepping coefficients:
   GMultilevel_coeffs_base<GFTYPE> *tcoeff_obj=NULLPTR; // time deriv coeffs
