@@ -1716,7 +1716,7 @@ GTVector<T>::infnorm()
 {
   GDOUBLE xnorm=0.0;
 
-  for ( auto j=this->gindex_.beg(), xnorm=0; j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+  for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
     xnorm = MAX(xnorm,fabs(this->data_[j]));
   }
   
@@ -1738,7 +1738,7 @@ GTVector<T>::Eucnorm()
   GDOUBLE n, xnorm=0.0;
 
   n = 0.0;
-  for ( auto j=this->gindex_.beg(), xnorm=0; j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+  for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
     xnorm += this->data_[j]*this->data_[j];
     n += 1.0;
   }
@@ -2105,7 +2105,8 @@ GTVector<T>::contains(T val, GSIZET *&iwhere, GSIZET &nw)
     nw = n;
   }
 
-  for ( auto i=this->gindex_.beg(), n=0; i<=this->gindex_.end(); i++ ) {
+  n = 0;
+  for ( auto i=this->gindex_.beg(); i<=this->gindex_.end(); i++ ) {
     if ( data_[i] == val ) {
       iwhere[n++] = i;
     }
