@@ -11,6 +11,600 @@ namespace GMTK
 {
 
 
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : fact
+// DESC   : Compute factorial of specified number
+//
+// ARGS   : n  : whole number
+// RETURNS: T factorial
+//**********************************************************************************
+template<typename T>
+T fact(T n)
+{
+   T Tzero = static_cast<T>(0);
+   T Tone  = static_cast<T>(1);
+   if ( n == Tzero || n == Tone ) {
+     return Tone;
+   }
+   else {
+     return n*fact(n-Tone);
+   }
+
+} // end, method fact
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : Plm_cart
+// DESC   : Compute assosiated Legendre polynomials at each grid point
+//          specified by xnodes in Carteswian coordinates.
+//              Note: Adapted from Numerical Recipes
+//
+// ARGS   : l,m,  : orbital ang mom. quantum number, and azimuthal quantum number
+//          xnodes: Cartesian coordinate arrays
+//          plm   : P^l_m for each grid point
+// RETURNS: none
+//**********************************************************************************
+template<typename T>
+void Plm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GTVector<T> &plm)
+{
+  T fact;
+  T pmm, pmmp1, pll, somx2;
+  T colat, r;
+  T xlmm, xlpm;
+  T x, y, z;
+
+  assert( m >= 0 && m <= l );
+
+  for ( auto j=0; j<xnodes[0].size(); j++ ) {
+    x     = xnodes[0][j]; y = xnodes[1][j]; z = xnodes[2][j];
+    r     = sqrt(x*x +y*y + z*z);
+
+    colat = acos(z/r); // Note: this is co-latitude
+    x     = cos(colat);
+    assert( fabs(x) <= 1.0  );
+
+    pmm = 1.0; // compute Pm_m 
+    if ( m > 0 ) {
+      somx2 = sqrt(fabs((1.0-x)*(1.0+x))); 
+      fact  = 1.0;
+      for ( auto i=1; i<=m; i++) {
+        pmm  *= -fact*somx2;
+        fact += 2.0; 
+      }
+    }
+    if (l == m) {
+      plm[j] = pmm; 
+      continue;
+    }
+    else {   // compute P^m_m+1    
+      pmmp1 = x*(2*m+1)*pmm; 
+      if (l == (m+1)) {
+        plm[j] = pmmp1; 
+        continue;
+      }
+      else { // compute P^m_l; l > m+1
+        for ( auto ll=m+2; ll<=l; ll++) {
+          xlpm  = ll + m - 1;
+          xlmm  = ll - m;
+          pll   = (x*(2*ll-1)*pmmp1 - xlpm*pmm)/xlmm; 
+          pmm   = pmmp1;
+          pmmp1 = pll;
+        }
+        plm[j] = pll; 
+        continue;
+      }
+    }
+  } // end, coord loop
+
+} // end, method Plm_cart
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : Ylm_cart
+// DESC   : Compute spherical harmonics at each grid point
+//          specified by xnodes in Carteswian coordinates.
+//          Computed as:
+//              Ylm  =  (-1)^m sqrt{ (2l+1)(l-m)! / [4pi (l+m)!] } X
+//                      P_lm exp(i m phi)
+//          If iri = 0, return Ylm; else returns Ylm^*. If |m| > l, set Ylm=0
+//          
+//   
+// ARGS   : l,m,  : orbital ang mom. quantum number, and azimuthal quantum number
+//          xnodes: Cartesian coordinate arrays
+//          iri   : if 0, return Ylm, else, return complex conjugate, Ylm^*
+//          ylm_r: real comp. of Y^l_m for each grid point
+//          ylm_i: imag. comp. of Y^l_m for each grid point
+// RETURNS: none
+//**********************************************************************************
+template<typename T>
+void Ylm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT iri, GTVector<T> &ylm_r, GTVector<T> &ylm_i)
+{
+  T phi;
+  T x, y, z;
+  GDOUBLE rfact, xl, xm;
+  GDOUBLE xf1, xf2;
+
+  assert( iri >= 0 );
+  assert( l >= 0 );
+
+  if ( abs(m) > l ) {
+    ylm_r = 0.0;
+    ylm_i = 0.0;
+    return;
+  }
+  
+  xl = l; xm = m;
+  xf1 = GMTK::fact<GDOUBLE>(xl-abs(xm));
+  xf2 = GMTK::fact<GDOUBLE>(xl+abs(xm));
+  rfact = sqrt( fabs(2.0*xl+1.0)/(4.0*PI) * (xf1 / xf2) ); 
+
+  GMTK::Plm_cart<T>(l, abs(m), xnodes, ylm_r);
+  ylm_i = ylm_r;
+  for ( auto j=0; j<xnodes[0].size(); j++ ) {
+    x     = xnodes[0][j]; y = xnodes[1][j]; z = xnodes[2][j];
+    phi   = atan2(y,x);
+    ylm_r[j] *= pow(-1.0,m)*rfact*cos(xm*phi);
+    ylm_i[j] *= pow(-1.0,m)*rfact*sin(xm*phi);
+  } // end, coord loop
+
+  if ( iri > 0 ) { // create complex conjugate
+    ylm_i *= -1.0;
+  }
+
+} // end, method Ylm_cart
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : dYlm_cart
+// DESC   : Compute 1-derivatives of spherical harmonics at each grid point
+//          specified by xnodes in Carteswian coordinates.
+//          Cmputed as:
+//              dYlm/dtheta = m cot theta Ylm + 
+//                            sqrt[(l-m)(l+m+1)] e^(-i phi) Yl(m+1)
+//              dYlm/dphi   = i m Ylm 
+//          If iri = 0, return dYlm; else return dYlm^*. 
+//          
+//   
+// ARGS   : l,m,  : orbital ang mom. quantum number, and azimuthal quantum number
+//          xnodes: Cartesian coordinate arrays
+//          idir  : If 1, take d/d\theta; if 2, take d/d\phi
+//          iri   : if 0, return dYlm, else, return complex conjugate, dYlm^*
+//          cexcl : exclude colat < cexcl and (PI-colat) < cexcl from computation 
+//                  (set to 0). Expressed in degrees.
+//          tmp   : tmp arrays. 2 are required.
+//          dylm_r: real comp. of dY^l_m for each grid point
+//          dylm_i: imag. comp. of dY^l_m for each grid point
+// RETURNS: none
+//**********************************************************************************
+template<typename T>
+void dYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT idir,  GINT iri, T cexcl,  GTVector<GTVector<T>*> &tmp, GTVector<T> &dylm_r, GTVector<T> &dylm_i)
+{
+  T colat, phi, r, rexcl;
+  T x, y, z;
+  T xl, xm;
+  T cotc, rfact, rfact1, rfact2;
+
+  rexcl = cexcl * PI/180.0;
+
+  assert( iri >= 0 );
+  assert( idir == 1 || idir == 2 );
+
+  xl    = l; xm = m;
+
+  if ( idir == 1 ) {
+
+#if 0
+    // Compute: 
+    // dYlm/dtheta = m cot theta Ylm + 
+    //               sqrt[(l-m)(l+m+1)] e^(-i phi) Yl(m+1)
+    assert( tmp.size() >= 2 );
+    rfact = sqrt( fabs((xl-xm)*(xl+xm+1.0)) );
+    Ylm_cart<T>(l, m  , xnodes, 0, dylm_r  , dylm_i); // Ylm
+    Ylm_cart<T>(l, m+1, xnodes, 0, *tmp[0], *tmp[1]); // Y^l_m+1
+    for ( auto j=0; j<xnodes[0].size(); j++ ) {
+      x     = xnodes[0][j]; y = xnodes[1][j]; z = xnodes[2][j];
+      r     = sqrt(x*x + y*y + z*z);
+      colat = acos(z/r);
+      if ( colat < rexcl || (PI-colat) < rexcl ) {
+        dylm_r[j] = dylm_i[j] = 0.0;
+        continue;
+      }
+      cotc  = cos(colat)/sin(colat);
+      phi   = atan2(y,x);
+      dylm_r[j] = xm*cotc*dylm_r[j] 
+                + rfact*( cos(phi)*(*tmp[0])[j] + sin(phi)*(*tmp[1])[j] );
+      dylm_i[j] = xm*cotc*dylm_i[j]
+                - rfact*( cos(phi)*(*tmp[1])[j] - sin(phi)*(*tmp[0])[j] );
+    } // end, coord loop
+#else
+    // Compute: 
+    // dYlm/dtheta = exp(-i phi) sqrt((l-m)(l+m+1)) Y^l_m+1
+    //             - exp (i phi) sqrt*(l+m)(l-m+1)) Y^l_m-1
+    assert( tmp.size() >= 2 );
+#if 0
+    rfact1 = 0.5*sqrt( fabs((xl-xm)*(xl+xm+1.0)) );
+    rfact2 = 0.5*sqrt( fabs((xl+xm)*(xl-xm+1.0)) );
+#else
+    rfact1 = sqrt( fabs((xl-xm)*(xl+xm+1.0)) );
+    rfact2 = sqrt( fabs((xl+xm)*(xl-xm+1.0)) );
+#endif
+    Ylm_cart<T>(l, m+1, xnodes, 0, *tmp[0], *tmp[1]); // Y^l_m+1
+    for ( auto j=0; j<xnodes[0].size(); j++ ) {
+      x     = xnodes[0][j]; y = xnodes[1][j]; z = xnodes[2][j];
+      r     = sqrt(x*x + y*y + z*z);
+      phi   = atan2(y,x);
+      dylm_r[j] = rfact1*(cos(phi)*(*tmp[0])[j] + sin(phi)*(*tmp[1])[j]);
+      dylm_i[j] = rfact1*(cos(phi)*(*tmp[1])[j] - sin(phi)*(*tmp[0])[j]);
+    } // end, coord loop
+
+    Ylm_cart<T>(l, m-1, xnodes, 0, *tmp[0], *tmp[1]); // Y^l_m-1
+    for ( auto j=0; j<xnodes[0].size(); j++ ) {
+      x     = xnodes[0][j]; y = xnodes[1][j]; z = xnodes[2][j];
+      r     = sqrt(x*x + y*y + z*z);
+      phi   = atan2(y,x);
+      dylm_r[j] -= rfact2*(cos(phi)*(*tmp[0])[j] - sin(phi)*(*tmp[1])[j]);
+      dylm_i[j] -= rfact2*(cos(phi)*(*tmp[1])[j] + sin(phi)*(*tmp[0])[j]);
+    } // end, coord loop
+#endif
+
+  }
+  else if ( idir == 2 ) {
+    // Compute:
+    // dYlm/dphi   = i m Ylm 
+    Ylm_cart<T>(l, m, xnodes, 0, *tmp[0], *tmp[1]);   // Ylm
+    for ( auto j=0; j<xnodes[0].size(); j++ ) {
+      dylm_r[j] = -xm * (*tmp[1])[j];
+      dylm_i[j] =  xm * (*tmp[0])[j];
+    } // end, coord loop
+  
+
+  }
+
+  if ( iri > 0 ) { // create complex conjugate
+    dylm_i *= -1.0;
+  }
+
+} // end, method dYlm_cart
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : ddYlm_cart
+// DESC   : Compute 2-derivatives of spherical harmonics at each grid point
+//          specified by xnodes in Carteswian coordinates.
+//          If iri = 0, return ddYlm; else return ddYlm^*. 
+//          
+//   
+// ARGS   : l,m,  : orbital ang mom. quantum number, and azimuthal quantum number
+//          xnodes: Cartesian coordinate arrays
+//          idir  : If 1, take d^2/d\theta^2; if 2, take d^2/d\phi^2
+//          iri   : if 0, return dYlm, else, return complex conjugate, dYlm^*
+//          cexcl : exclude colat < cexcl and (PI-colat) < cexcl from computation 
+//                  (set to 0). Expressed in degrees.
+//          tmp   : tmp arrays. 2 are required.
+//          dylm_r: real comp. of dY^l_m for each grid point
+//          dylm_i: imag. comp. of dY^l_m for each grid point
+// RETURNS: none
+//**********************************************************************************
+template<typename T>
+void ddYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT idir, GINT iri, T cexcl,  GTVector<GTVector<T>*> &tmp, GTVector<T> &dylm_r, GTVector<T> &dylm_i)
+{
+  T colat, phi, r, rexcl;
+  T x, y, z;
+  T xl, xm;
+  T cotc, csc, rfact;
+
+  assert( iri >= 0 );
+  assert( idir == 1 || idir == 2 );
+  assert( tmp.size() >= 2 );
+
+  xl   = l; xm = m;
+
+ 
+  if ( idir == 1 ) {
+
+    Ylm_cart<T>(l, m  , xnodes, 0, dylm_r  , dylm_i);   // Ylm
+    Ylm_cart<T>(l, m+1, xnodes, 0, *tmp[0], *tmp[1]); // Y^l_m+1
+    rfact = sqrt( fabs((xl-xm)*(xl+xm-1.0)) ) * (2.0*xm+1.0);
+    for ( auto j=0; j<xnodes[0].size(); j++ ) {
+      x     = xnodes[0][j]; y = xnodes[1][j]; z = xnodes[2][j];
+      r     = sqrt(x*x + y*y + z*z);
+      colat = acos(z/r);
+      if ( colat < rexcl || (PI-colat) < rexcl ) {
+        dylm_r[j] = dylm_i[j] = 0.0;
+        continue;
+      }
+      cotc  = cos(colat)/sin(colat);
+      csc   = 1.0 / sin(colat);
+      phi   = atan2(y,x);
+
+      dylm_r[j] = xm*( xm*cotc*cotc - csc*csc )*dylm_r[j] 
+                + rfact*cotc*( cos(phi)*(*tmp[0])[j] + sin(phi)*(*tmp[1])[j] );
+      dylm_i[j] = xm*( xm*cotc*cotc - csc*csc )*dylm_i[j]
+                + rfact*cotc*( cos(phi)*(*tmp[1])[j] - sin(phi)*(*tmp[0])[j] );
+
+    } // end, coord loop
+
+    Ylm_cart<T>(l, m+2, xnodes, 0, *tmp[0], *tmp[1]); // Y^l_m+2
+    rfact = sqrt( fabs((xl-xm)*(xl-xm-1.0)*(xm+xl+2.0)*(xm+xl+1.0)) );
+    for ( auto j=0; j<xnodes[0].size(); j++ ) {
+      x     = xnodes[0][j]; y = xnodes[1][j]; z = xnodes[2][j];
+      phi   = atan2(y,x);
+      dylm_r[j] += rfact*( cos(2.0*phi)*(*tmp[0])[j] + sin(2.0*phi)*(*tmp[1])[j] );
+      dylm_i[j] += rfact*( cos(2.0*phi)*(*tmp[1])[j] - sin(2.0*phi)*(*tmp[0])[j] );
+    } // end, coord loop
+
+  }
+  else if ( idir == 2 ) {
+
+    Ylm_cart<T>(l, m, xnodes, 0, *tmp[0], *tmp[1]);   // Ylm
+    for ( auto j=0; j<xnodes[0].size(); j++ ) {
+      dylm_r[j] = -xm*xm * (*tmp[0])[j];
+      dylm_i[j] = -xm*xm * (*tmp[1])[j];
+    } // end, coord loop
+  
+
+  }
+
+  if ( iri > 0 ) { // create complex conjugate
+    dylm_i *= -1.0;
+  }
+
+} // end, method ddYlm_cart
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : rYlm_cart
+// DESC   : Compute real spherical harmonics at each grid point
+//          specified by xnodes in Carteswian coordinates.
+//          Computed as:
+//              rYlm  =  (-1)^m/sqrt(2) (Ylm + Ylm^*); m > 0
+//                                       Yl0         ; m = 0
+//                     -i(-1)^m/sqrt(2) (Ylm - Ylm^*); m < 0
+//           Adapted from 
+//           Miguel A. Blanco, et al., 
+//             J. Mol. Struct. Theochem 419:19 (1997)
+//   
+// ARGS   : l,m,  : orbital ang mom. quantum number, and azimuthal quantum number
+//          xnodes: Cartesian coordinate arrays
+//          tmp   : tmp array the size of ylm
+//          rylm  : real comp. of Y^l_m for each grid point
+// RETURNS: none
+//**********************************************************************************
+template<typename T>
+void rYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GTVector<T> &tmp, GTVector<T> &rylm)
+{
+  T rfact;
+
+
+  if ( abs(m) > l ) {
+    rylm = 0.0;
+    return;
+  }
+
+  if ( m > 0 ) { 
+    rfact = pow(-1.0,m)/sqrt(2.0);
+    GMTK::Ylm_cart<T>(l, m, xnodes, 0, rylm, tmp);
+    rylm *= 2.0*rfact;
+  }
+  else if ( m < 0 ) {
+    rfact = pow(-1.0,m)/sqrt(2.0);
+    GMTK::Ylm_cart<T>(l, m, xnodes, 0, tmp, rylm);
+    rylm *= 2.0*rfact;
+  }
+  else {
+    GMTK::Ylm_cart<T>(l, m, xnodes, 0, rylm, tmp);
+  }
+
+} // end, method rYlm_cart
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : drYlm_cart
+// DESC   : Compute idir--derivative real spherical harmonics at each grid point
+//          specified by xnodes in Carteswian coordinates.
+//          Computed as:
+//             drYlm  =  (-1)^m/sqrt(2) (d_idir Ylm + d_idir Ylm^*); m > 0
+//                                       d_idir Yl0                ; m = 0
+//                     -i(-1)^m/sqrt(2) (d_idir Ylm - d_idir Ylm^*); m < 0
+//          
+//   
+// ARGS   : l,m,  : orbital ang mom. quantum number, and azimuthal quantum number
+//          xnodes: Cartesian coordinate arrays
+//          idir  : If 1, computes d/d\theta; if 2, computes d/d\phi
+//          cexcl : exclude colat < cexcl and (PI-colat) < cexcl from computation 
+//                  (set to 0). Expressed in degrees.
+//          tmp   : tmp arrays. 3 are required.
+//          dylm  : deriv of real comp. of Y^l_m for each grid point
+// RETURNS: none
+//**********************************************************************************
+template<typename T>
+void drYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT idir, T cexcl, GTVector<GTVector<T>*>  &tmp, GTVector<T> &drylm)
+{
+  T rfact;
+  GTVector<T> *dr, *di;  // real and imaginary comps of derivative
+  GTVector<GTVector<T>> mytmp(2);
+
+  if ( abs(m) > l ) {
+    drylm = 0.0;
+    return;
+  }
+
+  assert( idir == 1 || idir == 2 );
+  assert( tmp.size() >= 3 );
+
+  if ( m > 0 ) { 
+    rfact = pow(-1.0,m)/sqrt(2.0);
+    di = tmp[2];
+    GMTK::dYlm_cart<T>(l, m, xnodes, idir, 0, cexcl, tmp, drylm, *di);
+    drylm *= 2.0*rfact;
+  }
+  else if ( m < 0 ) {
+    rfact = pow(-1.0,m)/sqrt(2.0);
+    dr = tmp[2];
+    GMTK::dYlm_cart<T>(l, m, xnodes, idir, 0, cexcl, tmp, *dr, drylm);
+    drylm *= 2.0*rfact;
+  }
+  else {
+    di = tmp[2];
+    GMTK::dYlm_cart<T>(l, m, xnodes, idir, 0, cexcl, tmp, drylm, *di);
+  }
+
+} // end, method drYlm_cart
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : ddrYlm_cart
+// DESC   : Compute idir--2nd derivative of real spherical harmonics at 
+//          each grid point specified by xnodes in Carteswian coordinates.
+//          Computed as:
+//            ddrYlm  =  (-1)^m/sqrt(2) (d^2_idir Ylm + d^2_idir Ylm^*); m > 0
+//                                       d^2_idir Yl0                  ; m = 0
+//                     -i(-1)^m/sqrt(2) (d^2_idir Ylm - d^2_idir Ylm^*); m < 0
+//          
+//   
+// ARGS   : l,m,  : orbital ang mom. quantum number, and azimuthal quantum number
+//          xnodes: Cartesian coordinate arrays
+//          idir  : If 1, computes d/d\theta; if 2, computes d/d\phi
+//          cexcl : exclude colat < cexcl and (PI-colat) < cexcl from computation 
+//                  (set to 0). Expressed in degrees.
+//          tmp   : tmp arrays. 3 are required.
+//          dylm  : deriv. of real comp. of Y^l_m for each grid point
+// RETURNS: none
+//**********************************************************************************
+template<typename T>
+void ddrYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT idir, T cexcl, GTVector<GTVector<T>*>  &tmp, GTVector<T> &drylm)
+{
+  T rfact;
+  GTVector<T> *dr, *di;  // real and imaginary comps of derivative
+  GTVector<GTVector<T>> mytmp(2);
+
+  if ( abs(m) > l ) {
+    drylm = 0.0;
+    return;
+  }
+
+  assert( idir == 1 || idir == 2 );
+  assert( tmp.size() >= 3 );
+
+  if ( m > 0 ) { 
+    rfact = pow(-1.0,m)/sqrt(2.0);
+    di = tmp[2];
+    GMTK::ddYlm_cart<T>(l, m, xnodes, idir, 0, cexcl, tmp, drylm, *di);
+    drylm *= 2.0*rfact;
+  }
+  else if ( m < 0 ) {
+    rfact = pow(-1.0,m)/sqrt(2.0);
+    dr = tmp[2];
+    GMTK::ddYlm_cart<T>(l, m, xnodes, idir, 0, cexcl, tmp, *dr, drylm);
+    drylm *= 2.0*rfact;
+  }
+  else {
+    di = tmp[2];
+    GMTK::ddYlm_cart<T>(l, m, xnodes, idir, 0, cexcl, tmp, drylm, *di);
+  }
+
+} // end, method ddrYlm_cart
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : Rx3
+// DESC   : Compute finite rotation of amount alpha about x axis, and return
+//          in the input arrays
+//             x_new  = Rx x_old,
+//          where 
+//               | 1    0    0     |
+//          Rx = | 0   cos a sin a |
+//               | 0  -sin a cos a |
+//          Note: This is a 'passive' rotation of coord system. User must
+//                late alpha --> -alpha to get an active rotation of a vector
+//          
+// ARGS   : alpha : angle of rotation
+//          y, z  : arrays of vector components
+// RETURNS: none.
+//**********************************************************************************
+template<typename T>
+void Rx3(T alpha, GTVector<T> &y, GTVector<T> &z)
+{
+  assert( z.size() == y.size() &&  "Incompatible vectors");
+
+  for ( auto j=0; j<y.size(); j++ ) { // cycle over all vector elems
+    y[j]  =  cos(alpha)*y[j] + sin(alpha)*z[j];
+    z[j]  = -sin(alpha)*y[j] + cos(alpha)*z[j];
+  }
+
+} // end of method Rx3 
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : Ry3
+// DESC   : Compute finite rotation of amount alpha about y axis, and return
+//          in the input arrays
+//             x_new  = Ry x_old,
+//          where 
+//               | cos a    0    sin a |
+//          Rx = | 0        1    0     |
+//               | -sin a   0    cos a |
+//          Note: This is a 'passive' rotation of coord system. User must
+//                late alpha --> -alpha to get an active rotation of a vector
+//          
+// ARGS   : alpha : angle of rotation
+//          x, z  : arrays of vector components
+// RETURNS: none.
+//**********************************************************************************
+template<typename T>
+void Ry3(T alpha, GTVector<T> &x, GTVector<T> &z)
+{
+  assert( z.size() == x.size() &&  "Incompatible vectors");
+
+  for ( auto j=0; j<x.size(); j++ ) { // cycle over all vector elems
+    x[j]  =  cos(alpha)*x[j] + sin(alpha)*z[j];
+    z[j]  = -sin(alpha)*x[j] + cos(alpha)*z[j];
+  }
+
+} // end of method Ry3 
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : Rz3
+// DESC   : Compute finite rotation of amount alpha about z axis, and return
+//          in the input arrays
+//             x_new  = Rz x_old,
+//          where 
+//               |  cos a sin a  0 |
+//          Rz = | -sin a cos a  0 |
+//               | 0    0        1 |
+//          Note: This is a 'passive' rotation of coord system. User must
+//                late alpha --> -alpha to get an active rotation of a vector
+//          
+// ARGS   : alpha  : angle of rotation
+//          x, y   : arrays of vector components
+// RETURNS: none.
+//**********************************************************************************
+template<typename T>
+void Rz3(T alpha, GTVector<T> &x, GTVector<T> &y)
+{
+  assert( y.size() == x.size() &&  "Incompatible vectors");
+
+  for ( auto j=0; j<x.size(); j++ ) { // cycle over all vector elems
+    x[j]  =  cos(alpha)*x[j] + sin(alpha)*y[j];
+    y[j]  = -sin(alpha)*x[j] + cos(alpha)*y[j];
+  }
+
+} // end of method Rz3 
+
+
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : cross_prod_k (1)

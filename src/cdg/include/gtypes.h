@@ -153,16 +153,23 @@ const GINT GD_DATATYPE_SZ[] =
 // in gcommdata_t.h):
 #if !defined(_GC_OP_DEF)
 #define _GC_OP_DEF
-enum GC_OP              {GC_OP_MAX=0,GC_OP_MIN  ,GC_OP_SUM  ,GC_OP_PROD,
-                         GC_OP_LAND ,GC_OP__BAND,GC_OP_LOR  ,GC_OP_BOR ,
+enum GC_OP              {GC_OP_MAX=0,GC_OP_MIN ,GC_OP_SUM ,GC_OP_PROD,
+                         GC_OP_LAND ,GC_OP_BAND,GC_OP_LOR ,GC_OP_BOR ,
                          GC_OP_LXOR ,GC_OP_BXOR};
 #endif
 
 #if !defined(_G_BDYTYPE_DEF)
 #define _G_BDYTYPE_DEF
-enum GBdyType                    { GBDY_DIRICHLET=0 , GBDY_INFLOWT, GBDY_NOSLIP , GBDY_0FLUX , GBDY_PERIODIC , GBDY_OUTFLOW , GBDY_SPONGE , GBDY_USER0 , GBDY_USER1 , GBDY_NONE };
-const char * const sGBdyType [] ={"GBDY_DIRICHLET"  ,"GBDY_INFLOWT","GBDY_NOSLIP","GBDY_0FLUX","GBDY_PERIODIC","GBDY_OUTFLOW","GBDY_SPONGE","GBDY_USER0","GBDY_USER1","GBDY_NONE"};
+enum GBdyType                    { GBDY_DIRICHLET=0 , GBDY_INFLOW , GBDY_NOSLIP , GBDY_0FLUX , GBDY_OUTFLOW , GBDY_SPONGE , GBDY_PERIODIC , GBDY_NONE };
+const char * const sGBdyType [] ={"GBDY_DIRICHLET"  ,"GBDY_INFLOW","GBDY_NOSLIP","GBDY_0FLUX","GBDY_OUTFLOW","GBDY_SPONGE","GBDY_PERIODIC","GBDY_NONE"};
 #define GBDY_MAX GBDY_NONE
+// DIRICHLET  : Acts on state directly; may be variable in space, but constant in time
+// INFLOW     : Acts on state directly; may be variable in space, and time 
+// NOSLIP     : Acts only on velocity, and is 0 on bdy, constant in time
+// 0FLUX      : Acts only to velocity, normal compoment to surf is 0; time variable
+// PERIODIC   : Acts on entire state; no user configuration required
+// OUTFLOW    : Acts on state directly; variable in space, time; TBD
+// SPONGE     : Acts on state directly; variable in space, time
 #endif
 
 #if !defined(_G_ELEMTYPE_DEF)
@@ -186,8 +193,8 @@ enum GVectorType        {GVECTYPE_PHYS=0 , GVECTYPE_CONTRAVAR, GVECTYPE_COVAR};
 
 #if !defined(_G_STATE_COMP_TYPE_DEF)
 #define _G_STATE_COMP_TYPE_DEF
-enum GStateCompType                    {GSC_KINETIC=0, GSC_MAGNETIC , GSC_TOTDENSITY , GSC_LIQDENSITY , GSC_ICEDENSITY , GSC_INTENERGY , GSC_TOTENERGY , GSC_TEMPERATURE , GSC_PRESCRIBED , GSC_NONE };
-const char * const sGStateCompType [] ={"GSC_KINETIC","GSC_MAGNETIC","GSC_TOTDENSITY","GSC_LIQDENSITY","GSC_ICEDENSITY","GSC_INTENERGY","GSC_TOTENERGY","GSC_TEMPERATURE","GSC_PRESCRIBED","GSC_NONE"};
+enum GStateCompType                    {GSC_KINETIC=0, GSC_MAGNETIC , GSC_DENSITYT , GSC_DENSITY , GSC_MASSFRAC , GSC_ENERGY , GSC_TEMPERATURE , GSC_PRESCRIBED , GSC_NONE };
+const char * const sGStateCompType [] ={"GSC_KINETIC","GSC_MAGNETIC","GSC_DENSITYT","GSC_DENSITY","GSC_MASSFRAC","GSC_ENERGY","GSC_TEMPERATURE","GSC_PRESCRIBED","GSC_NONE"};
 #define GSC_MAX GSC_NONE
 #endif
 

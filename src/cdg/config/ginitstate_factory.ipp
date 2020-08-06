@@ -6,6 +6,7 @@
 // Derived From : none.
 //==================================================================================
 
+
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : init
@@ -20,7 +21,7 @@
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::init(const PropertyTree& ptree, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::init(const PropertyTree& ptree, Grid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL         bret    = FALSE;
   GString       stype;  
@@ -60,7 +61,7 @@ GBOOL GInitStateFactory<EquationType>::init(const PropertyTree& ptree, GGrid &gr
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::set_by_direct(const PropertyTree& ptree, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::set_by_direct(const PropertyTree& ptree, Grid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL         bret    = FALSE;
   GString       sinit   = ptree.getValue<GString>("initstate_block");
@@ -70,7 +71,7 @@ GBOOL GInitStateFactory<EquationType>::set_by_direct(const PropertyTree& ptree, 
       if ( u[i] != NULLPTR ) *u[i] = 0.0;
     } 
   }
-  else if ( "initstate_icosgaussburgers"  == sinit ) {
+  else if ( "initstate_icosgauss"  == sinit ) {
     bret = ginitstate::impl_icosgauss       (ptree, sinit, grid, stinfo, time, utmp, ub, u);
   }
   else if ( "initstate_boxdirgauss"       == sinit ) {
@@ -111,7 +112,7 @@ GBOOL GInitStateFactory<EquationType>::set_by_direct(const PropertyTree& ptree, 
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::set_by_comp(const PropertyTree& ptree, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::set_by_comp(const PropertyTree& ptree, Grid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL           bret    = TRUE;
   GSIZET          ndist, *ivar, mvar, nvar;
@@ -170,19 +171,19 @@ GBOOL GInitStateFactory<EquationType>::set_by_comp(const PropertyTree& ptree, GG
         for ( GINT i=0; i<nvar; i++ ) comp[i] = u[ivar[i]];
         bret = doinitdt(ptree, sinit, grid, stinfo, time, utmp, ub, comp);
         break;
-      case GSC_DENSITY1:
-        sinit = vtree.getValue<GString>("initd1");
+      case GSC_MASSFRAC:
+        sinit = vtree.getValue<GString>("initmfrac");
         nvar  = icomptype->contains(itype, ivar, mvar);
         comp.resize(nvar);
         for ( GINT i=0; i<nvar; i++ ) comp[i] = u[ivar[i]];
-        bret = doinitd1(ptree, sinit, grid, stinfo, time, utmp, ub, comp);
+        bret = doinitmfrac(ptree, sinit, grid, stinfo, time, utmp, ub, comp);
         break;
-      case GSC_DENSITY2:
-        sinit = vtree.getValue<GString>("initd2");
+      case GSC_ENERGY:
+        sinit = vtree.getValue<GString>("initen");
         nvar  = icomptype->contains(itype, ivar, mvar);
         comp.resize(nvar);
         for ( GINT i=0; i<nvar; i++ ) comp[i] = u[ivar[i]];
-        bret = doinitd2(ptree, sinit, grid, stinfo, time, utmp, ub, comp);
+        bret = doinitenergy(ptree, sinit, grid, stinfo, time, utmp, ub, comp);
         break;
       case GSC_TEMPERATURE:
         sinit = vtree.getValue<GString>("inittemp");
@@ -231,7 +232,7 @@ GBOOL GInitStateFactory<EquationType>::set_by_comp(const PropertyTree& ptree, GG
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::doinitv(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::doinitv(const PropertyTree &ptree, GString &sconfig, Grid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL           bret  = TRUE;
   GString         sinit;
@@ -300,7 +301,7 @@ GBOOL GInitStateFactory<EquationType>::doinitv(const PropertyTree &ptree, GStrin
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::doinitb(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::doinitb(const PropertyTree &ptree, GString &sconfig, Grid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL           bret    = FALSE;
   GString         sinit;
@@ -346,7 +347,7 @@ GBOOL GInitStateFactory<EquationType>::doinitb(const PropertyTree &ptree, GStrin
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::doinitdt(const PropertyTree &ptree, GString &sconfig, GGrid &grid,  StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::doinitdt(const PropertyTree &ptree, GString &sconfig, Grid &grid,  StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL           bret    = TRUE;
   GString         sinit;
@@ -375,8 +376,8 @@ GBOOL GInitStateFactory<EquationType>::doinitdt(const PropertyTree &ptree, GStri
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : doinitd1
-// DESC   : Do init of 1-density component. Full list of available
+// METHOD : doinitmfrac
+// DESC   : Do init of massfrac component. Full list of available
 //          initializations are contained here.
 //          Only d1 components are passed in.
 // ARGS   : ptree  : initial condition property tree
@@ -390,7 +391,7 @@ GBOOL GInitStateFactory<EquationType>::doinitdt(const PropertyTree &ptree, GStri
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::doinitd1(const PropertyTree &ptree, GString &sconfig, GGrid &grid,  StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::doinitmfrac(const PropertyTree &ptree, GString &sconfig, Grid &grid,  StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL           bret = FALSE;
   GString         sinit;
@@ -414,13 +415,13 @@ GBOOL GInitStateFactory<EquationType>::doinitd1(const PropertyTree &ptree, GStri
   }
 
   return bret;
-} // end, doinitd1 method
+} // end, doinitmfrac method
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : doinitd2
-// DESC   : Do init of 2-density component. Full list of available
+// METHOD : doinitenergy
+// DESC   : Do init of energy component. Full list of available
 //          initializations are contained here.
 //          Only d2 components are passed in.
 // ARGS   : ptree  : initial condition property tree
@@ -434,7 +435,7 @@ GBOOL GInitStateFactory<EquationType>::doinitd1(const PropertyTree &ptree, GStri
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::doinitd2(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::doinitenergy(const PropertyTree &ptree, GString &sconfig, Grid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL           bret = FALSE;
   GString         sinit;
@@ -458,7 +459,7 @@ GBOOL GInitStateFactory<EquationType>::doinitd2(const PropertyTree &ptree, GStri
   }
 
   return bret;
-} // end, doinitd2 method
+} // end, doinitenergy method
 
 
 //**********************************************************************************
@@ -478,7 +479,7 @@ GBOOL GInitStateFactory<EquationType>::doinitd2(const PropertyTree &ptree, GStri
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::doinittemp(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::doinittemp(const PropertyTree &ptree, GString &sconfig, Grid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL           bret = FALSE;
   GString         sinit;
@@ -523,7 +524,7 @@ GBOOL GInitStateFactory<EquationType>::doinittemp(const PropertyTree &ptree, GSt
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::doinitc(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::doinitc(const PropertyTree &ptree, GString &sconfig, Grid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL           bret  = FALSE;
   GString         sinit;

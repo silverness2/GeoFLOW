@@ -25,12 +25,20 @@
 
 typedef GTMatrix<GFTYPE> GFTMatrix;
 
+using namespace geoflow::pdeint;
+using namespace std;
+
 class GGridBox : public GGrid
 {
 
 public:
+<<<<<<< HEAD
         using              GGrid::faceNormals_;
         using              GGrid::bdyNormals_;
+=======
+//      using              GGrid::faceNormals_;
+//      using              GGrid::bdyNormals_;
+>>>>>>> master
 
         // Box grid traits:
         struct Traits {
@@ -51,7 +59,11 @@ public:
         void                set_basis(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b); // set element basis
         void                periodize();                                     // periodize coords, if allowed
         void                unperiodize();                                   // un-periodize coords, if allow
+<<<<<<< HEAD
         void                config_bdy(const PropertyTree &ptree,
+=======
+        void                config_bdy(const geoflow::tbox::PropertyTree &ptree,
+>>>>>>> master
                               GTVector<GTVector<GSIZET>>   &igbdy, 
                               GTVector<GTVector<GBdyType>> &igbdyt);         // config bdy
         void                do_bdy_normals  (
@@ -97,6 +109,8 @@ private:
          void               find_bdy_ind3d(GINT, GBOOL, GTVector<GSIZET> &);// find global bdy indices for specified bdy in 3d
          GBOOL              is_global_vertex(GTPoint<GFTYPE> &pt);          // pt on global vertex?
          GBOOL              on_global_edge(GINT iface, GTPoint<GFTYPE> &pt);// pt on global edge?
+
+
 
          GINT                ndim_;          // grid dimensionality (2 or 3)
          GFTYPE              eps_;           // float epsilon for comparisons

@@ -11,6 +11,8 @@
 //==================================================================================
 #include "gmtk.hpp"
 #include "ginitstate_direct_user.hpp"
+#include "ggrid_box.hpp"
+#include "ggrid_icos.hpp"
 
 
 namespace ginitstate {
@@ -39,7 +41,7 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
   GINT             nlump=0;
   GSIZET           i, j, nxy;
   GFTYPE           K2, nu, Re, r2, tdenom;
-  GFTYPE           efact, sum, tfact, xfact;
+  GFTYPE           efact, sum, tfact, tt, xfact;
   GTVector<GFTYPE> xx(GDIM), si(GDIM), sig(GDIM), t0;
   GTPoint<GFTYPE>  kprop(3), r0(3), P0(3), gL(3);
   std::vector<GFTYPE>  kxprop, kyprop, kzprop;
@@ -58,13 +60,15 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
   assert(grid.gtype() == GE_REGULAR 
       || grid.gtype() == GE_DEFORMED  && "Invalid element types");
 
+  tt = time;
+
   GTVector<GString> bc(6);
   bc[0] = boxptree.getValue<GString>("bdy_x_0");
   bc[1] = boxptree.getValue<GString>("bdy_x_1");
   bc[2] = boxptree.getValue<GString>("bdy_y_0");
   bc[3] = boxptree.getValue<GString>("bdy_y_1");
   bc[4] = boxptree.getValue<GString>("bdy_z_0");
-//    && "INFLOWT boundaries must be set on all boundaries");
+//    && "INFLOW boundaries must be set on all boundaries");
 
   nxy = (*xnodes)[0].size(); // same size for x, y, z
 
@@ -107,24 +111,26 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
   nlump = xinit.size();
 
   assert( snut == "constant" && "nu_type must bet set to 'constant')");
-  cout << "impl_boxnwaveburgers: nu=" << nu << " Re=" << Re << " time=" << time << endl;
 
-  if ( time <= 10.0*std::numeric_limits<GFTYPE>::epsilon() ) time = t0.max();
+  if ( (time-t0.max()) <= 10.0*std::numeric_limits<GFTYPE>::epsilon() ) time = t0.max();
+
 
   for ( i=0; i<GDIM; i++ ) {
     *u[i] = 0.0;
   }
+
+  tdenom  = 1.0/(4.0*nu*time);
   for ( GINT ilump=0; ilump<nlump; ilump++ ) {
     r0[0]  = xinit[ilump]; r0[1]  = yinit[ilump]; 
     if ( GDIM > 2 ) r0[2]  = zinit[ilump]; 
     kprop[0] = kxprop[ilump]; kprop[1] = kyprop[ilump];
     if ( GDIM > 2 ) kprop[2]  = kzprop[ilump]; 
     Re  = ULparam[ilump]/nu; // set Re from nu and ULparam
-    kprop  *= 1.0/kprop.norm();
-    tdenom  = 1.0/(4.0*nu*time);
-    tfact   = bplanar[ilump] ? sqrt(time/t0[ilump]): time/t0[ilump];
+//   cout << "impl_boxnwaveburgers: ilump=" << ilump << " nu=" << nu << " Re=" << Re << " tt=" << tt << " time=" << time << endl;
     for ( i=0, K2=0.0; i<GDIM; i++ ) K2 += kprop[i]*kprop[i];
-
+    assert(K2 > 10.0*std::numeric_limits<GFTYPE>::epsilon() && "Prop direction, kprop, not set");
+    if ( bplanar[ilump] ) kprop  *= 1.0/kprop.norm();
+    tfact   = bplanar[ilump] ? sqrt(time/t0[ilump]): time/t0[ilump];
     // If prop direction has more than one component != 0. Then
     // front is rotated (but still planar):
 //  for ( i=0, brot=TRUE; i<GDIM; i++ ) brot = brot && K[i] != 0.0 ;
@@ -143,7 +149,6 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
         xx[0] = sum;
       }
       for ( i=0, r2=0.0; i<GDIM; i++ ) r2 += xx[i]*xx[i];  
-  
       efact   = tfact * exp(r2*tdenom) / ( exp(Re) - 1.0 );
       xfact   = 1.0 /( time * (  1.0 + efact ) );
       // u(x,t) = (x/t) [ 1 + sqrt(t/t0) (e^Re - 1)^-1 exp(x^2/(4 nu t)) ]^-1
@@ -218,7 +223,7 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
       && lat0.size() == t0.size()
       && "lat0, lon0, and t0 must be the same size");
 
-  if ( time <= 10.0*std::numeric_limits<GFTYPE>::epsilon() ) time = t0.max();
+  if ( (time-t0.max()) <= 10.0*std::numeric_limits<GFTYPE>::epsilon() ) time = t0.max();
 
   // Convert initial positions to radians:
   for ( GINT ilump=0; ilump<lat0.size(); ilump++) {
@@ -231,6 +236,7 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
 
   for ( i=0; i<GDIM+1; i++ ) *u[i] = 0.0;
    
+  tdenom = 1.0/(4.0*nu*time);
   // Initialize each lump:
   for ( GINT ilump=0; ilump<lat0.size(); ilump++) {
     Re = Uparam[ilump]*r/nu; // set Re from nu, U, radius
@@ -241,15 +247,14 @@ GBOOL impl_icosnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &
       for ( i=0; i<GDIM+1; i++ ) { 
         xx[i] = (*xnodes)[i][j] - r0[ilump][i];
       }
-/*
+  
       xx[0] = r*lat;
       xx[1] = r*lon;
-*/
+  
       // find arclength from lump center
       s     = r*acos( sin(lat)*sin(lat0[ilump])
             +       cos(lat)*cos(lat0[ilump])*cos(lon - lon0[ilump]) );
   
-      tdenom = 1.0/(4.0*nu*time);
       tfact  = time/t0[ilump];
       efact  = tfact * exp(s*s*tdenom) / ( exp(Re) - 1.0 );
       xfact  = 1.0 /( time * (  1.0 + efact ) );
@@ -335,7 +340,7 @@ cout << "impl_boxdirgauss: sconfig=" << sconfig << endl;
   bc[3] = boxptree.getValue<GString>("bdy_y_1");
   bc[4] = boxptree.getValue<GString>("bdy_z_0");
   bc[5] = boxptree.getValue<GString>("bdy_z_1");
-  assert(bc.multiplicity("GBDY_INFLOWT") >= 2*GDIM
+  assert(bc.multiplicity("GBDY_INFLOW") >= 2*GDIM
       && "GBDY_INFLOW boundaries must be set on all boundaries");
 
   nxy = (*xnodes)[0].size(); // same size for x, y, z
@@ -422,7 +427,7 @@ GBOOL impl_boxpergauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
 
   assert(grid.gtype() == GE_REGULAR && "Invalid element types");
 
-  eps = 1.0e-4*std::numeric_limits<GFTYPE>::epsilon();
+  eps = 1.0e4*std::numeric_limits<GFTYPE>::epsilon();
 
   // Get periodicity length, gL:
   std::vector<GFTYPE> xyz0 = boxptree.getArray<GFTYPE>("xyz0");
@@ -436,15 +441,13 @@ GBOOL impl_boxpergauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
     cs = initptree.getArray<GFTYPE>("adv_vel");
   }
 
-  GTVector<GString> bc(6);
-  bc[0] = boxptree.getValue<GString>("bdy_x_0");
-  bc[1] = boxptree.getValue<GString>("bdy_x_1");
-  bc[2] = boxptree.getValue<GString>("bdy_y_0");
-  bc[3] = boxptree.getValue<GString>("bdy_y_1");
-  bc[4] = boxptree.getValue<GString>("bdy_z_0");
-  bc[5] = boxptree.getValue<GString>("bdy_z_1");
-  assert(bc.multiplicity("GBDY_PERIODIC") >= 2*GDIM
-      && "Periodic boundaries must be set on all boundaries");
+  GTVector<GTVector<GBdyType>>
+                           *igbdyt_face= &grid.igbdyt_bdyface();
+  for ( auto j=0; j<igbdyt_face->size(); j++ ) { // for each face
+cout << "boxpergauss: num=" << (*igbdyt_face)[j].size() << " igbdyt_face[" << j << "]=" << (*igbdyt_face)[j] << endl;
+    assert( (*igbdyt_face)[j].onlycontains(GBDY_PERIODIC) 
+        &&  "Periodic boundaries must be set on all boundaries");
+  }
 
   nxy = (*xnodes)[0].size(); // same size for x, y, z
 
@@ -508,7 +511,8 @@ GBOOL impl_boxpergauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : impl_icosgauss
-// DESC   : Initialize state for Burgers with Gauss lump on ICOS grid
+// DESC   : Initialize state for Burgers with Gauss lump on ICOS grid, based
+//          on a the Cartesian method
 // ARGS   : ptree  : main prop tree
 //          sconfig: ptree block name containing variable config
 //          grid   : grid
@@ -522,25 +526,20 @@ GBOOL impl_boxpergauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid,
 GBOOL impl_icosgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
 
-  GString          serr = "impl_icosgauss: ";
-  GBOOL            bContin;
-  GINT             j, k, n, nlumps;
-  GSIZET           nxy;
-  GFTYPE           alpha, argxp;
-  GFTYPE           lat, lon;
-  GFTYPE           x, y, z, r, s;
-  GFTYPE           nu, rad, E0, u0 ;
-  GFTYPE           vtheta, vphi;
-  GFTYPE           tiny = std::numeric_limits<GFTYPE>::epsilon();
-  GTPoint<GFTYPE>           rt(3);
-  GTVector<GFTYPE>          xx(3);
-  GTVector<GFTYPE>          si(4), sig(4), ufact(4);
-  GTVector<GFTYPE>          latp(4), lonp(4);
-  std::vector<GFTYPE>       c0(4), sig0(4);
-  std::vector<GFTYPE>       lat0(4), lon0(4); // up to 4 lumps
-  std::vector<GFTYPE>       Omega;
-  State            c(GDIM+1);
-  GString          snut;
+  GString             serr = "impl_icosgauss: ";
+  GINT                nlumps;
+  GSIZET              nxy;
+  GFTYPE              alpha, lat, latc, lon, lonc;
+  GFTYPE              x, y, z, r;
+  GFTYPE              irad, nu, rad, rexcl;
+  GFTYPE              cexcl, num, den;
+  GFTYPE              c0, cosk, spc;
+  GTVector<GFTYPE>    isig;
+  GTVector<GTVector<GFTYPE>*>
+                      c(3);
+  std::vector<GFTYPE> u0, sig0;
+  std::vector<GFTYPE> lat0, lon0; 
+  GString             snut;
 
   PropertyTree lumpptree = ptree.getPropertyTree(sconfig);
   PropertyTree icosptree = ptree.getPropertyTree("grid_icos");
@@ -555,22 +554,26 @@ GBOOL impl_icosgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid, S
   assert(grid.gtype() == GE_2DEMBEDDED && "Invalid element types");
 
 
-  if ( bpureadv ) {
-    for ( GSIZET j=0; j<GDIM+1; j++ ) c[j] = u[j+1];
-  }
+  // Need 3 arrays for utmp below, and 4 for other variables;
+  // use utmp[0-2] as tmp in calls to Ylm methods:
+  assert(utmp.size() >= 7 );
+  for (auto j=0; j<c.size(); j++ ) c[j] = u[j+1]; // adv vel. comp.
+
 
   nxy = (*xnodes)[0].size(); // same size for x, y, z
 
-  lat0  = lumpptree.getArray<GFTYPE>("latitude0"); // lat for each lump
-  lon0  = lumpptree.getArray<GFTYPE>("longitude0"); // lon for each lump
-  sig0  = lumpptree.getArray<GFTYPE>("sigma"); // sig for each lump
-  c0    = lumpptree.getArray<GFTYPE>("c0");  // initial concentrations for each lump
+  lat0  = lumpptree.getArray<GFTYPE>("latitude0");       // lat for each lump
+  lon0  = lumpptree.getArray<GFTYPE>("longitude0");      // lon for each lump
+  sig0  = lumpptree.getArray<GFTYPE>("sigma");           // sig for each lump
+  u0    = lumpptree.getArray<GFTYPE>("u0");              // initial concentrations for each lump
+  c0    = lumpptree.getValue<GFTYPE>("c0");              // adv. vel. magnitude
+  alpha = lumpptree.getValue<GFTYPE>("alpha");           // initial concentrations for each lump
+  cexcl = lumpptree.getValue<GFTYPE>("excl_angle");      // exclusion angle (degrees)
   rad   = icosptree.getValue<GFTYPE>("radius");
-  E0    = lumpptree.getValue<GFTYPE>("E0");
-  alpha = lumpptree.getValue<GFTYPE>("alpha",0.0);
-  nlumps= lumpptree.getValue<GINT>("nlumps",1);
+  irad  = 1.0/rad;
 
-  alpha *= PI/180.0;
+  nlumps = lat0.size();
+  rexcl = cexcl * PI/180.0;
 
   nu    = nuptree   .getValue<GFTYPE>("nu");
   snut  = nuptree   .getValue<GString>("nu_type","constant");
@@ -578,82 +581,54 @@ GBOOL impl_icosgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid, S
 
   // Convert initial locations from degrees to radians,
   // & compute initial positions of lumps in Cart coords:
-  for ( GSIZET k=0; k<nlumps; k++ ) {
+  isig.resize(sig0.size());
+  for ( auto k=0; k<nlumps; k++ ) {
     lat0[k] *= PI/180.0;
     lon0[k] *= PI/180.0;
+    isig[k]  = 1.0/sqrt(sig0[k]*sig0[k] + 4.0*nu*time);
   }
+  alpha *= PI/180.0;
 
-  // Set velocity here. Taken to be solid body rotation,
-  // u = Omega X r, where rotation rate vector, Omega
-  // is computed by rotating u0 x (0, 0, 1) about x axis by
-  // an amount alpha. These point to components of state u_:
-  u0 = sqrt(2.0*E0);
-  if ( bpureadv ) {
-    for ( k=0; k<nxy; k++ ) {
-      x   = (*xnodes)[0][k]; y = (*xnodes)[1][k]; z = (*xnodes)[2][k];
-      r   = sqrt(x*x + y*y + z*z);
-      // Compute lat & long:
-      lat = asin(z/r);
-      lon = atan2(y,x);
-      // u_lat = u_theta = -u0 sin(lon) sin(alpha)
-      // u_lon = u_phi   =  u0 (cos(theta) cos(alpha) + sin(theta)cos(lon)sin(alpha) )
-      (*utmp[0])[k]  = -u0*sin(lon)*sin(alpha);
-      (*utmp[1])[k]  =  u0*(cos(lat)*cos(alpha) + sin(lat)*cos(lon)*sin(alpha) );
-    }
-    GMTK::vsphere2cart(grid, utmp, GVECTYPE_PHYS, c);
-//  GMTK::constrain2sphere(grid, c);
+
+  // We use (lat,lon) advecting components from 
+  // Williamson JCP 102:211 (1992):
+  //   v_lat = -c0 sin(lon)sin(alpha)
+  //   v_lon =  c0 ( cos(lat) cos(alpha) + sin(lat) sin(lon) sin(alpha)).
+  // We compute the Cartesian components required by the solver:
+  for ( auto j=0; j<nxy; j++ ) { 
+    x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
+    r = sqrt(x*x + y*y + z*z); lat = asin(z/r); lon = atan2(y,x);
+    (*utmp[0])[j] = -c0 * sin(lon) * sin(alpha);
+    (*utmp[1])[j] =  c0 * ( cos(lat) * cos(alpha) - sin(lat)*cos(lon)*sin(alpha) );
   }
+  GMTK::vsphere2cart(grid, utmp, GVECTYPE_PHYS, c);
 
   *u[0] = 0.0;
-  for ( GSIZET k=0; k<nlumps; k++ ) {
+  for ( auto k=0; k<nlumps; k++ ) {
 
-    // Allow different sigma/concentration for each lump:
-    sig  [k] = sqrt(sig0[k]*sig0[k] + 4.0*time*nu); // constant viscosity only
-    si   [k] = 1.0/(sig[k]*sig[k]);
-    ufact[k] = c0[k]*pow(sig0[k]/sig[k],GDIM);
+        for ( auto j=0; j<nxy; j++ ) { 
+          x     = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
+          r     = sqrt(x*x + y*y + z*z); lat = asin(z/r); lon = atan2(y,x);
 
-    // Find where lat/lon endpoint would be at t, if alpha=0:
-    latp[k]  = lat0[k];
-    lonp[k]  = lon0[k] + (u0/rad) * time;
+          if ( (0.5*PI-fabs(lat)) < rexcl ) continue;
+          // Define following arclengths:
+          // s0c:  path from (lat0,lon0) to where solid body rotation
+          //       takes peak
+          // s0p:  path from (lat0,lon0) to arbitrary point
+          // spc:  path from arbitrary point to where solid body rotation
+          //       takes peak
+         
+          // Compute length from initial point to arb point on grid:
+//        s0p   = r*acos( sin(lat0[k])*sin(lat) + cos(lat0[k])*cos(lat)*cos(lon-lon0[k]) );
+          // Compute where lump should be (convert C to contravar. components):
+          latc  = lat0[k] - c0 * irad * sin(lon0[k]) * sin(alpha) * time;
+          lonc  = lon0[k] + c0 * irad * ( cos(alpha) + tan(lat0[k]) * sin(lon0[k]) * sin(alpha) ) * time;
+          spc   = r*acos( sin(lat)*sin(latc) + cos(lat)*cos(latc)*cos(lonc-lon) );
 
-    // Find where Cart endpoint would be at t, if alpha=0:
-    rt[0] = rad*cos(latp[k])*cos(lonp[k]);
-    rt[1] = rad*cos(latp[k])*sin(lonp[k]);
-    rt[2] = rad*sin(latp[k]);
-
-    // Now, rotate rt about x-axis by alpha to
-    // find lat/lon of final position of lump:
-    xx[0] = rt[0]; xx[1] = rt[1]; xx[2] = rt[2];
-    if ( time > 0 ) {
-      xx[1] =  cos(alpha)*rt[1] + sin(alpha)*rt[2];
-      xx[2] = -sin(alpha)*rt[1] + cos(alpha)*rt[2];
-    }
-    latp[k]  = asin(xx[2]/rad);
-    lonp[k]  = atan2(xx[1],xx[0]);
-
-    rt[0] = rad*cos(latp[k])*cos(lonp[k]);
-    rt[1] = rad*cos(latp[k])*sin(lonp[k]);
-    rt[2] = rad*sin(latp[k]);
-
-    for ( GSIZET j=0; j<nxy; j++ ) {
-      // Note: following c t is actually Integral_0^t c(t') dt', 
-      //       so if c becomes a function of t, this muct change:
-
-      x   = (*xnodes)[0][j];
-      y   = (*xnodes)[1][j];
-      z   = (*xnodes)[2][j];
-#if 1
-      r   = sqrt(x*x + y*y + z*z);
-      lat = asin(z/r);
-      lon = atan2(y,x);
-      // Compute arclength from point to where center _should_ be:
-      s     = r*acos( sin(latp[k])*sin(lat) + cos(latp[k])*cos(lat)*cos(lon-lonp[k]) );
-     (*u[0])[j] += ufact[k]*exp(-s*s*si[k]);
-#else
-     argxp = pow(x-rt[0],2) + pow(y-rt[1],2) + pow(z-rt[2],2);
-     (*u[0])[j] += ufact[k]*exp(-argxp*si[k]);
-#endif
-    } // end, grid-point loop
+          // Compute solution along trajectory:
+          (*u[0])[j] += u0[k]*pow(sig0[k]*isig[k],GDIM) 
+                      * exp( -pow(spc*isig[k], 2.0) ); 
+        }
 
   } // end, lump loop
 

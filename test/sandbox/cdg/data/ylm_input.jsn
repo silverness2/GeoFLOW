@@ -12,6 +12,9 @@
   "benchmark"            : false,
   "do_comparison"        : true,
   "observer_list"        : ["gio_observer", "global_diag_basic"],
+  "lmax"                 : 4,
+  "zero"                 : 1e-9,
+  "eps"                  : 1e-9,
   "initvss": {
     "name"     : "simplesum",
     "kdn"      : 2,

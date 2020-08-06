@@ -17,6 +17,12 @@
 #include "gmass.hpp"
 #include "gcomm.hpp"
 #include "ggfx.hpp"
+#include "ggrid.hpp"
+#include "ggrid_box.hpp"
+#include "ggrid_icos.hpp"
+#include "gupdatebdy_factory.hpp"
+#include "gmtk.hpp"
+#include "gutils.hpp"
 #include "tbox/error_handler.hpp"
 
 using namespace std;
@@ -34,7 +40,10 @@ GGrid::GGrid(const geoflow::tbox::PropertyTree &ptree, GTVector<GNBasis<GCTYPE,G
 :
 bInitialized_                   (FALSE),
 bapplybc_                       (FALSE),
+<<<<<<< HEAD
 bupdatebc_                      (FALSE),
+=======
+>>>>>>> master
 do_face_normals_                (FALSE),
 nprocs_        (GComm::WorldSize(comm)),
 ngelems_                            (0),
@@ -47,8 +56,12 @@ mass_                         (NULLPTR),
 imass_                        (NULLPTR),
 ggfx_                         (NULLPTR),
 ptree_                          (ptree),
+<<<<<<< HEAD
 bdy_apply_callback_           (NULLPTR),
 bdy_update_callback_          (NULLPTR)
+=======
+bdy_apply_callback_           (NULLPTR)
+>>>>>>> master
 {
 } // end of constructor method (1)
 
@@ -247,6 +260,7 @@ GSIZET GGrid::nfacedof()
 //**********************************************************************************
 GSIZET GGrid::nbdydof()
 {
+<<<<<<< HEAD
    // Use unique boundary indices to compute
    // number bdy surface dof. This list, unlike element
    // face indices, may conatin embedded booundary 
@@ -256,6 +270,9 @@ GSIZET GGrid::nbdydof()
      nftot += igbdy_binned_[j].size();
        
    return nftot;
+=======
+   return igbdy_.size();;
+>>>>>>> master
 } // end of method nbdydof
 
 
@@ -277,17 +294,27 @@ GFTYPE GGrid::minlength(GTVector<GFTYPE> *dx)
   
    if ( dx != NULLPTR ) dx->resizem(gelems_.nelems());
 
+<<<<<<< HEAD
    lmin = std::numeric_limits<GFTYPE>::max(); // min over all local elements
    for ( auto i=0; i<gelems_.size(); i++ ) {
      xverts = &gelems_[i]->xVertices();
      #if defined(_G_IS2D)
      emin = std::numeric_limits<GFTYPE>::max(); // min within an element
+=======
+   lmin = std::numeric_limits<GFTYPE>::max();
+   for ( auto i=0; i<gelems_.size(); i++ ) {
+     xverts = &gelems_[i]->xVertices();
+     #if defined(_G_IS2D)
+>>>>>>> master
      for ( auto j=0; j<xverts->size(); j++ ) {
        dr = (*xverts)[(j+1)%xverts->size()] - (*xverts)[j];
        emin = MIN(emin,dr.norm());
      }
      #elif defined(_G_IS3D)
+<<<<<<< HEAD
      emin = std::numeric_limits<GFTYPE>::max();
+=======
+>>>>>>> master
      for ( auto j=0; j<4; j++ ) { // bottom
        dr = (*xverts)[(j+1)%xverts->size()] - (*xverts)[j];
        lmin = MIN(emin,dr.norm());
@@ -327,6 +354,7 @@ GFTYPE GGrid::maxlength(GTVector<GFTYPE> *dx)
    GTPoint<GFTYPE> dr;
    GTVector<GTPoint<GFTYPE>> *xverts;
 
+<<<<<<< HEAD
    if ( dx != NULLPTR ) dx->resizem(gelems_.nelems());
 
    lmax = 0.0;  // max over all local elements
@@ -334,12 +362,21 @@ GFTYPE GGrid::maxlength(GTVector<GFTYPE> *dx)
      xverts = &gelems_[i]->xVertices();
      #if defined(_G_IS2D)
      emax = 0.0;  // max within an element
+=======
+   lmax = 0.0;
+   for ( auto i=0; i<gelems_.size(); i++ ) {
+     xverts = &gelems_[i]->xVertices();
+     #if defined(_G_IS2D)
+>>>>>>> master
      for ( auto j=0; j<xverts->size(); j++ ) {
        dr = (*xverts)[(j+1)%xverts->size()] - (*xverts)[j];
        emax = MAX(emax,dr.norm());
      }
      #elif defined(_G_IS3D)
+<<<<<<< HEAD
      emax = 0.0;
+=======
+>>>>>>> master
      for ( auto j=0; j<4; j++ ) { // bottom
        dr = (*xverts)[(j+1)%xverts->size()] - (*xverts)[j];
        emax = MAX(emax,dr.norm());
@@ -1193,23 +1230,36 @@ void GGrid::init_local_face_info()
 //**********************************************************************************
 void GGrid::init_bc_info()
 {
+<<<<<<< HEAD
   GBOOL                        bret;
   GSIZET                       ibeg, iend; // beg, end indices for global array
   GTVector<GINT>              *iebdy;  // domain bdy indices
   GTVector<GTVector<GINT>>    *ieface; // domain face indices
   GTVector<GINT>               igbdycf; // canonical bdy face
+=======
+  GBdyType                     btype;
+
+>>>>>>> master
 
   // Find boundary indices & types from config file 
   // specification, for _each_ natural/canonical domain face:
   config_bdy(ptree_, igbdy_bdyface_, igbdyt_bdyface_);
 
+<<<<<<< HEAD
 
   // Flatten these 2 bdy index & types indirection arrays:
   GSIZET      nind=0, nw=0;
   for ( auto j=0; j<igbdy_bdyface_.size(); j++ ) {
+=======
+  // Flatten bdy index indirection array:
+  GSIZET      nind=0, nw=0;
+  for ( auto j=0; j<igbdy_bdyface_.size(); j++ ) { // over dom can. bdy faces
+>>>>>>> master
     nind += igbdy_bdyface_[j].size(); // by-domain-face
   }
+  igbdy_  .resize(nind); // indices of bdy nodes in volume
 
+<<<<<<< HEAD
   igbdy_  .resize(nind); // indices of bdy nodes in volume
   igbdyt_ .resize(nind); // type of each of igbdy
   igbdycf .resize(nind); // canonical face each igbdy resides on
@@ -1219,10 +1269,17 @@ void GGrid::init_bc_info()
       igbdy_  [nind] = igbdy_bdyface_ [j][i];
       igbdyt_ [nind] = igbdyt_bdyface_[j][i];
       igbdycf [nind] = j;
+=======
+  nind = 0;
+  for ( auto j=0; j<igbdy_bdyface_.size(); j++ ) { // over can. bdy faces
+    for ( auto i=0; i<igbdy_bdyface_[j].size(); i++ ) {
+      igbdy_  [nind] = igbdy_bdyface_ [j][i];
+>>>>>>> master
       nind++;
     }
   }
 
+<<<<<<< HEAD
 
   // Create bdy type bins (one bin for each GBdyType), and
   // for each type, set the indirection indices into global
@@ -1250,16 +1307,53 @@ void GGrid::init_bc_info()
     nind = 0;
   } // end, element loop
 
+=======
+  // Create bdy type bins for each domain bdy:
+  //   [Dom bdy][bdytype][volume index]:
+  GBdyType         itype;
+  GSIZET          *ind=NULLPTR;
+  GSIZET           n, nbdy;
+  GTVector<GSIZET> iunique;
+   
+  nind = 0; 
+  // Compute 'binned' structures for global indices
+  // defining bdys, and to which index in bdy normal vectors
+  // a given bdy node corresponds:
+  n = 0; // cycle over all bdy nodes
+  igbdy_binned_.resize(igbdy_bdyface_.size());
+//ilbdy_binned_.resize(igbdy_bdyface_.size());
+  for ( auto k=0; k<igbdy_bdyface_.size(); k++ ) { // cycle over canonical bdy face
+    nbdy = igbdyt_bdyface_[k].size();
+    igbdy_binned_ [k].resize(GBDY_MAX);
+//  ilbdy_binned_ [k].resize(GBDY_MAX); // index into bdy arrays for each bdy type
+    for ( auto j=0; j<GBDY_MAX; j++ ) { // cycle over each bc type
+      itype = static_cast<GBdyType>(j);
+//    val  = igbdyt_bdyface_[k][itype];
+      nbdy = igbdyt_bdyface_[k].multiplicity(itype, ind, nind);
+      igbdy_binned_[k][j].resize(nbdy);
+//    ilbdy_binned_[k][j].resize(nbdy);
+      for ( auto i=0; i<nbdy; i++ ) { // assign comp. volume index
+        igbdy_binned_[k][j][i] = igbdy_bdyface_[k][ind[i]];
+//      ilbdy_binned_[k][j]    = n;     
+        n++;
+      }
+    } // end, bdy cond type loop
+  } // end, can. bdy loop
+>>>>>>> master
   if ( ind != NULLPTR ) delete [] ind;
 
   // Compute mask matrix from bdy vector:
   mask_.resize(ndof()); 
   mask_ = 1.0;
-  for ( auto j=0; j<igbdy_binned_[GBDY_DIRICHLET].size(); j++ ) {
-    mask_[igbdy_binned_[GBDY_DIRICHLET][j]] = 0.0;
-  }
-  for ( auto j=0; j<igbdy_binned_[GBDY_INFLOWT].size(); j++ ) {
-    mask_[igbdy_binned_[GBDY_INFLOWT][j]] = 0.0;
+  for ( auto k=0; k<igbdy_binned_.size(); k++ ) {
+    for ( auto j=0; j<GBDY_MAX; j++ ) {
+      btype = static_cast<GBdyType>(j);
+      if ( btype != GBDY_NONE && btype != GBDY_PERIODIC ) {
+        for ( auto i=0; i<igbdy_binned_[k][j].size(); i++ ) {
+          mask_[igbdy_binned_[k][j][i]] = 0.0;
+        }
+      }
+    }
   }
 
 
@@ -1341,4 +1435,36 @@ void GGrid::add_terrain(const State &xb, State &utmp)
   ivolume_ = 1.0 / volume_;
 
 } // end of method add_terrain
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : smooth
+// DESC   :
+//
+// DESC   : Computes a weighted average.
+//              Calculates:
+//                u <- DSS(M_L u) / DSS(M_L),
+//          where u is the field expressed in local format;
+//          M_L is the local mass matrix (unassembled);
+//          DSS is the application of Q Q^T, or the direct stiffness operator.
+// ARGS   :
+//          tmp  : tmp space
+//          op   : GGFX_OP operation
+//          u    : Locally expressed field to smooth
+// RETURNS: none.
+//************************************************************************************
+void GGrid::smooth(GGFX_OP op, GTVector<GFTYPE> &tmp, GTVector<GFTYPE> &u)
+{
+
+  tmp = u;
+
+  u.pointProd(*(this->massop().data()));
+  tmp = *(this->imassop().data());
+  this->ggfx_->doOp(tmp, op);  // DSS(mass_local)
+
+  u.pointProd(tmp);      // M_assembled u M_L
+
+} // end, smooth method
+
 
