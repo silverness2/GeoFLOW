@@ -32,13 +32,8 @@ class GGridBox : public GGrid
 {
 
 public:
-<<<<<<< HEAD
-        using              GGrid::faceNormals_;
-        using              GGrid::bdyNormals_;
-=======
 //      using              GGrid::faceNormals_;
 //      using              GGrid::bdyNormals_;
->>>>>>> master
 
         // Box grid traits:
         struct Traits {
@@ -59,11 +54,7 @@ public:
         void                set_basis(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b); // set element basis
         void                periodize();                                     // periodize coords, if allowed
         void                unperiodize();                                   // un-periodize coords, if allow
-<<<<<<< HEAD
-        void                config_bdy(const PropertyTree &ptree,
-=======
         void                config_bdy(const geoflow::tbox::PropertyTree &ptree,
->>>>>>> master
                               GTVector<GTVector<GSIZET>>   &igbdy, 
                               GTVector<GTVector<GBdyType>> &igbdyt);         // config bdy
         void                do_bdy_normals  (
