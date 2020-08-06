@@ -8,9 +8,7 @@
 // Copyright    : Copyright 2018. Colorado State University. All rights reserved
 // Derived from : none.
 //==================================================================================
-#include <limits>
-#include "cff_blas.h"
-#include "gmtk.hpp"
+#include "gtvector.hpp"
 
 #define GTMATRIX_ROTATE(a,i,j,k,l) g=a(i,j);h=a(k,l);a(i,j)=g-s*(h+g*tau);\
 	a(k,l)=h+s*(g-h*tau);
@@ -2640,7 +2638,28 @@ GTVector<T> GTMatrix<T>::matvec_impl_(const GTVector<T> &obj, std::true_type)
 {
   GTVector<T> vret(this->size(1));
 
-  GMTK::matvec_prod(vret, *this, obj);
+  GSIZET n1 = this->size(1);
+  GSIZET n2 = this->size(2);
+
+  if      ( std::is_same<T,GFLOAT>::value ) {
+    fmxv(vret.data(), const_cast<GFLOAT*>(this->data().data()),
+                      const_cast<GFLOAT*>(obj.data())       ,
+                      &n1, &n2, &icsz_);
+  }
+  else if ( std::is_same<T,GDOUBLE>::value ) {
+    dmxv(vret.data(), const_cast<GDOUBLE*>(this->data().data()),
+                      const_cast<GDOUBLE*>(obj.data())       ,
+                      &n1, &n2, &icsz_);
+  }
+  else if ( std::is_same<T,GQUAD>::value ) {
+    qmxv(vret.data(), const_cast<GQUAD*>(this->data().data()),
+                      const_cast<GQUAD*>(obj.data())       ,
+                      &n1, &n2, &icsz_);
+  }
+  else {
+    assert(FALSE);
+  }
+
 
   #if defined(_G_AUTO_UPDATE_DEV)
       vret.updatedev();
@@ -2695,7 +2714,35 @@ GTMatrix<T>::matmat_impl_(const GTMatrix &obj, std::true_type)
 {
   GTMatrix mret(this->size(1),obj.size(2));
 
-  GMTK::matmat_prod(mret, *this, obj);
+
+  GSIZET a1=this->size(1), a2 = this->A.size(2);
+  GSIZET b1=obj.size(1), b2 = obj.size(2);
+
+  if      ( std::is_same<T,GFLOAT>::value ) { 
+    fmxm(mret.data().data(),
+         const_cast<GFLOAT*>(this->data().data()),
+         &a1,&a2,
+         const_cast<GFLOAT*>(obj.data().data()),
+         &b1, &b2, &icsz_);
+  }
+  else if ( std::is_same<T,GDOUBLE>::value ) {
+    dmxm(mret.data().data(),
+         const_cast<GDOUBLE*>(this->data().data()),
+         &a1,&a2,
+         const_cast<GDOUBLE*>(obj.data().data()),
+         &b1, &b2, &icsz_);
+  }
+  else if ( std::is_same<T,GQUAD>::value ) {
+    qmxm(mret.data().data(),
+         const_cast<GQUAD*>(this->data().data()),
+         &a1,&a2,
+         const_cast<GQUAD*>(obj.data().data()),
+         &b1, &b2, &icsz_);
+  }
+  else {
+    assert(FALSE);
+  }
+
 
   #if defined(_G_AUTO_UPDATE_DEV)
       vret->updatedev();
