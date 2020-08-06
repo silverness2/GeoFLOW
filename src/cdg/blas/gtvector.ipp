@@ -2089,9 +2089,9 @@ GTVector<T>::contains(T val, GSIZET *&iwhere, GSIZET &nw)
 
   if ( this->data_ == NULLPTR ) return FALSE;
 
-  GLLONG n;
+  GLLONG n=0;
   
-  for ( auto i=this->gindex_.beg(), n=0; i<=this->gindex_.end(); i++ ) {
+  for ( auto i=this->gindex_.beg(); i<=this->gindex_.end(); i++ ) {
     n += this->data_[i] == val ? 1 : 0;
   }
 
