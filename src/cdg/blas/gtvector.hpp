@@ -19,21 +19,20 @@
 #if !defined(_GTVECTOR_DECL_HPP)
 #define _GTVECTOR_DECL_HPP
 
+#include <cstdlib>
+#include <limits>
+#include <iostream>
+#include <vector>
+
 #include "gtypes.h"
 #include "gindex.hpp"
 #include "cff_blas.h"
 #include "gcomm.hpp"
 #include "gmtk.hpp"
 
-#include <cstdlib>
-#include <limits>
-#include <iostream>
-#include <vector>
-
 #if !defined(_G_VEC_CACHE_SIZE)
   # define _G_VEC_CACHE_SIZE 16
 #endif
-
 
 
 template <class T> class GTVector
@@ -154,6 +153,8 @@ template <class T> class GTVector
     void               operator-=(const GTVector &b);
     #pragma acc routine vector
     void               operator*=(const GTVector &b);
+    #pragma acc routine vector
+    void               operator/=(const GTVector &b);
 
 
     #pragma acc routine vector

@@ -973,14 +973,16 @@ void normalize_euclidean(GTVector<GTVector<T>*> &x, GINT *iind, GINT nind, T x0)
   if ( iind != NULLPTR ) {
     for ( auto k=0; k<nind; k++ ) { // cycle over all n-tuples
       n = iind[k];
-      for ( auto l=0, xn=0.0; l<x.size(); l++ ) xn += (*x[l])[n]*(*x[l])[n];
+      xn = 0.0;
+      for ( auto l=0; l<x.size(); l++ ) xn += (*x[l])[n]*(*x[l])[n];
       xn = x0/pow(xn,0.5);
       for ( auto l=0; l<x.size(); l++ ) (*x[l])[n] *= xn;
     }
   }
   else {
     for ( auto n=0; n<x[0]->size(); n++ ) { // cycle over all n-tuples
-      for ( auto l=0, xn=0.0; l<x.size(); l++ ) xn += (*x[l])[n]*(*x[l])[n];
+      xn = 0.0;
+      for ( auto l=0; l<x.size(); l++ ) xn += (*x[l])[n]*(*x[l])[n];
       xn = x0/pow(xn,0.5);
       for ( auto l=0; l<x.size(); l++ ) (*x[l])[n] *= xn;
     }
@@ -1005,9 +1007,15 @@ void normalize_euclidean(GTVector<GTVector<T>*> &x, GINT *iind, GINT nind, T x0)
 template<typename T>
 void saxpby(GTVector<T> &x, T a, GTVector<T> &y, T b) 
 {
-  assert(x.size() == y.size() && "Incompatible array sizes");
-  for ( auto j=0; j<x.size(); j++ ) { 
-    x[j] = a*x[j] + b*y[j];
+  if ( y.size() > 1 ) {
+    for ( auto j=0; j<x.size(); j++ ) { 
+      x[j] = a*x[j] + b*y[j];
+    }
+  }
+  else { // to make consistent with GTVector
+    for ( auto j=0; j<x.size(); j++ ) { 
+      x[j] = a*x[j] + b*y[0];
+    }
   }
 } // end of method saxpby (1)
 
@@ -1029,9 +1037,15 @@ void saxpby(GTVector<T> &x, T a, GTVector<T> &y, T b)
 template<typename T>
 void saxpby(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y, T b) 
 {
-  assert(x.size() == y.size() && "Incompatible array sizes");
-  for ( auto j=0; j<x.size(); j++ ) { 
-    z[j] = a*x[j] + b*y[j];
+  if ( y.size() > 1 ) {
+    for ( auto j=0; j<x.size(); j++ ) { 
+      z[j] = a*x[j] + b*y[j];
+    }
+  }
+  else { // to make consistent with GTVector
+    for ( auto j=0; j<x.size(); j++ ) { 
+      z[j] = a*x[j] + b*y[0];
+    }
   }
 } // end of method saxpby (1)
 

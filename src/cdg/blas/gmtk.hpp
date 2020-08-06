@@ -13,7 +13,8 @@
 #include <limits>
 #include "gtypes.h"
 #include "cff_blas.h"
-//#include "ggrid.hpp"
+#include "gelem_base.hpp"
+  #include "ggrid.hpp"
 //#include "ggrid_box.hpp"
 //#include "ggrid_icos.hpp"
 

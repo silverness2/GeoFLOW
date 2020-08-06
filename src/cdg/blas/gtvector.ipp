@@ -15,11 +15,7 @@
 // Copyright   : Copyright 2018. Colorado State University. All rights reserved
 // Derived from: none.
 //==================================================================================
-
 #include "gmtk.hpp"
-
-#include <algorithm>
-#include <cassert>
 
 
 //**********************************************************************************
@@ -1105,10 +1101,12 @@ GTVector<T>::operator+=(const GTVector &obj)
   if ( obj.size() > 1 ) {
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       this->data_[j] += obj[j-this->gindex_.beg()];
+    }
   }
   else {
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       this->data_[j] += obj[0];
+    }
   }
 
   #if defined(_G_AUTO_UPDATE_DEV)
@@ -1134,10 +1132,12 @@ GTVector<T>::operator-=(const GTVector &obj)
   if ( obj.size() > 1 ) {
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       this->data_[j] -= obj[j-this->gindex_.beg()];
+    }
   }
   else {
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       this->data_[j] -= obj[0];
+    }
   }
 
   #if defined(_G_AUTO_UPDATE_DEV)
@@ -1159,8 +1159,7 @@ template<class T>
 void
 GTVector<T>::operator*=(const GTVector &obj)
 {
-  T *p = b.data();
-  if ( b.size() > 1 ) {
+  if ( obj.size() > 1 ) {
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       this->data_[j] *= obj[j-this->gindex_.beg()];
     }
@@ -1189,7 +1188,6 @@ template<class T>
 void
 GTVector<T>::operator/=(const GTVector &obj)
 {
-  T *p = b.data();
   if ( obj.size() > 1 ) {
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       this->data_[j] /= obj[j-this->gindex_.beg()];
@@ -1620,14 +1618,14 @@ while(1){};
   }
   #endif
 
-  if () obj.size() > 1 ) {
+  if ( obj.size() > 1 ) {
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-      data_[j] *= a * obj[j-gindex_.beg()];
+      data_[j] *= obj[j-gindex_.beg()];
     }
   }
   else {
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-      data_[j] *= a * obj[0];
+      data_[j] *= obj[0];
     }
   }
 
@@ -2107,7 +2105,7 @@ GTVector<T>::contains(T val, GSIZET *&iwhere, GSIZET &nw)
     nw = n;
   }
 
-  for ( i=this->gindex_.beg(), n=0; i<=this->gindex_.end(); i++ ) {
+  for ( auto i=this->gindex_.beg(), n=0; i<=this->gindex_.end(); i++ ) {
     if ( data_[i] == val ) {
       iwhere[n++] = i;
     }
@@ -2229,7 +2227,8 @@ GTVector<T>::contains_floor(T val, GSIZET  &iwhere, T floor, GSIZET istart)
 
   if ( data_ == NULLPTR ) return FALSE;
 
-  for ( auto i=this->gindex_.beg()+istart; i<=this->gindex_.end(); i++ ) {
+  GSIZET i;
+  for ( i=this->gindex_.beg()+istart; i<=this->gindex_.end(); i++ ) {
     if ( data_[i] > floor && data_[i] == val ) break;
   }
 
@@ -2265,7 +2264,8 @@ GTVector<T>::contains_ceil(T val, GSIZET  &iwhere, T ceil, GSIZET istart)
 
   if ( this->data_ == NULLPTR ) return FALSE;
 
-  for ( auto i=this->gindex_.beg()+istart; i<=this->gindex_.end(); i++ ) {
+  GSIZET i;
+  for ( i=this->gindex_.beg()+istart; i<=this->gindex_.end(); i++ ) {
     if ( this->data_[i] < ceil && this->data_[i] == val ) break;
   }
 
@@ -2368,6 +2368,7 @@ GTVector<T>::distinctrng(GSIZET ibeg, GSIZET n, GSIZET is,
                          T * const &tunique, GSIZET * const &itmp)
 {
 
+  GLLONG i;
   GLLONG nfound;
   GBOOL bcont;
 
@@ -2456,7 +2457,7 @@ GTVector<T>::distinctrng_floor(GSIZET ibeg, GSIZET n, GSIZET is, T *&vals,
     indices = new GSIZET [nd];
     assert(indices != NULLPTR );
   }
-  for ( i=0; i<nfound; i++ ) {
+  for ( auto i=0; i<nfound; i++ ) {
     vals   [i] = tunique[i];
     indices[i] = itmp[i];
   }
@@ -2519,7 +2520,7 @@ GTVector<T>::distinctrng_floor(GSIZET ibeg, GSIZET n, GSIZET is,
     nd = nfound;
     indices = new GSIZET [nd];
   }
-  for ( i=0; i<nfound; i++ ) {
+  for ( auto i=0; i<nfound; i++ ) {
     indices[i] = itmp[i];
   }
 
@@ -3106,7 +3107,7 @@ GTVector<T>::add_impl_(const GTVector &obj, std::true_type d)
   GTVector vret(this->gindex_);
   
   T a = static_cast<T>(1);
-  T b = static_cast<T>(1);
+  T b = static_cast<T>(-1);
   GMTK::add(vret, *this, obj, a, b);
 
   #if defined(_G_AUTO_UPDATE_DEV)
@@ -3129,8 +3130,6 @@ GTVector<T>::sub_impl_(const GTVector &obj, std::false_type d)
 {
   GTVector vret(this->gindex_);
 
-  T a = static_cast<T>(1);
-  T b = static_cast<T>(-1);
   if ( obj.size() > 1 ) {
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       vret[j] = this->data_[j] - obj[j];

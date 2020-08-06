@@ -540,7 +540,7 @@ void GBurgers<TypePack>::init(GBurgers::Traits &traits)
 
   if ( bconserved_ && !doheat_ ) {
     assert(FALSE && "Conservation not yet supported");
-    gpdv_  = new GpdV(*grid_,*gmass_);
+    gpdv_  = new GpdV<TypePacl>(*grid_,*gmass_);
 //  gflux_ = new GFlux(*grid_);
     assert( (gmass_   != NULLPTR
           && ghelm_   != NULLPTR

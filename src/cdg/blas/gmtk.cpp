@@ -1810,8 +1810,8 @@ while(1){};
   }
   #else
   GSIZET nn = vret.getIndex().end() - vret.getIndex().beg() + 1;
-  fzaxpby(vret.data(), const_cast<GFLOAT*>(va.data()), &a, 
-                       const_cast<GFLOAT*>(vb.data()), &b, &nn, &szVecCache_);
+  saxpby<GFLOAT>(vret.data(), const_cast<GFLOAT*>(va.data()), &a, 
+                 const_cast<GFLOAT*>(vb.data()), &b, &nn, &szVecCache_);
   #endif
 
 } // end, add 
@@ -1846,8 +1846,8 @@ while(1){};
   }
   #else
   GSIZET nn = vret.getIndex().end() - vret.getIndex().beg() + 1;
-  dzaxpby(vret.data(), const_cast<GDOUBLE*>(va.data()), &a, 
-                       const_cast<GDOUBLE*>(vb.data()), &b, &nn, &szVecCache_);
+  saxpby<GDOUBLE>(vret.data(), const_cast<GDOUBLE*>(va.data()), &a, 
+                  const_cast<GDOUBLE*>(vb.data()), &b, &nn, &szVecCache_);
   #endif
 
 } // end, add 
@@ -1882,8 +1882,8 @@ while(1){};
   }
   #else
   GSIZET nn = vret.getIndex().end() - vret.getIndex().beg() + 1;
-  qzaxpby(vret.data(), const_cast<GQUAD*>(va.data()), &a, 
-                       const_cast<GQUAD*>(vb.data()), &b, &nn, &szVecCache_);
+  saxpby<GAUAD>(vret.data(), const_cast<GQUAD*>(va.data()), &a, 
+                 const_cast<GQUAD*>(vb.data()), &b, &nn, &szVecCache_);
   #endif
 
 } // end, add 

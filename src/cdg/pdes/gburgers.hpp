@@ -161,7 +161,7 @@ private:
         GMass              *gimass_;        // inverse mass op
         GAdvect            *gadvect_;       // advection op
         GHelmholtz         *ghelm_;         // Helmholz and Laplacian op
-        GpdV               *gpdv_;          // pdV op
+        GpdV<TypePack>     *gpdv_;          // pdV op
 //      GFlux              *gflux_;         // flux op
         GC_COMM             comm_;          // communicator
         GGFX<GFTYPE>       *ggfx_;          // gather-scatter operator
