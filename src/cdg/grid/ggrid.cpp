@@ -19,6 +19,7 @@
 #include "ggrid.hpp"
 #include "ggrid_box.hpp"
 #include "ggrid_icos.hpp"
+#include "gmtk.hpp"
 #include "gutils.hpp"
 #include "tbox/error_handler.hpp"
 #include "gmtk.hpp"
@@ -1111,8 +1112,8 @@ void GGrid::wderiv(GTVector<GFTYPE> &u, GINT idir, GBOOL bwghts, GTVector<GFTYPE
     }
   }
   if ( bwghts ) {
-    for ( auto i=0; i<du.size(); i++ ) {
-      du[i] *= -(*Jac)[i] * (*mass)[i];
+    for ( auto i=0; i<dq.size(); i++ ) {
+      dq[i] *= -(*Jac)[i] * (*mass)[i];
     }
   }
     
