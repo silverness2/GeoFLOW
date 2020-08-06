@@ -18,7 +18,6 @@
 #include "gnbasis.hpp"
 #include "gelem_base.hpp"
 #include "gdd_base.hpp"
-#include "ggrid.hpp"
 #include "gcomm.hpp"
 #include "ggfx.hpp"
 #include "glinop.hpp"
@@ -125,6 +124,8 @@ virtual void                 print(const GString &filename){}          // print 
         GElemType            gtype() { return gtype_; }               // get unique elem type on grid       
         void                 deriv(GTVector<GFTYPE> &u, GINT idir, GTVector<GFTYPE> &tmp,
                                    GTVector<GFTYPE> &du );            // derivative of global vector
+       void                  wderiv(GTVector<GFTYPE> &q, GINT idir, GBOOL bwghts, 
+                                   GTVector<GFTYPE> &utmp, GTVector<GFTYPE> &du); // weak derivative
 
         void                 set_apply_bdy_callback(
                              std::function<void(const Time &t, State &u,
@@ -222,7 +223,6 @@ virtual void                        do_bdy_normals(GTMatrix<GTVector<GFTYPE>>
 
         GBOOL                       bInitialized_;  // object initialized?
         GBOOL                       bapplybc_;      // bc apply callback set
-        GBOOL                       bupdatebc_;     // bc update callback set
         GBOOL                       do_face_normals_; // compute elem face normals for fluxes?
         GElemType                   gtype_;         // element types comprising grid
         GINT                        irank_;         // MPI task id
