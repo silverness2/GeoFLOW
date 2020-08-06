@@ -11,6 +11,8 @@
 #include "gtvector.hpp"
 #include "gtmatrix.hpp"
 #include "ggrid.hpp"
+#include "ggrid_box.hpp"
+#include "ggrid_icos.hpp"
 
 using namespace std;
 
@@ -2738,7 +2740,7 @@ void compute_grefdiviW(GGrid &grid, GTVector<GTVector<GFTYPE>*> &u, GTVector<GFT
 //
 // ARGS   : grid : Grid. If not of the correct type, nothing is done
 //          vsph : Array of vector components. If we have GE_2DEMBEDDED grid,
-//                 there must be at least 2 components, and only the firs 2
+//                 there must be at least 2 components, and only the first 2
 //                 are used, and assumed to be latitudual, and longitudinal
 //                 respectively. If grid is a 3D spherical grid, then
 //                 vector components are assumed to be (r, lat, long).
@@ -2788,7 +2790,7 @@ void vsphere2cart(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &vsph, GVectorT
                        -  (*vsph[1])[j]*             sin(phi);
         (*vcart[1])[j] = -(*vsph[0])[j]*  sin(theta)*sin(phi) 
                        +  (*vsph[1])[j]*             cos(phi);
-        (*vcart[2])[j] =  (*vsph[0])[j]*  sin(theta);
+        (*vcart[2])[j] =  (*vsph[0])[j]*  cos(theta);
       }
     }
     else if ( vtype == GVECTYPE_COVAR ) { // vsph are covar. components

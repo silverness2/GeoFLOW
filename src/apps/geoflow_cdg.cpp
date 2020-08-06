@@ -134,7 +134,6 @@ int main(int argc, char **argv)
     else {                // restart run
       do_restart(ptree_, *grid_, u_, p, icycle, t);
     }
-    init_bdy  (ptree_, *grid_, pEqn_, t, utmp_, u_, ub_);
     init_force(ptree_, *grid_, pEqn_, t, utmp_, u_, uf_);
 
     //***************************************************
@@ -173,11 +172,11 @@ int main(int argc, char **argv)
     //***************************************************
     // Do shutdown, cleaning:
     //***************************************************
+    deallocate();
     EH_MESSAGE("geoflow: do shutdown...");
     GlobalManager::shutdown();
     GlobalManager::finalize();
     GComm::TermComm();
-    deallocate();
 
 
     return(0);
@@ -215,11 +214,6 @@ void create_equation(const PropertyTree &ptree, EqnBasePtr &pEqn)
 {
   pEqn = EquationFactory<MyTypes>::build(ptree, *grid_, utmp_);
 
-  // Set PDE callback functions, misc:
-  std::function<void(const Time &t, State &u, State &ub)>  
-      fcallback = [](const Time &t, State &u, State &ub)
-                  {update_boundary(t, u, ub);}; // set tmp function with proper signature for...
-  pEqn->set_bdy_update_callback(fcallback); // bdy update callback
 
 #if 0
   std::function<void(const Time &t, State &u, const Time &dt)> 
@@ -578,7 +572,7 @@ void init_state(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &
 {
   GBOOL bret;
 
-  bret = GInitStateFactory<MyTypes>::init(ptree, grid, peqn, t, utmp, ub, u);
+  bret = GInitStateFactory<MyTypes>::init(ptree, grid, peqn->stateinfo(), t, utmp, ub, u);
 
   assert(bret && "state initialization failed");
 
@@ -601,56 +595,11 @@ void init_force(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &
 {
   GBOOL bret;
 
-  bret = GInitForceFactory<MyTypes>::init(ptree, grid, peqn, t, utmp, u, uf);
+  bret = GInitForceFactory<MyTypes>::init(ptree, grid, peqn->stateinfo(), t, utmp, u, uf);
 
   assert(bret && "forcing initialization failed");
   
 } // end method init_force
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD: init_bdy
-// DESC  : Top-level method to set initial bdy conditions.
-// ARGS  : ptree: main prop tree
-//         grid : grid object
-//         peqn : pointer to EqnBase 
-//         t    : initial time
-//         utmp : vector of tmp vectors 
-//         u    : full state vector
-//         ub   : full boundary state vector
-//**********************************************************************************
-void init_bdy(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, State &utmp, State &u, State &ub)
-{
-  GBOOL bret;
-
-  bret = GInitBdyFactory<MyTypes>::init(ptree, grid, peqn, t, utmp, u, ub);
-
-  assert(bret && "boundary initialization failed");
-  
-} // end method init_bdy
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : update_boundary
-// DESC   : update/set boundary vectors, ub
-// ARGS   : 
-//          t    : time
-//          u    : current state
-//          ub   : bdy vectors (one for each state element)
-// RETURNS: none.
-//**********************************************************************************
-void update_boundary(const Time &t, State &u, State &ub)
-{
-  GBOOL  bret;
-  GFTYPE tt = t;
-
-  bret = GUpdateBdyFactory<MyTypes>::update(ptree_, *grid_, pEqn_, tt, utmp_, u, ub);
-  
-  assert(bret && "boundary update failed");
-  
-} // end of method update_boundary
 
 
 //**********************************************************************************
@@ -852,8 +801,8 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
   nnorm    = 1.0;
 
 
-  tt = 0.0;
-  bret = GInitStateFactory<MyTypes>::init(ptree, grid, peqn, tt, utmp, ub, ua);
+  tt = t;
+  bret = GInitStateFactory<MyTypes>::init(ptree, grid, peqn->stateinfo(), tt, utmp, ub, ua);
   assert(bret && "state initialization failed");
   for ( GSIZET j=0; j<nsolve_; j++ ) { // local errors
    *utmp [1] = *ua [j]; utmp [1]->rpow(2);
@@ -869,10 +818,10 @@ void compare(const PropertyTree &ptree, GGrid &grid, EqnBasePtr &peqn, Time &t, 
 
   // Compute analytic solution at t:
   tt = t;
-  bret = GInitStateFactory<MyTypes>::init(ptree, grid, peqn, tt, utmp, ub, ua);
+  bret = GInitStateFactory<MyTypes>::init(ptree, grid, peqn->stateinfo(), tt, utmp, ub, ua);
   assert(bret && "state initialization failed");
 
-#if 1
+#if 0
   // Set up and output the analytic solution
   // and difference solution as well as
   // advection velocity if one exists:

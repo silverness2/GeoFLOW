@@ -53,7 +53,6 @@ doheat_          (traits.doheat),
 bpureadv_      (traits.bpureadv),
 bconserved_  (traits.bconserved),
 bforced_        (traits.bforced),
-bupdatebc_               (FALSE),
 bsteptop_                (FALSE),
 bvariabledt_ (traits.variabledt),
 isteptype_       (GSTEPPER_EXRK),
@@ -293,15 +292,26 @@ void GBurgers<TypePack>::step_impl(const Time &t, State &uin, State &uf, State &
   // These are not deep copies:
   if ( doheat_ ) {
     uevolve_[0] = uin[0]; 
+    this->stateinfo_.nevolve = 1;
+    this->stateinfo_.icomptype.resize(1);
+    this->stateinfo_.icomptype.push_back(GSC_KINETIC);
   }
   else if ( bpureadv_ ) {
     uevolve_[0] = uin[0]; 
     if ( bpureadv_ ) {
       for ( auto j=0; j<c_.size(); j++ ) c_ [j] = uin[j+1];
     }
+    this->stateinfo_.nevolve = 1;
+    this->stateinfo_.npresc  = c_.size();
+    this->stateinfo_.icomptype.push_back(GSC_KINETIC);
+    for ( auto j=0; j<c_.size(); j++ ) 
+      this->stateinfo_.icomptype.push_back(GSC_PRESCRIBED);
   }
   else {
     for ( auto j=0; j<uin.size(); j++ ) uevolve_ [j] = uin[j];
+    this->stateinfo_.nevolve = uin.size();
+    this->stateinfo_.icomptype.resize(uin.size());
+    for ( auto j=0; j<uin.size(); j++ ) this->stateinfo_.icomptype[j] = GSC_KINETIC;
   }
 
   switch ( isteptype_ ) {
@@ -476,10 +486,10 @@ void GBurgers<TypePack>::init(GBurgers::Traits &traits)
       uoptmp_ .resize(nop); // RHS operator work space
       // Make sure there is no overlap between tmp arrays:
       n = 0;
-      for ( GSIZET j=0; j<nsolve         ; j++, n++ ) uold_   [j] = utmp_[n];
-      for ( GSIZET j=0; j<urktmp_ .size(); j++, n++ ) urktmp_ [j] = utmp_[n];
-      for ( GSIZET j=0; j<urhstmp_.size(); j++, n++ ) urhstmp_[j] = utmp_[n];
-      for ( GSIZET j=0; j<uoptmp_ .size(); j++, n++ ) uoptmp_ [j] = utmp_[n];
+     for ( auto j=0; j<nsolve         ; j++, n++ ) uold_   [j] = utmp_[n];
+     for ( auto j=0; j<urktmp_ .size(); j++, n++ ) urktmp_ [j] = utmp_[n];
+     for ( auto j=0; j<urhstmp_.size(); j++, n++ ) urhstmp_[j] = utmp_[n];
+     for ( auto j=0; j<uoptmp_ .size(); j++, n++ ) uoptmp_ [j] = utmp_[n];
       break;
     case GSTEPPER_BDFAB:
       dthist_.resize(MAX(itorder_,inorder_));
@@ -490,7 +500,7 @@ void GBurgers<TypePack>::init(GBurgers::Traits &traits)
       tcoeffs_ = tcoeff_obj->getCoeffs(); 
       acoeffs_ = acoeff_obj->getCoeffs();
       uold_   .resize(nsolve); // solution at time level n
-      for ( GSIZET j=0; j<nsolve; j++ ) uold_[j] = utmp_[j];
+     for ( auto j=0; j<nsolve; j++ ) uold_[j] = utmp_[j];
       bmultilevel = TRUE;
       break;
     case GSTEPPER_BDFEXT:
@@ -502,7 +512,7 @@ void GBurgers<TypePack>::init(GBurgers::Traits &traits)
       tcoeffs_ = tcoeff_obj->getCoeffs(); 
       acoeffs_ = acoeff_obj->getCoeffs();
       urhstmp_.resize(utmp_.size()-urktmp_.size());
-      for ( GSIZET j=0; j<utmp_.size(); j++ ) urhstmp_[j] = utmp_[j];
+     for ( auto j=0; j<utmp_.size(); j++ ) urhstmp_[j] = utmp_[j];
       bmultilevel = TRUE;
       break;
     default:
@@ -610,36 +620,45 @@ void GBurgers<TypePack>::set_nu(GTVector<GFTYPE> &nu)
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-void GBurgers<TypePack>::apply_bc_impl(const Time &t, State &u, const State &ub)
+void GBurgers<TypePack>::apply_bc_impl(const Time &t, State &u, State &ub)
 {
-  GTVector<GTVector<GSIZET>>  *igbdy = &grid_->igbdy_binned();
+  Time ttime = t;
+
+  BdyUpdateList *updatelist = &grid_->bdy_update_list();;
+
+
+  // Update bdy values if required to:
+  for ( auto k=0; k<updatelist->size(); k++ ) { // foreach grid bdy
+    for ( auto j=0; j<(*updatelist)[j].size(); j++ ) { // each update method
+      (*updatelist)[k][j]->update(*grid_, this->stateinfo_, ttime, utmp_, u, ub);
+    }
+  }
+
 
   // Use indirection to set the global field node values
-  // with domain boundary data. ub must be updated outside 
-  // of this method.
+  // with domain boundary data. 
+//GINT     nbdy = grid_->igbdy_binned().size();
+//GSIZET   ib;
+//GBdyType itype; 
+//GTVector<GTVector<GSIZET>>  *igbdy;
+//for ( auto k=0; k<nbdy; k++ ) {            // for each grid bdy
+//  itype = static_cast<GBdyType>(k);
+//  if ( itype == GBDY_PERIODIC
+//   ||  itype == GBDY_NONE ) continue;      // no bdy value for these
+//  igbdy = &grid_->igbdy_binned()[k];
+//  for ( auto j=0; j<igbdy->size(); j++ ) { // for each type of bdy in gtypes.h
+//    for ( auto i=0; i<u.size(); i++ ) {    // for each state component
+//      if ( ub[i] == NULLPTR ) continue;
+//      for ( auto m=0; m<(*igbdy)[j].size(); m++ ) { // set from ub
+//        ib = (*igbdy)[j][m];
+//        (*u[i])[ib] = (*ub[i])[m];
+//      } // end, bdy node loop
+//    } // end, state comp. loop
+//  } // end, GBdyType loop 
+//} // end, grid bdy loop  
 
-  // NOTE: This is useful to set Dirichlet-type bcs only. 
-  // Neumann bcs type have to be set with the
-  // differential operators themselves, though the node
-  // points in the operators may still be set from ub
- 
-  GBdyType itype; 
-  for ( GSIZET m=0; m<igbdy->size(); m++ ) { // for each type of bdy in gtypes.h
-    itype = static_cast<GBdyType>(m);
-    if (// itype == GBDY_NEUMANN
-         itype == GBDY_PERIODIC
-     ||  itype == GBDY_OUTFLOW
-     ||  itype == GBDY_SPONGE 
-     ||  itype == GBDY_NONE   ) continue;
-    for ( GSIZET k=0; k<u.size(); k++ ) { // for each state component
-      if ( ub[k] == NULLPTR ) continue;
-      for ( GSIZET j=0; j<(*igbdy)[m].size(); j++ ) { // set Dirichlet-like value
-        (*u[k])[(*igbdy)[m][j]] = (*ub[k])[j];
-      } 
-    } 
-  } 
-  
 } // end of method apply_bc_impl
+
 
 //**********************************************************************************
 //**********************************************************************************

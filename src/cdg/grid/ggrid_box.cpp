@@ -11,9 +11,12 @@
 #include <memory>
 #include <cmath>
 #include "gcomm.hpp"
-#include "gutils.hpp"
 #include "ggrid_box.hpp"
 #include "gspecbdy_factory.hpp"
+#include "gupdatebdy_factory.hpp"
+#include "ginitstate_factory.hpp"
+#include "gmtk.hpp"
+#include "gutils.hpp"
 #include "tbox/mpixx.hpp"
 #include "tbox/global_manager.hpp"
 
@@ -103,7 +106,7 @@ lshapefcn_             (NULLPTR)
   }
 
   ne_.resize(b.size());
-  for ( GSIZET j=0; j<b.size(); j++ ) {
+  for( auto j=0; j<b.size(); j++ ) {
     Lbox_[j] = fabs(dP_[j]);
     ne_  [j] = sne[j];
   }
@@ -145,7 +148,7 @@ std::ostream &operator<<(std::ostream &str, GGridBox &e)
   
   str << "    Lbox: " << e.Lbox_;
   str << std::endl << " Centroids: " ;
-  for ( GSIZET i=0; i<e.ftcentroids_.size(); i++ )
+  for( auto i=0; i<e.ftcentroids_.size(); i++ )
      str << (e.ftcentroids_[i]) << " " ;
   str << std::endl;
 
@@ -704,8 +707,8 @@ void GGridBox::print(const GString &filename)
 
   ios.open(filename);
   if ( ndim_ == 2 ) {
-    for ( GSIZET i=0; i<qmesh_.size(); i++ ) { // for each quad/hex
-      for ( GSIZET j=0; j<pow(2,ndim_); j++ ) { // for each vertex of reg polygon
+    for( auto i=0; i<qmesh_.size(); i++ ) { // for each quad/hex
+      for( auto j=0; j<pow(2,ndim_); j++ ) { // for each vertex of reg polygon
           pt = *qmesh_[i].v[j];
           ios << pt.x1 << " " <<  pt.x2 << std::endl;
           ios << pt.x1 << " " << pt.x2 << " " <<  pt.x3 << std::endl;
@@ -714,8 +717,8 @@ void GGridBox::print(const GString &filename)
   } 
 
   if ( ndim_ == 3 ) {
-    for ( GSIZET i=0; i<hmesh_.size(); i++ ) { // for each quad/hex
-      for ( GSIZET j=0; j<pow(2,ndim_); j++ ) { // for each vertex of reg polygon
+    for( auto i=0; i<hmesh_.size(); i++ ) { // for each quad/hex
+      for( auto j=0; j<pow(2,ndim_); j++ ) { // for each vertex of reg polygon
           pt = *hmesh_[i].v[j];
           ios << pt.x1 << " " <<  pt.x2 << std::endl;
           ios << pt.x1 << " " << pt.x2 << " " <<  pt.x3 << std::endl;
@@ -739,6 +742,7 @@ void GGridBox::periodize()
 {
   assert(bInitialized_ && "Object not initialized");
 
+  
   GTVector<GFTYPE>  x(xNodes_.size()); // coord values to set to
 
 
@@ -746,27 +750,34 @@ void GGridBox::periodize()
   periodicdirs_.clear();
 
   // Coords set to correspond to bottom-most domain point:
-  for ( GSIZET k=0; k<x.size(); k++ ) x[k] = P0_[k];
+  for( auto k=0; k<x.size(); k++ ) x[k] = P0_[k];
 
   GUINT  bit;
-  GSIZET id;
-  periodicids_ .resize(igbdy_binned_[GBDY_PERIODIC].size());
-  periodicdirs_.resize(igbdy_binned_[GBDY_PERIODIC].size());
-  for ( GSIZET k=0; k<igbdy_binned_[GBDY_PERIODIC].size(); k++ ) { // for each blobal bdy node
-    id = igbdy_binned_[GBDY_PERIODIC][k];
-    periodicids_ [k] = id;       
-    periodicdirs_[k] = 0;
-    for ( GSIZET i=0; i<xNodes_.size(); i++ ) { // for x, y, z dirs
-      if ( FUZZYEQ(P1_[i],xNodes_[i][id],eps_) ) { // right/top-most coord will change
-        periodicdirs_[k] |= 1U << i;  // position right-most direction bit  
+  GSIZET id, n, num=0;
+  for ( auto k=0; k<igbdy_binned_.size(); k++ ) {
+    num += igbdy_binned_[k][GBDY_PERIODIC].size();
+  }
+  periodicids_ .resize(num);
+  periodicdirs_.resize(num);
+
+  n = 0;
+  for( auto k=0; k<igbdy_binned_.size(); k++ ) { // for each global face
+    for( auto j=0; j<igbdy_binned_[k][GBDY_PERIODIC].size(); j++, n++ ) { // for each global bdy node
+      id = igbdy_binned_[k][GBDY_PERIODIC][j];
+      periodicids_ [n] = id;       
+      periodicdirs_[n] = 0;
+      for( auto i=0; i<xNodes_.size(); i++ ) { // for x, y, z dirs
+        if ( FUZZYEQ(P1_[i],xNodes_[i][id],eps_) ) { // right/top-mosstblock.tbdy[k];i coord will change
+          periodicdirs_[n] |= 1U << i;  // position right-most direction bit  
+        }
       }
     }
   }
 
   // Now, cycle through periodic nodes and periodize coordinates:
-  for ( GSIZET k=0; k<periodicids_.size(); k++ ) { // for each periodic node
+  for( auto k=0; k<periodicids_.size(); k++ ) { // for each periodic node
     id = periodicids_[k];
-    for ( GSIZET i= 0; i<xNodes_.size(); i++ ) { // coord direction
+    for( auto i= 0; i<xNodes_.size(); i++ ) { // coord direction
       // Set coord in this direction if corresp bit is set:
       bit = (periodicdirs_[k] >> i) & 1; 
       if ( bit ) xNodes_[i][id] = x[i];
@@ -791,14 +802,14 @@ void GGridBox::unperiodize()
   GTVector<GFTYPE>  x(xNodes_.size()); // coord values to set to
 
   // Coords to set to correspond to top-most domain point:
-  for ( GSIZET k=0; k<x.size(); k++ ) x[k] = P1_[k];
+  for( auto k=0; k<x.size(); k++ ) x[k] = P1_[k];
 
   // Cycle through periodic nodes and un-periodize coordinates:
   GUINT  bit;
   GSIZET id;
-  for ( GSIZET k=0; k<periodicids_.size(); k++ ) { // for each periodic node
+  for( auto k=0; k<periodicids_.size(); k++ ) { // for each periodic node
     id = periodicids_[k];
-    for ( GSIZET i= 0; i<xNodes_.size(); i++ ) { // coord direction
+    for( auto i= 0; i<xNodes_.size(); i++ ) { // coord direction
       // Set coord in this direction if corresp bit is set:
       bit = (periodicdirs_[k] >> i) & 1; 
       if ( bit ) xNodes_[i][id] = x[i];
@@ -830,14 +841,14 @@ void GGridBox::find_subdomain()
   GTPoint<GFTYPE> dx(ndim_);
 
   nglobal = 1; // total num elements in global grid
-  for ( GSIZET k=0; k<ne_.size(); k++ ) nglobal *= ne_[k];
+  for( auto k=0; k<ne_.size(); k++ ) nglobal *= ne_[k];
  
   nperrank = nglobal / nprocs_; // #elems per rank
   nthisrank = irank_ != nprocs_-1 ? nperrank : nglobal - (nprocs_-1)*nperrank;
 
 
  // Get uniform element sizes:
-  for ( GSIZET k=0; k<ndim_; k++ ) {
+  for( auto k=0; k<ndim_; k++ ) {
     dx[k] = Lbox_[k] / static_cast<GFTYPE>(ne_[k]);
   }
 
@@ -902,8 +913,8 @@ void GGridBox::find_subdomain()
 // ARGS   : 
 //          ptree : main prop tree 
 //          igbdy : For each natural/canonical global boundary face,
-//                  gives vector of global bdy ids
-//          igbdyt: bdy type ids for each index in igbdy
+//                  gives vector of global bdy ids. Allocated here.
+//          igbdyt: bdy type ids for each index in igbdy. Allocated here.
 // RETURNS: none.
 //**********************************************************************************
 void GGridBox::config_bdy(const PropertyTree &ptree, 
@@ -916,12 +927,14 @@ void GGridBox::config_bdy(const PropertyTree &ptree,
   GSIZET             iwhere;
   GTVector<GBOOL>    buniform(2*GDIM);
   GTVector<GBdyType> bdytype(2*GDIM);
-  GTVector<GBdyType> btmp;
   GTVector<GSIZET>   itmp;
   GTVector<GString>  bdynames (2*GDIM);
-  GTVector<GString>  confmthd (2*GDIM);
+  std::vector<GString>
+                     svec;
   GString            gname, sbdy, bdyclass;
-  PropertyTree       bdytree, gridptree, spectree;
+  PropertyTree       bdytree, gridptree;
+  stBdyBlock         stblock;
+  UpdateBasePtr      base_ptr;
 
   bdynames[0] = "bdy_x_0";
   bdynames[1] = "bdy_x_1";
@@ -938,36 +951,71 @@ void GGridBox::config_bdy(const PropertyTree &ptree,
 
 
   // Clear input arrays:
-  igbdy .clear();
-  igbdyt.clear();
-
   igbdy .resize(2*GDIM);
   igbdyt.resize(2*GDIM);
 
-#if 0
-  bdyupdate = gridptree.getValue<GString>("update_method","");
-  bdyinit   = gridptree.getValue<GString>("bdy_init_method","");
-  buseinit  = gridptree.getValue<GBOOL>  ("use_state_init_method",FALSE);
-#endif
+  bdy_update_list_.resize(2*GDIM);
 
-
-  // Get properties from the main prop tree. 
-  // Note: bdys are configured by way of geometry's
-  //       natural decomposition: here, by face (3d) or
-  //       edge (2d). But the bdy indices and types
-  //       returned on exist contain info for all bdys:
-  for ( auto j=0; j<2*GDIM; j++ ) { // cycle over faces
+  // Handle uniform, nonuniform bdy conditions:
+  // Note: If "uniform" not specified for a boundary, then
+  //       user MUST supply a method to configure it.
+  for ( auto j=0; j<2*GDIM; j++ ) { 
     sbdy         = gridptree.getValue<GString>(bdynames[j]);
+cout << "config_bdy: getting bdy tree: " << sbdy << endl;
     bdytree      = ptree.getPropertyTree(sbdy);
     bdyclass     = bdytree.getValue<GString>("bdy_class", "uniform");
-    bdytype  [j] = geoflow::str2bdytype(bdytree.getValue<GString>("base_type", "GBDY_NONE"));
-    buniform [j] = bdyclass == "uniform" ? TRUE : FALSE;
-    confmthd [j] = bdytree.getValue<GString>("bdy_config_method","");
-    bperiodic    = bperiodic || bdytype[j] == GBDY_PERIODIC;
-    if ( bperiodic ) {
-      assert(buniform[j] && "GBDY_PERIODIC boundary must have bdy_class = uniform");
+    if ( ndim_ == 2 ) 
+      find_bdy_ind2d(j, TRUE, itmp);
+    if ( ndim_ == 3 ) 
+      find_bdy_ind3d(j, TRUE, itmp);
+    igbdy [j].resize(itmp.size()); igbdy [j] = itmp;
+    igbdyt[j].resize(itmp.size()); igbdyt[j] = GBDY_NONE;
+    if ( "uniform" == bdyclass ) { // uniform bdy conditions
+cout << "config_bdy: extracting data from bdy tree: " << sbdy << endl;
+      geoflow::get_bdy_block(bdytree, stblock);
+      if ( stblock.tbdy.contains(GBDY_PERIODIC) ) {
+        assert(stblock.tbdy.onlycontains(GBDY_PERIODIC) && "All variables must be GBDY_PERIODIC");
+        bdytype  [j] = GBDY_PERIODIC;
+        igbdyt   [j] = GBDY_PERIODIC;
+        bperiodic    = bperiodic || bdytype[j] == GBDY_PERIODIC;
+      
+      }
+      // May have different uniform bdys for different state comps:
+      for ( auto k=0; k<stblock.tbdy.size() && !bperiodic; k++ ) {
+cout << "config_bdy: building bc for bdy cond " << k << endl;
+        base_ptr = GUpdateBdyFactory<BdyTypePack>::build(ptree, sbdy, *this,  j,
+                                            stblock.tbdy[k], stblock.istate[k], itmp);
+        igbdyt[j] = stblock.tbdy[k];
+        bdy_update_list_[j].push_back(base_ptr);
+      }
     }
-  }
+    else if ( "mixed" == bdyclass ) { // mixed bdy conditions
+      assert( bdytree.isArray<GString>("bdy_blocks") && "no bdy_blocks specified");
+      svec = bdytree.getArray<GString>("bdy_blocks");
+      for ( auto i=0; i<svec.size(); i++ ) { // loop over bdy blocks
+        assert( ptree.isPropertyTree(svec[i]) && "no component bdy_blocks specified");
+        bdytree = ptree.getPropertyTree(svec[i]);
+        geoflow::get_bdy_block(bdytree, stblock);
+        assert(!stblock.tbdy.contains(GBDY_PERIODIC) && "GBDY_PERIODIC bdys must be uniform");
+        GSpecBdyFactory::dospec(bdytree, *this, j, itmp);
+        for ( auto k=0; k<svec.size(); k++ ) { // for each sub-block
+          base_ptr = GUpdateBdyFactory<BdyTypePack>::build(ptree, svec[k], *this,  j,
+                                              stblock.tbdy[k], stblock.istate[k], itmp);
+
+          for ( auto m=0; m<itmp.size(); m++ ) {
+            if ( igbdy[j].contains(itmp[m]) ) igbdyt[j][m] = stblock.tbdy[k];
+          }
+          if ( stblock.tbdy[k] != GBDY_NONE ) igbdyt[j] = stblock.tbdy[k];
+          bdy_update_list_[j].push_back(base_ptr);
+        }
+      }
+    }
+    else {
+      assert(FALSE && "Invalid bdy_class");
+    }
+
+
+  } // end, global bdy face loop
 
   if ( bperiodic ) {
     if ( ndim_ == 2 ) {
@@ -982,66 +1030,6 @@ void GGridBox::config_bdy(const PropertyTree &ptree,
              &&  "Incompatible GBDY_PERIODIC boundary specification");
     }
   }
-       
-cout << "GGridBox::config_bdy: 0" << endl;
-  // Handle non-uniform (user-configured) bdy types first;
-  // Note: If "uniform" not specified for a boundary, then
-  //       user MUST supply a method to configure it.
-  //       Also, each natural face may be configured independently,
-  //       but the bdy indices & corresp. types are concatenated into 
-  //       single arrays:
-  for ( auto j=0; j<2*GDIM; j++ ) { 
-    // First, find global bdy indices:
-    if ( buniform[j] ) continue;
-    if ( ndim_ == 2 ) {
-      find_bdy_ind2d(j, TRUE, itmp); // include vertices
-    }
-    else {
-      find_bdy_ind3d(j, TRUE, itmp); // include edges
-    }
-    spectree  = ptree.getPropertyTree(confmthd[j]);
-    bret = GSpecBdyFactory::dospec(spectree, *this, j, itmp, btmp); // get user-defined bdy spec
-    assert(bret && "Boundary specification failed");
-    igbdy [j].resize(itmp.size()); igbdy [j] = itmp;
-    igbdyt[j].resize(itmp.size()); igbdyt[j] = btmp;
-    itmp.clear();
-    btmp.clear();
-  }
-  
-  // Fill in uniform bdy types:
-  for ( auto j=0; j<2*GDIM; j++ ) { // for each global bdy face 
-    if ( !buniform[j] ) continue;
-    // First, find global bdy indices:
-    if ( bperiodic && bdytype[j] != GBDY_PERIODIC  ) {
-      if ( ndim_ == 2 ) {
-        find_bdy_ind2d(j, FALSE, itmp); // doesn't include vertices
-      }
-      else {
-        find_bdy_ind3d(j, FALSE, itmp); // doesn't include edges
-      }
-
-    }
-    else {
-      if ( ndim_ == 2 ) {
-        find_bdy_ind2d(j, TRUE, itmp); // include vertices
-      }
-      else {
-        find_bdy_ind3d(j, TRUE, itmp); // include edges
-      }
-    }
-
-
-    // Set type for each bdy index:
-    btmp.resize(itmp.size());
-    for ( auto i=0; i<itmp.size(); i++ ) {
-      btmp[i] = bdytype[j]; 
-    }
-    igbdy [j].resize(itmp.size()); igbdy [j] = itmp;
-    igbdyt[j].resize(itmp.size()); igbdyt[j] = btmp;
-    itmp.clear();
-    btmp.clear();
-
-  } // end, global bdy face loop
 
 
 } // end of method config_bdy
@@ -1069,7 +1057,7 @@ void GGridBox::find_bdy_ind2d(GINT bdyid, GBOOL incl_vert, GTVector<GSIZET> &ibd
 
   switch ( bdyid ) {
     case 0: // lower horiz bdy:
-      for ( GSIZET i=0; i<xNodes_[0].size(); i++ ) { 
+      for( auto i=0; i<xNodes_[0].size(); i++ ) { 
         if ( FUZZYEQ(P0_.x2,xNodes_[1][i],eps_) ) {
           pt.assign(xNodes_, i);
           if ( incl_vert  || !is_global_vertex(pt) ) ibdy.push_back(i);
@@ -1078,7 +1066,7 @@ void GGridBox::find_bdy_ind2d(GINT bdyid, GBOOL incl_vert, GTVector<GSIZET> &ibd
       break;
 
     case 1: // right vert bdy:
-      for ( GSIZET i=0; i<xNodes_[0].size(); i++ ) { // bdy 1
+      for( auto i=0; i<xNodes_[0].size(); i++ ) { // bdy 1
         if ( FUZZYEQ(P1_.x1,xNodes_[0][i],eps_) ) {
           pt.assign(xNodes_, i);
           if ( incl_vert  || !is_global_vertex(pt) ) ibdy.push_back(i);
@@ -1087,7 +1075,7 @@ void GGridBox::find_bdy_ind2d(GINT bdyid, GBOOL incl_vert, GTVector<GSIZET> &ibd
       break;
 
     case 2: // top horiz bdy:
-      for ( GSIZET i=0; i<xNodes_[0].size(); i++ ) { // bdy 2
+      for( auto i=0; i<xNodes_[0].size(); i++ ) { // bdy 2
         if ( FUZZYEQ(P1_.x2,xNodes_[1][i],eps_) ) {
           pt.assign(xNodes_, i);
           if ( incl_vert  || !!is_global_vertex(pt) ) ibdy.push_back(i);
@@ -1096,7 +1084,7 @@ void GGridBox::find_bdy_ind2d(GINT bdyid, GBOOL incl_vert, GTVector<GSIZET> &ibd
       break;
 
     case 3: // left vert bdy:
-      for ( GSIZET i=0; i<xNodes_[0].size(); i++ ) { // bdy 3
+      for( auto i=0; i<xNodes_[0].size(); i++ ) { // bdy 3
         if ( FUZZYEQ(P0_.x1,xNodes_[0][i],eps_) ) {
           pt.assign(xNodes_, i);
           if ( incl_vert  || !is_global_vertex(pt) ) ibdy.push_back(i);
@@ -1135,14 +1123,14 @@ void GGridBox::find_bdy_ind3d(GINT bdyid, GBOOL incl_edge, GTVector<GSIZET> &ibd
   nbdy = n = 0;
   switch ( bdyid ) {
     case 0: // southern vert face:
-      for ( GSIZET i=0; i<xNodes_[0].size(); i++ ) { // face 0
+      for( auto i=0; i<xNodes_[0].size(); i++ ) { // face 0
         if ( FUZZYEQ(P0_.x2,xNodes_[1][i],eps_) ) {
           pt.assign(xNodes_, i);
           if ( incl_edge || !on_global_edge(0,pt) ) nbdy++;
         }
       }
       ibdy.resize(nbdy);
-      for ( GSIZET i=0; i<xNodes_[0].size(); i++ ) { // face 0
+      for( auto i=0; i<xNodes_[0].size(); i++ ) { // face 0
         if ( FUZZYEQ(P0_.x2,xNodes_[1][i],eps_) ) {
           pt.assign(xNodes_, i);
           if ( incl_edge || !on_global_edge(0,pt) ) ibdy[n++] = i;
@@ -1151,14 +1139,14 @@ void GGridBox::find_bdy_ind3d(GINT bdyid, GBOOL incl_edge, GTVector<GSIZET> &ibd
       break;
 
     case 1: // eastern vert. face:
-      for ( GSIZET i=0; i<xNodes_[0].size(); i++ ) { // face 1
+      for( auto i=0; i<xNodes_[0].size(); i++ ) { // face 1
         if ( FUZZYEQ(P1_.x1,xNodes_[0][i],eps_) ) {
           pt.assign(xNodes_, i);
           if ( incl_edge || !on_global_edge(1,pt) ) nbdy++;
         }
       }
       ibdy.resize(nbdy);
-      for ( GSIZET i=0; i<xNodes_[0].size(); i++ ) { // face 1
+      for( auto i=0; i<xNodes_[0].size(); i++ ) { // face 1
         if ( FUZZYEQ(P1_.x1,xNodes_[0][i],eps_) ) {
           pt.assign(xNodes_, i);
           if ( incl_edge || !on_global_edge(1,pt) ) ibdy[n++] = i;
@@ -1167,14 +1155,14 @@ void GGridBox::find_bdy_ind3d(GINT bdyid, GBOOL incl_edge, GTVector<GSIZET> &ibd
       break;
 
     case 2: // northern vert. face:
-      for ( GSIZET i=0; i<xNodes_[0].size(); i++ ) { // face 2
+      for( auto i=0; i<xNodes_[0].size(); i++ ) { // face 2
         if ( FUZZYEQ(P1_.x2,xNodes_[1][i],eps_) ) {
           pt.assign(xNodes_, i);
           if ( incl_edge || !on_global_edge(2,pt) ) nbdy++;
         }
       }
       ibdy.resize(nbdy);
-      for ( GSIZET i=0; i<xNodes_[0].size(); i++ ) { // face 2
+      for( auto i=0; i<xNodes_[0].size(); i++ ) { // face 2
         if ( FUZZYEQ(P1_.x2,xNodes_[1][i],eps_) ) {
           pt.assign(xNodes_, i);
           if ( incl_edge || !on_global_edge(2,pt) ) ibdy[n++] = i;
@@ -1183,14 +1171,14 @@ void GGridBox::find_bdy_ind3d(GINT bdyid, GBOOL incl_edge, GTVector<GSIZET> &ibd
       break;
 
     case 3: // western vertical face:
-      for ( GSIZET i=0; i<xNodes_[0].size(); i++ ) { // face 3
+      for( auto i=0; i<xNodes_[0].size(); i++ ) { // face 3
         if ( FUZZYEQ(P0_.x1,xNodes_[0][i],eps_) ) {
           pt.assign(xNodes_, i);
           if ( incl_edge || !on_global_edge(3,pt) ) nbdy++;
         }
       }
       ibdy.resize(nbdy);
-      for ( GSIZET i=0; i<xNodes_[0].size(); i++ ) { // face 3
+      for( auto i=0; i<xNodes_[0].size(); i++ ) { // face 3
         if ( FUZZYEQ(P0_.x1,xNodes_[0][i],eps_) ) {
           pt.assign(xNodes_, i);
           if ( incl_edge || !on_global_edge(3,pt) ) ibdy[n++] = i;
@@ -1199,14 +1187,14 @@ void GGridBox::find_bdy_ind3d(GINT bdyid, GBOOL incl_edge, GTVector<GSIZET> &ibd
       break;
 
     case 4: // bottom horiz face:
-      for ( GSIZET i=0; i<xNodes_[0].size(); i++ ) { // face 4
+      for( auto i=0; i<xNodes_[0].size(); i++ ) { // face 4
         if ( FUZZYEQ(P0_.x3,xNodes_[2][i],eps_) ) {
           pt.assign(xNodes_, i);
           if ( incl_edge || !on_global_edge(4,pt) ) nbdy++;
         }
       }
       ibdy.resize(nbdy);
-      for ( GSIZET i=0; i<xNodes_[0].size(); i++ ) { // face 4
+      for( auto i=0; i<xNodes_[0].size(); i++ ) { // face 4
         if ( FUZZYEQ(P0_.x3,xNodes_[2][i],eps_) ) {
           pt.assign(xNodes_, i);
           if ( incl_edge || !on_global_edge(4,pt) ) ibdy[n++] = i;
@@ -1215,14 +1203,14 @@ void GGridBox::find_bdy_ind3d(GINT bdyid, GBOOL incl_edge, GTVector<GSIZET> &ibd
       break;
 
     case 5: // top horiz face:
-      for ( GSIZET i=0; i<xNodes_[0].size(); i++ ) { // face 5
+      for( auto i=0; i<xNodes_[0].size(); i++ ) { // face 5
         if ( FUZZYEQ(P1_.x3,xNodes_[2][i],eps_) ) {
           pt.assign(xNodes_, i);
           if ( incl_edge || !on_global_edge(5,pt) ) nbdy++;
         }
       }
       ibdy.resize(nbdy);
-      for ( GSIZET i=0; i<xNodes_[0].size(); i++ ) { // face 5
+      for( auto i=0; i<xNodes_[0].size(); i++ ) { // face 5
         if ( FUZZYEQ(P1_.x3,xNodes_[2][i],eps_) ) {
           pt.assign(xNodes_, i);
           if ( incl_edge || !on_global_edge(5,pt) ) ibdy[n++] = i;
@@ -1250,7 +1238,7 @@ GBOOL GGridBox::is_global_vertex(GTPoint<GFTYPE> &pt)
 {
   GBOOL           bret = FALSE;
 
-  for ( GSIZET j=0; j<pow(2,ndim_) && !bret; j++ ) {
+  for( auto j=0; j<pow(2,ndim_) && !bret; j++ ) {
     bret = bret || ( pt == gverts_[j] ); // There is fuzziness in ==
   }
 
@@ -1359,16 +1347,16 @@ void GGridBox::do_face_normals2d()
    GTVector<GSIZET>            gieface; // global element face indices
    GTVector<GINT>             *iverts ; // elem vertex indices
    gieface.resize(gieface_.size());
-   for ( GSIZET e=0; e<gelems_.size(); e++ ) {
+   for( auto e=0; e<gelems_.size(); e++ ) {
      ibeg   = gelems_[e]->igbeg(); iend  = gelems_[e]->igend();
      ifbeg  = gelems_[e]->ifbeg(); ifend = gelems_[e]->ifend();
      ibbeg  = gelems_[e]->ibbeg(); ibend = gelems_[e]->ibend();
      ieface = &gelems_[e]->face_indices();
   
 
-     for ( GSIZET j=0; j<ieface->size(); j++ ) { // cycle over all elem faces
+     for( auto j=0; j<ieface->size(); j++ ) { // cycle over all elem faces
        iverts = &gelems_[e]->vert_indices(j);
-       for ( GSIZET k=0; k<(*ieface)[j].size(); k++ ) {
+       for( auto k=0; k<(*ieface)[j].size(); k++ ) {
          ig = nn + (*ieface)[j][k];
          if ( !gieface.containsn(ig, m) ) { // don't include repeated face ind
            gieface[m] = ig;
@@ -1393,7 +1381,7 @@ void GGridBox::do_face_normals2d()
 #endif
 
 
-} // end, method do_bdy_normals2d
+} // end, method do_face_normals2d
 
 
 //**********************************************************************************
@@ -1408,26 +1396,71 @@ void GGridBox::do_face_normals3d()
 
   assert(FALSE);
 
-} // end, method do_bdy_normals3d
+} // end, method do_face_normals3d
 
 
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : do_bdy_normals
 // DESC   : Compute normals to each domain bdy 
-// ARGS   : none 
+// ARGS   : 
+//          dXdXi     : matrix of dX_i/dXi_j matrix elements, s.t.
+//                      dXdX_i(i,j) = dx^j/dxi^i
+//          igbdy_face: vector of bdy indices into global volume fields 
+//                      for each face
+//          normals   : vector of normal components
+//          idepComp  : vector index dependent on the other indices (first 
+//                      component index whose normal component is nonzero)
 // RETURNS: none
 //**********************************************************************************
-void GGridBox::do_bdy_normals()
+void GGridBox::do_bdy_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
+                              GTVector<GTVector<GSIZET>>    &igbdy_face,
+                              GTVector<GTVector<GFTYPE>>    &normals,
+                              GTVector<GINT>                &idepComp)
 {
 
+  GSIZET icurr, nbdy, nface;
+
+  nbdy = 0;
+  for ( auto j=0; j<igbdy_face.size(); j++ ) {
+    nbdy += igbdy_face[j].size();
+  }
+  idepComp.resize(nbdy);
+  for ( auto j=0; j<normals.size(); j++ ) normals[j].resize(nbdy);
+
+
+  // Compute global boundary normals and associated data:
+
   #if defined(_G_IS2D)
-    do_bdy_normals2d();
+
+  icurr = 0;
+  for ( auto j=0; j<2*GDIM; j++ ) { // for each global bdy face 
+    nface = igbdy_face[j].size();   // # bdy nodes on this face
+    idepComp.range(icurr,icurr+nface-1);
+    for ( auto i=0; i<normals.size(); i++ ) normals[i].range(icurr,icurr+nface-1);
+    do_bdy_normals2d(dXdXi, igbdy_face[j], j, normals, idepComp);
+    icurr += nface;
+  }
+
   #elif defined(_G_IS3D)
-    do_bdy_normals3d();
+
+  icurr = 0;
+  for ( auto j=0; j<2*GDIM; j++ ) { // for each global bdy face 
+    nface = igbdy_face[j].size();   // # bdy nodes on this face
+    idepComp.range(icurr,icurr+nface-1);
+    for ( auto i=0; i<normals.size(); i++ ) normals[i].range(icurr,icurr+nface-1);
+    do_bdy_normals3d(dXdXi, igbdy_face[j], j, normals, idepComp);
+    icurr += nface;
+  }
+
   #else
     #error Invalid problem dimensionality
   #endif
+
+  // Reset vector ranges:
+  idepComp.range_reset();
+  for ( auto j=0; j<normals.size(); j++ ) normals[j].range_reset();
+
 
 } // end, method do_bdy_normals
 
@@ -1435,23 +1468,161 @@ void GGridBox::do_bdy_normals()
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : do_bdy_normals2d
-// DESC   : Compute normals to each domain bdy in 2d
-// ARGS   : none 
+// DESC   : Compute normals to each domain bdy in 2d. Also
+//          provide the vector component index for the dependent
+//          component, so that we can easily enforce, say, the constraint
+//                hat(n) \cdot \vec{u} = 0
+//          for the correct \vec{u} component. We must
+//          keep in mind that there may be terrain on the boundary,
+//          so we cannot rely on alignment of bdy surface with
+//          coordinate directions. This method should be called 
+//          after terrain is added.
+// ARGS   : 
+//          dXdXi   : matrix of dX_i/dXi_j matrix elements, s.t.
+//                    dXdX_i(i,j) = dx^j/dxi^i
+//          igbdy   : vector of bdy indices into global volume fields
+//          iface   : which global face igbdy list represents
+//          normals : vector of normal components
+//          idepComp: vector index dependent on the other indices (first 
+//                    component index whose normal component is nonzero)
+//          Note:
+//          dXdXi_  : matrix of dX_i/dXi_j matrix elements, s.t.
+//                    dXdX_i(i,j) = dx^j/dxi^i,
+//                    must be computed prior to entry.
 // RETURNS: none
 //**********************************************************************************
-void GGridBox::do_bdy_normals2d()
+void GGridBox::do_bdy_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
+                                GTVector<GSIZET>              &igbdy,
+                                GINT                           iedge,
+                                GTVector<GTVector<GFTYPE>>    &normals,
+                                GTVector<GINT>               &idepComp)
 {
+   GSIZET          ib, ic, ip; 
+   GFTYPE          tiny;
+   GFTYPE          xm;
+   GTPoint<GFTYPE> kp(3), xp(3), p1(3), p2(3);
+
+   tiny  = 100.0*std::numeric_limits<GFTYPE>::epsilon(); 
+   kp    = 0.0;
+   kp[2] = 1.0; // k-vector
+
+   // Normals depend on element type:
+   if ( this->gtype_ == GE_REGULAR ) {
+     // All normal components are 0, except the one
+     // perp. to iedge:
+     ip = (iedge+1)%2; // perp component
+     for ( auto j=0; j<igbdy.size(); j++ ) { // all points on iedge
+       xm = iedge == 1 || iedge == 2 ? -1.0 : 1.0;
+       for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = 0.0; 
+       normals[ip][j] = xm;
+       idepComp[j]    = ip; // dependent component
+     }
+   }
+   else if ( this->gtype_ == GE_DEFORMED ) {
+     // Bdy normal is hat{k} X dvec{X} / dxi_iedge,
+     // for edge iedge:
+     for ( auto j=0; j<igbdy.size(); j++ ) { // all points on iedge
+       ib = igbdy[j];
+       xm = iedge == 1 || iedge == 2 ? -1.0 : 1.0;
+       for ( auto i=0; i<dXdXi.size(2); i++ ) { // over _X_
+         p1[i] = dXdXi(iedge%2,i)[ib]; 
+       }
+       kp.cross(p1, xp);   // xp = k X p1
+       xp.unit();
+       for ( ic=0; ic<GDIM; ic++ ) if ( fabs(xp[ic]) > tiny ) break;
+       assert(ic >= GDIM); // no normal components > 0
+       for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
+       idepComp[j] = ic;  // dependent component
+     }
+   }
+   else if ( this->gtype_ == GE_2DEMBEDDED ) {
+     // Bdy normal is dvec{X} / dxi_xi X dvec{X} / dxi_eta
+     for ( auto j=0; j<igbdy.size(); j++ ) { // all points on iedge
+       ib = igbdy[j];
+       for ( auto i=0; i<dXdXi.size(2); i++ ) { // d_X_/dXi
+         p1[i] = dXdXi(0,i)[ib]; // d_X_/dxi
+         p2[i] = dXdXi(1,i)[ib]; // d_X_/deta
+       }
+       p1.cross(p2, xp);   // xp = p1 X p2
+       xp.unit();
+       for ( ic=0; ic<xp.dim(); ic++ ) if ( fabs(xp[ic]) > tiny ) break;
+       assert(ic >= GDIM); // no normal components > 0
+       for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
+       idepComp[j] = ic;  // dependent component
+     }
+   }
+
 } // end, method do_bdy_normals2d
 
 
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : do_bdy_normals3d
-// DESC   : Compute normals to each domain bdy in 3d
-// ARGS   : none 
+// DESC   : Compute normals to each domain bdy in 2d. Also
+//          provide the vector component index for the dependent
+//          component, so that we can easily enforce, say, the constraint
+//                hat(n) \cdot \vec{u} = 0
+//          for the correct \vec{u} component. We must
+//          keep in mind that there may be terrain on the boundary,
+//          so we cannot rely on alignment of bdy surface with
+//          coordinate directions. This method should be called 
+//          after terrain is added.
+// ARGS   : 
+//          dXdXi   : matrix of dX_i/dXi_j matrix elements, s.t.
+//                    dXdX_i(i,j) = dx^j/dxi^i
+//          igbdy   : vector of bdy indices into global volume fields
+//          iface   : which global face igbdy list represents
+//          normals : vector of normal components
+//          idepComp: vector index dependent on the other indices (first 
+//                    component index whose normal component is nonzero)
 // RETURNS: none
 //**********************************************************************************
-void GGridBox::do_bdy_normals3d()
+void GGridBox::do_bdy_normals3d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
+                                GTVector<GSIZET>              &igbdy,
+                                GINT                           iface,
+                                GTVector<GTVector<GFTYPE>>   &normals,
+                                GTVector<GINT>             &idepComp)
 {
+   GSIZET          ib, ic, ip; 
+   GINT            ixi[6][2] = { {0,2}, {1,2}, {0,2}, 
+                               {1,2}, {0,1}, {0,1} };
+   GFTYPE          xsgn  [] = { 1.0, -1.0, -1.0, 1.0, 1.0, -1.0};
+   GFTYPE          tiny;
+   GFTYPE          xm;
+   GTPoint<GFTYPE> xp(3), p1(3), p2(3);
+   tiny  = 100.0*std::numeric_limits<GFTYPE>::epsilon(); 
+
+   // Normals depend on element type:
+   if ( this->gtype_ == GE_REGULAR ) {
+     // All normal components are 0, except the one
+     // perp. to face:
+     ip = iface < 4 ? (iface+1)%2 : 2; // perp component
+     xm = iface == 1 || iface == 2 || iface == 5 ? -1.0 : 1.0;
+     for ( auto j=0; j<igbdy.size(); j++ ) { // all points on face
+       for ( auto i=0; i<normals.size(); i++ ) {
+         normals[i][j] = 0.0; 
+       }
+       normals[ip][j] = xm;
+       idepComp[j]    = ip; // dependent component
+     }
+   }
+   else if ( this->gtype_ == GE_DEFORMED ) {
+     // Bdy normal is dvec{X} / dxi_xi X dvec{X} / dxi_eta
+     for ( auto j=0; j<igbdy.size(); j++ ) { // all points on iedge
+       ib = igbdy[j];
+       for ( auto i=0; i<dXdXi.size(2); i++ ) { // over _X_
+         p1[i] = dXdXi(ixi[iface][0],i)[ib]; // d_X_/dxi
+         p2[i] = dXdXi(ixi[iface][1],i)[ib]; // d_X_/deta
+       }
+       p1.cross(p2, xp);   // xp = p1 X p2
+       xp.unit(); 
+       for ( ic=0; ic<xp.dim(); ic++ ) if ( fabs(xp[ic]) > tiny ) break;
+       assert(ic >= GDIM); // no normal components > 0
+       for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
+       idepComp[j] = ic;  // dependent component
+     }
+   }
+
 } // end, method do_bdy_normals3d
+
 

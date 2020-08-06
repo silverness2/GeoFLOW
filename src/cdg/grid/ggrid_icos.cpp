@@ -1,20 +1,30 @@
 //==================================================================================
-// Description  : Object defining a (global) icosahedral grid, that
-//                uses gnomonic projections to locate element vertices.
-// Copyright    : Copyright 2018. Colorado State University. All rights reserved
+// Module       : ggrid_icos.cpp
+// Date         : 8/31/18 (DLR)
+// Description  : Object defining a (global) icosahedral grid, that in 2d
+//                uses (extrinsic) gnomonic projections to locate element vertices.
+//                Vertices always reside on sphere, so centroids will
+//                not (will reside within). In 3d, the base is computed from
+//                the same procedure as in 2d, but we use isoparameteric
+//                representation on the sphere.
+// Copyright    : Copyright 2018. Colorado State University. All rights reserved.
 // Derived From : GGrid.
 //==================================================================================
+
 
 #include <cstdlib>
 #include <memory>
 #include <cmath>
 //#include "omp.h"  // Are we calling API functions ?
-#include "gutils.hpp"
 #include "gspecbdy_factory.hpp"
-#include "gelem_base.hpp"
+#include "gupdatebdy_factory.hpp"
+#include "ginitstate_factory.hpp"
 #include "ggrid_icos.hpp"
 #include "gtpoint.hpp"
+#include "gmtk.hpp"
+#include "gutils.hpp"
 
+using namespace geoflow::tbox;
 using namespace std;
 
 //**********************************************************************************
@@ -105,7 +115,7 @@ std::ostream &operator<<(std::ostream &str, GGridIcos &e)
   str << " level  : " << e.ilevel_;
   str << " nrows  : " << e.nrows_;
   str << std::endl << " Centroids: " ;
-  for ( GSIZET i=0; i<e.ftcentroids_.size(); i++ )
+  for ( auto i=0; i<e.ftcentroids_.size(); i++ )
      str << (e.ftcentroids_[i]) << " " ;
   str << std::endl;
 
@@ -206,10 +216,10 @@ fv0_(11,0) = -0.276393202250021; fv0_(11,1) = -0.850650808352040; fv0_(11,2) = -
   // Copy base data to new structure:
   GTPoint<GTICOS> pt;
   tbase_.resize(ifv0_.size(1));
-  for ( GSIZET j=0; j<tbase_.size(); j++ ) tbase_[j].resize(3);
-  for ( GSIZET i=0; i<ifv0_.size(1); i++ ) { // for all triangles:
-    for ( GSIZET j=0; j<ifv0_.size(2); j++ ) { // for each vertex:
-      for ( GSIZET k=0; k<3; k++ ) pt[k] = fv0_(ifv0_(i,j),k);
+  for ( auto j=0; j<tbase_.size(); j++ ) tbase_[j].resize(3);
+  for ( auto i=0; i<ifv0_.size(1); i++ ) { // for all triangles:
+    for ( auto j=0; j<ifv0_.size(2); j++ ) { // for each vertex:
+      for ( auto k=0; k<3; k++ ) pt[k] = fv0_(ifv0_(i,j),k);
       *tbase_[i].v[j] = pt;
     }
   }
@@ -264,7 +274,9 @@ void GGridIcos::lagrefine()
   }
 
   // Re-dimension mesh points to be 3d: Expect
-  // 20 * (ileve+1)^2 triangles, and 20 * (ilevel+1)^2 * 3 quads
+  // 20 * (nrows+1)^2 triangles, and 20 * (nrows+1)^2 * 3 quads
+  // Total number of points (in horizontal) is
+  // 6(
   tmesh_.resize(20*(nrows_*(nrows_+2)+1)); // refined triangular mesh
   for ( j=0; j<tmesh_.size(); j++ ) tmesh_[j].resize(3);
 
@@ -386,8 +398,8 @@ void GGridIcos::do_elems2d(GINT irank)
   if ( gdd_ == NULLPTR ) gdd_ = new GDD_base<GTICOS>(nprocs_);
 
   // Resize points to appropriate size:
-  for ( GSIZET j=0; j<tmesh_.size(); j++ ) tmesh_[j].resize(3);
-  for ( GSIZET j=0; j<4; j++ ) {
+  for ( auto j=0; j<tmesh_.size(); j++ ) tmesh_[j].resize(3);
+  for ( auto j=0; j<4; j++ ) {
     cverts[j].resize(3); // is a 3d point
     gverts[j].resize(3); // is only a 2d point
     tverts[j].resize(2); // is only a 2d point
@@ -423,7 +435,7 @@ void GGridIcos::do_elems2d(GINT irank)
     // Compute element vertices:
     // NOTE: Is this ordering compatible with shape functions 
     // (placement of +/-1 with physical point)?
-    for ( GSIZET j=0; j<3; j++ ) { // 3 new elements for each triangle
+    for ( auto j=0; j<3; j++ ) { // 3 new elements for each triangle
       pelem = new GElem_base(GE_2DEMBEDDED, gbasis_);
       cverts[0] = v1; cverts[1] = (v1+v2)*0.5; cverts[2] = ct; cverts[3] = (v1+v3)*0.5;
 #if 0
@@ -691,7 +703,7 @@ void GGridIcos::do_elems2d(GTMatrix<GINT> &p,
 
   // Now, treat the gbasis_ as a pool that we search
   // to find bases we need:
-  for ( GSIZET j=0; j<ppool.size(); j++ ) ppool[j] = gbasis_[j]->getOrder();
+  for ( auto j=0; j<ppool.size(); j++ ) ppool[j] = gbasis_[j]->getOrder();
 
 
   // Set element internal dof from input data:
@@ -701,9 +713,9 @@ void GGridIcos::do_elems2d(GTMatrix<GINT> &p,
   GSIZET icurr = 0; // current global index
   GSIZET fcurr = 0; // current global face index
   // For each triangle in base mesh owned by this rank...
-  for ( GSIZET i=0; i<p.size(1); i++ ) { 
+  for ( auto i=0; i<p.size(1); i++ ) { 
     nvnodes = 1;
-    for ( GSIZET j=0; j<GDIM; j++ ) { // set basis from pool
+    for ( auto j=0; j<GDIM; j++ ) { // set basis from pool
       assert(ppool.contains(p(i,j),iwhere) && "Expansion order not found");
       gb[j] = gbasis_[iwhere];
       nvnodes *= (p(i,j) + 1);
@@ -714,11 +726,11 @@ void GGridIcos::do_elems2d(GTMatrix<GINT> &p,
     // Set internal node positions from input data.
     // Note that gxnodes are 'global' and xNodes is
     // element-local:
-    for ( GSIZET j=0; j<GDIM; j++ ) {
+    for ( auto j=0; j<GDIM; j++ ) {
        gxnodes[j].range(icurr, icurr+nvnodes-1);
       (*xNodes)[j] = gxnodes[j];
     }
-    for ( GSIZET j=0; j<GDIM; j++ ) gxnodes[j].range_reset();
+    for ( auto j=0; j<GDIM; j++ ) gxnodes[j].range_reset();
 
     pelem->init(*xNodes);
     gelems_.push_back(pelem);
@@ -760,7 +772,7 @@ void GGridIcos::do_elems3d(GTMatrix<GINT> &p,
 
   // Now, treat the gbasis_ as a pool that we search
   // to find bases we need:
-  for ( GSIZET j=0; j<ppool.size(); j++ ) ppool[j] = gbasis_[j]->getOrder();
+  for ( auto j=0; j<ppool.size(); j++ ) ppool[j] = gbasis_[j]->getOrder();
 
 
   // Set element internal dof from input data:
@@ -770,9 +782,9 @@ void GGridIcos::do_elems3d(GTMatrix<GINT> &p,
   GSIZET icurr = 0; // current global index
   GSIZET fcurr = 0; // current global face index
   // For each triangle in base mesh owned by this rank...
-  for ( GSIZET i=0; i<p.size(1); i++ ) { 
+  for ( auto i=0; i<p.size(1); i++ ) { 
     nvnodes = 1;
-    for ( GSIZET j=0; j<GDIM; j++ ) { // set basis from pool
+    for ( auto j=0; j<GDIM; j++ ) { // set basis from pool
       assert(ppool.contains(p(i,j),iwhere) && "Expansion order not found");
       gb[j] = gbasis_[iwhere];
       nvnodes *= (p(i,j) + 1);
@@ -783,11 +795,11 @@ void GGridIcos::do_elems3d(GTMatrix<GINT> &p,
     // Set internal node positions from input data.
     // Note that gxnodes are 'global' and xNodes is
     // element-local:
-    for ( GSIZET j=0; j<GDIM; j++ ) {
+    for ( auto j=0; j<GDIM; j++ ) {
        gxnodes[j].range(icurr, icurr+nvnodes-1);
       (*xNodes)[j] = gxnodes[j];
     }
-    for ( GSIZET j=0; j<GDIM; j++ ) gxnodes[j].range_reset();
+    for ( auto j=0; j<GDIM; j++ ) gxnodes[j].range_reset();
 
     pelem->init(*xNodes);
     gelems_.push_back(pelem);
@@ -827,8 +839,8 @@ void GGridIcos::print(const GString &filename, GCOORDSYST icoord)
 
   ios.open(filename);
   if ( icoord == GICOS_LATLONG) { // print in lat-long
-    for ( GSIZET i=0; i<tmesh_.size(); i++ ) { // for each triangle
-      for ( GSIZET j=0; j<3; j++ ) { // for each vertex of triangle
+    for ( auto i=0; i<tmesh_.size(); i++ ) { // for each triangle
+      for ( auto j=0; j<3; j++ ) { // for each vertex of triangle
         pt = *tmesh_[i].v[j];
         r = sqrt(pt.x1*pt.x1 + pt.x2*pt.x2 + pt.x3*pt.x3);
         xlat  = asin(pt.x3/r);
@@ -843,8 +855,8 @@ void GGridIcos::print(const GString &filename, GCOORDSYST icoord)
     }
   }
   else if ( icoord == GICOS_CART ) { // print in Cartesian
-    for ( GSIZET i=0; i<tmesh_.size(); i++ ) { // for each triangle
-      for ( GSIZET j=0; j<3; j++ ) { // for each vertex of triangle
+    for ( auto i=0; i<tmesh_.size(); i++ ) { // for each triangle
+      for ( auto j=0; j<3; j++ ) { // for each vertex of triangle
         pt = *tmesh_[i].v[j];
         ios << pt.x1 << " " << pt.x2 << " " << pt.x3 << std::endl ;
       }
@@ -863,28 +875,25 @@ void GGridIcos::print(const GString &filename, GCOORDSYST icoord)
 // ARGS   : 
 //          ptree : main prop tree 
 //          igbdy : For each natural/canonical global boundary face,
-//                  gives vector of global bdy ids
-//          igbdyt: bdy type ids for each index in igbdy
+//                  gives vector of global bdy ids. Allocated here.
+//          igbdyt: bdy type ids for each index in igbdy. Allocated here.
 // RETURNS: none.
 //**********************************************************************************
-void GGridIcos::config_bdy(const PropertyTree &ptree, 
+void GGridIcos::config_bdy(const geoflow::tbox::PropertyTree &ptree, 
                            GTVector<GTVector<GSIZET>> &igbdy, 
                            GTVector<GTVector<GBdyType>> &igbdyt)
 {
   // Cycle over all geometric boundaries, and configure:
 
-  GBOOL              bret, buniform=FALSE;
-  GSIZET             iwhere;
-  GTVector<GBOOL>    uniform(2);
-  GTVector<GBdyType> bdytype(2);
-  GTVector<GBdyType> btmp;
+  GBOOL              bret;
   GTVector<GSIZET>   itmp;
   GTVector<GFTYPE>   rbdy(2);
   GTVector<GString>  bdynames(2);
-  GTVector<GString>  confmthd (2);
-  GTVector<GString>  bdyupdate(2);
+  std::vector<GString>  svec;
   GString            gname, sbdy, bdyclass;
-  PropertyTree       bdytree, gridptree, spectree;
+  PropertyTree       bdytree, gridptree;
+  UpdateBasePtr      base_ptr;
+  stBdyBlock         stblock;
 
   // Clear input arrays:
   igbdy .clear();
@@ -895,13 +904,26 @@ void GGridIcos::config_bdy(const PropertyTree &ptree,
   bdynames[0] = "bdy_inner";
   bdynames[1] = "bdy_outer";
 
+  if ( !ptree.isValue<GString>(gname) ) {
+    cout << "GGridIcos::config_bdy: grid_type not set" << endl;
+    assert(FALSE);
+  }
   gname     = ptree.getValue<GString>("grid_type");
+
+  if ( !ptree.isPropertyTree(gname) ) {
+    cout << "GGridIcos::config_bdy: grid_type block " << gname << " not found" << endl;
+    assert(FALSE);
+  }
   gridptree = ptree.getPropertyTree(gname);
 
-
-  bdyupdate = gridptree.getValue<GString>("update_method","");
   rbdy[0] = radiusi_;
   rbdy[1] = radiuso_;
+
+  igbdy.resize(2); // 2 canonical bdys
+  igbdyt.resize(2); // 2 canonical bdys
+
+  bdy_update_list_.resize(2*GDIM);
+ 
 
   // Get properties from the main prop tree. 
   // Note: bdys are configured by way of geometry's
@@ -910,46 +932,46 @@ void GGridIcos::config_bdy(const PropertyTree &ptree,
   //       and types returned on exist contain info for all bdys:
   for ( auto j=0; j<2; j++ ) { // cycle over 2 spherical surfaces
     sbdy         = gridptree.getValue<GString>(bdynames[j]);
-    bdytree      = gridptree.getPropertyTree(sbdy);
+    bdytree      = ptree.getPropertyTree(sbdy);
     bdyclass     = bdytree.getValue<GString>("bdy_class", "uniform");
-    bdytype  [j] = geoflow::str2bdytype(bdytree.getValue<GString>("base_type", "GBDY_NONE"));
-    assert(bdytype  [j] == GBDY_PERIODIC && "Invalid boundary condition");
-    uniform  [j] = bdyclass == "uniform" ? TRUE : FALSE;
-    confmthd [j] = bdytree.getValue<GString>("bdy_config_method","");
-    buniform     = buniform || uniform[j];
-  }
-
-  // Handle non-uniform (user-configured) bdy types first;
-  // Note: If "uniform" not specified for a boundary, then
-  //       user MUST supply a method to configure it.
-  //       Also, each natural face may be configured independently,
-  //       but the bdy indices & corresp. types are concatenated into 
-  //       single arrays:
-  for ( auto j=0; j<2; j++ ) { 
-    // First, find global bdy indices:
-    if ( uniform[j] ) continue;
     find_bdy_ind3d(rbdy[j], itmp); 
-    spectree  = ptree.getPropertyTree(confmthd[j]);
-    bret = GSpecBdyFactory::dospec(spectree, *this, j, itmp, btmp); // get user-defined bdy spec
-    assert(bret && "Boundary specification failed");
-    igbdy [j].resize(itmp.size()); igbdy [j] = itmp;
-    igbdyt[j].resize(itmp.size()); igbdyt[j] = btmp;
-
-  }
-  
-  // Fill in uniform bdy types:
-  for ( auto j=0; j<2; j++ ) { 
-    if ( !uniform[j] ) continue;
-    // First, find global bdy indices:
-    find_bdy_ind3d(rbdy[j], itmp); 
-    // Set type for each bdy index:
-    for ( auto i=0; i<itmp.size(); i++ ) {
-      btmp[i] = bdytype[j]; 
+    igbdy[j].resize(itmp.size()); igbdy[j] = itmp;
+    igbdyt[j].resize(itmp.size()); igbdyt[j] = GBDY_NONE;
+    geoflow::get_bdy_block(bdytree, stblock);
+    if ( "uniform" == bdyclass ) { // uniform bdy conditions
+      assert(!stblock.tbdy.contains(GBDY_PERIODIC) && "Invalid boundary condition");
+      // May have different uniform bdys for different state comps:
+      for ( auto k=0; k<stblock.tbdy.size(); k++ ) { 
+        base_ptr = GUpdateBdyFactory<BdyTypePack>::build(ptree, sbdy, *this,  j, 
+                                            stblock.tbdy[k], stblock.istate[k], itmp);
+        if ( stblock.tbdy[k] != GBDY_NONE ) igbdyt[j] = stblock.tbdy[k];
+        bdy_update_list_[j].push_back(base_ptr);
+      }
     }
-    igbdy [j].resize(itmp.size()); igbdy [j] = itmp;
-    igbdyt[j].resize(itmp.size()); igbdyt[j] = btmp;
-  }
-
+    else if ( "mixed" == bdyclass ) { // mixed bdy conditions
+      assert( bdytree.isArray<GString>("bdy_blocks") && "No bdy_blocks specified"); 
+      svec = bdytree.getArray<GString>("bdy_blocks");
+      for ( auto i=0; i<svec.size(); i++ ) {
+        bdytree = ptree.getPropertyTree(svec[i]);
+        geoflow::get_bdy_block(bdytree, stblock);
+        assert(!stblock.tbdy.contains(GBDY_PERIODIC) && "Invalid boundary condition");
+        GSpecBdyFactory::dospec(bdytree, *this, j, itmp);
+        for ( auto k=0; k<svec.size(); k++ ) { // for each sub-block
+          base_ptr = GUpdateBdyFactory<BdyTypePack>::build(ptree, svec[k], *this, j, 
+                                              stblock.tbdy[k], stblock.istate[k], itmp);
+          
+          for ( auto m=0; m<itmp.size(); m++ ) {
+            if ( igbdy[j].contains(itmp[m]) ) igbdyt[j][m] = stblock.tbdy[k];
+          }
+          if ( stblock.tbdy[k] != GBDY_NONE ) igbdyt[j] = stblock.tbdy[k];
+          bdy_update_list_[j].push_back(base_ptr);
+        }
+      } 
+    }
+    else {
+      assert(FALSE && "Invalid bdy_class");
+    }
+  } // end, canonical bdy loop
 
 } // end of method config_bdy
 
@@ -972,7 +994,7 @@ void GGridIcos::find_bdy_ind3d(GFTYPE radius, GTVector<GSIZET> &ibdy)
   ibdy.clear();
   eps = 100*std::numeric_limits<GFTYPE>::epsilon();
 
-  for ( GSIZET i=0; i<xNodes_[0].size(); i++ ) { // face 0
+  for ( auto i=0; i<xNodes_[0].size(); i++ ) { // face 0
       r = sqrt(pow(xNodes_[0][i],2)+pow(xNodes_[1][i],2)+pow(xNodes_[2][i],2));
       if ( FUZZYEQ(r, radius, eps) ) {
         ibdy.push_back(i);
@@ -1017,7 +1039,7 @@ void GGridIcos::do_face_normals2d()
   // normals. Taken in order, these should correspond
 
 
-} // end, method do_bdy_normals2d
+} // end, method do_face_normals2d
 
 
 //**********************************************************************************
@@ -1031,27 +1053,57 @@ void GGridIcos::do_face_normals3d()
 {
 
 
-} // end, method do_bdy_normals3d
-
+} // end, method do_face_normals3d
 
 
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : do_bdy_normals
-// DESC   : Compute normals to each domain bdy
-// ARGS   : none 
+// DESC   : Compute normals to each domain bdy 
+// ARGS   : 
+//          dXdXi   : matrix of dX_i/dXi_j matrix elements, s.t.
+//                    dXdX_i(i,j) = dx^j/dxi^i
+//          igbdy   : vector of bdy indices
+//          normals : vector of normal components
+//          idepComp: vector index dependent on the other indices (first 
+//                    component index whose normal component is nonzero)
 // RETURNS: none
 //**********************************************************************************
-void GGridIcos::do_bdy_normals()
+void GGridIcos::do_bdy_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
+                               GTVector<GTVector<GSIZET>>    &igbdy_face,
+                               GTVector<GTVector<GFTYPE>>    &normals,
+                               GTVector<GINT>                &idepComp)
 {
+  GSIZET icurr, nbdy, nface;
+
+  nbdy = 0;
+  for ( auto j=0; j<igbdy_face.size(); j++ ) {
+    nbdy += igbdy_face[j].size();
+  }
+  idepComp.resize(nbdy);
+  for ( auto j=0; j<normals.size(); j++ ) normals[j].resize(nbdy);
+
 
   #if defined(_G_IS2D)
-    return;
+    // No bdys in 2D
   #elif defined(_G_IS3D)
-    do_bdy_normals3d();
+
+  icurr = 0;
+  for ( auto j=0; j<2; j++ ) {      // for each global bdy face
+    nface = igbdy_face[j].size();   // # bdy nodes on this face
+    idepComp.range(icurr,icurr+nface-1);
+    for ( auto k=0; k<normals.size(); k++ ) normals[k].range(icurr,icurr+nface-1);
+    do_bdy_normals3d(dXdXi, igbdy_face[j], j, normals, idepComp);
+    icurr += nface;
+  }
   #else
     #error Invalid problem dimensionality
   #endif
+
+  // Reset vector ranges:
+  idepComp.range_reset();
+  for ( auto j=0; j<normals.size(); j++ ) normals[j].range_reset();
+
 
 } // end, method do_bdy_normals
 
@@ -1059,11 +1111,57 @@ void GGridIcos::do_bdy_normals()
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : do_bdy_normals3d
-// DESC   : Compute normals to each domain bdy in 3d
-// ARGS   : none 
+// DESC   : Compute normals to each domain bdy in 2d. Also
+//          provide the vector component index for the dependent
+//          component, so that we can easily enforce, say, the constraint
+//                hat(n) \cdot \vec{u} = 0
+//          for the correct \vec{u} component. We must
+//          keep in mind that there may be terrain on the boundary,
+//          so we cannot rely on alignment of bdy surface with
+//          coordinate directions. This method should be called 
+//          after terrain is added.
+// ARGS   : 
+//          dXdXi   : matrix of dX_i/dXi_j matrix elements, s.t.
+//                    dXdX_i(i,j) = dx^j/dxi^i
+//          igbdy   : vector of bdy indices
+//          iface   : which global face igbdy list represents
+//          normals : vector of normal components
+//          idepComp: vector index dependent on the other indices (first 
+//                    component index whose normal component is nonzero)
 // RETURNS: none
 //**********************************************************************************
-void GGridIcos::do_bdy_normals3d()
+void GGridIcos::do_bdy_normals3d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
+                                 GTVector<GSIZET>              &igbdy,
+                                 GINT                           iface,
+                                 GTVector<GTVector<GFTYPE>>  &normals,
+                                 GTVector<GINT>             &idepComp)
 {
+   GSIZET          ib, ic, ip; 
+   GFTYPE          tiny;
+   GFTYPE          xm;
+   GTPoint<GFTYPE> xp(3), p1(3), p2(3);
+   tiny  = 100.0*std::numeric_limits<GFTYPE>::epsilon(); 
+
+   xm = iface == 1 ? -1.0 : 1.0;
+
+   // Normals depend on element type:
+   if ( this->gtype_ == GE_DEFORMED ) {
+     // Bdy normal is dvec{X} / dxi_xi X dvec{X} / dxi_eta
+     for ( auto j=0; j<igbdy.size(); j++ ) { // all points on iedge
+       ib = igbdy[j];
+       for ( auto i=0; i<this->dXdXi_.size(2); i++ ) { // over _X_
+         p1[i] = this->dXdXi_(0,i)[ib]; // d_X_/dxi
+         p2[i] = this->dXdXi_(1,i)[ib]; // d_X_/deta
+       }
+       p1.cross(p2, xp);   // xp = p1 X p2
+       xp.unit(); 
+       xp *= xm;
+       for ( ic=0; ic<xp.dim(); ic++ ) if ( fabs(xp[ic]) > tiny ) break;
+       assert(ic >= GDIM); // no normal components > 0
+       for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
+       idepComp[j] = ic;  // dependent component
+     }
+   }
 
 } // end, method do_bdy_normals3d
+

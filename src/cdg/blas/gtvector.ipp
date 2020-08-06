@@ -1139,9 +1139,8 @@ void
 GTVector<T>::operator*=(const GTVector &b)
 {
   GLLONG j;
-  T *p = b.data();
   for ( j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-    this->data_[j] *= p[j-this->gindex_.beg()];
+    this->data_[j] *= b[j-this->gindex_.beg()];
   }
 
   #if defined(_G_AUTO_UPDATE_DEV)
@@ -1874,6 +1873,31 @@ GTVector<T>::multiplicity_ceil(T val, T ceil)
 
 } // multiplicity_ceil
 
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : onlycontains 
+// DESC   : Determines if only candidate value is in the buffer
+// ARGS   : val : member to search for in buffer
+// RETURNS: TRUE if member is in list, else FALSE. If list is empty, returns TRUE
+//**********************************************************************************
+#pragma acc routine vector
+template<class T>
+GBOOL
+GTVector<T>::onlycontains(T val)
+{
+
+  if ( this->data_ == NULLPTR ) return TRUE;
+
+  GLLONG i=this->gindex_.beg();
+
+  while ( i <= this->gindex_.end() && this->data_[i] == val ) i++;
+
+  if ( i > this->gindex_.end() ) return TRUE;
+
+  return FALSE;
+
+} // end of method onlycontains 
 
 //**********************************************************************************
 //**********************************************************************************

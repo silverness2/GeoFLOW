@@ -13,7 +13,7 @@ set(CDG_INC
           ${GHOME}/blas
           ${GHOME}/comm
           ${GHOME}/grid
-          ${GHOME}/init
+          ${GHOME}/config
           ${GHOME}/io
           ${GHOME}/pdes
           ${GHOME}/sem

@@ -14,8 +14,8 @@
 
 #include "tbox/property_tree.hpp"
 #include "gtypes.h"
+#include "gstateinfo.hpp"
 #include "gtvector.hpp"
-#include "ggrid.hpp"
 #include "gcomm.hpp"
 #include "gutils.hpp"
 
@@ -24,15 +24,19 @@ using namespace geoflow::tbox;
 
 typedef GFTYPE                      Time;
 typedef GTVector<GTVector<GFTYPE>*> State;
+typedef GStateInfo                  StateInfo;
+
+class GGrid;
+
 
 namespace ginitstate
 {
 
-GBOOL impl_boxnwaveburgers      (const PropertyTree& ptree, GString &sconfig, GGrid &grid,  Time &time, State &utmp, State &ub, State &u);
-GBOOL impl_icosnwaveburgers     (const PropertyTree& ptree, GString &sconfig, GGrid &grid,  Time &time, State &utmp, State &ub, State &u);
-GBOOL impl_boxdirgauss          (const PropertyTree& ptree, GString &sconfig, GGrid &grid,  Time &time, State &utmp, State &ub, State &u);
-GBOOL impl_boxpergauss          (const PropertyTree& ptree, GString &sconfig, GGrid &grid,  Time &time, State &utmp, State &ub, State &u);
-GBOOL impl_icosgauss            (const PropertyTree& ptree, GString &sconfig, GGrid &grid,  Time &time, State &utmp, State &ub, State &u);
+GBOOL impl_boxnwaveburgers      (const PropertyTree& ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u);
+GBOOL impl_icosnwaveburgers     (const PropertyTree& ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u);
+GBOOL impl_boxdirgauss          (const PropertyTree& ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u);
+GBOOL impl_boxpergauss          (const PropertyTree& ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u);
+GBOOL impl_icosgauss            (const PropertyTree& ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u);
 };
 
 

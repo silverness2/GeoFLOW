@@ -22,12 +22,13 @@ namespace ginitforce {
 // ARGS   : ptree  : main prop tree
 //          sconfig: ptree block name containing variable config
 //          grid   : grid object
+//          stinfo : StateInfo
 //          t      : time
 //          u      : current state
 //          uf    : force vectors (one for each state element)
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL initf_impl_rand(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &t, State &u, State &uf)
+GBOOL initf_impl_rand(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo,  Time &t, State &u, State &uf)
 {
 
   assert(FALSE);

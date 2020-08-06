@@ -17,6 +17,12 @@
 #include "gmass.hpp"
 #include "gcomm.hpp"
 #include "ggfx.hpp"
+#include "ggrid.hpp"
+#include "ggrid_box.hpp"
+#include "ggrid_icos.hpp"
+#include "gupdatebdy_factory.hpp"
+#include "gmtk.hpp"
+#include "gutils.hpp"
 #include "tbox/error_handler.hpp"
 
 using namespace std;
@@ -33,6 +39,7 @@ using namespace std;
 GGrid::GGrid(const geoflow::tbox::PropertyTree &ptree, GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GC_COMM &comm)
 :
 bInitialized_                   (FALSE),
+bapplybc_                       (FALSE),
 do_face_normals_                (FALSE),
 nprocs_        (GComm::WorldSize(comm)),
 ngelems_                            (0),
@@ -44,7 +51,8 @@ comm_                            (comm),
 mass_                         (NULLPTR),
 imass_                        (NULLPTR),
 ggfx_                         (NULLPTR),
-ptree_                          (ptree)
+ptree_                          (ptree),
+bdy_apply_callback_           (NULLPTR)
 {
 } // end of constructor method (1)
 
@@ -122,11 +130,11 @@ void GGrid::print(GString filename, GBOOL bdof)
   ios.open(filename);
 
   if ( !bdof ) { // print only wire mesh (vertices)
-    for ( GSIZET i=0; i<gelems_.size(); i++ ) { // for each element
+    for ( auto i=0; i<gelems_.size(); i++ ) { // for each element
        
-       for ( GSIZET j=0; j<gelems_[i]->nvertices(); j++ ) { // for each vertex of element
+       for ( auto j=0; j<gelems_[i]->nvertices(); j++ ) { // for each vertex of element
         vert = &gelems_[i]->xVertices(j);
-        for ( GSIZET k=0; k<vert->size()-1; k++ ) {
+        for ( auto k=0; k<vert->size()-1; k++ ) {
             ios << (*vert)[k] << " ";
         }
         ios << (*vert)[vert->size()-1] << std::endl;
@@ -137,26 +145,26 @@ void GGrid::print(GString filename, GBOOL bdof)
   }
 
   // Print internal dofs too:
-  for ( GSIZET i=0; i<gelems_.size(); i++ ) { // for each element
+  for ( auto i=0; i<gelems_.size(); i++ ) { // for each element
     xnodes  = &gelems_[i]->xNodes();  
     N       = gelems_[i]->size();
     n       = (*xnodes)[0].size();
     if ( GDIM == 1 ) {
-      for ( GSIZET k=0; k<n; k++ ) {
+      for ( auto k=0; k<n; k++ ) {
         ios << (*xnodes)[0][k] << " " << std::endl;
       }
     }
     else if ( GDIM == 2 && gelems_[i]->elemtype() != GE_2DEMBEDDED ) {
       xnodes  = &gelems_[i]->xNodes();  
-      for ( GSIZET k=0; k<n; k++ ) {
+      for ( auto k=0; k<n; k++ ) {
         ios << (*xnodes)[0][k] << " "
             << (*xnodes)[1][k] << std::endl;
       }
     }
     else if (GDIM==2 && gelems_[i]->elemtype() == GE_2DEMBEDDED ) {
       // Lay down in separate 'sub-quads':
-      for ( GSIZET k=0; k<N[1]-1; k++ ) {
-        for ( GSIZET j=0; j<N[0]-1; j++ ) {
+      for ( auto k=0; k<N[1]-1; k++ ) {
+        for ( auto j=0; j<N[0]-1; j++ ) {
           // For each sub-quad, print its vertices:
           ios << (*xnodes)[0][j+k*N[0]] << " "
               << (*xnodes)[1][j+k*N[0]] << " "
@@ -174,7 +182,7 @@ void GGrid::print(GString filename, GBOOL bdof)
       }
     }
     else if ( GDIM == 3 ) {
-      for ( GSIZET k=0; k<n-1; k++ ) {
+      for ( auto k=0; k<n-1; k++ ) {
         ios << (*xnodes)[0][k] << " "
             << (*xnodes)[1][k] << " "
             << (*xnodes)[2][k] << std::endl;
@@ -213,7 +221,7 @@ GSIZET GGrid::ndof()
    assert(gelems_.size() > 0 && "Elements not set");
 
    GSIZET Ntot=0;
-   for ( GSIZET i=0; i<gelems_.size(); i++ ) Ntot += gelems_[i]->nnodes();
+   for ( auto i=0; i<gelems_.size(); i++ ) Ntot += gelems_[i]->nnodes();
 
    return Ntot;
 } // end of method ndof
@@ -243,15 +251,7 @@ GSIZET GGrid::nfacedof()
 //**********************************************************************************
 GSIZET GGrid::nbdydof()
 {
-   // Use unique boundary indices to compute
-   // number bdy surface dof. This list, unlike element
-   // face indices, may conatin embedded booundary 
-   // surfaces too:
-   GSIZET nftot=0;
-   for ( GSIZET j=0; j<igbdy_binned_.size(); j++ ) 
-     nftot += igbdy_binned_[j].size();
-       
-   return nftot;
+   return igbdy_.size();;
 } // end of method nbdydof
 
 
@@ -271,23 +271,23 @@ GFTYPE GGrid::minlength()
    GTVector<GTPoint<GFTYPE>> *xverts;
 
    lmin = std::numeric_limits<GFTYPE>::max();
-   for ( GSIZET i=0; i<gelems_.size(); i++ ) {
+   for ( auto i=0; i<gelems_.size(); i++ ) {
      xverts = &gelems_[i]->xVertices();
      #if defined(_G_IS2D)
-     for ( GSIZET j=0; j<xverts->size(); j++ ) {
+     for ( auto j=0; j<xverts->size(); j++ ) {
        dr = (*xverts)[(j+1)%xverts->size()] - (*xverts)[j];
        lmin = MIN(lmin,dr.norm());
      }
      #elif defined(_G_IS3D)
-     for ( GSIZET j=0; j<4; j++ ) { // bottom
+     for ( auto j=0; j<4; j++ ) { // bottom
        dr = (*xverts)[(j+1)%xverts->size()] - (*xverts)[j];
        lmin = MIN(lmin,dr.norm());
      }
-     for ( GSIZET j=4; j<8; j++ ) { // top
+     for ( auto j=4; j<8; j++ ) { // top
        dr = (*xverts)[(j+1)%xverts->size()] - (*xverts)[j];
        lmin = MIN(lmin,dr.norm());
      }
-     for ( GSIZET j=0; j<4; j++ ) { // vertical edges
+     for ( auto j=0; j<4; j++ ) { // vertical edges
        dr = (*xverts)[j+4] - (*xverts)[j];
        lmin = MIN(lmin,dr.norm());
      }
@@ -316,23 +316,23 @@ GFTYPE GGrid::maxlength()
    GTVector<GTPoint<GFTYPE>> *xverts;
 
    lmax = 0.0;
-   for ( GSIZET i=0; i<gelems_.size(); i++ ) {
+   for ( auto i=0; i<gelems_.size(); i++ ) {
      xverts = &gelems_[i]->xVertices();
      #if defined(_G_IS2D)
-     for ( GSIZET j=0; j<xverts->size(); j++ ) {
+     for ( auto j=0; j<xverts->size(); j++ ) {
        dr = (*xverts)[(j+1)%xverts->size()] - (*xverts)[j];
        lmax = MAX(lmax,dr.norm());
      }
      #elif defined(_G_IS3D)
-     for ( GSIZET j=0; j<4; j++ ) { // bottom
+     for ( auto j=0; j<4; j++ ) { // bottom
        dr = (*xverts)[(j+1)%xverts->size()] - (*xverts)[j];
        lmax = MAX(lmax,dr.norm());
      }
-     for ( GSIZET j=4; j<8; j++ ) { // top
+     for ( auto j=4; j<8; j++ ) { // top
        dr = (*xverts)[(j+1)%xverts->size()] - (*xverts)[j];
        lmax = MAX(lmax,dr.norm());
      }
-     for ( GSIZET j=0; j<4; j++ ) { // vertical edges
+     for ( auto j=0; j<4; j++ ) { // vertical edges
        dr = (*xverts)[j+4] - (*xverts)[j];
        lmax = MAX(lmax,dr.norm());
      }
@@ -362,26 +362,26 @@ GFTYPE GGrid::avglength()
 
    navg = 0.0;
    lavg = 0.0;
-   for ( GSIZET i=0; i<gelems_.size(); i++ ) {
+   for ( auto i=0; i<gelems_.size(); i++ ) {
      xverts = &gelems_[i]->xVertices();
      #if defined(_G_IS2D)
-     for ( GSIZET j=0; j<xverts->size(); j++ ) {
+     for ( auto j=0; j<xverts->size(); j++ ) {
        dr = (*xverts)[(j+1)%xverts->size()] - (*xverts)[j];
        lavg += dr.norm();
        navg += 1.0;
      }
      #elif defined(_G_IS3D)
-     for ( GSIZET j=0; j<4; j++ ) { // bottom
+     for ( auto j=0; j<4; j++ ) { // bottom
        dr = (*xverts)[(j+1)%xverts->size()] - (*xverts)[j];
        lavg += dr.norm();
        navg += 1.0;
      }
-     for ( GSIZET j=4; j<8; j++ ) { // top
+     for ( auto j=4; j<8; j++ ) { // top
        dr = (*xverts)[(j+1)%xverts->size()] - (*xverts)[j];
        lavg += dr.norm();
        navg += 1.0;
      }
-     for ( GSIZET j=0; j<4; j++ ) { // vertical edges
+     for ( auto j=0; j<4; j++ ) { // vertical edges
        dr = (*xverts)[j+4] - (*xverts)[j];
        lavg += dr.norm();
        navg += 1.0;
@@ -565,34 +565,33 @@ void GGrid::def_geom_init()
 
    GString serr = "GGrid::def_geom_init: ";
    GSIZET nxy = gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
-   GTMatrix<GTVector<GFTYPE>> rijtmp;
    GTVector<GTVector<GFTYPE>> *xe;
 
    // Resize geometric quantities to global size:
    dXidX_.resize(nxy,nxy);
-   rijtmp.resize(nxy,nxy);
-   for ( GSIZET j=0; j<nxy; j++ ) {
-     for ( GSIZET i=0; i<nxy; i++ )  {
+   dXdXi_.resize(nxy,nxy);
+   for ( auto j=0; j<nxy; j++ ) {
+     for ( auto i=0; i<nxy; i++ )  {
        dXidX_(i,j).resize(ndof());
-       rijtmp(i,j).resize(ndof());
+       dXdXi_(i,j).resize(ndof());
      }
    }
    Jac_.resize(ndof());
    faceJac_.resize(nfacedof());
 
    // Resize surface-point-wise normals:
-   faceNormal_.resize(nxy); // no. coords for each normal at each face point
-   bdyNormal_.resize(nxy); // no. coords for each normal at each domain bdy point
-   for ( GSIZET i=0; i<bdyNormal_.size(); i++ ) {
-     faceNormal_[i].resize(nfacedof());
-     bdyNormal_ [i].resize(nbdydof());
+   faceNormals_.resize(nxy); // no. coords for each normal at each face point
+   bdyNormals_.resize(nxy); // no. coords for each normal at each domain bdy point
+   for ( auto i=0; i<bdyNormals_.size(); i++ ) {
+     faceNormals_[i].resize(nfacedof());
+     bdyNormals_ [i].resize(nbdydof());
    }
 
    // Now, set the geometry/metric quanties from the elements:
    GSIZET ibeg, iend; // beg, end indices for global arrays
    GSIZET ibbeg, ibend; // beg, end indices for global arrays for bdy quantities
    GSIZET ifbeg, ifend; // beg, end indices for global arrays for face quantities
-   for ( GSIZET e=0; e<gelems_.size(); e++ ) {
+   for ( auto e=0; e<gelems_.size(); e++ ) {
      ibeg  = gelems_[e]->igbeg(); iend  = gelems_[e]->igend();
      ifbeg = gelems_[e]->ifbeg(); ifend = gelems_[e]->ifend();
 //   ibbeg = gelems_[e]->ibbeg(); ibend = gelems_[e]->ibend();
@@ -600,10 +599,10 @@ void GGrid::def_geom_init()
      xe    = &gelems_[e]->xNodes();
 
      // Restrict global arrays to local scope:
-     for ( GSIZET j=0; j<nxy; j++ ) {
-       for ( GSIZET i=0; i<nxy; i++ )  {
+     for ( auto j=0; j<nxy; j++ ) {
+       for ( auto i=0; i<nxy; i++ )  {
          dXidX_(i,j).range(ibeg, iend);
-         rijtmp(i,j).range(ibeg, iend);
+         dXdXi_(i,j).range(ibeg, iend);
        }
      }
      Jac_.range(ibeg, iend);
@@ -611,21 +610,21 @@ void GGrid::def_geom_init()
 
      // Set the geom/metric quantities using element data:
      if ( GDIM == 2 ) {
-       gelems_[e]->dogeom2d(rijtmp, dXidX_, Jac_, faceJac_);
+       gelems_[e]->dogeom2d(dXdXi_, dXidX_, Jac_, faceJac_);
      }
      else if ( GDIM == 3 ) {
-       gelems_[e]->dogeom3d(rijtmp, dXidX_, Jac_, faceJac_);
+       gelems_[e]->dogeom3d(dXdXi_, dXidX_, Jac_, faceJac_);
      }
 
      // Zero-out local xe; only global allowed now:
-//   for ( GSIZET j=0; j<nxy; j++ ) (*xe)[j].clear(); 
+//   for ( auto j=0; j<nxy; j++ ) (*xe)[j].clear(); 
      
    } // end, element loop
 
-   for ( GSIZET j=0; j<nxy; j++ )  {
-     for ( GSIZET i=0; i<nxy; i++ )  {
+   for ( auto j=0; j<nxy; j++ )  {
+     for ( auto i=0; i<nxy; i++ )  {
        dXidX_(i,j).range_reset();
-       rijtmp(i,j).range_reset();
+       dXdXi_(i,j).range_reset();
      }
    }
    Jac_.range_reset();
@@ -654,26 +653,26 @@ void GGrid::reg_geom_init()
 
    GString serr = "GridIcos::reg_geom_init: ";
    GSIZET nxy = GDIM;
-   GTMatrix<GTVector<GFTYPE>>  rijtmp;
+   GTMatrix<GTVector<GFTYPE>>  dXdXi_;
    GTVector<GTVector<GFTYPE>> *xe;
 
    // Resize geometric quantities to global size:
    dXidX_.resize(nxy,1);
-   rijtmp.resize(nxy,1);
-   for ( GSIZET i=0; i<nxy; i++ ) {
+   dXdXi_.resize(nxy,1);
+   for ( auto i=0; i<nxy; i++ ) {
      dXidX_(i,0).resize(ndof());
-     rijtmp(i,0).resize(ndof());
+     dXdXi_(i,0).resize(ndof());
    }
    Jac_.resize(ndof());
    faceJac_.resize(nfacedof());
 
 
    // Resize surface-point-wise normals:
-   faceNormal_.resize(nxy); // no. coords for each normal at each face point
-   bdyNormal_ .resize(nxy); // no. coords for each normal at each bdy point
-   for ( GSIZET i=0; i<nxy; i++ ) {
-     faceNormal_[i].resize(nfacedof());
-     bdyNormal_ [i].resize(nbdydof());
+   faceNormals_.resize(nxy); // no. coords for each normal at each face point
+   bdyNormals_ .resize(nxy); // no. coords for each normal at each bdy point
+   for ( auto i=0; i<nxy; i++ ) {
+     faceNormals_[i].resize(nfacedof());
+     bdyNormals_ [i].resize(nbdydof());
    }
 
 
@@ -681,7 +680,7 @@ void GGrid::reg_geom_init()
    GSIZET ibeg, iend; // beg, end indices for global arrays
    GSIZET ibbeg, ibend; // beg, end indices for global arrays for bdy quantities
    GSIZET ifbeg, ifend; // beg, end indices for global arrays for face quantities
-   for ( GSIZET e=0; e<gelems_.size(); e++ ) {
+   for ( auto e=0; e<gelems_.size(); e++ ) {
      ibeg  = gelems_[e]->igbeg(); iend  = gelems_[e]->igend();
      ifbeg = gelems_[e]->ifbeg(); ifend = gelems_[e]->ifend();
 //   ibbeg = gelems_[e]->ibbeg(); ibend = gelems_[e]->ibend();
@@ -689,12 +688,12 @@ void GGrid::reg_geom_init()
      xe    = &gelems_[e]->xNodes();
 
      // Restrict global data to local scope:
-     for ( GSIZET j=0; j<nxy; j++ ) {
-       faceNormal_[j].range(ifbeg, ifend); 
-//     bdyNormal_ [j].range(ibbeg, ibend); 
+     for ( auto j=0; j<nxy; j++ ) {
+       faceNormals_[j].range(ifbeg, ifend); 
+//     bdyNormals_ [j].range(ibbeg, ibend); 
      }
-     for ( GSIZET j=0; j<dXidX_.size(2); j++ ) {
-       for ( GSIZET i=0; i<dXidX_.size(1); i++ )  {
+     for ( auto j=0; j<dXidX_.size(2); j++ ) {
+       for ( auto i=0; i<dXidX_.size(1); i++ )  {
          dXidX_(i,j).range(ibeg, iend);
        }
      }
@@ -703,24 +702,24 @@ void GGrid::reg_geom_init()
 
      // Set the geom/metric quantities using element data:
      if ( GDIM == 2 ) {
-       gelems_[e]->dogeom2d(rijtmp, dXidX_, Jac_, faceJac_); 
+       gelems_[e]->dogeom2d(dXdXi_, dXidX_, Jac_, faceJac_); 
      } 
      else if ( GDIM == 3 ) {
-       gelems_[e]->dogeom3d(rijtmp, dXidX_, Jac_, faceJac_);
+       gelems_[e]->dogeom3d(dXdXi_, dXidX_, Jac_, faceJac_);
      }
       
      // Zero-out local xe; only global allowed now:
-//   for ( GSIZET j=0; j<nxy; j++ ) (*xe)[j].clear(); 
+//   for ( auto j=0; j<nxy; j++ ) (*xe)[j].clear(); 
 
    } // end, element loop
 
    // Reset global scope:
-   for ( GSIZET j=0; j<nxy; j++ ) {
-     faceNormal_[j].range_reset();
-     bdyNormal_ [j].range_reset();
+   for ( auto j=0; j<nxy; j++ ) {
+     faceNormals_[j].range_reset();
+     bdyNormals_ [j].range_reset();
    }
-   for ( GSIZET j=0; j<dXidX_.size(2); j++ )  {
-     for ( GSIZET i=0; i<dXidX_.size(1); i++ )  {
+   for ( auto j=0; j<dXidX_.size(2); j++ )  {
+     for ( auto i=0; i<dXidX_.size(1); i++ )  {
        dXidX_(i,j).range_reset();
      }
    }
@@ -737,7 +736,7 @@ void GGrid::reg_geom_init()
 //**********************************************************************************
 // METHOD : do_normals
 // DESC   : Compute normals to elem faces, and to domain boundary 
-//          nodes
+//          nodes. Note: init_bc_info must be called prior to entry.
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
@@ -762,8 +761,7 @@ void GGrid::do_normals()
   }
   
   // Set domain boundary node normals:
-  do_bdy_normals();
-  
+  do_bdy_normals(dXdXi_, igbdy_bdyface_, bdyNormals_, idepComp_);
    
 } // end of method do_normals
 
@@ -782,15 +780,15 @@ void GGrid::globalize_coords()
    GTVector<GTVector<GFTYPE>> *xe;
 
    xNodes_.resize(nxy);
-   for ( GSIZET j=0; j<nxy; j++ ) xNodes_[j].resize(ndof());
+   for ( auto j=0; j<nxy; j++ ) xNodes_[j].resize(ndof());
 
    GSIZET ibeg, iend; // beg, end indices for global arrays
-   for ( GSIZET e=0; e<gelems_.size(); e++ ) {
+   for ( auto e=0; e<gelems_.size(); e++ ) {
      ibeg  = gelems_[e]->igbeg(); iend  = gelems_[e]->igend();
      xe    = &gelems_[e]->xNodes();
 
      // Set global nodal Cart coords from element coords:
-     for ( GSIZET j=0; j<nxy; j++ ) {
+     for ( auto j=0; j<nxy; j++ ) {
        xNodes_[j].range(ibeg, iend);
        xNodes_[j] = (*xe)[j];
      }
@@ -798,7 +796,7 @@ void GGrid::globalize_coords()
    } // end, element loop
 
    // Reset global scope:
-   for ( GSIZET j=0; j<nxy; j++ ) xNodes_[j].range_reset();
+   for ( auto j=0; j<nxy; j++ ) xNodes_[j].range_reset();
 
 
 } // end, method globalize_coords
@@ -897,20 +895,6 @@ GTVector<GFTYPE> &GGrid::faceJac()
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : bdyNormal
-// DESC   : Return global vector of normals at bdy nodes
-// ARGS   : none
-// RETURNS: GTVector<GTVector<GFTYPE>> &
-//**********************************************************************************
-GTVector<GTVector<GFTYPE>> &GGrid::bdyNormal()
-{
-   assert(bInitialized_ && "Object not inititaized");
-   return bdyNormal_;
-
-} // end of method bdyNormal
-
-//**********************************************************************************
-//**********************************************************************************
 // METHOD : find_min_dist
 // DESC   : Compute min inter-node distance for grid
 //          NOTE: this method isn't recommended for regular
@@ -941,8 +925,8 @@ GFTYPE GGrid::find_min_dist()
 
   // Cycle over all node points and find min distance:
   // NOTE: this isn't fast....
-  for ( GSIZET j=0; j<xNodes_[0].size()-1; j++ ) {
-    for ( GSIZET i=0; i<nxy; i++ ) {
+  for ( auto j=0; j<xNodes_[0].size()-1; j++ ) {
+    for ( auto i=0; i<nxy; i++ ) {
       p0[i] = xNodes_[i][j];
       p1[i] = xNodes_[i][j+1];
     }
@@ -980,41 +964,41 @@ GFTYPE GGrid::integrate(GTVector<GFTYPE> &u, GTVector<GFTYPE> &tmp, GBOOL bgloba
   //       require computing a new GDIM-operator each time
   //       integration is required or setting it.
 #if defined(_G_IS2D)
-  for ( GSIZET e=0; e<gelems_.size(); e++ ) {
+  for ( auto e=0; e<gelems_.size(); e++ ) {
     ibeg  = gelems_[e]->igbeg(); iend  = gelems_[e]->igend();
 
     // Restrict global data to local scope:
     tmp.range(ibeg, iend);
     u.range(ibeg, iend);
 
-    for ( GSIZET k=0; k<GDIM; k++ ) {
+    for ( auto k=0; k<GDIM; k++ ) {
       W[k] = gelems_[e]->gbasis(k)->getWeights();
       N[k] = gelems_[e]->size(k);
     }
     n = 0;
-    for ( GSIZET k=0; k<N[1]; k++ ) {
-      for ( GSIZET j=0; j<N[0]; j++ ) {
+    for ( auto k=0; k<N[1]; k++ ) {
+      for ( auto j=0; j<N[0]; j++ ) {
         tmp[n] = (*W[1])[k]*(*W[0])[j] * u[n];
         n++;
       }
     }
   } // end, element loop
 #elif defined(_G_IS3D)
-  for ( GSIZET e=0; e<gelems_.size(); e++ ) {
+  for ( auto e=0; e<gelems_.size(); e++ ) {
     ibeg  = gelems_[e]->igbeg(); iend  = gelems_[e]->igend();
 
     // Restrict global data to local scope:
     tmp.range(ibeg, iend);
     u.range(ibeg, iend);
 
-    for ( GSIZET k=0; k<GDIM; k++ ) {
+    for ( auto k=0; k<GDIM; k++ ) {
       W[k] = gelems_[e]->gbasis(k)->getWeights();
       N[k] = gelems_[e]->size(k);
     }
     n = 0;
-    for ( GSIZET k=0; k<N[2]; k++ ) {
-      for ( GSIZET j=0; j<N[1]; j++ ) {
-        for ( GSIZET i=0; i<N[0]; i++ ) {
+    for ( auto k=0; k<N[2]; k++ ) {
+      for ( auto j=0; j<N[1]; j++ ) {
+        for ( auto i=0; i<N[0]; i++ ) {
           tmp[n] = (*W[2])[k]*(*W[1])[j]*(*W[0])[i] * u[n];
           n++;
         }
@@ -1069,7 +1053,7 @@ void GGrid::deriv(GTVector<GFTYPE> &u, GINT idir, GTVector<GFTYPE> &utmp,
     assert(idir > 0 && idir <= GDIM+1 && "Invalid derivative");
     GMTK::compute_grefderiv(*this, u, etmp_, 1, FALSE, du); // D_xi u
     du.pointProd((*dXidX)(0,idir-1));
-    for ( GSIZET j=1; j<GDIM; j++ ) {
+    for ( auto j=1; j<GDIM; j++ ) {
       GMTK::compute_grefderiv(*this, u, etmp_, j+1, FALSE, utmp); // D_xi^j u
       utmp.pointProd((*dXidX)(j,idir-1));
       du += utmp; 
@@ -1099,11 +1083,11 @@ void GGrid::init_local_face_info()
   GSIZET        ig; // index into global array
 
   n = 0;
-  for ( GSIZET e=0; e<gelems_.size(); e++ ) { // get global # face nodes
+  for ( auto e=0; e<gelems_.size(); e++ ) { // get global # face nodes
 #if 0
     ieface = &gelems_[e]->face_indices(); // set in child class
-    for ( GSIZET j=0; j<ieface->size(); j++ ) { // count elem face nodes
-      for ( GSIZET k=0; k<(*ieface)[j].size(); k++) n++; 
+    for ( auto j=0; j<ieface->size(); j++ ) { // count elem face nodes
+      for ( auto k=0; k<(*ieface)[j].size(); k++) n++; 
     }
 #endif
     n += gelems_[e]->nfnodes();
@@ -1113,11 +1097,11 @@ void GGrid::init_local_face_info()
   // Find list over all elemes of element face nodes:
   nn = 0; // global reference index
   m  = 0; // current num of global face indices
-  for ( GSIZET e=0; e<gelems_.size(); e++ ) { // cycle over all elems
+  for ( auto e=0; e<gelems_.size(); e++ ) { // cycle over all elems
     ibeg   = gelems_[e]->igbeg(); iend  = gelems_[e]->igend();
     ieface = &gelems_[e]->face_indices(); // set in child class
-    for ( GSIZET j=0; j<ieface->size(); j++ ) { // cycle over all elem faces
-      for ( GSIZET k=0; k<(*ieface)[j].size(); k++ ) {
+    for ( auto j=0; j<ieface->size(); j++ ) { // cycle over all elem faces
+      for ( auto k=0; k<(*ieface)[j].size(); k++ ) {
         ig = nn + (*ieface)[j][k];
         if ( !gieface_.containsn(ig, m) ) { // don't include repeated face ind
           gieface_[m] = ig;
@@ -1142,64 +1126,73 @@ void GGrid::init_local_face_info()
 //**********************************************************************************
 void GGrid::init_bc_info()
 {
-  GBOOL                        bret;
-  GSIZET                       ibeg, iend; // beg, end indices for global array
-  GTVector<GINT>              *iebdy;  // domain bdy indices
-  GTVector<GTVector<GINT>>    *ieface; // domain face indices
+  GBdyType                     btype;
+
 
   // Find boundary indices & types from config file 
   // specification, for _each_ natural/canonical domain face:
-  config_bdy(ptree_, igbdy_bydface_, igbdyt_bydface_);
+  config_bdy(ptree_, igbdy_bdyface_, igbdyt_bdyface_);
 
-#if 0
-  // Do a consistency check of no. global bdy indices:
-  GSIZET nebdy=0;
-  for ( auto j=0; j<gelems_.size(); j++ ) { 
-    nebdy += gelems_[j]->bdy_indices().size();
-  }
-#endif
-
-  // Flatten these 2 bdy index & types indirection arrays:
+  // Flatten bdy index indirection array:
   GSIZET      nind=0, nw=0;
-  for ( auto j=0; j<igbdy_bydface_.size(); j++ ) {
-    nind += igbdy_bydface_[j].size(); // by-domain-face
+  for ( auto j=0; j<igbdy_bdyface_.size(); j++ ) { // over dom can. bdy faces
+    nind += igbdy_bdyface_[j].size(); // by-domain-face
   }
+  igbdy_  .resize(nind); // indices of bdy nodes in volume
 
-  igbdy_ .resize(nind);
-  igbdyt_.resize(nind);
   nind = 0;
-  for ( auto j=0; j<igbdy_bydface_.size(); j++ ) {
-    for ( auto i=0; i<igbdy_bydface_[j].size(); i++ ) {
-      igbdy_ [nind  ] = igbdy_bydface_ [j][i];
-      igbdyt_[nind++] = igbdyt_bydface_[j][i];
+  for ( auto j=0; j<igbdy_bdyface_.size(); j++ ) { // over can. bdy faces
+    for ( auto i=0; i<igbdy_bdyface_[j].size(); i++ ) {
+      igbdy_  [nind] = igbdy_bdyface_ [j][i];
+      nind++;
     }
   }
 
-
-  // Create bdy type bins (one bin for each GBdyType), and
-  // for each type, set the indirection indices into global
-  // vectors that have that type:
+  // Create bdy type bins for each domain bdy:
+  //   [Dom bdy][bdytype][volume index]:
   GBdyType         itype;
-  GSIZET    *ind=NULLPTR;
-  igbdy_binned_.resize(GBDY_MAX); // set of bdy indices for each type
-  for ( auto k=0; k<GBDY_MAX; k++ ) { // cycle over each bc type
-    itype = static_cast<GBdyType>(k);
-    nind = igbdyt_.contains(itype, ind, nw);
-    igbdy_binned_[k].resize(nind);
-    for ( auto j=0; j<nind; j++ ) igbdy_binned_[k][j] = igbdy_[ind[j]];
-    nind = 0;
-  } // end, element loop
-
+  GSIZET          *ind=NULLPTR;
+  GSIZET           n, nbdy;
+  GTVector<GSIZET> iunique;
+   
+  nind = 0; 
+  // Compute 'binned' structures for global indices
+  // defining bdys, and to which index in bdy normal vectors
+  // a given bdy node corresponds:
+  n = 0; // cycle over all bdy nodes
+  igbdy_binned_.resize(igbdy_bdyface_.size());
+//ilbdy_binned_.resize(igbdy_bdyface_.size());
+  for ( auto k=0; k<igbdy_bdyface_.size(); k++ ) { // cycle over canonical bdy face
+    nbdy = igbdyt_bdyface_[k].size();
+    igbdy_binned_ [k].resize(GBDY_MAX);
+//  ilbdy_binned_ [k].resize(GBDY_MAX); // index into bdy arrays for each bdy type
+    for ( auto j=0; j<GBDY_MAX; j++ ) { // cycle over each bc type
+      itype = static_cast<GBdyType>(j);
+//    val  = igbdyt_bdyface_[k][itype];
+      nbdy = igbdyt_bdyface_[k].multiplicity(itype, ind, nind);
+      igbdy_binned_[k][j].resize(nbdy);
+//    ilbdy_binned_[k][j].resize(nbdy);
+      for ( auto i=0; i<nbdy; i++ ) { // assign comp. volume index
+        igbdy_binned_[k][j][i] = igbdy_bdyface_[k][ind[i]];
+//      ilbdy_binned_[k][j]    = n;     
+        n++;
+      }
+    } // end, bdy cond type loop
+  } // end, can. bdy loop
   if ( ind != NULLPTR ) delete [] ind;
 
   // Compute mask matrix from bdy vector:
   mask_.resize(ndof()); 
   mask_ = 1.0;
-  for ( auto j=0; j<igbdy_binned_[GBDY_DIRICHLET].size(); j++ ) {
-    mask_[igbdy_binned_[GBDY_DIRICHLET][j]] = 0.0;
-  }
-  for ( auto j=0; j<igbdy_binned_[GBDY_INFLOWT].size(); j++ ) {
-    mask_[igbdy_binned_[GBDY_INFLOWT][j]] = 0.0;
+  for ( auto k=0; k<igbdy_binned_.size(); k++ ) {
+    for ( auto j=0; j<GBDY_MAX; j++ ) {
+      btype = static_cast<GBdyType>(j);
+      if ( btype != GBDY_NONE && btype != GBDY_PERIODIC ) {
+        for ( auto i=0; i<igbdy_binned_[k][j].size(); i++ ) {
+          mask_[igbdy_binned_[k][j][i]] = 0.0;
+        }
+      }
+    }
   }
 
 
@@ -1256,7 +1249,7 @@ void GGrid::add_terrain(const State &xb, State &utmp)
   // Before computing new metric, Jacobian, etc, must set
   // new coordinates in elements that have already been initialized:
    GSIZET ibeg, iend; // beg, end indices for global arrays
-   for ( GSIZET e=0; e<gelems_.size(); e++ ) {
+   for ( auto e=0; e<gelems_.size(); e++ ) {
      ibeg  = gelems_[e]->igbeg(); iend  = gelems_[e]->igend();
      for ( auto j=0; j<xNodes_.size(); j++ ) xNodes_[j].range(ibeg, iend);
      gelems_[e]->set_nodes(xNodes_);
@@ -1281,4 +1274,36 @@ void GGrid::add_terrain(const State &xb, State &utmp)
   ivolume_ = 1.0 / volume_;
 
 } // end of method add_terrain
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : smooth
+// DESC   :
+//
+// DESC   : Computes a weighted average.
+//              Calculates:
+//                u <- DSS(M_L u) / DSS(M_L),
+//          where u is the field expressed in local format;
+//          M_L is the local mass matrix (unassembled);
+//          DSS is the application of Q Q^T, or the direct stiffness operator.
+// ARGS   :
+//          tmp  : tmp space
+//          op   : GGFX_OP operation
+//          u    : Locally expressed field to smooth
+// RETURNS: none.
+//************************************************************************************
+void GGrid::smooth(GGFX_OP op, GTVector<GFTYPE> &tmp, GTVector<GFTYPE> &u)
+{
+
+  tmp = u;
+
+  u.pointProd(*(this->massop().data()));
+  tmp = *(this->imassop().data());
+  this->ggfx_->doOp(tmp, op);  // DSS(mass_local)
+
+  u.pointProd(tmp);      // M_assembled u M_L
+
+} // end, smooth method
+
 

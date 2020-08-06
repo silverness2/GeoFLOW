@@ -35,6 +35,7 @@
 #include "pdeint/io_base.hpp"
 #include "gio_observer.hpp"
 #include "gio.hpp"
+#include "gstateinfo.hpp"
 #include "pdeint/equation_base.hpp"
 #include "pdeint/equation_factory.hpp"
 #include "pdeint/integrator.hpp"
@@ -44,7 +45,6 @@
 #include "pdeint/null_observer.hpp"
 #include "ginitstate_factory.hpp"
 #include "ginitforce_factory.hpp"
-#include "ginitbdy_factory.hpp"
 #include "gupdatebdy_factory.hpp"
 #include "gspecterrain_factory.hpp"
 #include "tbox/command_line.hpp"
@@ -60,28 +60,11 @@ using namespace geoflow::pdeint;
 using namespace geoflow::tbox;
 using namespace std;
 
-struct stStateInfo {
-  GINT        sttype  = 1;       // state type index (grid=0 or state=1)
-  GINT        gtype   = 0;       // check src/cdg/include/gtypes.h
-  GSIZET      index   = 0;       // time index
-  GSIZET      nelems  = 0;       // num elems
-  GSIZET      cycle   = 0;       // continuous time cycle
-  GFTYPE      time    = 0.0;     // state time
-  std::vector<GString>
-              svars;             // names of state members
-  GTVector<GStateCompType>
-              icomptype;         // encoding of state component types    
-  GTMatrix<GINT>
-              porder;            // if ivers=0, is 1 X GDIM; else nelems X GDIM;
-  GString     idir;              // input directory
-  GString     odir;              // output directory
-};
-
 
 template< // Complete typepack
 typename StateType     = GTVector<GTVector<GFTYPE>*>,
 typename StateCompType = GTVector<GFTYPE>,
-typename StateInfoType = stStateInfo,
+typename StateInfoType = GStateInfo,
 typename GridType      = GGrid,
 typename ValueType     = GFTYPE,
 typename DerivType     = StateType,
@@ -102,7 +85,7 @@ struct TypePack {
         using Jacobian   = JacoType;
         using Size       = SizeType;
 };
-using StateInfo     = stStateInfo;
+using StateInfo     = GStateInfo;
 using MyTypes       = TypePack<>;           // Define grid types used
 using Grid          = GGrid;           
 using EqnBase       = EquationBase<MyTypes>;    // Equation Base type
@@ -146,14 +129,12 @@ GC_COMM          comm_ ;       // communicator
 
 
 // Callback functions:
-void update_boundary  (const Time &t, State &u, State &ub);     // bdy vector update
 void update_forcing   (const Time &t, State &u, State &uf);     // forcing vec update
 void steptop_callback (const Time &t, State &u, const Time &dt);// backdoor function
 
 // Public methods:
 void init_state       (const PropertyTree &ptree, GGrid &, EqnBasePtr &pEqn, Time &t, State &utmp, State &u, State &ub);
 void init_force       (const PropertyTree &ptree, GGrid &, EqnBasePtr &pEqn, Time &t, State &utmp, State &u, State &uf);
-void init_bdy         (const PropertyTree &ptree, GGrid &, EqnBasePtr &pEqn, Time &t, State &utmp, State &u, State &ub);
 void allocate         (const PropertyTree &ptree);
 void deallocate       ();
 void create_observers (EqnBasePtr &eqn_ptr, PropertyTree &ptree, GSIZET icycle, Time time, std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers);

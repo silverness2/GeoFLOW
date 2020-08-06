@@ -19,6 +19,7 @@
 #include "gindex.hpp"
 #include "cff_blas.h"
 #include "gcomm.hpp"
+#include "gmtk.hpp"
 
 #include <cstdlib>
 #include <limits>
@@ -182,6 +183,8 @@ template <class T> class GTVector
         void rpow(GDOUBLE p);
     #pragma acc routine vector
         void abs();
+    #pragma acc routine vector
+inline GBOOL onlycontains(T val); // Buffer contains only val?
     #pragma acc routine vector
 inline GBOOL contains(T val);     // Buffer contains val?
     #pragma acc routine vector

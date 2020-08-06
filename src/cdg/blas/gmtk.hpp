@@ -13,6 +13,9 @@
 #include <limits>
 #include "gtypes.h"
 #include "cff_blas.h"
+//#include "ggrid.hpp"
+//#include "ggrid_box.hpp"
+//#include "ggrid_icos.hpp"
 
 template<typename T> class GTVector;
 template<typename T> class GTMatrix;
@@ -24,6 +27,39 @@ extern GINT szVecCache_;
 
 namespace GMTK
 {
+
+  template<typename T>     
+  T fact(T l);
+
+  template<typename T>     
+  void Pml_cart(T l, T m, GTVector<GTVector<T>> &xnodes, GTVector<T> &plm);
+
+  template<typename T>     
+  void Ylm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT iri, GTVector<T> &ylm_r, GTVector<T> &ylm_i);
+
+  template<typename T>     
+  void dYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT idir, GINT iri, T cexcl,  GTVector<GTVector<T>*> &tmp, GTVector<T> &dylm_r, GTVector<T> &dylm_i);
+
+  template<typename T>     
+  void ddYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT idir, GINT iri, T cexcl, GTVector<GTVector<T>*> &tmp, GTVector<T> &dylm_r, GTVector<T> &dylm_i);
+
+  template<typename T>     
+  void rYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GTVector<T> &tmp, GTVector<T> &ylm);
+
+  template<typename T>     
+  void drYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT idir, T cexcl, GTVector<T> &tmp, GTVector<T> &dylm);
+
+  template<typename T>     
+  void ddrYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT idir, T cexcl, GTVector<T> &tmp, GTVector<T> &dylm);
+
+  template<typename T>     
+  void Rx3(T alpha, GTVector<T> &y, GTVector<T> &z);
+
+  template<typename T>     
+  void Ry3(T alpha, GTVector<T> &x, GTVector<T> &z);
+
+  template<typename T>     
+  void Rz3(T alpha, GTVector<T> &x, GTVector<T> &y);
 
   template<typename T>     
   void D2_X_D1(GTMatrix<T> &D1, GTMatrix<T> &D2T, GTVector<T> &u, 

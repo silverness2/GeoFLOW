@@ -20,13 +20,14 @@ namespace ginitfv {
 // ARGS   : ptree  : main property tree
 //          sconfig: ptree block name containing variable config
 //          grid   : grid object
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          ub     : boundary state (also initialized here)
 //          uf     : velocity-state to be initialized.
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
-GBOOL impl_abc_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &uf)
+GBOOL impl_abc_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &uf)
 {
 
   GGridBox *box = dynamic_cast<GGridBox*>(&grid);
@@ -106,13 +107,14 @@ GBOOL impl_abc_box(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Tim
 // ARGS   : ptree  : main property tree
 //          sconfig: ptree block name containing variable config
 //          grid   : grid object
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          ub     : boundary state (also initialized here)
 //          uf     : velocity-state to be initialized.
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
-GBOOL impl_abc_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &uf)
+GBOOL impl_abc_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &uf)
 {
 
   GGridIcos *icos = dynamic_cast<GGridIcos*>(&grid);
@@ -204,13 +206,14 @@ GBOOL impl_abc_icos(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Ti
 // ARGS   : ptree  : initial condition property tree
 //          sconfig: ptree block name containing variable config
 //          grid   : grid object
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          ub     : boundary state (also initialized here)
 //          uf     : velocity-state to be initialized.
 // RETURNS: TRUE on success; else FALSE 
 //**********************************************************************************
-GBOOL impl_rand(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &uf)
+GBOOL impl_rand(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo,  Time &time, State &utmp, State &ub, State &uf)
 {
 
   return FALSE;

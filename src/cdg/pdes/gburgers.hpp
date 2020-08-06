@@ -99,12 +99,6 @@ public:
         GBurgers &operator=(const GBurgers &bu) = default;
 
         GTVector<GFTYPE>    &get_nu() { return nu_; };                       // Set nu/viscosity
-        void                 set_bdy_update_callback(
-                             std::function<void(const Time &t, State &u,
-                                           State &ub)> callback) 
-                             { this->update_bdy_callback_ = callback; bupdatebc_ = TRUE;
-                               if ( gexrk_ != NULLPTR ) 
-                                 gexrk_->set_update_bdy_callback(callback);} // set bdy-update callback
 
         void                set_steptop_callback(
                             std::function<void(const Time &t, State &u, 
@@ -120,7 +114,7 @@ protected:
         GBOOL               has_dt_impl() const {return bvariabledt_;}    // Has dynamic dt?
         void                dt_impl(const Time &t, State &u, Time &dt);   // Get dt
         void                apply_bc_impl(const Time &t, State &u, 
-                                          const State &ub);               // Apply bdy conditions
+                                          State &ub);                     // Apply bdy conditions
 private:
 
         void                init(GBurgers::Traits &);                     // initialize 
@@ -138,7 +132,6 @@ private:
         GBOOL               bpureadv_;      // do pure (linear) advection?
         GBOOL               bconserved_;    // use conservation form?
         GBOOL               bforced_;       // use forcing vectors
-        GBOOL               bupdatebc_;     // bdy update callback set?
         GBOOL               bsteptop_;      // is there a top-of-step callback?
         GBOOL               bvariabledt_;   // is dt allowed to vary?
         GStepperType        isteptype_;     // stepper type

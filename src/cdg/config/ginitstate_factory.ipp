@@ -6,13 +6,14 @@
 // Derived From : none.
 //==================================================================================
 
+
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : init
 // DESC   : Do init of state components
 // ARGS   : ptree  : main property tree
 //          grid   : grid object
-//          peqn   : ptr to EqnBase 
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          ub     : boundary state (also initialized here)
@@ -20,7 +21,7 @@
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::init(const PropertyTree& ptree, GGrid &grid, EqnBasePtr &peqn, Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::init(const PropertyTree& ptree, Grid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL         bret    = FALSE;
   GString       stype;  
@@ -29,10 +30,10 @@ GBOOL GInitStateFactory<EquationType>::init(const PropertyTree& ptree, GGrid &gr
   stype = ptree.getValue<GString>("initstate_type","");
   if ( "direct"   == stype 
     || ""         == stype ) {
-    bret = set_by_direct(ptree, grid, peqn, time, utmp, ub, u);
+    bret = set_by_direct(ptree, grid, stinfo, time, utmp, ub, u);
   }
   else if ( "component" == stype ) {
-    bret = set_by_comp  (ptree, grid, peqn, time, utmp, ub, u);
+    bret = set_by_comp  (ptree, grid, stinfo, time, utmp, ub, u);
   }
   else {
     assert(FALSE && "Invalid state initialization type");
@@ -52,7 +53,7 @@ GBOOL GInitStateFactory<EquationType>::init(const PropertyTree& ptree, GGrid &gr
 //          all state members are initialized.
 // ARGS   : ptree  : main property tree
 //          grid   : grid object
-//          peqn   : ptr to EqnBase 
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          ub     : boundary state (also initialized here)
@@ -60,7 +61,7 @@ GBOOL GInitStateFactory<EquationType>::init(const PropertyTree& ptree, GGrid &gr
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::set_by_direct(const PropertyTree& ptree, GGrid &grid, EqnBasePtr &peqn, Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::set_by_direct(const PropertyTree& ptree, Grid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL         bret    = FALSE;
   GString       sinit   = ptree.getValue<GString>("initstate_block");
@@ -70,20 +71,20 @@ GBOOL GInitStateFactory<EquationType>::set_by_direct(const PropertyTree& ptree, 
       if ( u[i] != NULLPTR ) *u[i] = 0.0;
     } 
   }
-  else if ( "initstate_icosgaussburgers"  == sinit ) {
-    bret = ginitstate::impl_icosgauss       (ptree, sinit, grid, time, utmp, ub, u);
+  else if ( "initstate_icosgauss"  == sinit ) {
+    bret = ginitstate::impl_icosgauss       (ptree, sinit, grid, stinfo, time, utmp, ub, u);
   }
   else if ( "initstate_boxdirgauss"       == sinit ) {
-    bret = ginitstate::impl_boxdirgauss     (ptree, sinit, grid, time, utmp, ub, u);
+    bret = ginitstate::impl_boxdirgauss     (ptree, sinit, grid, stinfo, time, utmp, ub, u);
   }
   else if ( "initstate_boxpergauss"       == sinit ) {
-    bret = ginitstate::impl_boxpergauss     (ptree, sinit, grid, time, utmp, ub, u);
+    bret = ginitstate::impl_boxpergauss     (ptree, sinit, grid, stinfo, time, utmp, ub, u);
   }
   else if ( "initstate_boxnwave"          == sinit ) {
-    bret = ginitstate::impl_boxnwaveburgers (ptree, sinit, grid, time, utmp, ub, u);
+    bret = ginitstate::impl_boxnwaveburgers (ptree, sinit, grid, stinfo, time, utmp, ub, u);
   }
   else if ( "initstate_icosnwave"          == sinit ) {
-    bret = ginitstate::impl_icosnwaveburgers (ptree, sinit, grid, time, utmp, ub, u);
+    bret = ginitstate::impl_icosnwaveburgers (ptree, sinit, grid, stinfo, time, utmp, ub, u);
   }
   else                                        {
     assert(FALSE && "Specified state initialization method unknown");
@@ -103,7 +104,7 @@ GBOOL GInitStateFactory<EquationType>::set_by_direct(const PropertyTree& ptree, 
 //          in the EqnBase pointer to locate variable groups.
 // ARGS   : ptree  : main property tree
 //          grid   : grid object
-//          peqn   : ptr to EqnBase 
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          ub     : boundary state (also initialized here)
@@ -111,7 +112,7 @@ GBOOL GInitStateFactory<EquationType>::set_by_direct(const PropertyTree& ptree, 
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::set_by_comp(const PropertyTree& ptree, GGrid &grid, EqnBasePtr &peqn, Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::set_by_comp(const PropertyTree& ptree, Grid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL           bret    = TRUE;
   GSIZET          ndist, *ivar, mvar, nvar;
@@ -122,7 +123,7 @@ GBOOL GInitStateFactory<EquationType>::set_by_comp(const PropertyTree& ptree, GG
   PropertyTree    vtree     = ptree.getPropertyTree(sblk);
   State           comp;
   GStateCompType *pct;
-  CompDesc       *icomptype = &peqn->stateinfo().icomptype;
+  CompDesc       *icomptype = &stinfo.icomptype;
   CompDesc        cdesc;
 
   GTVector<GSIZET>   itmp;
@@ -154,49 +155,49 @@ GBOOL GInitStateFactory<EquationType>::set_by_comp(const PropertyTree& ptree, GG
         nvar  = icomptype->contains(itype, ivar, mvar);
         comp.resize(nvar);
         for ( GINT i=0; i<nvar; i++ ) comp[i] = u[ivar[i]];
-        bret = doinitv(ptree, sinit, grid, time, utmp, ub, comp);
+        bret = doinitv(ptree, sinit, grid, stinfo, time, utmp, ub, comp);
         break;
       case GSC_MAGNETIC:
         sinit = vtree.getValue<GString>("initb");
         nvar  = icomptype->contains(itype, ivar, mvar);
         comp.resize(nvar);
         for ( GINT i=0; i<nvar; i++ ) comp[i] = u[ivar[i]];
-        bret = doinitb(ptree, sinit, grid, time, utmp, ub, comp);
+        bret = doinitb(ptree, sinit, grid, stinfo, time, utmp, ub, comp);
         break;
       case GSC_DENSITYT:
         sinit = vtree.getValue<GString>("initdt");
         nvar  = icomptype->contains(itype, ivar, mvar);
         comp.resize(nvar);
         for ( GINT i=0; i<nvar; i++ ) comp[i] = u[ivar[i]];
-        bret = doinitdt(ptree, sinit, grid, time, utmp, ub, comp);
+        bret = doinitdt(ptree, sinit, grid, stinfo, time, utmp, ub, comp);
         break;
-      case GSC_DENSITY1:
-        sinit = vtree.getValue<GString>("initd1");
+      case GSC_MASSFRAC:
+        sinit = vtree.getValue<GString>("initmfrac");
         nvar  = icomptype->contains(itype, ivar, mvar);
         comp.resize(nvar);
         for ( GINT i=0; i<nvar; i++ ) comp[i] = u[ivar[i]];
-        bret = doinitd1(ptree, sinit, grid, time, utmp, ub, comp);
+        bret = doinitmfrac(ptree, sinit, grid, stinfo, time, utmp, ub, comp);
         break;
-      case GSC_DENSITY2:
-        sinit = vtree.getValue<GString>("initd2");
+      case GSC_ENERGY:
+        sinit = vtree.getValue<GString>("initen");
         nvar  = icomptype->contains(itype, ivar, mvar);
         comp.resize(nvar);
         for ( GINT i=0; i<nvar; i++ ) comp[i] = u[ivar[i]];
-        bret = doinitd2(ptree, sinit, grid, time, utmp, ub, comp);
+        bret = doinitenergy(ptree, sinit, grid, stinfo, time, utmp, ub, comp);
         break;
       case GSC_TEMPERATURE:
         sinit = vtree.getValue<GString>("inittemp");
         nvar  = icomptype->contains(itype, ivar, mvar);
         comp.resize(nvar);
         for ( GINT i=0; i<nvar; i++ ) comp[i] = u[ivar[i]];
-        bret = doinittemp(ptree, sinit, grid, time, utmp, ub, comp);
+        bret = doinittemp(ptree, sinit, grid, stinfo, time, utmp, ub, comp);
         break;
       case GSC_PRESCRIBED:
         sinit = vtree.getValue<GString>("initc");
         nvar  = icomptype->contains(itype, ivar, mvar);
         comp.resize(nvar);
         for ( GINT i=0; i<nvar; i++ ) comp[i] = u[ivar[i]];
-        bret = doinitc(ptree, sinit, grid, time, utmp, ub, comp);
+        bret = doinitc(ptree, sinit, grid, stinfo, time, utmp, ub, comp);
         break;
       case GSC_NONE:
         break;
@@ -223,6 +224,7 @@ GBOOL GInitStateFactory<EquationType>::set_by_comp(const PropertyTree& ptree, GG
 // ARGS   : ptree  : initial condition property tree
 //          sconfig: ptree block name containing kinetic variable config
 //          grid   : grid object
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          ub     : boundary state (also initialized here)
@@ -230,7 +232,7 @@ GBOOL GInitStateFactory<EquationType>::set_by_comp(const PropertyTree& ptree, GG
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::doinitv(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::doinitv(const PropertyTree &ptree, GString &sconfig, Grid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL           bret  = TRUE;
   GString         sinit;
@@ -252,26 +254,26 @@ GBOOL GInitStateFactory<EquationType>::doinitv(const PropertyTree &ptree, GStrin
   }
   else if ( "abc" == sinit ) {        // ABC init
     if      ( icos != NULLPTR ) {
-      bret = ginitv::impl_abc_icos(ptree, sconfig, grid, time, utmp, ub, u);
+      bret = ginitv::impl_abc_icos(ptree, sconfig, grid, stinfo, time, utmp, ub, u);
     }
     else  {
-      bret = ginitv::impl_abc_box (ptree, sconfig, grid, time, utmp, ub, u);
+      bret = ginitv::impl_abc_box (ptree, sconfig, grid, stinfo, time, utmp, ub, u);
     }
   } 
   else if ( "simplesum1d" == sinit ) { // simple-wave sum init for 1d approx
       assert( icos == NULLPTR && "simplesum1d allowed only for box grid");
-      bret = ginitv::impl_simpsum1d_box(ptree, sconfig, grid, time, utmp, ub, u);
+      bret = ginitv::impl_simpsum1d_box(ptree, sconfig, grid, stinfo, time, utmp, ub, u);
   }
   else if ( "simplesum" == sinit ) { // simple-wave sum init
     if      ( icos != NULLPTR ) {
-      bret = ginitv::impl_simpsum_icos(ptree, sconfig, grid, time, utmp, ub, u);
+      bret = ginitv::impl_simpsum_icos(ptree, sconfig, grid, stinfo, time, utmp, ub, u);
     }
     else  {
-      bret = ginitv::impl_simpsum_box (ptree, sconfig, grid, time, utmp, ub, u);
+      bret = ginitv::impl_simpsum_box (ptree, sconfig, grid, stinfo, time, utmp, ub, u);
     }
   } 
   else if ( "random" == sinit ) {
-    bret = ginitv::impl_rand   (ptree, sconfig, grid, time, utmp, ub, u);
+    bret = ginitv::impl_rand   (ptree, sconfig, grid, stinfo, time, utmp, ub, u);
   } 
   else {
     assert(FALSE && "Unknown velocity initialization method");
@@ -291,6 +293,7 @@ GBOOL GInitStateFactory<EquationType>::doinitv(const PropertyTree &ptree, GStrin
 // ARGS   : ptree  : initial condition property tree
 //          sconfig: ptree block name containing mag field config
 //          grid   : grid object
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          ub     : boundary state (also initialized here)
@@ -298,7 +301,7 @@ GBOOL GInitStateFactory<EquationType>::doinitv(const PropertyTree &ptree, GStrin
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::doinitb(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::doinitb(const PropertyTree &ptree, GString &sconfig, Grid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL           bret    = FALSE;
   GString         sinit;
@@ -315,7 +318,7 @@ GBOOL GInitStateFactory<EquationType>::doinitb(const PropertyTree &ptree, GStrin
     bret = TRUE;
   }
   else if ( "random" == sinit ) {
-    bret = ginitb::impl_rand(ptree, sconfig, grid, time, utmp, ub, u);
+    bret = ginitb::impl_rand(ptree, sconfig, grid, stinfo, time, utmp, ub, u);
   } 
   else {
     assert(FALSE && "Unknown b-field initialization method");
@@ -336,6 +339,7 @@ GBOOL GInitStateFactory<EquationType>::doinitb(const PropertyTree &ptree, GStrin
 // ARGS   : ptree  : main property tree
 //          sconfig: ptree block name containing scalar config
 //          grid   : grid object
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          ub     : boundary state (also initialized here)
@@ -343,7 +347,7 @@ GBOOL GInitStateFactory<EquationType>::doinitb(const PropertyTree &ptree, GStrin
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::doinitdt(const PropertyTree &ptree, GString &sconfig, GGrid &grid,  Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::doinitdt(const PropertyTree &ptree, GString &sconfig, Grid &grid,  StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL           bret    = TRUE;
   GString         sinit;
@@ -360,7 +364,7 @@ GBOOL GInitStateFactory<EquationType>::doinitdt(const PropertyTree &ptree, GStri
     bret = TRUE;
   }
   else if ( "random" == sinit ) {
-    bret = ginits::impl_rand(ptree, sconfig, grid, time, utmp, ub, u);
+    bret = ginits::impl_rand(ptree, sconfig, grid, stinfo, time, utmp, ub, u);
   } 
   else {
     assert(FALSE && "Unknown b-field initialization method");
@@ -372,13 +376,14 @@ GBOOL GInitStateFactory<EquationType>::doinitdt(const PropertyTree &ptree, GStri
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : doinitd1
-// DESC   : Do init of 1-density component. Full list of available
+// METHOD : doinitmfrac
+// DESC   : Do init of massfrac component. Full list of available
 //          initializations are contained here.
 //          Only d1 components are passed in.
 // ARGS   : ptree  : initial condition property tree
 //          sconfig: ptree block name containing passive scalar config
 //          grid   : grid object
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          ub     : boundary state (also initialized here)
@@ -386,7 +391,7 @@ GBOOL GInitStateFactory<EquationType>::doinitdt(const PropertyTree &ptree, GStri
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::doinitd1(const PropertyTree &ptree, GString &sconfig, GGrid &grid,  Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::doinitmfrac(const PropertyTree &ptree, GString &sconfig, Grid &grid,  StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL           bret = FALSE;
   GString         sinit;
@@ -403,25 +408,26 @@ GBOOL GInitStateFactory<EquationType>::doinitd1(const PropertyTree &ptree, GStri
     bret = TRUE;
   }
   else if ( "random" == sinit ) {
-    bret = ginits::impl_rand(ptree, sconfig, grid, time, utmp, ub, u);
+    bret = ginits::impl_rand(ptree, sconfig, grid, stinfo, time, utmp, ub, u);
   } 
   else {
     assert(FALSE && "Unknown b-field initialization method");
   }
 
   return bret;
-} // end, doinitd1 method
+} // end, doinitmfrac method
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : doinitd2
-// DESC   : Do init of 2-density component. Full list of available
+// METHOD : doinitenergy
+// DESC   : Do init of energy component. Full list of available
 //          initializations are contained here.
 //          Only d2 components are passed in.
 // ARGS   : ptree  : initial condition property tree
 //          sconfig: ptree block name containing passive scalar config
 //          grid   : grid object
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          ub     : boundary state (also initialized here)
@@ -429,7 +435,7 @@ GBOOL GInitStateFactory<EquationType>::doinitd1(const PropertyTree &ptree, GStri
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::doinitd2(const PropertyTree &ptree, GString &sconfig, GGrid &grid,  Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::doinitenergy(const PropertyTree &ptree, GString &sconfig, Grid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL           bret = FALSE;
   GString         sinit;
@@ -446,14 +452,14 @@ GBOOL GInitStateFactory<EquationType>::doinitd2(const PropertyTree &ptree, GStri
     bret = TRUE;
   }
   else if ( "random" == sinit ) {
-    bret = ginits::impl_rand(ptree, sconfig, grid, time, utmp, ub, u);
+    bret = ginits::impl_rand(ptree, sconfig, grid, stinfo, time, utmp, ub, u);
   } 
   else {
     assert(FALSE && "Unknown b-field initialization method");
   }
 
   return bret;
-} // end, doinitd2 method
+} // end, doinitenergy method
 
 
 //**********************************************************************************
@@ -465,6 +471,7 @@ GBOOL GInitStateFactory<EquationType>::doinitd2(const PropertyTree &ptree, GStri
 // ARGS   : ptree  : initial condition property tree
 //          sconfig: ptree block name containing passive scalar config
 //          grid   : grid object
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          ub     : boundary state (also initialized here)
@@ -472,7 +479,7 @@ GBOOL GInitStateFactory<EquationType>::doinitd2(const PropertyTree &ptree, GStri
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::doinittemp(const PropertyTree &ptree, GString &sconfig, GGrid &grid,  Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::doinittemp(const PropertyTree &ptree, GString &sconfig, Grid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL           bret = FALSE;
   GString         sinit;
@@ -489,7 +496,7 @@ GBOOL GInitStateFactory<EquationType>::doinittemp(const PropertyTree &ptree, GSt
     bret = TRUE;
   }
   else if ( "random" == sinit ) {
-    bret = ginits::impl_rand(ptree, sconfig, grid, time, utmp, ub, u);
+    bret = ginits::impl_rand(ptree, sconfig, grid, stinfo, time, utmp, ub, u);
   } 
   else {
     assert(FALSE && "Unknown b-field initialization method");
@@ -509,6 +516,7 @@ GBOOL GInitStateFactory<EquationType>::doinittemp(const PropertyTree &ptree, GSt
 // ARGS   : ptree  : initial condition property tree
 //          sconfig: ptree block name containing prescribed variable config
 //          grid   : grid object
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          ub     : boundary state (also initialized here)
@@ -516,7 +524,7 @@ GBOOL GInitStateFactory<EquationType>::doinittemp(const PropertyTree &ptree, GSt
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitStateFactory<EquationType>::doinitc(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitStateFactory<EquationType>::doinitc(const PropertyTree &ptree, GString &sconfig, Grid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL           bret  = FALSE;
   GString         sinit;
@@ -533,7 +541,7 @@ GBOOL GInitStateFactory<EquationType>::doinitc(const PropertyTree &ptree, GStrin
     bret = TRUE;
   }
   else if ( "random" == sinit ) {
-    bret = ginitc::impl_rand(ptree, sconfig, grid, time, utmp, ub, u);
+    bret = ginitc::impl_rand(ptree, sconfig, grid, stinfo, time, utmp, ub, u);
   } 
   else {
     assert(FALSE && "Unknown b-field initialization method");

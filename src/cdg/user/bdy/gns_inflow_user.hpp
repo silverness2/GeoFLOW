@@ -11,6 +11,7 @@
 
 #include "tbox/property_tree.hpp"
 #include "gtypes.h"
+#include "gstateinfo.hpp"
 #include "gtvector.hpp"
 #include "ggrid.hpp"
 
@@ -20,12 +21,15 @@ using namespace geoflow::tbox;
 
 typedef GFTYPE                      Time;
 typedef GTVector<GTVector<GFTYPE>*> State;
+typedef GStateInfo                  StateInfo;
+typedef GGrid                       Grid;
 
 
-namespace ginitbdy
+namespace GInflowBdyMethods
 {
 
-GBOOL impl_mybdyinit        (const PropertyTree& stree, GGrid &grid,  Time &time, State &utmp, State &u, State &ub);
+GBOOL myinflow  (Grid &grid, StateInfo &stinfo, Time &time, const GINT id, State &utmp, State &u, State &ub);
+
 };
 
 #endif

@@ -12,7 +12,7 @@
 // DESC   : Do init of state components
 // ARGS   : ptree  : main property tree
 //          grid   : grid object
-//          peqn   : ptr to EqnBase 
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          ub     : boundary state (also initialized here)
@@ -20,7 +20,7 @@
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitForceFactory<EquationType>::init(const PropertyTree& ptree, GGrid &grid, EqnBasePtr &peqn, Time &time, State &utmp, State &ub, State &u)
+GBOOL GInitForceFactory<EquationType>::init(const PropertyTree& ptree, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
 {
   GBOOL         bret    = FALSE;
   GBOOL         bforced = ptree.getValue<GBOOL>("use_forcing");
@@ -33,10 +33,10 @@ GBOOL GInitForceFactory<EquationType>::init(const PropertyTree& ptree, GGrid &gr
   stype = ptree.getValue<GString>("initforce_type","");
   if ( "direct"   == stype 
     || ""         == stype ) {
-    bret = set_by_direct(ptree, grid, peqn, time, utmp, ub, u);
+    bret = set_by_direct(ptree, grid, stinfo, time, utmp, ub, u);
   }
   else if ( "component" == stype ) {
-    bret = set_by_comp  (ptree, grid, peqn, time, utmp, ub, u);
+    bret = set_by_comp  (ptree, grid, stinfo, time, utmp, ub, u);
   }
   else {
     assert(FALSE && "Invalid state initialization type");
@@ -56,7 +56,7 @@ GBOOL GInitForceFactory<EquationType>::init(const PropertyTree& ptree, GGrid &gr
 //          all state members are initialized.
 // ARGS   : ptree  : main property tree
 //          grid   : grid object
-//          peqn   : ptr to EqnBase 
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          ub     : boundary state (also initialized here)
@@ -64,7 +64,7 @@ GBOOL GInitForceFactory<EquationType>::init(const PropertyTree& ptree, GGrid &gr
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitForceFactory<EquationType>::set_by_direct(const PropertyTree& ptree, GGrid &grid, EqnBasePtr &peqn, Time &time, State &utmp, State &ub, State &uf)
+GBOOL GInitForceFactory<EquationType>::set_by_direct(const PropertyTree& ptree, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &uf)
 {
   GBOOL         bret    = FALSE;
   GString       sinit   = ptree.getValue<GString>("initforce_block");
@@ -96,7 +96,7 @@ GBOOL GInitForceFactory<EquationType>::set_by_direct(const PropertyTree& ptree, 
 //          in the EqnBase pointer to locate variable groups.
 // ARGS   : ptree  : main property tree
 //          grid   : grid object
-//          peqn   : ptr to EqnBase 
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          ub     : boundary state (also initialized here)
@@ -104,7 +104,7 @@ GBOOL GInitForceFactory<EquationType>::set_by_direct(const PropertyTree& ptree, 
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitForceFactory<EquationType>::set_by_comp(const PropertyTree& ptree, GGrid &grid, EqnBasePtr &peqn, Time &time, State &utmp, State &ub, State &uf)
+GBOOL GInitForceFactory<EquationType>::set_by_comp(const PropertyTree& ptree, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &uf)
 {
   GBOOL           bret    = TRUE;
   GSIZET          mvar, ndist, nvar;
@@ -114,7 +114,7 @@ GBOOL GInitForceFactory<EquationType>::set_by_comp(const PropertyTree& ptree, GG
   GStateCompType  itype;
   PropertyTree    vtree   = ptree.getPropertyTree(sblk);
   State           comp;
-  CompDesc       *icomptype = &peqn->stateinfo().icomptype;
+  CompDesc       *icomptype = &stinfo.icomptype;
 
   GStateCompType *pct;
   GTVector<GStateCompType> cdesc;
@@ -149,21 +149,21 @@ GBOOL GInitForceFactory<EquationType>::set_by_comp(const PropertyTree& ptree, GG
         nvar  = icomptype->contains(itype, ivar, mvar);
         comp.resize(nvar);
         for ( GINT i=0; i<nvar; i++ ) comp[i] = uf[ivar[i]];
-        bret = doinitfv(ptree, sinit, grid, time, utmp, ub, comp);
+        bret = doinitfv(ptree, sinit, grid, stinfo, time, utmp, ub, comp);
         break;
       case GSC_MAGNETIC:
         sinit = vtree.getValue<GString>("initfb");
         nvar  = icomptype->contains(itype, ivar, mvar);
         comp.resize(nvar);
         for ( GINT i=0; i<nvar; i++ ) comp[i] = uf[ivar[i]];
-        bret = doinitfb(ptree, sinit, grid, time, utmp, ub, comp);
+        bret = doinitfb(ptree, sinit, grid, stinfo, time, utmp, ub, comp);
         break;
       case GSC_TEMPERATURE:
         sinit = vtree.getValue<GString>("initftemp");
         nvar  = icomptype->contains(itype, ivar, mvar);
         comp.resize(nvar);
         for ( GINT i=0; i<nvar; i++ ) comp[i] = uf[ivar[i]];
-        bret = doinitftemp(ptree, sinit, grid, time, utmp, ub, comp);
+        bret = doinitftemp(ptree, sinit, grid, stinfo, time, utmp, ub, comp);
         break;
       case GSC_PRESCRIBED:
       case GSC_NONE:
@@ -191,6 +191,7 @@ GBOOL GInitForceFactory<EquationType>::set_by_comp(const PropertyTree& ptree, GG
 // ARGS   : ptree  : main property tree
 //          sconfig: ptree block name containing variable config
 //          grid   : grid object
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          ub     : boundary state (also initialized here)
@@ -198,7 +199,7 @@ GBOOL GInitForceFactory<EquationType>::set_by_comp(const PropertyTree& ptree, GG
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitForceFactory<EquationType>::doinitfv(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &uf)
+GBOOL GInitForceFactory<EquationType>::doinitfv(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &uf)
 {
   GBOOL           bret    = TRUE;
   GString         sinit;
@@ -221,15 +222,15 @@ GBOOL GInitForceFactory<EquationType>::doinitfv(const PropertyTree &ptree, GStri
   else if ( "abc" == sinit ) {             // ABC forcing
 
     if       ( icos != NULLPTR ) {
-      bret = ginitfv::impl_abc_icos(ptree, sconfig, grid, time, utmp, ub, uf);
+      bret = ginitfv::impl_abc_icos(ptree, sconfig, grid, stinfo, time, utmp, ub, uf);
     }
     else {
-      bret = ginitfv::impl_abc_box (ptree, sconfig, grid, time, utmp, ub, uf);
+      bret = ginitfv::impl_abc_box (ptree, sconfig, grid, stinfo, time, utmp, ub, uf);
     }
 
   } 
   else if ( "random" == sinit ) {
-    bret = ginitfv::impl_rand   (ptree, sinit, grid, time, utmp, ub, uf);
+    bret = ginitfv::impl_rand   (ptree, sinit, grid, stinfo, time, utmp, ub, uf);
   } 
   else {
     assert(FALSE && "Unknown velocity force initialization method");
@@ -249,6 +250,7 @@ GBOOL GInitForceFactory<EquationType>::doinitfv(const PropertyTree &ptree, GStri
 // ARGS   : ptree  : main property tree
 //          sconfig: ptree block name containing variable config
 //          grid   : grid object
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          ub     : boundary state (also initialized here)
@@ -256,7 +258,7 @@ GBOOL GInitForceFactory<EquationType>::doinitfv(const PropertyTree &ptree, GStri
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitForceFactory<EquationType>::doinitfb(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Time &time, State &utmp, State &ub, State &uf)
+GBOOL GInitForceFactory<EquationType>::doinitfb(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &uf)
 {
   GBOOL           bret    = FALSE;
   GString         sinit;
@@ -273,7 +275,7 @@ GBOOL GInitForceFactory<EquationType>::doinitfb(const PropertyTree &ptree, GStri
     bret = TRUE;
   }
   else if ( "random" == sinit ) {
-    bret = ginitfb::impl_rand(ptree, sinit, grid, time, utmp, ub, uf);
+    bret = ginitfb::impl_rand(ptree, sinit, grid, stinfo, time, utmp, ub, uf);
   } 
   else {
     assert(FALSE && "Unknown b-field force initialization method");
@@ -294,6 +296,7 @@ GBOOL GInitForceFactory<EquationType>::doinitfb(const PropertyTree &ptree, GStri
 // ARGS   : ptree  : initial condition property tree
 //          sconfig: ptree block name containing variable config
 //          grid   : grid object
+//          stinfo : StateInfo
 //          time   : initialization time
 //          utmp   : tmp arrays
 //          ub     : boundary state (also initialized here)
@@ -301,7 +304,7 @@ GBOOL GInitForceFactory<EquationType>::doinitfb(const PropertyTree &ptree, GStri
 // RETURNS: TRUE on success; else FALSE
 //**********************************************************************************
 template<typename EquationType>
-GBOOL GInitForceFactory<EquationType>::doinitftemp(const PropertyTree &ptree, GString &sconfig, GGrid &grid,  Time &time, State &utmp, State &ub, State &uf)
+GBOOL GInitForceFactory<EquationType>::doinitftemp(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo,  Time &time, State &utmp, State &ub, State &uf)
 {
   GBOOL           bret    = TRUE;
   GString         sinit;
@@ -318,7 +321,7 @@ GBOOL GInitForceFactory<EquationType>::doinitftemp(const PropertyTree &ptree, GS
     bret = TRUE;
   }
   else if ( "random" == sinit ) {
-    bret = ginitfs::impl_rand(ptree, sinit, grid, time, utmp, ub, uf);
+    bret = ginitfs::impl_rand(ptree, sinit, grid, stinfo, time, utmp, ub, uf);
   } 
   else {
     assert(FALSE && "Unknown scalar force  initialization method");
