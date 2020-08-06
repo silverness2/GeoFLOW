@@ -17,7 +17,6 @@
 #include <cmath>
 //#include "omp.h"  // Are we calling API functions ?
 #include "gspecbdy_factory.hpp"
-#include "gupdatebdy_factory.hpp"
 #include "ginitstate_factory.hpp"
 #include "ggrid_icos.hpp"
 #include "gtpoint.hpp"
