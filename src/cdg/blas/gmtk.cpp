@@ -2594,7 +2594,7 @@ void compute_grefdiv(GGrid &grid, GTVector<GTVector<GFTYPE>*> &u, GTVector<GFTYP
       GMTK::I2_X_D1(*Di[0], *u[0], N[0], N[1], etmp); // D1 u1
       divu += etmp;
     }
-    if ( u[1] != NULLPTR && u[1]->size() > 1 )
+    if ( u[1] != NULLPTR && u[1]->size() > 1 ) {
       GMTK::D2_X_I1(*Di[1], *u[1], N[0], N[1], etmp); // D2 u2
       divu += etmp;
     }
@@ -2617,15 +2617,15 @@ void compute_grefdiv(GGrid &grid, GTVector<GTVector<GFTYPE>*> &u, GTVector<GFTYP
     Di[1] = (*gelems)[e]->gbasis(1)->getDerivMatrix(!dotrans); 
     Di[2] = (*gelems)[e]->gbasis(1)->getDerivMatrix(!dotrans); 
 
-    if ( u[0] != NULLPTR && u[0]->size() > 1 )
+    if ( u[0] != NULLPTR && u[0]->size() > 1 ) {
       GMTK::I3_X_I2_X_D1(*Di[0], *u[0], N[0], N[1], N[2], etmp); // D1 u1
       divu += etmp;
     }
-    if ( u[1] != NULLPTR && u[1]->size() > 1 )
+    if ( u[1] != NULLPTR && u[1]->size() > 1 ) {
       GMTK::I3_X_D2_X_I1(*Di[1], *u[1], N[0], N[1], N[2], etmp); // D2 u2
       divu += etmp;
     }
-    if ( u[2] != NULLPTR && u[2]->size() > 1 )
+    if ( u[2] != NULLPTR && u[2]->size() > 1 ) {
       GMTK::D3_X_I2_X_I1(*Di[2], *u[2], N[0], N[1], N[2], etmp); // D3 u3
       divu += etmp;
     }
