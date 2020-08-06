@@ -35,8 +35,8 @@
 #include "gelem_base.hpp"
 #include "gshapefcn_embed.hpp"
 #include "gshapefcn_hostd.hpp"
-#include "gmtk.hpp"
 #include "tbox/error_handler.hpp"
+#include "gmtk.hpp"
 
 using namespace std;
 
