@@ -16,10 +16,11 @@
 #include <sstream>
 #include "gtvector.hpp"
 #include "gtmatrix.hpp"
+#include "gmtk.hpp"
+#include "ggrid.hpp"
 #include "glinop.hpp"
 #include "gcomm.hpp"
 #include "ggfx.hpp"
-#include "gmtk.hpp"
 #include "pdeint/lin_solver_base.hpp"
 
 using namespace geoflow::pdeint;
