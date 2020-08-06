@@ -14,7 +14,6 @@
 #include "ggrid_box.hpp"
 #include "gspecbdy_factory.hpp"
 #include "ginitstate_factory.hpp"
-#include "gmtk.hpp"
 #include "gutils.hpp"
 #include "tbox/mpixx.hpp"
 #include "tbox/global_manager.hpp"
