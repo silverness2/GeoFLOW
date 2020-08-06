@@ -14,13 +14,19 @@
 #include "gtypes.h"
 #include "cff_blas.h"
 #include "gelem_base.hpp"
-  #include "ggrid.hpp"
+
+#include "gtvector.hpp"
+#include "gtmatrix.hpp"
+//#include "ggrid.hpp"
 //#include "ggrid_box.hpp"
 //#include "ggrid_icos.hpp"
 
-template<typename T> class GTVector;
-template<typename T> class GTMatrix;
+//template<typename T> class GTVector;
+//template<typename T> class GTMatrix;
                      class GGrid;
+
+typedef GTVector<GElem_base*> GElemList;
+
 
 extern GINT szMatCache_;
 extern GINT szVecCache_;

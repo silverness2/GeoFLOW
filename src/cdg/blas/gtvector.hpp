@@ -28,7 +28,6 @@
 #include "gindex.hpp"
 #include "cff_blas.h"
 #include "gcomm.hpp"
-#include "gmtk.hpp"
 
 #if !defined(_G_VEC_CACHE_SIZE)
   # define _G_VEC_CACHE_SIZE 16
@@ -255,6 +254,8 @@ inline GSIZET multiplicity_floor(T val, GSIZET *&index, GSIZET &n, T floor);
     GIndex gindex_keep_; // gen. index object, stored
     T     *data_;
     GSIZET n_;
+    GINT   icsz_;  // GTVector cache-blocking factor
+
     GBOOL  bdatalocal_; // tells us that data_ is owned by caller
 
 

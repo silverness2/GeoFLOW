@@ -15,7 +15,11 @@
 // Copyright   : Copyright 2018. Colorado State University. All rights reserved
 // Derived from: none.
 //==================================================================================
-#include "gmtk.hpp"
+
+#if !defined(_G_VEC_CACHE_SIZE)
+  # define _G_VEC_CACHE_SIZE 16
+#endif
+
 
 
 //**********************************************************************************
@@ -27,9 +31,10 @@
 //**********************************************************************************
 template<class T>
 GTVector<T>::GTVector():
-data_    (NULLPTR),
-n_             (0),
-bdatalocal_ (TRUE)
+data_           (NULLPTR),
+n_                    (0),
+icsz_ (_G_VEC_CACHE_SIZE),
+bdatalocal_        (TRUE)
 {
   gindex_(n_, n_, 0, n_-1, 1,  0);
   gindex_keep_ = gindex_;
@@ -49,9 +54,10 @@ bdatalocal_ (TRUE)
 //**********************************************************************************
 template<class T>
 GTVector<T>::GTVector(GSIZET n):
-data_    (NULLPTR),
-n_             (n),
-bdatalocal_ (TRUE)
+data_           (NULLPTR),
+n_                    (n),
+icsz_ (_G_VEC_CACHE_SIZE),
+bdatalocal_        (TRUE)
 {
   data_ = new T [n_];
   assert(this->data_!= NULLPTR );
@@ -72,8 +78,9 @@ bdatalocal_ (TRUE)
 //**********************************************************************************
 template<class T>
 GTVector<T>::GTVector(GIndex &gi):
-data_    (NULLPTR),
-bdatalocal_ (TRUE)
+data_           (NULLPTR),
+icsz_ (_G_VEC_CACHE_SIZE),
+bdatalocal_        (TRUE)
 {
   gindex_ = gi;
   gindex_keep_ = gindex_;
@@ -97,9 +104,10 @@ bdatalocal_ (TRUE)
 //**********************************************************************************
 template<class T>
 GTVector<T>::GTVector(GTVector<T> &obj):
-data_      (NULLPTR),
-n_      (obj.size()),
-bdatalocal_   (TRUE)
+data_           (NULLPTR),
+n_           (obj.size()),
+icsz_ (_G_VEC_CACHE_SIZE),
+bdatalocal_        (TRUE)
 {
   data_ = new T [n_];
   assert(this->data_!= NULLPTR );
@@ -128,9 +136,10 @@ bdatalocal_   (TRUE)
 //**********************************************************************************
 template<class T>
 GTVector<T>::GTVector(T *indata, GSIZET n, GSIZET istride):
-data_     (NULLPTR),
-n_      (n/istride),
-bdatalocal_  (TRUE)
+data_           (NULLPTR),
+n_            (n/istride),
+icsz_ (_G_VEC_CACHE_SIZE),
+bdatalocal_        (TRUE)
 {
   data_ = new T [n_];
   assert(this->data_!= NULLPTR );
@@ -162,9 +171,10 @@ bdatalocal_  (TRUE)
 //**********************************************************************************
 template<class T>
 GTVector<T>::GTVector(T *indata, GSIZET n, GSIZET istride, GBOOL blocmgd):
-data_     (NULLPTR),
-n_      (n/istride),
-bdatalocal_  (TRUE)
+data_           (NULLPTR),
+n_            (n/istride),
+icsz_ (_G_VEC_CACHE_SIZE),
+bdatalocal_        (TRUE)
 {
   if ( bdatalocal_ ) {
     data_ = new T [n_];
@@ -191,15 +201,16 @@ bdatalocal_  (TRUE)
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : Copy constructor method
-// DESC   : Override degault copy constructor
+// DESC   : Override default copy constructor
 // ARGS   : 
 // RETURNS: 
 //**********************************************************************************
 template<class T>
 GTVector<T>::GTVector(const GTVector<T> &obj):
-data_      (NULLPTR),
-n_      (obj.size()),
-bdatalocal_   (TRUE)
+data_           (NULLPTR),
+n_           (obj.size()),
+icsz_ (_G_VEC_CACHE_SIZE),
+bdatalocal_        (TRUE)
 {
   data_ = new T [n_];
   assert(this->data_!= NULLPTR );
@@ -3108,7 +3119,24 @@ GTVector<T>::add_impl_(const GTVector &obj, std::true_type d)
   
   T a = static_cast<T>(1);
   T b = static_cast<T>(-1);
-  GMTK::add(vret, *this, obj, a, b);
+
+  GSIZET nn = vret.getIndex().end() - vret.getIndex().beg() + 1;
+  if      ( std::is_same<T,GFLOAT>::value ) {
+    fzaxpby(vret.data(), const_cast<GFLOAT*>(this->data()), &a,
+            const_cast<GFLOAT*>(obj.data()), &b, &nn, &icsz_);
+  }
+  else if ( std::is_same<T,GDOUBLE>::value ) {
+    dzaxpby(vret.data(), const_cast<GDOUBLE*>(this->data()), &a,
+            const_cast<GDOUBLE*>(obj.data()), &b, &nn, &icsz_);
+  }
+  else if ( std::is_same<T,GQUAD>::value ) {
+    qzaxpby(vret.data(), const_cast<GQUAD*>(this->data()), &a,
+            const_cast<GQUAD*>(obj.data()), &b, &nn, &icsz_);
+  }
+  else {
+    assert(FALSE);
+  }
+
 
   #if defined(_G_AUTO_UPDATE_DEV)
       vret.updatedev();
@@ -3164,7 +3192,23 @@ GTVector<T>::sub_impl_(const GTVector &obj, std::true_type d)
 
   T a = static_cast<T>(1);
   T b = static_cast<T>(-1);
-  GMTK::add(vret, *this, obj, a, b);
+  
+  GSIZET nn = vret.getIndex().end() - vret.getIndex().beg() + 1;
+  if      ( std::is_same<T,GFLOAT>::value ) {
+    fzaxpby(vret.data(), const_cast<GFLOAT*>(this->data()), &a,
+            const_cast<GFLOAT*>(obj.data()), &b, &nn, &icsz_);
+  }
+  else if ( std::is_same<T,GDOUBLE>::value ) {
+    dzaxpby(vret.data(), const_cast<GDOUBLE*>(this->data()), &a,
+            const_cast<GDOUBLE*>(obj.data()), &b, &nn, &icsz_);
+  }
+  else if ( std::is_same<T,GQUAD>::value ) {
+    qzaxpby(vret.data(), const_cast<GQUAD*>(this->data()), &a,
+            const_cast<GQUAD*>(obj.data()), &b, &nn, &icsz_);
+  }
+  else {
+    assert(FALSE);
+  }
 
   #if defined(_G_AUTO_UPDATE_DEV)
       vret.updatedev();
@@ -3189,12 +3233,12 @@ GTVector<T>::mul_impl_(const GTVector &obj, std::false_type d)
   T a = static_cast<T>(1);
   T b = static_cast<T>(-1);
   if ( obj.size() > 1 ) {
-    for ( autop j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       vret[j] = this->data_[j] * obj[j];
     }
   }
   else {
-    for ( autop j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
+    for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       vret[j] = this->data_[j] * obj[0];
     }
   }

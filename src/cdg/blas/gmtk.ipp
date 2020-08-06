@@ -6,6 +6,7 @@
 // Copyright    : Copyright 2018. Colorado State University. All rights reserved
 // Derived From : none.
 //==================================================================================
+#include "ggrid.cpp"
 
 namespace GMTK 
 {
@@ -1181,7 +1182,7 @@ void maxbyelem(GGrid &grid, GTVector<T> &q, GTVector<T> &max)
   for ( auto e=0; e<grid.nelems(); e++ ) {
     ibeg = (*elems)[e]->igbeg(); iend = (*elems)[e]->igend();
     q.range(ibeg, iend); // restrict global vecs to local range
-    max[i] = q.amax();
+    max[e] = q.amax();
   } // end, elem loop
   q.range_reset();
 
@@ -1209,7 +1210,7 @@ void minbyelem(GGrid &grid, GTVector<T> &q, GTVector<T> &min)
   for ( auto e=0; e<grid.nelems(); e++ ) {
     ibeg = (*elems)[e]->igbeg(); iend = (*elems)[e]->igend();
     q.range(ibeg, iend); // restrict global vecs to local range
-    min[i] = q.amin();
+    min[e] = q.amin();
   } // end, elem loop
   q.range_reset();
 
