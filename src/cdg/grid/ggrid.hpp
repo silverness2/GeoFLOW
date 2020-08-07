@@ -21,13 +21,14 @@
 #include "gcomm.hpp"
 #include "ggfx.hpp"
 #include "glinop.hpp"
-#include "gcg.hpp"
 #include "ghelmholtz.hpp"
 #include "pdeint/update_bdy_base.hpp"
+#include "pdeint/lin_solver_base.hpp"
 #include "tbox/property_tree.hpp"
 
 
 using namespace geoflow::tbox;
+using namespace geoflow::pdeint;
 using namespace std;
 
 class GMass;
@@ -199,6 +200,15 @@ virtual void                 config_bdy(const PropertyTree &ptree,
 
         void                 smooth(GGFX_OP op, GTVector<GFTYPE> &tmp, 
                                     GTVector<GFTYPE> &u);              // H1-smoothing operatrion     
+        void                 compute_grefderiv(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
+                                               GINT idir, GBOOL dotrans, GTVector<GFTYPE> &du);
+
+        void                 compute_grefderivs(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
+                                                GBOOL btrans, GTVector<GTVector<GFTYPE>*> &du);
+        void                 compute_grefderivsW(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
+                                                 GBOOL btrans, GTVector<GTVector<GFTYPE>*> &du);
+        void                 compute_grefdiv(GTVector<GTVector<GFTYPE>*> &u, GTVector<GFTYPE> &etmp,
+                                              GBOOL btrans, GTVector<GFTYPE> &divu);
 
 friend  std::ostream&        operator<<(std::ostream&, GGrid &);       // Output stream operator
  
