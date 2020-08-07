@@ -77,11 +77,11 @@ template <class T> class GTVector
     #pragma acc routine vector
     void               pointProd(const T a, const GTVector<T> &fact, GTVector<T> &ret);
     #pragma acc routine vector
+    void               apointProd(const T a, const GTVector<T> &fact);
+    #pragma acc routine vector
     void               pointProd(const GTVector<T> &);
     #pragma acc routine vector
-    void               pointProd(const T a, const GTVector<T> &fact);
-    #pragma acc routine vector
-    void               constProd(const T, GTVector<T> &ret);
+    void               constProd(const T a, GTVector<T> &ret);
     #pragma acc routine vector
     void transpose(GSIZET n);
 

@@ -1579,7 +1579,9 @@ while(1){};
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : pointProd (3)
-// DESC   : point-by-point multiplication, returned in *this
+// DESC   : point-by-point multiplication, 
+//            this_j *= obj_j
+//          returned in *this
 // ARGS   : obj: const GTVector<>  factor
 // RETURNS: none
 //**********************************************************************************
@@ -1611,19 +1613,21 @@ while(1){};
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : pointProd (4)
-// DESC   : point-by-point multiplication together with contatnt factor, 
-//          returned in *this
-// ARGS   : obj: const GTVector<>  factor
-// RETURNS: none
+// METHOD : apointProd 
+// DESC   : point-by-point multiplication, and additional constant
+//          factor returned in specified GTVector
+//             this *= a * obj
+// ARGS   : a  : constant factor
+//          obj: const GTVector<>  factor
+// RETURNS: GTVector & 
 //**********************************************************************************
 template<class T>
 void
-GTVector<T>::pointProd(const T, const GTVector<T> &obj)
+GTVector<T>::apointProd(const T a, const GTVector<T> &obj ) 
 {
   #if defined(_G_BOUNDS_CHK)
-  if ( obj.size() > 1 && obj.size() < this->size() ) {
-    std::cout << "pointProd(2): " << "incompatible size" << std::endl;
+  if ( (obj.size() != this->size()) && obj.size() != 1 ) {
+    std::cout << "pointProd(1): " << "incompatible size" << std::endl;
 while(1){};
     exit(1);
   }
@@ -1631,16 +1635,16 @@ while(1){};
 
   if ( obj.size() > 1 ) {
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-      data_[j] *= obj[j-gindex_.beg()];
+      (*this)[j] *= a * obj[j];
     }
   }
   else {
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
-      data_[j] *= obj[0];
+      (*this)[j] *= a * obj[0];
     }
   }
 
-} // end, pointProd (4)
+} // end, apointProd
 
 
 //**********************************************************************************
