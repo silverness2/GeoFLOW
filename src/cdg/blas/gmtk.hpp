@@ -36,6 +36,9 @@ namespace GMTK
 {
 
   template<typename T>     
+  void dot(GTVector<GTVector<T>*> &x, GTVector<GTVector<T>*> &y, GTVector<T> &tmp, GTVector<T> &dot);
+
+  template<typename T>     
   T fact(T l);
 
   template<typename T>     
@@ -135,6 +138,9 @@ namespace GMTK
 
   template<typename T>  
   void    normalizeL2(GGrid &grid, GTVector<GTVector<T>*> &u, GTVector<GTVector<T>*    > &tmp, T u0);
+
+  template<typename T>
+  void saxy(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y); 
 
   template<typename T>
   void saxpby(GTVector<T> &x, T a, GTVector<T> &y, T b); 

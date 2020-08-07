@@ -993,6 +993,34 @@ void normalize_euclidean(GTVector<GTVector<T>*> &x, GINT *iind, GINT nind, T x0)
 
 //**********************************************************************************
 //**********************************************************************************
+// METHOD :    saxy (1)
+// DESC   : 
+//             compute z = axy
+//          
+// ARGS   : z : return vector
+//          x : vector factor
+//          a : const multiplying x
+//          y : vector factor
+//          
+// RETURNS: none
+//**********************************************************************************
+template<typename T>
+void saxy(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y) 
+{
+  if ( y.size() > 1 ) {
+    for ( auto j=0; j<x.size(); j++ ) { 
+      x[j] = a*x[j]*y[j];
+    }
+  }
+  else { // to make consistent with GTVector
+    for ( auto j=0; j<x.size(); j++ ) { 
+      x[j] = a*x[j]*y[0];
+    }
+  }
+} // end of method saxy (1)
+
+//**********************************************************************************
+//**********************************************************************************
 // METHOD :    saxpby (1)
 // DESC   : 
 //             compute x = ax + by
@@ -2158,6 +2186,51 @@ void matmat_prod(GTMatrix<T> &C, const GTMatrix<T> &A, const GTMatrix<T> &B)
   #endif
 
 } // end of operator * mat-mat
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : dot
+// DESC   : Compute dot prod of input vector fields,
+//          with the understanding that either vector 
+//          could have NULL or constant components:
+//                r = f . v,
+//          where return vector, r, is non-NULL and of
+//          full length. A constant vector has a size of 1
+// ARGS   : 
+//          x  : first vector field; may be NULL or constant
+//          y  : second vector  field; may be NULL or constant
+//          tmp: tmp vector, of full size
+//          r  : scalar field containing injection rate, of full size
+// RETURNS: none.
+//**********************************************************************************
+template<typename T>
+void dot(GTVector<GTVector<T>*> &x, GTVector<GTVector<T>*> &y, GTVector<T> &tmp, GTVector<T> &r)
+{
+   assert(x.size() == y.size());
+
+   r = 0.0;
+   for ( auto j=0; j<x.size(); j++ ) {
+
+     if ( x[j] == NULLPTR || y[j] == NULLPTR ) continue;
+     if      ( x[j]->size() == 1 && y[j]->size() == 1 ) { // x , y constant
+       tmp =  (*x[j])[0] * (*y[j])[0];
+     }
+     else if ( x[j]->size() >  1 && y[j]->size() == 1 ) { // y constant
+       GMTK::saxpby<T>(tmp, 1.0, *x[j], (*y[j])[0]);  
+       
+     }
+     else if ( x[j]->size() == 1 && y[j]->size() >  1 ) { // x constant
+       GMTK::saxpby<T>(tmp, 1.0, *y[j], (*x[j])[0]);  
+     }
+     else {                                               // x, y of full length
+       x[j]->pointProd(*y[j], tmp);
+     }
+     r += tmp;
+
+   }
+
+} // end of method dot
 
 
 
