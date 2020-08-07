@@ -27,7 +27,8 @@ public:
 	using Types      = TypePack;
 	using State      = typename Types::State;
 	using StateComp  = typename Types::StateComp;
-        using StateInfo  = typename Types::StateInfo;
+    using StateInfo  = typename Types::StateInfo;
+    using Mass       = typename Types::Mass;
 	using Grid       = typename Types::Grid;
 	using Value      = typename Types::Value;
 	using Derivative = typename Types::Derivative;
