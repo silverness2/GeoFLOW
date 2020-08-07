@@ -17,15 +17,15 @@
 
 #include "gtvector.hpp"
 #include "gtmatrix.hpp"
-//#include "ggrid.hpp"
-//#include "ggrid_box.hpp"
-//#include "ggrid_icos.hpp"
+#include "ggrid.hpp"
+#include "ggrid_box.hpp"
+#include "ggrid_icos.hpp"
 
 //template<typename T> class GTVector;
 //template<typename T> class GTMatrix;
-                     class GGrid;
+//                   class GGrid;
 
-typedef GTVector<GElem_base*> GElemList;
+//typedef GTVector<GElem_base*> GElemList;
 
 
 extern GINT szMatCache_;
@@ -71,22 +71,29 @@ namespace GMTK
   template<typename T>     
   void D2_X_D1(GTMatrix<T> &D1, GTMatrix<T> &D2T, GTVector<T> &u, 
                GTVector<T> &tmp, GTVector<T> &y);
+
   template<typename T>     
   void D3_X_D2_X_D1(GTMatrix<T> &D1, GTMatrix<T> &D2T, GTMatrix<T> &D3T,  
                     GTVector<T> &u , GTVector<T> &tmp, GTVector<T> &y  );
-  template<typename T>     
+
+  template<typename T>
   void I2_X_D1(GTMatrix<T> &D1, GTVector<T> &u, GSIZET N1, GSIZET N2, GTVector<T> &y);
+
   template<typename T>     
   void D2_X_I1(GTMatrix<T> &D2T, GTVector<T> &u, GSIZET N1, GSIZET N2, GTVector<T> &y);
+
   template<typename T>     
   void I3_X_I2_X_D1(GTMatrix<T> &D1, GTVector<T> &u, GSIZET N1, GSIZET N2, GSIZET N3,
                     GTVector<T> &y);
+
   template<typename T>     
   void I3_X_D2_X_I1(GTMatrix<T> &D2T, GTVector<T> &u, GSIZET N1, GSIZET N2, GSIZET N3,
                     GTVector<T> &y);
+
   template<typename T>     
   void D3_X_I2_X_I1(GTMatrix<T> &D3T, GTVector<T> &u, GSIZET N1, GSIZET N2, GSIZET N3,
                     GTVector<T> &y);
+
   template<typename T>     
   void matvec_prod(GTVector<T> &vret, const GTMatrix<T> &A, const GTVector<T> &b);
 
@@ -154,24 +161,6 @@ namespace GMTK
   void    D3_X_Dg2_X_Dg1     (GTVector<T> &Dg1, GTVector<T> &Dg2, GTMatrix<T> &D3T, GTVector<T> &x, GTVector<T> &tmp, GTVector<T> &y);
 
   template<typename T>  
-  void compute_grefderiv(GGrid &grid, GTVector<T> &u, GTVector<T> &etmp,
-                         GINT idir, GBOOL dotrans, GTVector<T> &du);
-
-  template<typename T>  
-  void    compute_grefderivs(GGrid &grid, GTVector<T> &u, GTVector<T> &etmp,
-                             GBOOL btrans, GTVector<GTVector<T>*> &du);
-  template<typename T>  
-  void    compute_grefderivsW(GGrid &grid, GTVector<T> &u, GTVector<T> &etmp,
-                              GBOOL btrans, GTVector<GTVector<T>*> &du);
-  template<typename T>  
-  void    compute_grefdiv(GGrid &grid, GTVector<GTVector<T>*> &u, GTVector<T> &etmp,
-                          GBOOL btrans, GTVector<T> &divu);
-/*
-  template<typename T>  
-  void    compute_grefdiviW(GGrid &grid, GTVector<GTVector<T>*> &u, GTVector<T> &etmp,
-                           GBOOL btrans, GTVector<T> &divu);
-*/
-  template<typename T>  
   void    grad(GGrid &grid, GTVector<T> &u, const GINT idir, 
                GTVector<GTVector<T>*> &tmp, GTVector<T> &grad);
   template<typename T>  
@@ -214,3 +203,4 @@ namespace GMTK
 #include "gmtk.ipp"
 
 #endif
+
