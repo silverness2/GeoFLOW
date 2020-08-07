@@ -25,5 +25,6 @@ done in master:17. Command line args in main driver: push off to a method; set t
 32.convective PDE
 33. mat-mat when computing derivatives--assuming that p doesn't change between elements
 34. test flux formalism
-35. terrain-following coordinates
-36.
+done.35. terrain-following coordinates
+36. We no longer require the boundary state in equation_base, et seq. Remove it?
+37. Style: make template typepacks consistent; change Value to Ftype everywhere
