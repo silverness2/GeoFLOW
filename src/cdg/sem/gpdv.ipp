@@ -17,7 +17,7 @@
 // RETURNS: none
 //**********************************************************************************
 template<typename TypePack>
-GpdV<TypePack>::GpdV(GGrid &grid)
+GpdV<TypePack>::GpdV(Grid &grid)
 :
 bInitialized_   (FALSE),
 grid_           (&grid),
@@ -179,6 +179,7 @@ void GpdV<TypePack>::reg_prod(StateComp &p, State &u, State &utmp, StateComp &po
 // ARGS   : none
 // RETURNS: none
 //**********************************************************************************
+template<typename TypePack>
 void GpdV<TypePack>::init()
 {
   assert(grid_->ntype().multiplicity(0) == GE_MAX-1 

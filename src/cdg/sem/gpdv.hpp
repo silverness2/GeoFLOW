@@ -17,6 +17,7 @@
 #include "gmass.hpp"
 #include "gtmatrix.hpp"
 #include "gmtk.hpp"
+#include "pdeint/equation_base.hpp"
 
 
 template<typename TypePack>
@@ -24,7 +25,6 @@ class GpdV
 {
 public:
         using Interface  = EquationBase<TypePack>;
-        using Base       = Interface;
         using State      = typename Interface::State;
         using StateComp  = typename Interface::StateComp;
         using Grid       = typename Interface::Grid;
@@ -38,7 +38,7 @@ public:
 
         static_assert(std::is_same<State,GTVector<GTVector<Value>*>>::value,
                "State is of incorrect type");
-        static_assert(std::is_same<StateComp,GTVector<Value>::value,
+        static_assert(std::is_same<StateComp,GTVector<Value>>::value,
                "StateComp is of incorrect type");
         static_assert(std::is_same<Derivative,GTVector<GTVector<Value>*>>::value,
                "Derivative is of incorrect type");
@@ -47,6 +47,7 @@ public:
 
 public:
 
+                          GpdV() = delete;
                           GpdV(Grid &grid);
                           GpdV(const GpdV &);
                          ~GpdV();
@@ -58,7 +59,7 @@ public:
 private:
         void              def_init();
         void              reg_init();
-        void              def_prod(StateComp &p State &u, State *utmp,
+        void              def_prod(StateComp &p, State &u, State &utmp,
                                    StateComp &po);
         void              reg_prod(StateComp &p, State &u,  State &utmp, 
                                    StateComp &po);
@@ -73,7 +74,7 @@ private:
 };
 
 
-#include "gpdV.ipp"
+#include "gpdv.ipp"
 
 
 #endif
