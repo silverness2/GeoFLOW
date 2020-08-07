@@ -5,9 +5,6 @@
  *      Author: bryan.flynt, d.rosenberg
  */
 
-#include "gburgers.hpp"
-#include "gmconv.hpp"
-
 namespace geoflow {
 namespace pdeint {
 
@@ -56,20 +53,25 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid, State& u
                 comps            = eqn_ptree.getArray<int>   ("forcing_comp",default_comps);
                 btraits.iforced.resize(comps.size());
                 btraits.iforced   = comps; // traits.iforced may be a different d.structure
+
 		// Allocate equation Implementation
 		std::shared_ptr<EqnImpl> eqn_impl(new EqnImpl(grid, btraits, utmp));
 
 		// Set back to base type
 		base_ptr = eqn_impl;
 	}
-	if( "pde_mconv" == equation_name ){
+	if( "pde_mconv" == equation_name ) {
 		using EqnImpl = GMConv<ET>;
 
-                ctraits.doheat    = eqn_ptree.getValue<bool>  ("dodry",true);
+                ctraits.docoriolis= eqn_ptree.getValue<bool>  ("docoriolis",false);
+                ctraits.dodry     = eqn_ptree.getValue<bool>  ("dodry",true);
                 ctraits.dofallout = eqn_ptree.getValue<bool>  ("dofallout",false);
+                ctraits.dograv    = eqn_ptree.getValue<bool>  ("dogravity",false);
                 ctraits.bconserved= eqn_ptree.getValue<bool>  ("bconserved",false);
                 ctraits.bforced   = eqn_ptree.getValue<bool>  ("use_forcing",false);
+                ctraits.usemomden = stp_ptree.getValue<bool>  ("usemomden",true);
                 ctraits.variabledt= stp_ptree.getValue<bool>  ("variable_dt",false);
+                ctraits.bvarvterm = stp_ptree.getValue<bool>  ("variable_term_vel",false);
                 ctraits.itorder   = stp_ptree.getValue<int>   ("time_deriv_order",4);
                 ctraits.inorder   = stp_ptree.getValue<int>   ("extrap_order",2);
                 ctraits.courant   = stp_ptree.getValue<double>("courant",0.5);
@@ -80,8 +82,9 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid, State& u
                 comps            = eqn_ptree.getArray<int>   ("forcing_comp",default_comps);
                 ctraits.iforced.resize(comps.size());
                 ctraits.iforced   = comps; // traits.iforced may be a different d.structure
+
 		// Allocate equation Implementation
-		std::shared_ptr<EqnImpl> eqn_impl(new EqnImpl(grid, btraits, utmp));
+		std::shared_ptr<EqnImpl> eqn_impl(new EqnImpl(grid, ctraits, utmp));
 
 		// Set back to base type
 		base_ptr = eqn_impl;

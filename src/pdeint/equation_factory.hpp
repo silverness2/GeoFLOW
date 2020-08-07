@@ -10,6 +10,8 @@
 
 #include <memory>
 #include <string>
+#include "gburgers.hpp"
+#include "gmconv.hpp"
 #include "tbox/error_handler.hpp"
 #include "pdeint/equation_base.hpp"
 #include "tbox/property_tree.hpp"
