@@ -63,6 +63,9 @@
 //#include "gflux.hpp"
 #include "gexrk_stepper.hpp"
 #include "gbutcherrk.hpp"
+#include "ggrid_box.hpp"
+#include "ggrid_icos.hpp"
+#include "gmtk.hpp"
 #include "ggfx.hpp"
 #include "pdeint/equation_base.hpp"
 
@@ -128,15 +131,6 @@ public:
 
         StateComp           &get_nu() { return nu_; };                       // Set nu/viscosity
 
-        void                 set_bdy_update_callback(
-                             std::function<void(
-                              const geoflow::tbox::PropertyTree& ptree,
-                              GString &supdate, Grid &grid, StateInfo &stinfo, 
-                              Time &time, State &utmp, State &u, State &ub)> callback)
-                             { this->update_bdy_callback_ = callback; bupdatebc_ = TRUE;
-                               if ( gexrk_ != NULLPTR ) 
-                                 gexrk_->set_bdy_update_callback(callback);} // set bdy-update callback
-
         void                set_steptop_callback(
                             std::function<void(const Time &t, State &u, 
                                                const Time &dt)> callback) 
@@ -148,7 +142,8 @@ protected:
                                       const Time &dt);                    // Take a step
         void                step_impl(const Time &t, const State &uin, State &uf, State &ub,
                                       const Time &dt, State &uout);       // Take a step
-        GBOOL               has_dt_impl() const {return traits_variabledt;}    // Has dynamic dt?
+        GBOOL               has_dt_impl() const {return traits_.variabledt;}  
+                                                                          // Has dynamic dt?
         void                dt_impl(const Time &t, State &u, Time &dt);   // Get dt
         void                apply_bc_impl(const Time &t, State &u, 
                                           const State &ub);               // Apply bdy conditions
@@ -179,7 +174,6 @@ inline  void                compute_pe   (StateComp &rhoT, State &qi, State &tvi
  
 
         GBOOL               bforced_;       // use forcing vectors
-        GBOOL               bupdatebc_;     // bdy update callback set?
         GBOOL               bsteptop_;      // is there a top-of-step callback?
         GBOOL               bvterm_;        // teminal vel. computed?
         GINT                nevolve_;       // num StateComp's evolved
@@ -218,7 +212,7 @@ inline  void                compute_pe   (StateComp &rhoT, State &qi, State &tvi
         GMass              *gimass_;        // inverse mass op
         GAdvect            *gadvect_;       // advection op
         GHelmholtz         *ghelm_;         // Helmholz and Laplacian op
-        GpdV               *gpdv_;          // pdV op
+        GpdV<TypePack>     *gpdv_;          // pdV op
 //      GFlux              *gflux_;         // flux op
         GC_COMM             comm_;          // communicator
         GGFX<GFTYPE>       *ggfx_;          // gather-scatter operator
@@ -231,6 +225,6 @@ inline  void                compute_pe   (StateComp &rhoT, State &qi, State &tvi
 
 };
 
-#include "gburgers.ipp"
+#include "gmconv.ipp"
 
 #endif

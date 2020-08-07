@@ -1,4 +1,4 @@
- for timestep//==================================================================================
+//==================================================================================
 // Module       : gmconv.ipp
 // Date         : 6/11/20 (DLR)
 // Description  : Object defining a moist convection solver:
@@ -57,15 +57,6 @@
 // Copyright    : Copyright 2020. Colorado State University. All rights reserved.
 // Derived From : EquationBase.
 //==================================================================================
-#include <cstdlib>
-#include <memory>
-#include <cmath>
-#include "gab.hpp"
-#include "gext.hpp"
-#include "gbdf.hpp"
-#include "gexrk_stepper.hpp"
-
-using namespace std;
 
 //**********************************************************************************
 //**********************************************************************************
@@ -81,7 +72,6 @@ using namespace std;
 template<typename TypePack>
 GMConv<TypePack>::GMConv(Grid &grid, GMConv<TypePack>::Traits &traits, State &tmp) :
 EquationBase<TypePack>(),
-bupdatebc_               (FALSE),
 bsteptop_                (FALSE),
 bvterm_                  (FALSE),
 gmass_                 (NULLPTR),
@@ -100,10 +90,10 @@ steptop_callback_      (NULLPTR)
 {
 
   GINT      nexcl;
-  GridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
+  GGridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
 
   assert(tmp.size() >= req_tmp_size() && "Insufficient tmp space provided");
-  assert(!(GDIM==2 && icos!=NULLPTR && 2D spherical grid not allowed");
+  assert(!(GDIM==2 && icos!=NULLPTR && "Embedded 2D spherical grid not allowed");
 
   traits_.iforced.resize(traits.iforced.size());
   traits_ = traits;
