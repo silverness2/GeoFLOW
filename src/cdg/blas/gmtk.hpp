@@ -140,13 +140,13 @@ namespace GMTK
   void    normalizeL2(GGrid &grid, GTVector<GTVector<T>*> &u, GTVector<GTVector<T>*    > &tmp, T u0);
 
   template<typename T>
-  void saxy(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y); 
+  void paxy(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y); 
 
   template<typename T>
-  void saxpby(GTVector<T> &x, T a, GTVector<T> &y, T b); 
+  void saxpy(GTVector<T> &x, T a, GTVector<T> &y, T b); 
 
   template<typename T>
-  void saxpby(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y, T b); 
+  void saxpy(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y, T b); 
 
   template<typename T>  
   void     add(GTVector<T> &vret, const GTVector<T> &va, const GTVector<T> &vb, T a, T b);

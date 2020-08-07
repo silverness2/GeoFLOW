@@ -993,7 +993,7 @@ void normalize_euclidean(GTVector<GTVector<T>*> &x, GINT *iind, GINT nind, T x0)
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD :    saxy (1)
+// METHOD :    paxy (1)
 // DESC   : 
 //             compute z = axy
 //          
@@ -1005,7 +1005,7 @@ void normalize_euclidean(GTVector<GTVector<T>*> &x, GINT *iind, GINT nind, T x0)
 // RETURNS: none
 //**********************************************************************************
 template<typename T>
-void saxy(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y) 
+void paxy(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y) 
 {
   if ( y.size() > 1 ) {
     for ( auto j=0; j<x.size(); j++ ) { 
@@ -1017,11 +1017,11 @@ void saxy(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y)
       x[j] = a*x[j]*y[0];
     }
   }
-} // end of method saxy (1)
+} // end of method paxy (1)
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD :    saxpby (1)
+// METHOD :    saxpy (1)
 // DESC   : 
 //             compute x = ax + by
 //          
@@ -1033,7 +1033,7 @@ void saxy(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y)
 // RETURNS: GTVector & 
 //**********************************************************************************
 template<typename T>
-void saxpby(GTVector<T> &x, T a, GTVector<T> &y, T b) 
+void saxpy(GTVector<T> &x, T a, GTVector<T> &y, T b) 
 {
   if ( y.size() > 1 ) {
     for ( auto j=0; j<x.size(); j++ ) { 
@@ -1045,12 +1045,12 @@ void saxpby(GTVector<T> &x, T a, GTVector<T> &y, T b)
       x[j] = a*x[j] + b*y[0];
     }
   }
-} // end of method saxpby (1)
+} // end of method saxpy (1)
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD :    saxpby (2)
+// METHOD :    saxpy (2)
 // DESC   : 
 //             compute z = ax + by
 //          
@@ -1063,7 +1063,7 @@ void saxpby(GTVector<T> &x, T a, GTVector<T> &y, T b)
 // RETURNS: GTVector & 
 //**********************************************************************************
 template<typename T>
-void saxpby(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y, T b) 
+void saxpy(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y, T b) 
 {
   if ( y.size() > 1 ) {
     for ( auto j=0; j<x.size(); j++ ) { 
@@ -1075,7 +1075,7 @@ void saxpby(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y, T b)
       z[j] = a*x[j] + b*y[0];
     }
   }
-} // end of method saxpby (1)
+} // end of method saxpy (1)
 
 
 //**********************************************************************************
@@ -2217,11 +2217,11 @@ void dot(GTVector<GTVector<T>*> &x, GTVector<GTVector<T>*> &y, GTVector<T> &tmp,
        tmp =  (*x[j])[0] * (*y[j])[0];
      }
      else if ( x[j]->size() >  1 && y[j]->size() == 1 ) { // y constant
-       GMTK::saxpby<T>(tmp, 1.0, *x[j], (*y[j])[0]);  
+       GMTK::saxpy<T>(tmp, 1.0, *x[j], (*y[j])[0]);  
        
      }
      else if ( x[j]->size() == 1 && y[j]->size() >  1 ) { // x constant
-       GMTK::saxpby<T>(tmp, 1.0, *y[j], (*x[j])[0]);  
+       GMTK::saxpy<T>(tmp, 1.0, *y[j], (*x[j])[0]);  
      }
      else {                                               // x, y of full length
        x[j]->pointProd(*y[j], tmp);
