@@ -31,6 +31,7 @@
 #include "gburgers.hpp"
 #include "ggrid_box.hpp"
 #include "ggrid_factory.hpp"
+#include "gmass.hpp"
 #include "pdeint/observer_base.hpp"
 #include "pdeint/io_base.hpp"
 #include "gio_observer.hpp"
@@ -66,6 +67,7 @@ typename StateType     = GTVector<GTVector<GFTYPE>*>,
 typename StateCompType = GTVector<GFTYPE>,
 typename StateInfoType = GStateInfo,
 typename GridType      = GGrid,
+typename MassOpType    = GMass,
 typename ValueType     = GFTYPE,
 typename DerivType     = StateType,
 typename TimeType      = ValueType,
@@ -78,6 +80,7 @@ struct TypePack {
         using StateComp  = StateCompType;
         using StateInfo  = StateInfoType;
         using Grid       = GridType;
+        using Mass       = MassOpType;
         using Value      = ValueType;
         using Derivative = DerivType;
         using Time       = TimeType;
