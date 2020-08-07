@@ -105,7 +105,7 @@ void GExRKStepper<T>::step(const Time &t, const State &uin, State &uf, State &ub
 
     for ( n=0; n<nstate; n++ ) { // for each state member, u
       for ( j=0,*isum=0.0; j<m; j++ )
-        GMTK::saxpby(*isum,  1.0, *K_[j][n], (*beta)(m,j)*h);
+        GMTK::saxpy(*isum,  1.0, *K_[j][n], (*beta)(m,j)*h);
      *u[n]  = (*uin[n]) + (*isum);
     }
     GMTK::constrain2sphere(*grid_, u);
@@ -129,7 +129,7 @@ void GExRKStepper<T>::step(const Time &t, const State &uin, State &uf, State &ub
    tt = t + (*alpha)[nstage_-1]*h;
    for ( n=0; n<nstate; n++ ) { // for each state member, u
      for ( j=0,*isum=0.0; j<nstage_-1; j++ ) 
-       GMTK::saxpby(*isum,  1.0, *K_[j][n], (*beta)(nstage_-1,j)*h);
+       GMTK::saxpy(*isum,  1.0, *K_[j][n], (*beta)(nstage_-1,j)*h);
      *u[n] = (*uin[n]) + (*isum);
    }
     GMTK::constrain2sphere(*grid_, u);
