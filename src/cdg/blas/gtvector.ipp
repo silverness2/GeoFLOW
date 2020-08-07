@@ -3123,16 +3123,16 @@ GTVector<T>::add_impl_(const GTVector &obj, std::true_type d)
 
   GSIZET nn = vret.getIndex().end() - vret.getIndex().beg() + 1;
   if      ( std::is_same<T,GFLOAT>::value ) {
-    fzaxpby(vret.data(), const_cast<GFLOAT*>(this->data()), &a,
-            const_cast<GFLOAT*>(obj.data()), &b, &nn, &icsz_);
+    fzaxpby((GFLOAT*)vret.data(), (GFLOAT*)(this->data()), (GFLOAT*)&a,
+            (GFLOAT*)(obj.data()), (GFLOAT*)&b, &nn, &icsz_);
   }
   else if ( std::is_same<T,GDOUBLE>::value ) {
-    dzaxpby(vret.data(), const_cast<GDOUBLE*>(this->data()), &a,
-            const_cast<GDOUBLE*>(obj.data()), &b, &nn, &icsz_);
+    dzaxpby((GDOUBLE*)vret.data(), (GDOUBLE*)(this->data()), (GDOUBLE*)&a,
+            (GDOUBLE*)(obj.data()), (GDOUBLE*)&b, &nn, &icsz_);
   }
   else if ( std::is_same<T,GQUAD>::value ) {
-    qzaxpby(vret.data(), const_cast<GQUAD*>(this->data()), &a,
-            const_cast<GQUAD*>(obj.data()), &b, &nn, &icsz_);
+    qzaxpby((GQUAD*)vret.data(), (GQUAD*)(this->data()), (GQUAD*)&a,
+            (GQUAD*)(obj.data()), (GQUAD*)&b, &nn, &icsz_);
   }
   else {
     assert(FALSE);
@@ -3196,16 +3196,16 @@ GTVector<T>::sub_impl_(const GTVector &obj, std::true_type d)
   
   GSIZET nn = vret.getIndex().end() - vret.getIndex().beg() + 1;
   if      ( std::is_same<T,GFLOAT>::value ) {
-    fzaxpby(vret.data(), const_cast<GFLOAT*>(this->data()), &a,
-            const_cast<GFLOAT*>(obj.data()), &b, &nn, &icsz_);
+    fzaxpby((GFLOAT*)vret.data(), (GFLOAT*)(this->data()), (GFLOAT*)&a,
+            (GFLOAT*)(obj.data()), (GFLOAT*)&b, &nn, &icsz_);
   }
   else if ( std::is_same<T,GDOUBLE>::value ) {
-    dzaxpby(vret.data(), const_cast<GDOUBLE*>(this->data()), &a,
-            const_cast<GDOUBLE*>(obj.data()), &b, &nn, &icsz_);
+    dzaxpby((GDOUBLE*)vret.data(), (GDOUBLE*)(this->data()), (GDOUBLE*)&a,
+            (GDOUBLE*)(obj.data()), (GDOUBLE*)&b, &nn, &icsz_);
   }
   else if ( std::is_same<T,GQUAD>::value ) {
-    qzaxpby(vret.data(), const_cast<GQUAD*>(this->data()), &a,
-            const_cast<GQUAD*>(obj.data()), &b, &nn, &icsz_);
+    qzaxpby((GQUAD*)vret.data(), (GQUAD*)(this->data()), (GQUAD*)&a,
+            (GQUAD*)(obj.data()), (GQUAD*)&b, &nn, &icsz_);
   }
   else {
     assert(FALSE);
