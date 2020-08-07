@@ -16,6 +16,7 @@
 #include "gmass.hpp"
 #include "gcomm.hpp"
 #include "ggfx.hpp"
+#include "gmtk.hpp"
 #include "ggrid.hpp"
 #include "ggrid_box.hpp"
 #include "ggrid_icos.hpp"

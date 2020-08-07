@@ -21,7 +21,6 @@
 #include "gshapefcn_linear.hpp"
 #include "polygon.h"
 #include "gtpoint.hpp"
-#include "ggrid.hpp"
 
 typedef GTMatrix<GFTYPE> GFTMatrix;
 
