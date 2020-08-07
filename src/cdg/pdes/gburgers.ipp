@@ -24,15 +24,6 @@
 // Copyright    : Copyright 2019. Colorado State University. All rights reserved.
 // Derived From : EquationBase.
 //==================================================================================
-#include <cstdlib>
-#include <memory>
-#include <cmath>
-#include "gab.hpp"
-#include "gext.hpp"
-#include "gbdf.hpp"
-#include "gexrk_stepper.hpp"
-
-using namespace std;
 
 //**********************************************************************************
 //**********************************************************************************
@@ -540,7 +531,7 @@ void GBurgers<TypePack>::init(GBurgers::Traits &traits)
 
   if ( bconserved_ && !doheat_ ) {
     assert(FALSE && "Conservation not yet supported");
-    gpdv_  = new GpdV<TypePacl>(*grid_,*gmass_);
+    gpdv_  = new GpdV<TypePack>(*grid_,*gmass_);
 //  gflux_ = new GFlux(*grid_);
     assert( (gmass_   != NULLPTR
           && ghelm_   != NULLPTR
