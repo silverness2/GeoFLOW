@@ -2642,18 +2642,18 @@ GTVector<T> GTMatrix<T>::matvec_impl_(const GTVector<T> &obj, std::true_type)
   GSIZET n2 = this->size(2);
 
   if      ( std::is_same<T,GFLOAT>::value ) {
-    fmxv(vret.data(), const_cast<GFLOAT*>(this->data().data()),
-                      const_cast<GFLOAT*>(obj.data())       ,
+    fmxv((GFLOAT*)vret.data(), (GFLOAT*)(this->data().data()),
+                      (GFLOAT*)(obj.data())       ,
                       &n1, &n2, &icsz_);
   }
   else if ( std::is_same<T,GDOUBLE>::value ) {
-    dmxv(vret.data(), const_cast<GDOUBLE*>(this->data().data()),
-                      const_cast<GDOUBLE*>(obj.data())       ,
+    dmxv((GDOUBLE*)vret.data(), (GDOUBLE*)(this->data().data()),
+                      (GDOUBLE*)(obj.data())       ,
                       &n1, &n2, &icsz_);
   }
   else if ( std::is_same<T,GQUAD>::value ) {
-    qmxv(vret.data(), const_cast<GQUAD*>(this->data().data()),
-                      const_cast<GQUAD*>(obj.data())       ,
+    qmxv((GQUAD*)vret.data(), (GQUAD*)(this->data().data()),
+                      (GQUAD*)(obj.data())       ,
                       &n1, &n2, &icsz_);
   }
   else {
@@ -2715,28 +2715,28 @@ GTMatrix<T>::matmat_impl_(const GTMatrix &obj, std::true_type)
   GTMatrix mret(this->size(1),obj.size(2));
 
 
-  GSIZET a1=this->size(1), a2 = this->A.size(2);
+  GSIZET a1=this->size(1), a2 = this->size(2);
   GSIZET b1=obj.size(1), b2 = obj.size(2);
 
   if      ( std::is_same<T,GFLOAT>::value ) { 
-    fmxm(mret.data().data(),
-         const_cast<GFLOAT*>(this->data().data()),
-         &a1,&a2,
-         const_cast<GFLOAT*>(obj.data().data()),
+    fmxm((GFLOAT*)mret.data().data(),
+         (GFLOAT*)(this->data().data()),
+         &a1, &a2,
+         (GFLOAT*)(obj.data().data()),
          &b1, &b2, &icsz_);
   }
   else if ( std::is_same<T,GDOUBLE>::value ) {
-    dmxm(mret.data().data(),
-         const_cast<GDOUBLE*>(this->data().data()),
-         &a1,&a2,
-         const_cast<GDOUBLE*>(obj.data().data()),
+    dmxm((GDOUBLE*)mret.data().data(),
+         (GDOUBLE*)(this->data().data()),
+         &a1, &a2,
+         (GDOUBLE*)(obj.data().data()),
          &b1, &b2, &icsz_);
   }
   else if ( std::is_same<T,GQUAD>::value ) {
-    qmxm(mret.data().data(),
-         const_cast<GQUAD*>(this->data().data()),
-         &a1,&a2,
-         const_cast<GQUAD*>(obj.data().data()),
+    qmxm((GQUAD*)mret.data().data(),
+         (GQUAD*)(this->data().data()),
+         &a1, &a2,
+         (GQUAD*)(obj.data().data()),
          &b1, &b2, &icsz_);
   }
   else {
