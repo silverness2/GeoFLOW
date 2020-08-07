@@ -26,6 +26,7 @@ class EquationBase {
 public:
 	using Types      = TypePack;
 	using State      = typename Types::State;
+	using StateComp  = typename Types::StateComp;
         using StateInfo  = typename Types::StateInfo;
 	using Grid       = typename Types::Grid;
 	using Value      = typename Types::Value;
