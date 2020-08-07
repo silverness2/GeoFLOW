@@ -531,7 +531,7 @@ void GBurgers<TypePack>::init(GBurgers::Traits &traits)
 
   if ( bconserved_ && !doheat_ ) {
     assert(FALSE && "Conservation not yet supported");
-    gpdv_  = new GpdV<TypePack>(*grid_,*gmass_);
+    gpdv_  = new GpdV<TypePack>(*grid_);
 //  gflux_ = new GFlux(*grid_);
     assert( (gmass_   != NULLPTR
           && ghelm_   != NULLPTR
@@ -624,29 +624,6 @@ void GBurgers<TypePack>::apply_bc_impl(const Time &t, State &u, State &ub)
       (*updatelist)[k][j]->update(*grid_, this->stateinfo_, ttime, utmp_, u, ub);
     }
   }
-
-
-  // Use indirection to set the global field node values
-  // with domain boundary data. 
-//GINT     nbdy = grid_->igbdy_binned().size();
-//GSIZET   ib;
-//GBdyType itype; 
-//GTVector<GTVector<GSIZET>>  *igbdy;
-//for ( auto k=0; k<nbdy; k++ ) {            // for each grid bdy
-//  itype = static_cast<GBdyType>(k);
-//  if ( itype == GBDY_PERIODIC
-//   ||  itype == GBDY_NONE ) continue;      // no bdy value for these
-//  igbdy = &grid_->igbdy_binned()[k];
-//  for ( auto j=0; j<igbdy->size(); j++ ) { // for each type of bdy in gtypes.h
-//    for ( auto i=0; i<u.size(); i++ ) {    // for each state component
-//      if ( ub[i] == NULLPTR ) continue;
-//      for ( auto m=0; m<(*igbdy)[j].size(); m++ ) { // set from ub
-//        ib = (*igbdy)[j][m];
-//        (*u[i])[ib] = (*ub[i])[m];
-//      } // end, bdy node loop
-//    } // end, state comp. loop
-//  } // end, GBdyType loop 
-//} // end, grid bdy loop  
 
 } // end of method apply_bc_impl
 
