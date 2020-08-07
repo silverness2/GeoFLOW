@@ -10,6 +10,7 @@
 
 #include "gtvector.hpp"
 #include "ggrid.hpp"
+#include "gmtk.hpp"
 #include "pdeint/equation_base.hpp"
 #include "pdeint/observer_base.hpp"
 #include "pdeint/io_base.hpp"
