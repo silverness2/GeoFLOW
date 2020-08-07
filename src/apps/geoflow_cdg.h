@@ -6,8 +6,8 @@
 // Copyright    : Copyright 2019. Colorado State University. All rights reserved.
 // Derived From : 
 //==================================================================================
-#if !defined(GEOFLOW_CDG_MAIN_H)
-#define GEOFLOW_CDG_MAIN_H
+#if !defined(_GEOFLOW_CDG_MAIN_H)
+#define _GEOFLOW_CDG_MAIN_H
 
 #if defined(_OPENMP)
    #include <omp.h>
@@ -75,7 +75,7 @@ typename SizeType      = GSIZET
 >
 struct TypePack {
         using State      = StateType;
-        using Statecomp  = StateCompType;
+        using StateComp  = StateCompType;
         using StateInfo  = StateInfoType;
         using Grid       = GridType;
         using Value      = ValueType;

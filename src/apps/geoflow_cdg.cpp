@@ -701,7 +701,7 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
     xkey.resize(GDIM);   
     for ( auto j=0; j<xnodes->size(); j++ ) cart[j] = &(*xnodes)[j];
     for ( auto j=0; j<GDIM; j++ ) xkey[j] = utmp_[j];
-    GMTK::cart2spherical(cart, xkey);
+    GMTK::rcart2sphere(cart, xkey);
     for ( auto j=0; j<GDIM; j++ ) ldelta[j] = xkey[j]->amindiff(tiny);
     GComm::Allreduce(ldelta.data(), delta.data(), GDIM, T2GCDatatype<GFTYPE>(), GC_OP_MIN, comm_);
     for ( auto j=0; j<GDIM; j++ ) dX[j] = 0.025*delta[j];
