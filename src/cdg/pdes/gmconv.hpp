@@ -158,19 +158,18 @@ private:
                                         const Time &dt, State &uout);
         void                step_multistep(const Time &t, State &uin, State &uf, State &ub,
                                            const Time &dt);
-        void                cycle_keep   (State &u);
-inline  void                compute_cv   (State &u, State &utmp, StateComp &cv);
-inline  void                compute_qd   (State &u, State &utmp, StateComp &qd);
-inline  void                compute_temp (State &u, State &utmp, StateComp &t );
-inline  void                compute_p    (State &u, State &utmp, StateComp &p );
-inline  void                compute_ptemp(State &u, State &utmp, StateComp &temp, StateComp &p );
+        void                cycle_keep   (const State &u);
+inline  void                compute_cv   (const State &u, State &utmp, StateComp &cv);
+inline  void                compute_qd   (const State &u, State &utmp, StateComp &qd);
+inline  void                compute_temp (const State &u, State &utmp, StateComp &t );
+inline  void                compute_p    (const State &u, State &utmp, StateComp &p );
+inline  void                compute_ptemp(const State &u, State &utmp, StateComp &temp, StateComp &p );
 inline  void                compute_falloutsrc
                                          (StateComp &g, State &qi, State &v, GINT jexcl, State &utmp, StateComp &r );
 inline  void                compute_div  (StateComp &q, State &v, State &utmp, StateComp &div );
-inline  void                compute_v    (State &u, State &utmp, State &v);
+inline  void                compute_v    (const State &u, State &utmp, State &v);
 inline  void                compute_vterm(StateComp &tv, State &W);
-inline  void                compute_fv   (State &uf, State &v, StateComp &tmp, StateComp &rate);
-inline  void                assign_helpers(State &u, State &uf);
+inline  void                assign_helpers(const State &u, const State &uf);
 inline  void                compute_pe   (StateComp &rhoT, State &qi, State &tvi, State &utmp, StateComp      &r);
  
 

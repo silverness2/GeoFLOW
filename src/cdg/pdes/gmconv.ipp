@@ -88,8 +88,8 @@ gadvect_               (NULLPTR),
 gexrk_                 (NULLPTR),
 gpdv_                  (NULLPTR),
 grid_                    (&grid),
-comm_         (ggfx_->getComm()),
 ggfx_         (&grid.get_ggfx()),
+comm_(grid.get_ggfx().getComm()),
 steptop_callback_      (NULLPTR)
 {
 
@@ -187,9 +187,9 @@ void GMConv<TypePack>::dt_impl(const Time &t, State &u, Time &dt)
    dtmin = std::numeric_limits<GFTYPE>::max();
 
    // Compute Cv:
-   utmp_[1] =           1.0;  
-   utmp_[1] -= (*u[GDIM+1]);     // running total 1- Sum_k q_k
-   utmp_[0] = (*u[GDIM+1])*CVV;  // Cv = Cvv * q_vapor
+  *utmp_[1] =           1.0;  
+  *utmp_[1] -= (*u[GDIM+1]);     // running total 1- Sum_k q_k
+  *utmp_[0] = (*u[GDIM+1])*CVV;  // Cv = Cvv * q_vapor
    for ( auto k=GDIM+3; k<traits_.nlsector+1; k++ ) { // vapor & liquids
      *utmp_[1] -= *u[k];         // subtract in ql_k
      *utmp_[0] += (*u[k]) * CVL; // add in Cvl * ql_k
@@ -202,18 +202,18 @@ void GMConv<TypePack>::dt_impl(const Time &t, State &u, Time &dt)
    *utmp_[0] += (*utmp_[1])*CVD; // Final Cv += Cvd * qd
 
    // Compute v^2:
-   *utmp[1] = *u[0]; utmp[0]->rpow(2);
+   *utmp_[1] = *u[0]; utmp_[0]->rpow(2);
    for ( auto k=1; k<u.size(); k++ ) { // each advecting v 
-     *utmp[2] = *u[k]; utmp[2]->rpow(2);
-     *utmp[1] += (*utmp[2]);           // v^2 += v_k^2
+     *utmp_[2] = *u[k]; utmp_[2]->rpow(2);
+     *utmp_[1] += (*utmp_[2]);           // v^2 += v_k^2
    }
   
    // Compute sound speed: c^2 = p/rho_dry; p ~ Rd e / Cv,
-   *utmp[2]  = (*u[GDIM]);   // utmp = e
-   *utmp[2] /= *utmp[0];     // e / Cv
-   *utmp[2] *= RD;           // c^2 = Rd e / Cv
-   *utmp[2] += *utmp[1];     // v^2 + c^2
-   GMTK::maxbyelem<GFTYPE>(*grid_, *utmp[2], maxbyelem_);
+   *utmp_[2]  = (*u[GDIM]);    // utmp = e
+   *utmp_[2] /= *utmp_[0];     // e / Cv
+   *utmp_[2] *= RD;            // c^2 = Rd e / Cv
+   *utmp_[2] += *utmp_[1];     // v^2 + c^2
+   GMTK::maxbyelem<GFTYPE>(*grid_, *utmp_[2], maxbyelem_);
    
    // Note: maxbyelem_ is an array with the max of v^2 + c^2 
    //       on each element
@@ -265,10 +265,10 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   // be problems. This is required for explicit schemes, for
   // which this method is called.
 
-  assert( !traits_.bsonserved ); // don't allow conservative form yet
+  assert( !traits_.bconserved ); // don't allow conservative form yet
 
   // Assign qi, tvi, qice, qliq, tvice, tvliq:
-  assign_helpers(u);
+  assign_helpers(u, uf);
 
  *urhstmp_[0] = *u[GDIM+1]; urhstmp_[0]->rpow(-1.0); // 1/total mass
 
@@ -293,7 +293,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
 
   compute_div(*u[GDIM+1], v_, urhstmp_, *dudt[GDIM+1]); 
   compute_falloutsrc(*u[GDIM+1], qi_, tvi_, -1, uoptmp_, *Ltot);
-  GMTK::saxpby<Ftype>(*dudt[GDIM+1], 1.0, *Ltot, 1.0);   // += Ltot
+  GMTK::saxpy<Ftype>(*dudt[GDIM+1], 1.0, *Ltot, 1.0);   // += Ltot
   if ( uf[GDIM+1] != NULLPTR ) *dudt[GDIM+1] -= *uf[GDIM+1];//  += sdot(s_rhoT)
   
   // First, compute all operators as though they are on the LHS, then
@@ -314,12 +314,12 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
     compute_div(*tmp1, W_, urhstmp_, *tmp2);   // Div(q_i rhoT W)
     *tmp2 *= *irhoT;                           // Div(q_i rhoT W)/rhoT
     *dudt[ibeg+j] += *tmp2;                    // += Div(q_i rhoT W)/rhoT
-    *tmp1  = (*Ltot) * (*irhoT); *tmp1 *= (*qi_[j]) // q_i/rhoT Ltot
+    *tmp1  = (*Ltot) * (*irhoT); *tmp1 *= (*qi_[j]);// q_i/rhoT Ltot
     *dudt[ibeg+j] -= *tmp1;                    // += -q_i/rhoT Ltot
     if ( uf[ibeg+j] != NULLPTR ) {             // add in sdot(s_i)/rhoT
       *tmp1 = *uf[ibeg+1]; *tmp1 *= *irhoT;    // dot(s)/rhoT 
       *tmp1 *= *Jac ; *tmp1 *= *Mass;
-      GMTK::saxpby<Ftype>(*dudt[ibeg+j], 1.0, *tmp1, -1.0); 
+      GMTK::saxpy<Ftype>(*dudt[ibeg+j], 1.0, *tmp1, -1.0); 
                                                // -= dot(s)/rhoT
     }
   }
@@ -334,15 +334,15 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   
   compute_ptemp(u, uoptmp_, *T, *p);               // find p, T
 
-  GMTK::saxpby<Ftype>(*tmp1, *e, 1.0, *p, 1.0);    // h = p+e, enthalpy density
+  GMTK::saxpy<Ftype>(*tmp1, *e, 1.0, *p, 1.0);    // h = p+e, enthalpy density
   compute_div(*tmp1, v_, uoptmp_, *dudt[GDIM]);    // Div (h v);
 
   if ( traits_.dofallout || traits_.dodry ) {
-   *tmp1 = *rhoT; tmp1->pointProd(CPL, *T);        // tmp1 = CP_liq rhoT T
+    GMTK::paxy(*tmp1, *rhoT, CVL, *T);             // tmp1 = C_liq rhoT T
     compute_falloutsrc(*tmp1, qliq_, tvliq_, -1.0, uoptmp_, *Ltot);
                                                    // liquid fallout src
    *dudt[GDIM] += *Ltot;                           // += L_liq
-   *tmp1 = *rhoT; tmp1->pointProd(CPI, *T);        // tmp1 = CP_ice rhoT T
+    GMTK::paxy(*tmp1, *rhoT, CVI, *T);             // tmp1 = C_ice rhoT T
     compute_falloutsrc(*tmp1, qice_, tvice_, -1.0, uoptmp_, *Ltot); 
                                                    // ice fallout src
    *dudt[GDIM] += *Ltot;                           // += L_ice
@@ -356,12 +356,12 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
    *dudt[GDIM] += *tmp1;                           // += Sum_i rhoT q_i g.W_i
   }
 
-  compute_fv(fv_, v_, *tmp2, *tmp1);
+  GMTK::dot<Ftype>(fv_, v_, *tmp2, *tmp1);
  *dudt[GDIM] += *tmp1;                             // += f_kinetic . v
 
   if ( uf[GDIM] != NULLPTR ) {                    
     *tmp1 = *uf[GDIM]; *tmp1 *= *Jac ; *tmp1 *= *Mass;
-    GMTK::saxpby<Ftype>(*dudt[GDIM], 1.0, *tmp1, -1.0); 
+    GMTK::saxpy<Ftype>(*dudt[GDIM], 1.0, *tmp1, -1.0); 
                                                    // -= q_heat
   }
 
@@ -372,35 +372,35 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   Mass = grid_->massop().data();
   if ( traits_.dograv) {
     *tmp1 = -GG; // set constant grav accel
-     for ( auto j=0; j<GDIM; j++ ) g[j] = utmp[j];
+     for ( auto j=0; j<GDIM; j++ ) g[j] = urhstmp_[j];
      compute_vterm(*tmp1, g); // compute grav vector components
   }
 
-  for ( auto j=0; k<GDIM; j++ ) {
+  for ( auto j=0; j<GDIM; j++ ) {
 
     gadvect_->apply(*s_[j], v_, uoptmp_, *dudt[j]);   // v.Grad s_j
     if ( traits_.dofallout || traits_.dodry ) {
-      compute_falloutsrc(*u[j], qli_, tvli_,-1.0, uoptmp_, *Ltot);
+      compute_falloutsrc(*u[j], qliq_, tvi_,-1.0, uoptmp_, *Ltot);
                                                       // hydrometeor fallout src
      *dudt[GDIM] += *Ltot;                            // += L_tot
     }
-    grid_->wderiv(*u[j], j+1, TRUE, uoptmp_, *tmp1);  // Grad p
+    grid_->wderiv(*u[j], j+1, TRUE, *tmp2, *tmp1);    // Grad p
    *dudt[GDIM] += *tmp1;                              // += Grad p
     ghelm_->opVec_prod(*u[j], uoptmp_, *tmp1);        // nu Laplacian s_j
    *dudt[GDIM] -= *tmp1;                              // -= nu Laplacian s_j
     if ( traits_.docoriolis ) {
       GMTK::cross_prod(g, s_, j+1, *tmp1);
      *tmp1 *= *Jac; *tmp1 *= *Mass;             
-      GMTK::saxpby<Ftype>(*dudt[j], 1.0, *tmp1, 2.0); // += 2 Omega X (thooT v) M J
+      GMTK::saxpy<Ftype>(*dudt[j], 1.0, *tmp1, 2.0); // += 2 Omega X (thooT v) M J
     }
     if ( traits_.dograv && g[j] != NULLPTR ) {
-      g[j]->pointProd(*rhotT, *tmp1);
+      g[j]->pointProd(*rhoT, *tmp1);
      *tmp1 *= *Jac; *tmp1 *= *Mass;             
      *dudt[GDIM] -= *tmp1;                            // -= rhoT g M J
     }
-    if ( traits_.forced && uf[j] != NULLPTR ) {                    
+    if ( traits_.bforced && uf[j] != NULLPTR ) {                    
       *tmp1 = *uf[j]; *tmp1 *= *Jac ; *tmp1 *= *Mass;
-      GMTK::saxpby<Ftype>(*dudt[j], 1.0, *tmp1, -1.0); 
+      GMTK::saxpy<Ftype>(*dudt[j], 1.0, *tmp1, -1.0); 
                                                       // -= f_v
     }
 
@@ -409,7 +409,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   // Multiply RHS by -M^-1 to (1) place all terms on the 'RHS',
   // and (2) to account for factor of M on du/dt term:
   for ( auto j=0; j<nevolve_; j++ ) {
-    dudt[j]->pointProd(-1.0, *gimass_->data());// dudt -> -M^-1 dudt
+    dudt[j]->apointProd(-1.0, *gimass_->data());// dudt -> -M^-1 dudt
   }
   
 } // end of method dudt_impl
@@ -724,8 +724,8 @@ void GMConv<TypePack>::init()
   nhydro_ = traits_.dodry ? 0 : traits_.nlsector + traits_.nisector + 1;
   nmoist_ = traits_.dodry ? 0 : nhydro_ + 1;
   nevolve_ = GDIM + 2 + nmoist_;
-  this->stateinfo.nevolve = traits_.solve;
-  this->stateinfo.presc   = traits_.nstate - traits_.solve;
+  this->stateinfo().nevolve = traits_.nsolve;
+  this->stateinfo().npresc  = traits_.nstate - traits_.nsolve;
   qi_   .resize(nmoist_);
   tvi_  .resize(nmoist_);
   qliq_ .resize(traits_.nlsector);
@@ -756,7 +756,7 @@ void GMConv<TypePack>::init()
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::cycle_keep(State &u)
+void GMConv<TypePack>::cycle_keep(const State &u)
 {
 
   // Make sure following index map contains the 
@@ -811,7 +811,7 @@ void GMConv<TypePack>::apply_bc_impl(const Time &t, State &u, State &ub)
   // Update bdy values if required to:
   for ( auto k=0; k<updatelist->size(); k++ ) { // foreach grid bdy
     for ( auto j=0; j<(*updatelist)[j].size(); j++ ) { // each update method
-      (*updatelist)[k][j]->update(*grid_, this->stateinfo_, ttime, utmp_, u, ub);
+      (*updatelist)[k][j]->update(*grid_, this->stateinfo(), ttime, utmp_, u, ub);
     }
   }
 
@@ -853,24 +853,24 @@ GINT GMConv<TypePack>::req_tmp_size()
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::compute_cv(State &u, State &utmp, StateComp &cv)
+void GMConv<TypePack>::compute_cv(const State &u, State &utmp, StateComp &cv)
 {
    GString    serr = "GMConv<TypePack>::compute_cv: ";
    GINT       ibeg;
 
    // Compute Cv:
    if ( traits_.dodry ) { // if dry dynamics only
-     utmp[0] = CVD;  
+     cv = CVD;  
      return;
    }
 
-   utmp[0] =           1.0;  
-   utmp[0] -= (*u[GDIM+1]);      // running total 1- Sum_k q_k
+  *utmp[0]  =          1.0;  
+  *utmp[0] -= (*u[GDIM+1]);      // running total 1- Sum_k q_k
    cv       = (*u[GDIM+1])*CVV;  // Cv = Cvv * q_vapor
    ibeg = GDIM + 3;
    for ( auto k=ibeg; k<ibeg+traits_.nlsector+1; k++ ) { // liquids
      *utmp[0] -= *u[k];         // subtract in ql_k
-     *cv      += (*u[k]) * CVL; // add in Cvl * ql_k
+      cv      += (*u[k]) * CVL; // add in Cvl * ql_k
    }
    ibeg = GDIM + 3 + traits_.nlsector;;
    for ( auto k=ibeg; k<ibeg+traits_.nisector; k++ ) { // ices
@@ -894,7 +894,7 @@ void GMConv<TypePack>::compute_cv(State &u, State &utmp, StateComp &cv)
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::compute_qd(State &u, State &utmp, StateComp &qd)
+void GMConv<TypePack>::compute_qd(const State &u, State &utmp, StateComp &qd)
 {
    GString    serr = "GMConv<TypePack>::compute_qd: ";
    GINT       ibeg;
@@ -935,7 +935,7 @@ void GMConv<TypePack>::compute_qd(State &u, State &utmp, StateComp &qd)
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::compute_temp(State &u, State &utmp, StateComp &temp)
+void GMConv<TypePack>::compute_temp(const State &u, State &utmp, StateComp &temp)
 {
    GString    serr = "GMConv<TypePack>::compute_temp: ";
    StateComp *cv, *d, *e; 
@@ -951,7 +951,7 @@ void GMConv<TypePack>::compute_temp(State &u, State &utmp, StateComp &temp)
    compute_cv(u, utmp, *cv); // utmp[0] only used in call
 
    // Compute temperature:
-   for ( auto j=0; j<es->size(); j++ ) {
+   for ( auto j=0; j<e->size(); j++ ) {
      temp[j] = (*e)[j] / ( (*d)[j] * (*cv)[j] );
    }
 
@@ -972,17 +972,17 @@ void GMConv<TypePack>::compute_temp(State &u, State &utmp, StateComp &temp)
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::compute_p(State &u, State &utmp, StateComp &p)
+void GMConv<TypePack>::compute_p(const State &u, State &utmp, StateComp &p)
 {
    GString    serr = "GMConv<TypePack>::compute_p: ";
-   StateComp *qd, *qv, *t; 
+   StateComp *dt, *qd, *qv, *t; 
 
 
    assert(utmp.size() >= 3);
 
    // Set int energy and density:
-   es = u[GDIM];   // sensible internal energy density
-   d  = u[GDIM+1]; // total density fluctuation
+// es = u[GDIM];   // sensible internal energy density
+   dt = u[GDIM+1]; // total density fluctuation
 
    t = utmp[2];    // temp
    compute_temp(u, utmp, *t);  // first 2 utmp arrays used
@@ -990,7 +990,7 @@ void GMConv<TypePack>::compute_p(State &u, State &utmp, StateComp &p)
    if ( traits_.dodry ) { // if dry dynamics only
      // p' = rho'  Rd T:
      for ( auto j=0; j<p.size(); j++ ) {
-       p[j] = (*d)[j] * RD  * (*t)[j];
+       p[j] = (*dt)[j] * RD  * (*t)[j];
      }
      return;
    }
@@ -1004,7 +1004,7 @@ void GMConv<TypePack>::compute_p(State &u, State &utmp, StateComp &p)
 
    // p' = rho' ( qd Rd + qv Rv ) T:
    for ( auto j=0; j<p.size(); j++ ) {
-     p[j] = (*d)[j] * ( (*qd)[j]*RD + (*qv)[j]*RV ) * (*t)[j];
+     p[j] = (*dt)[j] * ( (*qd)[j]*RD + (*qv)[j]*RV ) * (*t)[j];
    }
 
 } // end of method compute_p 
@@ -1027,17 +1027,16 @@ void GMConv<TypePack>::compute_p(State &u, State &utmp, StateComp &p)
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::compute_ptemp(State &u, State &utmp, StateComp &temp, StateComp &p)
+void GMConv<TypePack>::compute_ptemp(const State &u, State &utmp, StateComp &temp, StateComp &p)
 {
    GString    serr = "GMConv<TypePack>::compute_ptemp: ";
-   StateComp *qd, *qv, *t; 
+   StateComp *dt, *qd, *qv, *t; 
 
 
    assert(utmp.size() >= 3);
 
    // Set int energy and density:
-   es = u[GDIM];   // sensible internal energy density
-   d  = u[GDIM+1]; // total density fluctuation
+   dt  = u[GDIM+1]; // total density fluctuation
 
    t = &temp;    // temp
    compute_temp(u, utmp, *t);  // first 2 utmp arrays used
@@ -1045,7 +1044,7 @@ void GMConv<TypePack>::compute_ptemp(State &u, State &utmp, StateComp &temp, Sta
    if ( traits_.dodry ) { // if dry dynamics only
      // p' = rho'  Rd T:
      for ( auto j=0; j<p.size(); j++ ) {
-       p[j] = (*d)[j] * RD  * (*t)[j];
+       p[j] = (*dt)[j] * RD  * (*t)[j];
      }
      return;
    }
@@ -1059,7 +1058,7 @@ void GMConv<TypePack>::compute_ptemp(State &u, State &utmp, StateComp &temp, Sta
 
    // p' = rho' ( qd Rd + qv Rv ) T:
    for ( auto j=0; j<p.size(); j++ ) {
-     p[j] = (*d)[j] * ( (*qd)[j]*RD + (*qv)[j]*RV ) * (*t)[j];
+     p[j] = (*dt)[j] * ( (*qd)[j]*RD + (*qv)[j]*RV ) * (*t)[j];
    }
 
 } // end of method compute_ptemp
@@ -1081,7 +1080,7 @@ template<typename TypePack>
 void GMConv<TypePack>::compute_div(StateComp &q, State &v, State &utmp, StateComp &div)
 {
    GString    serr = "GMConv<TypePack>::compute_div: ";
-   State     *tmp(GDIM);
+   State      tmp(GDIM);
    StateComp *qd, *qv, *t; 
 
    assert(utmp.size() >= GDIM+1);
@@ -1093,8 +1092,8 @@ void GMConv<TypePack>::compute_div(StateComp &q, State &v, State &utmp, StateCom
      //   Div (q v) = q Div v + v.Grad q 
      assert(gadvect_ != NULLPTR && gpdv_ != NULLPTR);    
      for ( auto j=0; j<GDIM; j++ ) tmp[j] = utmp[j];
-     gadvect->apply(q, v, tmp, div); 
-     gpdv   ->apply(q, v, tmp, *utmp[GDIM]); 
+     gadvect_->apply(q, v, tmp, div); 
+     gpdv_   ->apply(q, v, tmp, *utmp[GDIM]); 
      div += *utmp[GDIM];
    }
 
@@ -1114,11 +1113,10 @@ void GMConv<TypePack>::compute_div(StateComp &q, State &v, State &utmp, StateCom
 // RETURNS: none. Member data, v_, is set here
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::compute_v(State &u, State &utmp, State &v)
+void GMConv<TypePack>::compute_v(const State &u, State &utmp, State &v)
 {
    GString    serr = "GMConv<TypePack>::compute_v: ";
-   State     *tmp(GDIM);
-   StateComp *irhot, *rhot
+   StateComp *irhot, *rhot;
 
    assert(utmp.size() >= 1);
 
@@ -1164,12 +1162,12 @@ void GMConv<TypePack>::compute_vterm(StateComp &tvi, State &W)
    GString    serr = "GMConv<TypePack>::compute_vterm: ";
    GINT       ibeg, nhydro;
    Ftype      r, x, y, z;
-   Ftype      lat, long;
+   Ftype      lat, lon;
    GTVector<GTVector<GFTYPE>> 
-             *xnodes = &grid.xNodes();
+             *xnodes = &grid_->xNodes();
 
    GGridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
-   GGridIcos *box  = dynamic_cast <GGridBox*>(grid_);
+   GGridBox  *box  = dynamic_cast <GGridBox*>(grid_);
 
    assert(W.size() == GDIM);
 
@@ -1179,7 +1177,7 @@ void GMConv<TypePack>::compute_vterm(StateComp &tvi, State &W)
      // as preferred 'fallout' direction. In 2d, this
      // will be the 2-coord; in 3d, the 3-coord:
      W = NULLPTR;
-     W[GDIM-1] = tvi; 
+     W[GDIM-1] = &tvi; 
      return;
    }
 
@@ -1193,15 +1191,15 @@ void GMConv<TypePack>::compute_vterm(StateComp &tvi, State &W)
      x = (*xnodes)[0][i]; y = (*xnodes)[1][i]; z = (*xnodes)[2][i];
      r     = sqrt(x*x + y*y + z*z);
      lat   = asin(z/r);
-     long  = atan2(y,x);
+     lon   = atan2(y,x);
 
-     (*W[0])[i] = cos(lat)*cos(long);
-     (*W[1])[i] = cos(lat)*sin(long);
+     (*W[0])[i] = cos(lat)*cos(lon);
+     (*W[1])[i] = cos(lat)*sin(lon);
      (*W[2])[i] = sin(lat);
    }
 
    for ( auto j=0; j<W_.size(); j++ ) {
-     *W[j] *= (*tvi);
+     *W[j] *= tvi;
    }
 
 
@@ -1269,54 +1267,6 @@ void GMConv<TypePack>::compute_falloutsrc(StateComp &g, State &qi, State &tvi, G
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : compute_fv
-// DESC   : Compute dot prod of input vector fields,
-//          with the understanding that either vector 
-//          could have NULL or constant components:
-//                r = f . v,
-//          where return vector, r, is non-NULL and of
-//          full length. A constant vector has a size of 1
-// ARGS   : 
-//          f  : forcing vector; may be NULL or constant
-//          v  : velocity components; may be NULL or constant
-//          tmp: tmp vector, of full size
-//          r  : scalar field containing injection rate, of full size
-// RETURNS: none.
-//**********************************************************************************
-template<typename TypePack>
-void GMConv<TypePack>::compute_fv(State &f, State &v, StateComp &tmp, StateComp &r)
-{
-   GString     serr = "GMConv<TypePack>::compute_fv: ";
-
-   assert(f.size() == v.size());
-
-
-   r = 0.0;
-   for ( auto j=0; j<f.size(); j++ ) {
-
-     if ( f[j] == NULLPTR || v[j] == NULLPTR ) continue;
-     if      ( f[j]->size() == 1 && v[j]->size() == 1 ) { // f , v constant
-       tmp =  (*f[j])[0] * (*v[j])[0];
-     }
-     else if ( f[j]->size() >  1 && v[j]->size() == 1 ) { // v constant
-       GMTK::saxpby<Ftype>(tmp, 1.0, *f[j], (*v[j])[0]);  
-       
-     }
-     else if ( f[j]->size() == 1 && v[j]->size() >  1 ) { // f constant
-       GMTK::saxpby<Ftype>(tmp, 1.0, *v[j], (*f[j])[0]);  
-     }
-     else {                                               // f, v of full length
-       f[j]->pointProd(*v[j], tmp);
-     }
-     r += tmp;
-
-   }
-
-} // end of method compute_fv
-
-
-//**********************************************************************************
-//**********************************************************************************
 // METHOD : compute_pe
 // DESC   : Compute energy potential energy of hydrometeors:
 //       
@@ -1342,7 +1292,6 @@ void GMConv<TypePack>::compute_pe(StateComp &rhoT, State &qi, State &tvi, State 
 
    assert(tvi.size() == qi.size());
    assert(utmp.size() >= GDIM+2);
-   assert(jexcl < 0 || (jexcl >=0 && jexcl < qi.size()));
 
    // Compute:
    //    r = Sum_i rhoT q_i vec{g} . vec{W}_i,
@@ -1366,9 +1315,9 @@ void GMConv<TypePack>::compute_pe(StateComp &rhoT, State &qi, State &tvi, State 
    for ( auto j=0; j<nhydro; j++ ) {
 
      compute_vterm(*tvi[j], W_);       // compute W
-     compute_fv(g, W_, *tmp1, *tmp2);  // g.W
+     GMTK::dot<Ftype>(g, W_, *tmp1, *tmp2);  // g.W
      tmp2->pointProd(*qi[j]);          // qi * (g.W)
-     r += *tmp2
+     r += *tmp2;
 
    }
    r.pointProd(rhoT);                  // rhoT Sum_i q_i vec{g}.vec{W}_i
@@ -1386,7 +1335,7 @@ void GMConv<TypePack>::compute_pe(StateComp &rhoT, State &qi, State &tvi, State 
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::assign_helpers(State &u, State &uf)
+void GMConv<TypePack>::assign_helpers(const State &u, const State &uf)
 {
    GString     serr = "GMConv<TypePack>::assign_helpers: ";
 
@@ -1399,11 +1348,13 @@ void GMConv<TypePack>::assign_helpers(State &u, State &uf)
    }
    for ( auto j=0; j<GDIM; j++ ) fk_[j] = uf[j]; // kinetic forcing vector
 
-   for ( auto j=0; j<GDIM            ; j++ ) s_    [j] = u[j];
-   for ( auto j=0; j<traits_.nlsector; j++ ) qliq_ [j] = u[GDIM+3+j];
-   for ( auto j=0; j<traits_.nisector; j++ ) qice_ [j] = u[GDIM+3+nliq+j];
-   for ( auto j=0; j<traits_.nlsector; j++ ) tvliq_[j] = u[GDIM+3+  nliq+nice+j];
-   for ( auto j=0; j<traits_.nisector; j++ ) tvice_[j] = u[GDIM+3+2*nliq+nice+j];
+   GINT nliq = traits_.nlsector;
+   GINT nice = traits_.nisector;
+   for ( auto j=0; j<GDIM; j++ ) s_    [j] = u[j];
+   for ( auto j=0; j<nliq; j++ ) qliq_ [j] = u[GDIM+3+j];
+   for ( auto j=0; j<nice; j++ ) qice_ [j] = u[GDIM+3+nliq+j];
+   for ( auto j=0; j<nliq; j++ ) tvliq_[j] = u[GDIM+3+  nliq+nice+j];
+   for ( auto j=0; j<nice; j++ ) tvice_[j] = u[GDIM+3+2*nliq+nice+j];
 
 } // end of method assign_helpers
 
