@@ -141,7 +141,7 @@ void GHelmholtz::def_prod(GTVector<GFTYPE> &u,
   for ( GSIZET i=0; i<GDIM; i++ ) gdu[i] = utmp[i+GDIM];
 
   // Compute derivatives of u:
-  GMTK::compute_grefderivs(*grid_, u, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj u
+  grid_->compute_grefderivs(u, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj u
 
   if ( buse_metric_ ) {
     // Compute Gij (D^j u). Recall, Gij contain mass: 
@@ -170,7 +170,7 @@ void GHelmholtz::def_prod(GTVector<GFTYPE> &u,
   }
 
   // Now compute DT^j ( T^j ):
-  GMTK::compute_grefdiv(*grid_, gdu, etmp1_, TRUE, uo); // Compute 'divergence' with DT_j
+  grid_->compute_grefdiv(gdu, etmp1_, TRUE, uo); // Compute 'divergence' with DT_j
 
   // If p_ is constant, multiply at the end:
   if ( p_ != NULLPTR ) {
@@ -243,7 +243,7 @@ void GHelmholtz::embed_prod(GTVector<GFTYPE> &u,
   for ( GSIZET i=0; i<GDIM; i++ ) gdu[i] = utmp[i+GDIM+1];
 
   // Compute reference-space gradient of u:
-  GMTK::compute_grefderivs(*grid_, u, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj u
+  grid_->compute_grefderivs(u, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj u
 
   if ( buse_metric_ ) {
     // Compute Gij (D^j u). Recall, Gij contain mass, Jac: 
@@ -272,7 +272,7 @@ void GHelmholtz::embed_prod(GTVector<GFTYPE> &u,
 
   // gdu now hold Ti = p Gij D^j u, i = 0, GDIM-1
   // Now compute DT^j ( t^j ):
-  GMTK::compute_grefdiv(*grid_, gdu, etmp1_, TRUE, uo); // Compute 'divergence' with DT_j
+  grid_->compute_grefdiv(gdu, etmp1_, TRUE, uo); // Compute 'divergence' with DT_j
 
   // If p_ is constant, multiply at the end:
   if ( p_ != NULLPTR ) {
@@ -335,7 +335,7 @@ void GHelmholtz::reg_prod(GTVector<GFTYPE> &u,
 
 
   // Compute deriviatives of u:
-  GMTK::compute_grefderivs (*grid_, u, etmp1_, FALSE, gdu); // utmp stores tensor-prod derivatives
+  grid_->compute_grefderivs (u, etmp1_, FALSE, gdu); // utmp stores tensor-prod derivatives
 
   // Multiply by (element-size const) metric factors, possibly x-dependent 
   // 'viscosity', and mass:
@@ -356,7 +356,7 @@ void GHelmholtz::reg_prod(GTVector<GFTYPE> &u,
 
 
   // Take 'divergence' with D^T:
-  GMTK::compute_grefdiv  (*grid_, gdu, etmp1_, TRUE, uo); // Compute 'divergence' with W^-1 D_j
+  grid_->compute_grefdiv  (gdu, etmp1_, TRUE, uo); // Compute 'divergence' with W^-1 D_j
 
 
   // If p_ is constant, multiply at the end:

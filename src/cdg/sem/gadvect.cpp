@@ -126,7 +126,7 @@ void GAdvect::def_prod(GTVector<GFTYPE> &p, const GTVector<GTVector<GFTYPE>*> &u
   GTVector<GFTYPE>           *Jac   = &grid_->Jac  (); // get J
 
   // Get derivatives with weights:
-  GMTK::compute_grefderivsW(*grid_, p, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj p
+  grid_->compute_grefderivsW(*grid_, p, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj p
 
 
   // Compute po += ui Rij (D^j p).
@@ -179,7 +179,7 @@ void GAdvect::reg_prod(GTVector<GFTYPE> &p, const GTVector<GTVector<GFTYPE>*> &u
 // the derivative:
 
   // Get reference derivatives:
-  GMTK::compute_grefderivsW(*grid_, p, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj p
+  grid_->compute_grefderivsW(*grid_, p, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj p
 
   // Compute po += Gj uj D^j p.
   // Note: if u[j]==NULL, assume it's 0:

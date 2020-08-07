@@ -8,6 +8,7 @@
 
 #if !defined(_GLINOP_HPP)
 #define _GLINOP_HPP
+
 #include "gtvector.hpp"
 
 class GGrid;

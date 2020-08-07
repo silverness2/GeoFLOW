@@ -98,7 +98,7 @@ void GpdV<TypePack>::def_prod(StateComp &p, State &u, State &utmp, StateComp &po
   // Compute po += Gj (D^j u_j): 
   po = 0.0;
   for ( auto j=0; j<GDIM; j++ ) { 
-    GMTK::compute_grefdiv(*grid_, u, etmp1_, FALSE, *utmp[0]); 
+    grid_->compute_grefdiv(u, etmp1_, FALSE, *utmp[0]); 
     utmp[0]->pointProd(*G_[j],*utmp[1]); // Gj * du^j. Mass included in Gj
     po += *utmp[1];
   }
@@ -147,12 +147,12 @@ void GpdV<TypePack>::reg_prod(StateComp &p, State &u, State &utmp, StateComp &po
 // as is the Jacobian. Weights are provided by mass matrix, which
 // is set on construction, so that we don't have to re-compute it here:
 
-  GMTK::compute_grefdiv(*grid_, u, etmp1_, FALSE, *utmp[0]); // utmp stores tensor-prod divergence: Dj u^j
+  grid_->compute_grefdiv(u, etmp1_, FALSE, *utmp[0]); // utmp stores tensor-prod divergence: Dj u^j
 
   // Compute po += Gj (D^j u_j): 
   po = 0.0;
   for ( auto j=0; j<GDIM; j++ ) { 
-    GMTK::compute_grefdiv(*grid_, u, etmp1_, FALSE, *utmp[0]); 
+    grid_->compute_grefdiv(u, etmp1_, FALSE, *utmp[0]); 
     *utmp[0] *= (*G_[j])[0]; // remember, mass not included in G here
     po += *utmp[0];
   }
