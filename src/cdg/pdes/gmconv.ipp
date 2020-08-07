@@ -72,8 +72,12 @@
 template<typename TypePack>
 GMConv<TypePack>::GMConv(Grid &grid, GMConv<TypePack>::Traits &traits, State &tmp) :
 EquationBase<TypePack>(),
+bforced_                 (FALSE),
 bsteptop_                (FALSE),
 bvterm_                  (FALSE),
+nevolve_                     (0),
+nhydro_                      (0),
+nmoist_                      (0),
 gmass_                 (NULLPTR),
 gimass_                (NULLPTR),
 /*
@@ -93,7 +97,7 @@ steptop_callback_      (NULLPTR)
   GGridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
 
   assert(tmp.size() >= req_tmp_size() && "Insufficient tmp space provided");
-  assert(!(GDIM==2 && icos!=NULLPTR && "Embedded 2D spherical grid not allowed");
+  assert(!(GDIM==2 && icos!=NULLPTR) && "Embedded 2D spherical grid not allowed");
 
   traits_.iforced.resize(traits.iforced.size());
   traits_ = traits;
@@ -266,7 +270,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   // Assign qi, tvi, qice, qliq, tvice, tvliq:
   assign_helpers(u);
 
- *urhstmp_[0] = *u[GDIM+1]; urhstmp[0]->rpow(-1.0) // 1/total mass
+ *urhstmp_[0] = *u[GDIM+1]; urhstmp_[0]->rpow(-1.0); // 1/total mass
 
   // Set tmp pool for RHS computations:
   Ltot  = urhstmp_[urhstmp_.size()-1];
@@ -275,7 +279,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   tmp2  = urhstmp_[urhstmp_.size()-4];
 
   // Compute velocity for timestep:
-  compute_v(u, utmp); // stored in v_
+  compute_v(u, utmp_, v_); // stored in v_
 
   // Get 1/rhoT:
   rhoT  =  u[GDIM+1];
@@ -290,7 +294,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   compute_div(*u[GDIM+1], v_, urhstmp_, *dudt[GDIM+1]); 
   compute_falloutsrc(*u[GDIM+1], qi_, tvi_, -1, uoptmp_, *Ltot);
   GMTK::saxpby<Ftype>(*dudt[GDIM+1], 1.0, *Ltot, 1.0);   // += Ltot
-  if ( uf[GDIM+1] != NULLPTR ) *dudt[GDIM+1] -= *uf[GDIM+1]; += sdot(s_rhoT)
+  if ( uf[GDIM+1] != NULLPTR ) *dudt[GDIM+1] -= *uf[GDIM+1];//  += sdot(s_rhoT)
   
   // First, compute all operators as though they are on the LHS, then
   // change the sign and add Mass at the very end....
@@ -304,13 +308,13 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   // *************************************************************
   ibeg   = GDIM + 2;
   for ( auto j=0; j<nmoist_; j++ ) {
-    gadvect_->apply(*qi[j], v_, uoptmp_, *dudt[ibeg+j]); // apply advection
+    gadvect_->apply(*qi_[j], v_, uoptmp_, *dudt[ibeg+j]); // apply advection
     compute_vterm(*tvi_[j], W_);
-    *tmp1 = (*qi[k]) * (*rhoT);                // q_i rhoT
+    *tmp1 = (*qi_[j]) * (*rhoT);               // q_i rhoT
     compute_div(*tmp1, W_, urhstmp_, *tmp2);   // Div(q_i rhoT W)
     *tmp2 *= *irhoT;                           // Div(q_i rhoT W)/rhoT
     *dudt[ibeg+j] += *tmp2;                    // += Div(q_i rhoT W)/rhoT
-    *tmp1  = (*Ltot) * (*irhoT); *tmp1 *= (qi[j]) // q_i/rhoT Ltot
+    *tmp1  = (*Ltot) * (*irhoT); *tmp1 *= (*qi_[j]) // q_i/rhoT Ltot
     *dudt[ibeg+j] -= *tmp1;                    // += -q_i/rhoT Ltot
     if ( uf[ibeg+j] != NULLPTR ) {             // add in sdot(s_i)/rhoT
       *tmp1 = *uf[ibeg+1]; *tmp1 *= *irhoT;    // dot(s)/rhoT 
@@ -331,14 +335,14 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   compute_ptemp(u, uoptmp_, *T, *p);               // find p, T
 
   GMTK::saxpby<Ftype>(*tmp1, *e, 1.0, *p, 1.0);    // h = p+e, enthalpy density
-  compute_div(*tmp1 v_, uoptmp_, *dudt[GDIM]);     // Div (h v);
+  compute_div(*tmp1, v_, uoptmp_, *dudt[GDIM]);    // Div (h v);
 
   if ( traits_.dofallout || traits_.dodry ) {
-   *tmp1 = *rhoT; *tmp1.pointProd(CPL, *T);        // tmp1 = CP_liq rhoT T
+   *tmp1 = *rhoT; tmp1->pointProd(CPL, *T);        // tmp1 = CP_liq rhoT T
     compute_falloutsrc(*tmp1, qliq_, tvliq_, -1.0, uoptmp_, *Ltot);
                                                    // liquid fallout src
    *dudt[GDIM] += *Ltot;                           // += L_liq
-   *tmp1 = *rhoT; *tmp1.pointProd(CPI, *T);        // tmp1 = CP_ice rhoT T
+   *tmp1 = *rhoT; tmp1->pointProd(CPI, *T);        // tmp1 = CP_ice rhoT T
     compute_falloutsrc(*tmp1, qice_, tvice_, -1.0, uoptmp_, *Ltot); 
                                                    // ice fallout src
    *dudt[GDIM] += *Ltot;                           // += L_ice
@@ -569,9 +573,9 @@ void GMConv<TypePack>::init()
 
   // Find no. state and solve members, and component types:
   for( auto j=0; j<GDIM; j++ ) icomptype->push_back(GSC_KINETIC); 
-  icomptype->push_back(GSC_TOTDENSITY); 
-  icomptype->push_back(GSC_INTENERGY); 
-  if ( traits_.dodry  {
+  icomptype->push_back(GSC_DENSITYT); 
+  icomptype->push_back(GSC_ENERGY); 
+  if ( traits_.dodry )  {
     traits_.nsolve = GDIM + 2;
     traits_.nstate = traits_.nsolve;
   }
@@ -579,16 +583,14 @@ void GMConv<TypePack>::init()
     n = traits_.nlsector + traits_.nisector;
     traits_.nsolve = GDIM + 2 + n;
     traits_.nstate = traits_.nsolve;
-    for( auto j=0; j<traits_.nlsector; j++ ) icomptype->push_back(GSC_LIQDENSITY); 
-    for( auto j=0; j<traits_.nisector; j++ ) icomptype->push_back(GSC_ICEDENSITY); 
-    if traits_.dofallout ) { // include terminal velocities:
+    for( auto j=0; j<traits_.nlsector; j++ ) icomptype->push_back(GSC_MASSFRAC); 
+    for( auto j=0; j<traits_.nisector; j++ ) icomptype->push_back(GSC_MASSFRAC); 
+    if ( traits_.dofallout ) { // include terminal velocities:
       traits_.nstate += 
                      traits_.nlsector + traits_.nisector;
     for( auto j=0; j<n; j++ ) icomptype->push_back(GSC_PRESCRIBED); 
     }
   }
-  this->stateinfo.nevolve = traits_.solve;
-  this->stateinfo.presc   = traits_.nstate - traits_.solve;
 
   // Find multistep/multistage time stepping coefficients:
   GMultilevel_coeffs_base<GFTYPE> *tcoeff_obj=NULLPTR; // time deriv coeffs
@@ -687,7 +689,7 @@ void GMConv<TypePack>::init()
 
   if ( traits_.bconserved ) {
     assert(FALSE && "Conservation not yet supported");
-    gpdv_  = new GpdV(*grid_,*gmass_);
+    gpdv_  = new GpdV<TypePack>(*grid_);
 //  gflux_ = new GFlux(*grid_);
     assert( (gmass_   != NULLPTR
           && ghelm_   != NULLPTR
@@ -695,7 +697,7 @@ void GMConv<TypePack>::init()
   }
   else {
     gadvect_ = new GAdvect(*grid_);
-    gpdv_    = new GpdV(*grid_);
+    gpdv_    = new GpdV<TypePack>(*grid_);
     assert( (gmass_   != NULLPTR
           && ghelm_   != NULLPTR
           && gpdv_    != NULLPTR
@@ -715,13 +717,15 @@ void GMConv<TypePack>::init()
   // Find minimum element edge/face lengths for 
   // timestep computation:
   maxbyelem_.resize(grid_->nelems());
-  ggrid_->minlength(&dxmin_);
+  grid_->minlength(&dxmin_);
 
   // Set size of mass frac and term vel vectors,
   // misc. helper arrays:
-  nhyrdo_ = traits_.dodry ? 0 : traits_.nlsector + traits_.nisector + 1;
+  nhydro_ = traits_.dodry ? 0 : traits_.nlsector + traits_.nisector + 1;
   nmoist_ = traits_.dodry ? 0 : nhydro_ + 1;
   nevolve_ = GDIM + 2 + nmoist_;
+  this->stateinfo.nevolve = traits_.solve;
+  this->stateinfo.presc   = traits_.nstate - traits_.solve;
   qi_   .resize(nmoist_);
   tvi_  .resize(nmoist_);
   qliq_ .resize(traits_.nlsector);
@@ -797,72 +801,17 @@ void GMConv<TypePack>::set_nu(GTVector<GFTYPE> &nu)
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::apply_bc_impl(const Time &t, State &u, const State &ub)
+void GMConv<TypePack>::apply_bc_impl(const Time &t, State &u, State &ub)
 {
-  GTVector<GTVector<GSIZET>>  *igbdy = &grid_->igbdy_binned();
-  GTVector<GTVector<GSIZET>>  *ilbdy = &grid_->ilbdy_binned();
+  Time ttime = t;
 
-  // Use indirection to set the global field node values
-  // with domain boundary data. ub must be updated outside 
-  // of this method.
+  BdyUpdateList *updatelist = &grid_->bdy_update_list();;
 
-  // NOTE: This is useful to set Dirichlet-type bcs only. 
-  // Neumann bcs type have to be set with the
-  // differential operators themselves, though the node
-  // points in the operators may still be set from ub
- 
-  GSIZET   ib;
-  GBdyType itype; 
-  for ( GSIZET m=0; m<igbdy->size(); m++ ) { // for each type of bdy in gtypes.h
-    itype = static_cast<GBdyType>(m);
-    if (// itype == GBDY_NEUMANN
-         itype == GBDY_PERIODIC
-     ||  itype == GBDY_OUTFLOW
-     ||  itype == GBDY_SPONGE 
-     ||  itype == GBDY_NONE   ) continue;
-    for ( GSIZET k=0; k<u.size(); k++ ) { // for each state component
-      if ( ub[k] == NULLPTR ) continue;
-      for ( GSIZET j=0; j<(*igbdy)[m].size(); j++ ) { // set Dirichlet-like value
-        ib = (*igbdy)[m][j];
-        (*u[k])[ib] = (*ub[k])[j];
-      } 
-    } 
-  } 
 
-  // Handle 0-Flux bdy conditions. This
-  // is computed by solving
-  //    vec{n} \cdot vec{u} = 0
-  // for 'dependent' component set in grid.
-  //
-  // Note: We may want to switch the order of the
-  //       following loops to have a better chance
-  //       of vectorization. Unrolling likely
-  //       won't occur:
-  GINT                         id;
-  GSIZET                       il;
-  GFTYPE                       sum, xn;
-  GTVector<GTVector<GFTYPE>>  *n    = &grid_->bdyNormals();
-  GTVector<GINT>              *idep = &grid_->idepComp  ();
-
-  itype = GBDY_0FLUX;
-  for ( auto j=0; j<(*igbdy)[itype].size(); j++ ) { 
-    ib = (*igbdy)[itype][j]; // index into vector array
-    il = (*ilbdy)[itype][j]; // index into bdy array (for normals, e.g.)
-    id = (*idep)[ib];        // dependent vector component
-    xn = (*n)[id][ib];       // n_id == normal component for dependent vector comp
-    sum = 0.0;
-    for ( auto k=0; k<u.size(); k++ ) { // for each vector component
-      if ( k != (*idep)[ib] ) sum -= (*n)[k][il] * (*u[k])[ib];
-    }
-    (*u[id])[ib] = sum / xn;
-  }
-
-  // Handle no-slip bdy conditions.
-  itype = GBDY_NOSLIP;
-  for ( auto k=0; k<u.size(); k++ ) { // for each velocity component
-    for ( auto j=0; j<(*igbdy)[itype].size(); j++ ) { 
-      ib = (*igbdy)[itype][j]; // index into vector array
-      (*u[k])[ib] = 0.0;
+  // Update bdy values if required to:
+  for ( auto k=0; k<updatelist->size(); k++ ) { // foreach grid bdy
+    for ( auto j=0; j<(*updatelist)[j].size(); j++ ) { // each update method
+      (*updatelist)[k][j]->update(*grid_, this->stateinfo_, ttime, utmp_, u, ub);
     }
   }
 

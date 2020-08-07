@@ -46,6 +46,7 @@
 #define _GMCONV_HPP
 
 #include "gtypes.h"
+#include "gphysics.h"
 #include <functional>
 #include <cstdlib>
 #include <memory>
@@ -146,7 +147,7 @@ protected:
                                                                           // Has dynamic dt?
         void                dt_impl(const Time &t, State &u, Time &dt);   // Get dt
         void                apply_bc_impl(const Time &t, State &u, 
-                                          const State &ub);               // Apply bdy conditions
+                                          State &ub);                     // Apply bdy conditions
 private:
 
         void                init();                                       // initialize 
@@ -166,10 +167,10 @@ inline  void                compute_ptemp(State &u, State &utmp, StateComp &temp
 inline  void                compute_falloutsrc
                                          (StateComp &g, State &qi, State &v, GINT jexcl, State &utmp, StateComp &r );
 inline  void                compute_div  (StateComp &q, State &v, State &utmp, StateComp &div );
-inline  void                compute_v    (State &u, State &utmp);
+inline  void                compute_v    (State &u, State &utmp, State &v);
 inline  void                compute_vterm(StateComp &tv, State &W);
 inline  void                compute_fv   (State &uf, State &v, StateComp &tmp, StateComp &rate);
-inline  void                assign_helpers();
+inline  void                assign_helpers(State &u, State &uf);
 inline  void                compute_pe   (StateComp &rhoT, State &qi, State &tvi, State &utmp, StateComp      &r);
  
 
@@ -196,6 +197,7 @@ inline  void                compute_pe   (StateComp &rhoT, State &qi, State &tvi
         State               tvi_;           // term vel. vector for all qi
         State               tvice_;         // term vel. vector for all qice
         State               tvliq_;         // term vel. vector for all qliq
+        State               fv_;            // state velocity forcing components
         State               s_;             // state momentum components
         State               v_;             // state velocity components
         State               W_;             // terminal velocity components
