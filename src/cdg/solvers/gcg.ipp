@@ -12,6 +12,7 @@
 #include <limits>
 #include "ggfx.hpp"
 #include "gcomm.hpp"
+#include "gmtk.hpp"
 #include "tbox/error_handler.hpp"
 
 using namespace std;

@@ -18,13 +18,13 @@
 #include "gtmatrix.hpp"
 #include "gmtk.hpp"
 #include "ggrid.hpp"
-#include "glinop.hpp"
 #include "gcomm.hpp"
 #include "ggfx.hpp"
 #include "pdeint/lin_solver_base.hpp"
 
 using namespace geoflow::pdeint;
 using namespace std;
+
 
 template<typename TypePack> 
 class GCG : public LinSolverBase<TypePack>
