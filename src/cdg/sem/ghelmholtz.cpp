@@ -199,7 +199,7 @@ void GHelmholtz::def_prod(GTVector<GFTYPE> &u,
 // METHOD : embed_prod
 // DESC   : Compute application of this operator to input vector for
 //          GE_2DEMBEDDED elements
-//          NOTE: must have 2*GDIM+3 utmp vectors set via set_tmp method
+//          NOTE: must have 2*GDIM utmp vectors set via set_tmp method
 // ARGS   : u  : input vector
 //          uo : output (result) vector
 //          utmp: tmp space
@@ -210,7 +210,7 @@ void GHelmholtz::embed_prod(GTVector<GFTYPE> &u,
                             GTVector<GTVector<GFTYPE>*> &utmp,
                             GTVector<GFTYPE> &uo)
 {
-  assert( GDIM == 2 && utmp.size() >= 2*GDIM+3
+  assert( GDIM == 2 && utmp.size() >= 2*GDIM+1
        && "Insufficient temp space specified");
 
   GString serr = "GHelmholtz::embed_prod: ";
@@ -240,7 +240,7 @@ void GHelmholtz::embed_prod(GTVector<GFTYPE> &u,
 // p is 'viscosity', M is mass matrix, and q a factor for M
 
   // Re-arrange local temp space for divergence:
-  for ( GSIZET i=0; i<GDIM; i++ ) gdu[i] = utmp[i+GDIM+1];
+  for ( GSIZET i=0; i<GDIM; i++ ) gdu[i] = utmp[i+GDIM];
 
   // Compute reference-space gradient of u:
   grid_->compute_grefderivs(u, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj u

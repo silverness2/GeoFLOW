@@ -122,7 +122,7 @@ void GpdV<TypePack>::def_prod(StateComp &p, State &u, State &utmp, StateComp &po
 //          NOTE: must have 1 utmp vectors provided
 // ARGS   : p   : input vector (global)
 //          u   : input vector field (global)
-//          utmp: array of tmp arrays
+//          utmp: array of tmp arrays. One array required.
 //          po  : output (result) field (global)
 //             
 // RETURNS:  none

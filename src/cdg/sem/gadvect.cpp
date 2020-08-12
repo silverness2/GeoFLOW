@@ -92,10 +92,12 @@ void GAdvect::apply(GTVector<GFTYPE> &p, const GTVector<GTVector<GFTYPE>*> &u, G
 // DESC   : Compute this term for 2d & 3d GE_DEFORMED elements.
 //          NOTE: must have 5 utmp vectors set via call if
 //                using GDIM=3 or if GDIM=2 & are using GE_2DEMBEDDED elements;
-//                If using 2D deformed elements, need just 4 utmp vectors.
-// ARGS   : p : input vector (global)
-//          u : input vector field (global)
-//          po: output (result) field (global)
+//                If using 2D deformed elements, need 4 utmp vectors.
+// ARGS   : p   : input vector (global)
+//          u   : input vector field (global)
+//          utmp: tmp arrays; GDIM+2; if using 2DEMBEDDED
+//                elements require GDIM+3
+//          po  : output (result) field (global)
 //             
 // RETURNS:  none
 //**********************************************************************************
@@ -104,7 +106,7 @@ void GAdvect::def_prod(GTVector<GFTYPE> &p, const GTVector<GTVector<GFTYPE>*> &u
   GSIZET nxy = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
 
   assert( u.size() == nxy );
-  assert( utmp.size() >= nxy+1
+  assert( utmp.size() >= nxy+2
        && "Insufficient temp space specified");
 
 
