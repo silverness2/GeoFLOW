@@ -658,7 +658,7 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
   GSIZET              nxy;
   GFTYPE              x, y, z, r;
   GFTYPE              delT, L, T0, Ts, P0;
-  GTVector<GFTYPE>   *db, *dT, *Pb, *Tb;
+  GTVector<GFTYPE>   *db, *dT, *e, *Pb, *Tb;
   std::vector<GFTYPE> xc, xr;  
 
   PropertyTree bubbptree   = ptree.getPropertyTree(sconfig);
@@ -686,7 +686,7 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
   xr    = bubbptree.getArray<GFTYPE>("x_width");         // bubble width
   P0   *= 1.0e5;  // convert P0 to Pa
 
-  assert(xc.size() >= GDIM && xr >= GDIM);
+  assert(xc.size() >= GDIM && xr.size() >= GDIM);
 
  *u[0]  = 0.0; // sx
  *u[1]  = 0.0; // sy
@@ -697,9 +697,9 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
     x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
     if ( GDIM == 3 ) z = (*xnodes)[2][j];
     (*Tb)[j]  = Ts - GG*z/CPD;
-    (*Pb)[j]  = P0*pow((*T)[j]/Ts,CPD/RD);
+    (*Pb)[j]  = P0*pow((*Tb)[j]/Ts,CPD/RD);
     (*db)[j]  = (*Pb)[j] / ( RD * (*Tb)[j] );
-    L         = pow((x-xc[0])/xr[0],2) + pow((y-xc[1])/xr[1],2)
+    L         = pow((x-xc[0])/xr[0],2) + pow((y-xc[1])/xr[1],2);
     L        += GDIM == 3 ? pow((z-xc[2])/xr[2],2) : 0.0;
     L         = sqrt(L);
     delT      = L <= 1.0 ? -T0*pow(cos(0.5*PI*L),2.0) : 0.0;

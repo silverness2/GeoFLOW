@@ -12,12 +12,13 @@
 #if !defined(_GINITSTATE_USER_HPP)
 #define _GINITSTATE_USER_HPP
 
-#include "tbox/property_tree.hpp"
 #include "gtypes.h"
+#include "gphysics.h"
 #include "gstateinfo.hpp"
 #include "gtvector.hpp"
 #include "gcomm.hpp"
 #include "gutils.hpp"
+#include "tbox/property_tree.hpp"
 
 using namespace geoflow;
 using namespace geoflow::tbox;
