@@ -118,7 +118,7 @@ steptop_callback_      (NULLPTR)
     }
   }
   // Set space for terminal velocity, if needed:
-  if ( icos != NULLPTR ) {
+  if ( icos && (traits_.nlsector || traits_.nisector)) {
     for ( auto j=0; j<GDIM; j++ ) {
       W_[j] = tmp[j+v_.size()];
       nexcl++;
@@ -273,9 +273,9 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   // Assign qi, tvi, qice, qliq, tvice, tvliq:
   assign_helpers(u, uf);
 
- *urhstmp_[0] = *u[GDIM+1]; urhstmp_[0]->rpow(-1.0); // 1/total mass
 
   // Set tmp pool for RHS computations:
+  assert(urhstmp_.size() >= szrhstmp());
   Ltot  = urhstmp_[urhstmp_.size()-1];
   irhoT = urhstmp_[urhstmp_.size()-2];
   tmp1  = urhstmp_[urhstmp_.size()-3];
@@ -295,7 +295,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   // *************************************************************
 
   compute_div(*rhoT, v_, urhstmp_, *dudt[GDIM+1]); 
-  compute_falloutsrc(*rhoT, qi_, tvi_, -1, uoptmp_, *Ltot);
+  compute_falloutsrc(*rhoT, qi_, tvi_, -1, urhstmp_, *Ltot);
   GMTK::saxpy<Ftype>(*dudt[DENSITY], 1.0, *Ltot, 1.0);   // += Ltot
   if ( uf[DENSITY] != NULLPTR ) *dudt[DENSITY] -= *uf[DENSITY];//  += sdot(s_rhoT)
   
@@ -310,8 +310,8 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   // where Ltot is total fallout source over liq + ice sectors:
   // *************************************************************
   for ( auto j=0; j<nmoist_; j++ ) {
-    gadvect_->apply(*qi_[j], v_, uoptmp_, *dudt[VAPOR+j]); // apply advection
-    compute_vterm(*tvi_[j], W_);
+    gadvect_->apply(*qi_[j], v_, urhstmp_, *dudt[VAPOR+j]); // apply advection
+    compute_vpref(*tvi_[j], W_);
     *tmp1 = (*qi_[j]) * (*rhoT);                // q_i rhoT
     compute_div(*tmp1, W_, urhstmp_, *tmp2);    // Div(q_i rhoT W)
     *tmp2 *= *irhoT;                            // Div(q_i rhoT W)/rhoT
@@ -326,45 +326,48 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
     }
   }
   
-  p = urhstmp_[urhstmp_.size()-1]; // holds pressure
-  T = urhstmp_[urhstmp_.size()-2]; // holds temperature
-  e = u[ENERGY];                   // internal energy density
+  Ltot  = urhstmp_[urhstmp_.size()-1];
+  tmp1  = urhstmp_[urhstmp_.size()-2];
+  tmp2  = urhstmp_[urhstmp_.size()-3];
+  p     = urhstmp_[urhstmp_.size()-4]; // holds pressure
+  T     = urhstmp_[urhstmp_.size()-5]; // holds temperature
+  e     = u[ENERGY];                   // internal energy density
 
   // *************************************************************
   // Energy equationu RHS:
   // *************************************************************
   
-  compute_ptemp(u, uoptmp_, *T, *p);               // find p, T
+  compute_ptemp(u, urhstmp_, *T, *p);              // find p, T
 
   GMTK::saxpy<Ftype>(*tmp1, *e, 1.0, *p, 1.0);     // h = p+e, enthalpy density
-  compute_div(*tmp1, v_, uoptmp_, *dudt[GDIM]);    // Div (h v);
+  compute_div(*tmp1, v_, urhstmp_, *dudt[GDIM]);   // Div (h v);
 
   if ( traits_.dofallout || traits_.dodry ) {
     GMTK::paxy(*tmp1, *rhoT, CVL, *T);             // tmp1 = C_liq rhoT T
-    compute_falloutsrc(*tmp1, qliq_, tvliq_, -1.0, uoptmp_, *Ltot);
+    compute_falloutsrc(*tmp1, qliq_, tvliq_, -1.0, urhstmp_, *Ltot);
                                                    // liquid fallout src
    *dudt[ENERGY] += *Ltot;                         // += L_liq
     GMTK::paxy(*tmp1, *rhoT, CVI, *T);             // tmp1 = C_ice rhoT T
-    compute_falloutsrc(*tmp1, qice_, tvice_, -1.0, uoptmp_, *Ltot); 
+    compute_falloutsrc(*tmp1, qice_, tvice_, -1.0, urhstmp_, *Ltot); 
                                                    // ice fallout src
    *dudt[ENERGY] += *Ltot;                         // += L_ice
   }
 
-  gadvect_->apply(*p, v_, uoptmp_, *tmp1);         // v.Grad p
- *dudt[ENERGY] -= *tmp1;                           // -= v . Grad p
+  gadvect_->apply(*p, v_, urhstmp_, *tmp1);         // v.Grad p 
+ *dudt[ENERGY] -= *tmp1;                            // -= v . Grad p
 
   if ( traits_.dograv ) {
-    compute_pe(*rhoT, qi_, tvi_, uoptmp_, *tmp1);
-   *dudt[ENERGY] += *tmp1;                         // += Sum_i rhoT q_i g.W_i
+    compute_pe(*rhoT, qi_, tvi_, urhstmp_, *tmp1);
+   *dudt[ENERGY] += *tmp1;                          // += Sum_i rhoT q_i g.W_i
   }
 
   GMTK::dot<Ftype>(fv_, v_, *tmp2, *tmp1);
- *dudt[ENERGY] += *tmp1;                           // += f_kinetic . v
+ *dudt[ENERGY] += *tmp1;                            // += f_kinetic . v
 
   if ( uf[ENERGY] != NULLPTR ) {                    
     *tmp1 = *uf[ENERGY]; *tmp1 *= *Jac ; *tmp1 *= *Mass;
     GMTK::saxpy<Ftype>(*dudt[ENERGY], 1.0, *tmp1, -1.0); 
-                                                   // -= q_heat
+                                                    // -= q_heat
   }
 
   // *************************************************************
@@ -372,31 +375,27 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   // *************************************************************
   Jac = &grid_->Jac();
   Mass = grid_->massop().data();
-  if ( traits_.dograv) {
-    *tmp1 = -GG; // set constant grav accel
-     for ( auto j=0; j<GDIM; j++ ) g[j] = urhstmp_[j];
-     compute_vterm(*tmp1, g); // compute grav vector components
-  }
-
   for ( auto j=0; j<GDIM; j++ ) {
 
-    gadvect_->apply(*s_[j], v_, uoptmp_, *dudt[j]);   // v.Grad s_j
+    gadvect_->apply(*s_[j], v_, urhstmp_, *dudt[j]);  // v.Grad s_j
     if ( traits_.dofallout || traits_.dodry ) {
-      compute_falloutsrc(*u[j], qliq_, tvi_,-1.0, uoptmp_, *Ltot);
+      compute_falloutsrc(*u[j], qliq_, tvi_,-1.0, urhstmp_, *Ltot);
                                                       // hydrometeor fallout src
      *dudt[j] += *Ltot;                               // += L_tot
     }
-    grid_->wderiv(*u[j], j+1, TRUE, *tmp2, *tmp1);    // Grad p'
+    grid_->wderiv(*p, j+1, TRUE, *tmp2, *tmp1);       // Grad p'
    *dudt[j] += *tmp1;                                 // += Grad p'
-    ghelm_->opVec_prod(*u[j], uoptmp_, *tmp1);        // nu Laplacian s_j
+    ghelm_->opVec_prod(*u[j], urhstmp_, *tmp1);       // nu Laplacian s_j
    *dudt[j] -= *tmp1;                                 // -= nu Laplacian s_j
     if ( traits_.docoriolis ) {
-      GMTK::cross_prod(g, s_, j+1, *tmp1);
+      GMTK::cross_prod(v_, s_, j+1, *tmp1);
      *tmp1 *= *Jac; *tmp1 *= *Mass;             
-      GMTK::saxpy<Ftype>(*dudt[j], 1.0, *tmp1, 2.0); // += 2 Omega X (thooT v) M J
+      GMTK::saxpy<Ftype>(*dudt[j], 1.0, *tmp1, 2.0);  // += 2 Omega X (rhoT v) M J
     }
-    if ( traits_.dograv && g[j] != NULLPTR ) {
-      g[j]->pointProd(*rhoT, *tmp1);
+    if ( traits_.dograv ) {
+     *tmp1 = -GG; 
+      compute_vpref(*tmp1, j+1, *tmp2); // compute grav component
+      tmp2->pointProd(*rhoT, *tmp1);
      *tmp1 *= *Jac; *tmp1 *= *Mass;             
      *dudt[j] -= *tmp1;                              // -= rhoT g M J
     }
@@ -549,7 +548,7 @@ void GMConv<TypePack>::init()
   GBOOL      bmultilevel = FALSE;
   GSIZET     n;
   GSIZET     nc = grid_->gtype() == GE_2DEMBEDDED ? 3 : GDIM;
-  GINT       nop;
+  GINT       nrhstmp;
   CompDesc *icomptype = &this->stateinfo().icomptype;
 
   // Check if specified stepper type is valid:
@@ -646,16 +645,14 @@ void GMConv<TypePack>::init()
       // we're sure there's no overlap:
       uold_   .resize(traits_.nsolve); // solution at time level n
       urktmp_ .resize(traits_.nsolve*(traits_.itorder+1)+1); // RK stepping work space
-      urhstmp_.resize(1); // work space for RHS
-      nop = utmp_.size()-uold_.size()-urktmp_.size()-urhstmp_.size();
-      assert(nop > 0 && "Invalid operation tmp array specification");
-      uoptmp_ .resize(nop); // RHS operator work space
+      urhstmp_.resize(szrhstmp()); // work space for RHS
+      nrhstmp = utmp_.size()-uold_.size()-urktmp_.size()-urhstmp_.size();
+      assert(nrhstmp > szrhstmp() && "Invalid rhstmp array size");
       // Make sure there is no overlap between tmp arrays:
       n = 0;
       for ( GSIZET j=0; j<traits_.nsolve ; j++, n++ ) uold_   [j] = utmp_[n];
       for ( GSIZET j=0; j<urktmp_ .size(); j++, n++ ) urktmp_ [j] = utmp_[n];
       for ( GSIZET j=0; j<urhstmp_.size(); j++, n++ ) urhstmp_[j] = utmp_[n];
-      for ( GSIZET j=0; j<uoptmp_ .size(); j++, n++ ) uoptmp_ [j] = utmp_[n];
       break;
 /*
     case GSTEPPER_BDFAB:
@@ -737,7 +734,7 @@ void GMConv<TypePack>::init()
   maxbyelem_.resize(grid_->nelems());
   grid_->minlength(&dxmin_);
 
-  // Set size of mass frac and term vel vectors,
+  // Set size of mass frac and 
   // misc. helper arrays:
   nhydro_ = traits_.dodry ? 0 : traits_.nlsector + traits_.nisector + 1;
   nmoist_ = traits_.dodry ? 0 : nhydro_ + 1;
@@ -882,15 +879,15 @@ void GMConv<TypePack>::compute_cv(const State &u, State &utmp, StateComp &cv)
      return;
    }
 
-  *utmp[0]  =          1.0;  
-  *utmp[0] -= (*u[GDIM+1]);      // running total 1- Sum_k q_k
-   cv       = (*u[GDIM+1])*CVV;  // Cv = Cvv * q_vapor
-   ibeg     = LIQMASSDa; + 1 + traits_.nlsector;;
+  *utmp[0]  = 1.0;              // running total: subtract qi's  
+  *utmp[0] -= (*u[VAPOR]);      // -q_v
+   cv       = (*u[VAPOR])*CVV;  // Cv = Cvv * q_vapor
+   ibeg     = LIQMASS;
    for ( auto k=ibeg; k<ibeg+traits_.nlsector+1; k++ ) { // liquids
      *utmp[0] -= *u[k];         // subtract in ql_k
       cv      += (*u[k]) * CVL; // add in Cvl * ql_k
    }
-   ibeg = LIQMASS + 1 + traits_.nlsector;;
+   ibeg = LIQMASS + traits_.nlsector;;
    for ( auto k=ibeg; k<ibeg+traits_.nisector; k++ ) { // ices
      *utmp[0] -= *u[k];         // subtract in qi_k
      cv       += (*u[k]) * CVI; // add in Cvi * qi_k
@@ -1134,7 +1131,7 @@ template<typename TypePack>
 void GMConv<TypePack>::compute_v(const State &u, State &utmp, State &v)
 {
    GString    serr = "GMConv<TypePack>::compute_v: ";
-   StateComp *irhoT, *rhot;
+   StateComp *irhoT, *rhoT;
 
    assert(utmp.size() >= 1);
 
@@ -1148,8 +1145,12 @@ void GMConv<TypePack>::compute_v(const State &u, State &utmp, State &v)
    }
 
    // Compute inverse mass:
-   rhot  = u[DENSITY]; 
-   irhoT = utmp[0];
+   rhoT  = u[DENSITY]; 
+   if ( traits_.usebase ) {
+     *rhoT += *u[BASESTATE];
+   }
+   irhoT  = utmp[0];
+   *irhoT = *rhoT;
    irhoT->rpow(-1.0);
 
    // Find velocity from momentum density:
@@ -1165,19 +1166,18 @@ void GMConv<TypePack>::compute_v(const State &u, State &utmp, State &v)
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : compute_vterm
-// DESC   : Transform 'terminal' (preferred) direction component specified into
-//          Cartesian compoments, W.
+// METHOD : compute_vpref (1)
+// DESC   : Transform preferred direction component into vector.
+//          Components of W may be NULL.
 // ARGS   : tvi   : terminal velocity or gravity magnitude in preferred
 //                  direction
-//          W     : Cartesian vector field. Components may be set to NULL if not
-//                  needed.
+//          W     : Cartesian vector field 
 // RETURNS: none. 
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::compute_vterm(StateComp &tvi, State &W)
+void GMConv<TypePack>::compute_vpref(StateComp &tvi, State &W)
 {
-   GString    serr = "GMConv<TypePack>::compute_vterm: ";
+   GString    serr = "GMConv<TypePack>::compute_vpref(1): ";
    Ftype      r, x, y, z;
    Ftype      lat, lon;
    GTVector<GTVector<GFTYPE>> 
@@ -1220,7 +1220,84 @@ void GMConv<TypePack>::compute_vterm(StateComp &tvi, State &W)
    }
 
 
-} // end of method compute_vterm
+} // end of method compute_vpref (1)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : compute_vpref (2)
+// DESC   : Transform preferred direction component specified in coord
+//          direction idir
+// ARGS   : tvi   : terminal velocity or gravity magnitude in preferred
+//                  direction
+//          idir  : vetor component direction, in 1, 2,...GDIM
+//          W     : idir-th Cartesian vector field component
+//                  sought.
+// RETURNS: none. 
+//**********************************************************************************
+template<typename TypePack>
+void GMConv<TypePack>::compute_vpref(StateComp &tvi, GINT idir, StateComp &W)
+{
+   GString    serr = "GMConv<TypePack>::compute_vpref (2): ";
+   Ftype      r, x, y, z;
+   Ftype      lat, lon;
+   GTVector<GTVector<GFTYPE>> 
+             *xnodes = &grid_->xNodes();
+
+   GGridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
+   GGridBox  *box  = dynamic_cast <GGridBox*>(grid_);
+
+   assert(idir > 0 && idir <= GDIM);
+
+   // Specify components for Cartesian grid:
+   if ( box != NULLPTR ) {
+     // In Cartesian coords, select the 'z' direction
+     // as preferred 'fallout' direction. In 2d, this
+     // will be the 2-coord; in 3d, the 3-coord:
+     if ( idir != GDIM+1 ) {
+       W = 0.0;
+     }
+     else {
+       W = tvi; 
+     }
+     return;
+   }
+
+   // Specify components for spherical grid. Here,
+   // the preferred direction is along radial direction; 
+   // we assume that the prescribed term velocity
+   // is the radial component only, which must be
+   // transformed into Cartesian components:
+
+   if ( idir == 1 ) {
+     for ( auto i=0; i<(*xnodes)[0].size(); i++ ) {
+       x = (*xnodes)[0][i]; y = (*xnodes)[1][i]; z = (*xnodes)[2][i];
+       r     = sqrt(x*x + y*y + z*z);
+       lat   = asin(z/r);
+       lon   = atan2(y,x);
+       W[i]  = tvi[i]*cos(lat)*cos(lon);
+     }
+   }
+   else if ( idir == 2 ) {
+     for ( auto i=0; i<(*xnodes)[0].size(); i++ ) {
+       x = (*xnodes)[0][i]; y = (*xnodes)[1][i]; z = (*xnodes)[2][i];
+       r     = sqrt(x*x + y*y + z*z);
+       lat   = asin(z/r);
+       lon   = atan2(y,x);
+       W[i]  = tvi[i]*cos(lat)*sin(lon);
+     }
+   }
+   else {
+     for ( auto i=0; i<(*xnodes)[0].size(); i++ ) {
+       x = (*xnodes)[0][i]; y = (*xnodes)[1][i]; z = (*xnodes)[2][i];
+       r     = sqrt(x*x + y*y + z*z);
+       lat   = asin(z/r);
+       lon   = atan2(y,x);
+       W[i]  = tvi[i]*sin(lat);
+     }
+   }
+
+} // end of method compute_vpref (2)
 
 
 //**********************************************************************************
@@ -1272,7 +1349,7 @@ void GMConv<TypePack>::compute_falloutsrc(StateComp &g, State &qi, State &tvi, G
      // Convert terminal velocities to required 
      // (Cartesian) components. vterm may point
      // to tvi, or to v_ member data, or may be NULL:
-     compute_vterm(*tvi[j], W_);
+     compute_vpref(*tvi[j], W_);
 
      // Compute i_th contribution to source term:
      compute_div(*qg, W_, utmp, *div);
@@ -1285,7 +1362,7 @@ void GMConv<TypePack>::compute_falloutsrc(StateComp &g, State &qi, State &tvi, G
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : compute_pe
-// DESC   : Compute energy potential energy of hydrometeors:
+// DESC   : Compute potential energy of hydrometeors:
 //       
 //              r = Sum_i rhoT q_i vec{g} . vec{W}_i,
 //          where i is over all hydrometeor sectors, q_i & W_i
@@ -1326,12 +1403,12 @@ void GMConv<TypePack>::compute_pe(StateComp &rhoT, State &qi, State &tvi, State 
   
    // Compute Cartersian components of gravity vector field:
   *tmp1 = -GG;
-   compute_vterm(*tmp1, g);
+   compute_vpref(*tmp1, g);
 
    r = 0.0;
    for ( auto j=0; j<nhydro; j++ ) {
 
-     compute_vterm(*tvi[j], W_);       // compute W
+     compute_vpref(*tvi[j], W_);       // compute W
      GMTK::dot<Ftype>(g, W_, *tmp1, *tmp2);  // g.W
      tmp2->pointProd(*qi[j]);          // qi * (g.W)
      r += *tmp2;
@@ -1376,3 +1453,30 @@ void GMConv<TypePack>::assign_helpers(const State &u, const State &uf)
 } // end of method assign_helpers
 
 
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : szrhstmp
+// DESC   : Get size of tmp array for RHS computations
+//       
+// ARGS   : none
+// RETURNS: GINT size
+//**********************************************************************************
+template<typename TypePack>
+GINT GMConv<TypePack>::szrhstmp()
+{
+   GINT       sum = 0;
+   GGridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
+   GGridBox  *box  = dynamic_cast <GGridBox*>(grid_);
+   
+   // Get tp size for operators:
+   if ( box ) {
+     sum += box->gtype() == GE_DEFORMED ? 2*GDIM : GDIM;
+   }
+   else {
+     sum += 2*GDIM;
+   }
+  sum += GDIM + 3; // size for compute_* methods
+  sum += 5;        // size for misc tmp space in dudt_impl
+
+  return sum;
+} //end szrhstmp

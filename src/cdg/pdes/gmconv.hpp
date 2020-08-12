@@ -172,9 +172,11 @@ inline  void                compute_falloutsrc
                                          (StateComp &g, State &qi, State &v, GINT jexcl, State &utmp, StateComp &r );
 inline  void                compute_div  (StateComp &q, State &v, State &utmp, StateComp &div );
 inline  void                compute_v    (const State &u, State &utmp, State &v);
-inline  void                compute_vterm(StateComp &tv, State &W);
+inline  void                compute_vpref(StateComp &tv, State &W);
+inline  void                compute_vpref(StateComp &tv, GINT idir, StateComp &W);
 inline  void                assign_helpers(const State &u, const State &uf);
 inline  void                compute_pe   (StateComp &rhoT, State &qi, State &tvi, State &utmp, StateComp      &r);
+inline  GINT                szrhstmp();
  
 
         GBOOL               bforced_;       // use forcing vectors
@@ -191,7 +193,6 @@ inline  void                compute_pe   (StateComp &rhoT, State &qi, State &tvi
         State               utmp_;
         State               uold_;          // helper arrays set from utmp
         State               urhstmp_;       // helper arrays set from utmp
-        State               uoptmp_;        // helper arrays set from utmp
         State               urktmp_;        // helper arrays set from utmp
         State               fk_;            // kinetic forcing vector
         State               qi_;            // full mass fraction vector
