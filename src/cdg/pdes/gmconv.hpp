@@ -24,6 +24,8 @@
 //                  q_ice_1 : 'ice' substance 1 mass fraction  |  'ice' mass sector
 //                  q_ice_2 : 'ice' substance 2 mass fraction  |
 //                   ...
+//                  rho_s   : base state density               |
+//                  p_s     : base state pressure              | base state sector
 //                  w_liq_0 : liquid substance 2 term velocity |
 //                  w_liq_1 : liquid substance 2 term velocity | 'liquid' term vel. sector
 //                  w_liq_2 : liquid substance 2 term velocity |
@@ -107,12 +109,14 @@ public:
           GBOOL           bconserved  = FALSE;  // use conserved form?
           GBOOL           bforced     = FALSE;  // use forcing?
           GBOOL           usemomden   = TRUE;   // use momentum density form?
+          GBOOL           usebase     = TRUE;   // use hydrostatic base state?
           GBOOL           variabledt  = FALSE;  // use variable timestep?
           GBOOL           bvarvterm   = FALSE;  // time-variable term vel?
           GINT            nstate      = GDIM+2; // no. vars in state vec
           GINT            nsolve      = GDIM+2; // no. vars to solve for
           GINT            nlsector    = 0;      // no. vars in liq-sector
           GINT            nisector    = 0;      // no. vars in ice-sector
+          GINT            nbase       = 2;      // no. vars in base state
           GINT            ntmp        = 8;
           GINT            itorder     = 2;
           GINT            inorder     = 2;
@@ -222,6 +226,18 @@ inline  void                compute_pe   (StateComp &rhoT, State &qi, State &tvi
 
         std::function<void(const Time &t, State &u, const Time &dt)>
                            steptop_callback_;
+
+        // Starting indices for each sector:
+        GINT               MOMENTUM;
+        GINT               ENERGY;
+        GINT               DENSITY;
+        GINT               VAPOR;
+        GINT               LIQMASS;
+        GINT               ICEMASS;
+        GINT               PRESCRIBED;
+        GINT               BASESTATE;
+        GINT               LIQTERMV;
+        GINT               ICETERMV;
 
 
 };
