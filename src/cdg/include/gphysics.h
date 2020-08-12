@@ -8,7 +8,7 @@
 #if !defined(_GPHYSICS_H)
 #define _GPHYSICS_H
 
-#include "configure.hpp"
+//#include "configure.hpp"
 
   #define CPD     1004.0    // sp. heat const press, dry air J/kg-K
   #define CPV     1885.0    // sp. heat const press, liq. water J/Kg-J
@@ -20,7 +20,7 @@
   #define LV0        2.50e6 // latent heat of vaporization, reference J/kg
   #define RD       287.0    // gas const for dry air J/kg-K
   #define RV       461.0    // gas const for water vapor J/kg-K
-  #define T0       273.15   // ref temp K
+  #define TKREF    273.15   // ref temp K
 
 #endif // !defined(_GPHYSICS_H)
 
