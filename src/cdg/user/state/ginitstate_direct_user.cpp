@@ -553,9 +553,6 @@ GBOOL impl_icosgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid, S
   GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
   assert(grid.gtype() == GE_2DEMBEDDED && "Invalid element types");
 
-
-  // Need 3 arrays for utmp below, and 4 for other variables;
-  // use utmp[0-2] as tmp in calls to Ylm methods:
   assert(utmp.size() >= 7 );
   for (auto j=0; j<c.size(); j++ ) c[j] = u[j+1]; // adv vel. comp.
 
@@ -635,6 +632,82 @@ GBOOL impl_icosgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid, S
   return TRUE;
 
 } // end of method impl_icosgauss
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : impl_boxdrybubble
+// DESC   : Initialize state for GMConv solver with cold/dry bubble
+//          on box grids. Taken from Straka et al. 1993, Int. J. Num. 
+//          Meth. Fluids 17:1, and from Bryan & Fritsch 2002 MWR
+//          130:2817.
+// ARGS   : ptree  : main prop tree
+//          sconfig: ptree block name containing variable config
+//          grid   : grid
+//          stinfo : StateInfo
+//          t      : time
+//          utmp   : tmp arrays
+//          ub     : bdy vectors (one for each state element)
+//          u      : current state
+// RETURNS: TRUE on success; else FALSE 
+//**********************************************************************************
+GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
+{
+
+  GString             serr = "impl_boxdrybubble: ";
+  GSIZET              nxy;
+  GFTYPE              x, y, z, r;
+  GFTYPE              delT, L, T0, Ts, P0;
+  GTVector<GFTYPE>   *db, *dT, *Pb, *Tb;
+  std::vector<GFTYPE> xc, xr;  
+
+  PropertyTree bubbptree   = ptree.getPropertyTree(sconfig);
+  PropertyTree boxptreea   = ptree.getPropertyTree("grid_icos");
+  PropertyTree mconvptree  = ptree.getPropertyTree("pde_mconv");
+
+  GGridBox  *box   = dynamic_cast <GGridBox*>(&grid);
+  assert(box && "Must use a box grid");
+
+  GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
+
+  assert(u.size() != GDIM+4);
+
+  Tb    = utmp[0];  // background temp
+  e     = u  [GDIM];// int. energy density
+  dT    = u[GDIM+1];// total density fluctuation
+  db    = u[GDIM+2];// background density fluct
+  Pb    = u[GDIM+3];// background pressure 
+  nxy   = (*xnodes)[0].size(); // same size for x, y, z
+
+  P0    = bubbptree.getValue<GFTYPE>("P0",1000.0);       // ref. pressure (mb)
+  Ts    = bubbptree.getValue<GFTYPE>("T_surf", 300.0);   // surf. temp (K)
+  T0    = bubbptree.getValue<GFTYPE>("T_pert", 15.0);    // temp. perturb. magnitude (K)
+  xc    = bubbptree.getArray<GFTYPE>("x_center");        // center location
+  xr    = bubbptree.getArray<GFTYPE>("x_width");         // bubble width
+  P0   *= 1.0e5;  // convert P0 to Pa
+
+  assert(xc.size() >= GDIM && xr >= GDIM);
+
+ *u[0]  = 0.0; // sx
+ *u[1]  = 0.0; // sy
+ if ( GDIM == 3 ) *u[2]  = 0.0; // sz
+ *dT    = 0.0;
+
+  for ( auto j=0; j<nxy; j++ ) { 
+    x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
+    if ( GDIM == 3 ) z = (*xnodes)[2][j];
+    (*Tb)[j]  = Ts - GG*z/CPD;
+    (*Pb)[j]  = P0*pow((*T)[j]/Ts,CPD/RD);
+    (*db)[j]  = (*Pb)[j] / ( RD * (*Tb)[j] );
+    L         = pow((x-xc[0])/xr[0],2) + pow((y-xc[1])/xr[1],2)
+    L        += GDIM == 3 ? pow((z-xc[2])/xr[2],2) : 0.0;
+    L         = sqrt(L);
+    delT      = L <= 1.0 ? -T0*pow(cos(0.5*PI*L),2.0) : 0.0;
+    (*e)[j]   = CVD * (*db)[j] * ( (*Tb)[j] + delT ); // e = Cv d (T+delT);
+  }
+  return TRUE;
+
+} // end of method impl_boxdrybubble
 
 
 
