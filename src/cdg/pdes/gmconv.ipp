@@ -169,12 +169,11 @@ template<typename TypePack>
 void GMConv<TypePack>::dt_impl(const Time &t, State &u, Time &dt)
 {
    GString    serr = "GMConv<TypePack>::dt_impl: ";
-   GINT       pmax;
-   GSIZET     ibeg, iend;
    GFTYPE     dtmin, dt1, umax;
-   GFTYPE     drmin  = grid_->minlength();
-   GElemList *gelems = &grid_->elems();
-   GTVector<GNBasis<GCTYPE,GFTYPE>*> *gbasis;
+   StateComp *p, *d;
+   StateComp *tmp1, *tmp2;
+
+   assert(utmp_.size() >= 6 );
 
    // This is an estimate. We assume the timestep is
    // is governed by fast sonic waves with speed
@@ -189,34 +188,31 @@ void GMConv<TypePack>::dt_impl(const Time &t, State &u, Time &dt)
    
    dtmin = std::numeric_limits<GFTYPE>::max();
 
-   // Compute Cv:
-  *utmp_[1] =           1.0;  
-  *utmp_[1] -= (*u[GDIM+1]);     // running total 1- Sum_k q_k
-  *utmp_[0] = (*u[GDIM+1])*CVV;  // Cv = Cvv * q_vapor
-   for ( auto k=GDIM+3; k<traits_.nlsector+1; k++ ) { // vapor & liquids
-     *utmp_[1] -= *u[k];         // subtract in ql_k
-     *utmp_[0] += (*u[k]) * CVL; // add in Cvl * ql_k
-   }
-   for ( auto k=GDIM+3+traits_.nlsector; k<traits_.nisector; k++ ) { // ice
-     *utmp_[1] -= *u[k];         // subtract in qi_k
-     *utmp_[0] += (*u[k]) * CVI; // add in Cvi * qi_k
-   }
-   // After subtracting q_i, final result is qd=q_dry, so:
-   *utmp_[0] += (*utmp_[1])*CVD; // Final Cv += Cvd * qd
+
+  
+   // Assign pointers:
+   p    = utmp_[utmp_.size()-1];
+   tmp1 = utmp_[utmp_.size()-2];
+   tmp2 = utmp_[utmp_.size()-3];
+   d    = u[DENSITY];
+
+   compute_v(u, utmp_, v_); 
 
    // Compute v^2:
-   *utmp_[1] = *u[0]; utmp_[0]->rpow(2);
+  *tmp1 = *v_[0]; tmp1->rpow(2);
    for ( auto k=1; k<u.size(); k++ ) { // each advecting v 
-     *utmp_[2] = *u[k]; utmp_[2]->rpow(2);
-     *utmp_[1] += (*utmp_[2]);           // v^2 += v_k^2
+     *tmp2 = *u[k]; tmp2->rpow(2);
+     *tmp1 += *tmp2;                   // v^2 += v_k^2
+   }
+
+   // Compute v^2 + c^2:
+   compute_p(u, utmp_, *p);
+   for ( auto j=0; j<p->size(); j++ ) {
+     (*tmp1)[j] += (*p)[j] / (*d)[j];
    }
   
-   // Compute sound speed: c^2 = p/rho_dry; p ~ Rd e / Cv,
-   *utmp_[2]  = (*u[GDIM]);    // utmp = e
-   *utmp_[2] /= *utmp_[0];     // e / Cv
-   *utmp_[2] *= RD;            // c^2 = Rd e / Cv
-   *utmp_[2] += *utmp_[1];     // v^2 + c^2
-   GMTK::maxbyelem<GFTYPE>(*grid_, *utmp_[2], maxbyelem_);
+   // Compute max(v^2 + c^2) for each element:
+   GMTK::maxbyelem<GFTYPE>(*grid_, *tmp1, maxbyelem_);
    
    // Note: maxbyelem_ is an array with the max of v^2 + c^2 
    //       on each element
