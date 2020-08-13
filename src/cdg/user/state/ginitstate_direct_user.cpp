@@ -658,7 +658,7 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
   GSIZET              nxy;
   GFTYPE              x, y, z, r;
   GFTYPE              delT, L, T0, Ts, P0;
-  GTVector<GFTYPE>   *db, *dT, *e, *Pb, *Tb;
+  GTVector<GFTYPE>   *db, *dtot, *e, *Pb, *Tb;
   std::vector<GFTYPE> xc, xr;  
 
   PropertyTree bubbptree   = ptree.getPropertyTree(sconfig);
@@ -674,7 +674,7 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
 
   Tb    = utmp[0];  // background temp
   e     = u  [GDIM];// int. energy density
-  dT    = u[GDIM+1];// total density fluctuation
+  dtot  = u[GDIM+1];// total density fluctuation
   db    = u[GDIM+2];// background density fluct
   Pb    = u[GDIM+3];// background pressure 
   nxy   = (*xnodes)[0].size(); // same size for x, y, z
@@ -684,14 +684,14 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
   T0    = bubbptree.getValue<GFTYPE>("T_pert", 15.0);    // temp. perturb. magnitude (K)
   xc    = bubbptree.getArray<GFTYPE>("x_center");        // center location
   xr    = bubbptree.getArray<GFTYPE>("x_width");         // bubble width
-  P0   *= 1.0e5;  // convert P0 to Pa
+  P0   *= 1.0e2;  // convert P0 from mb to Pa
 
   assert(xc.size() >= GDIM && xr.size() >= GDIM);
 
  *u[0]  = 0.0; // sx
  *u[1]  = 0.0; // sy
  if ( GDIM == 3 ) *u[2]  = 0.0; // sz
- *dT    = 0.0;
+ *dtot  = 0.0;
 
   for ( auto j=0; j<nxy; j++ ) { 
     x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
