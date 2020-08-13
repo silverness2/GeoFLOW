@@ -17,7 +17,9 @@
 //                the State consists of [*u, *c1, *c2, *c3], where u is the solution
 //                desired (there is only one, and it's a scalar), and ci 
 //                are the unevolved Eulerian velocity components. If solving the 
-//                heat equation, the state consists of [*u] alone.
+//                heat equation, the state consists of [*u] alone. PRESCRIBED quantities
+//                in state vector, such as adv. velocities, must be placed at the end
+//                of the state vector.
 // 
 // 
 //                The dissipation coefficient may also be provided as a spatial field.

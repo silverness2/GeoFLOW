@@ -2,10 +2,22 @@
 // Module       : gmconv.hpp
 // Date         : 6/11/20 (DLR)
 // Description  : Object defining a moist convection solver:
-//
+// 
 //                PDEs:
-//                     TBD
+//                  d_t rhoT + Div (rhoT v)   = -Ltot, total mass
+//                  d_t q_v + v.Grad q_v      = q_v Ltot/rhoT + dot(s_v)/rhoT
+//                  d_t q_h + v.Grad q_i      = q_h Ltot/rhoT - Div(rhoT q_h W_i)/rhoT
+//                                            + dot(s_h)/rhoT
 //
+//                where 
+//                  Ltot = Sum_h Div(rhoT q_h vec{W}_i), 
+//                is the total mass loss due to hydrometeor fallout, and              
+//                and q_h are the hydrometeor (liquid and ice) mass
+//                fractions. The dry mass fraction is:
+//                  q_d = 1 - Sum_h q_h.
+//                Note:
+//                  Sum_i dot(s_i) = 0, where sum is over all densities,
+//                and dot(s_i) are the mass sources for vapor, and hydrometeors.
 //                This solver can be built in 2D or 3D for box grids,
 //                but is valid only for 3D spherical grids.
 //
@@ -25,22 +37,27 @@
 //                  q_ice_2 : 'ice' substance 2 mass fraction  |
 //                   ...
 //                  rho_s   : base state density               |
-//                  p_s     : base state pressure              | base state sector
+//                  p_s     : base state pressure              | base state sector, prescibed
+//
 //                  w_liq_0 : liquid substance 2 term velocity |
-//                  w_liq_1 : liquid substance 2 term velocity | 'liquid' term vel. sector
-//                  w_liq_2 : liquid substance 2 term velocity |
+//                  w_liq_1 : liquid substance 2 term velocity | 'liquid' term vel. sector,
+//                  w_liq_2 : liquid substance 2 term velocity |  prescribed
 
 //                  w_ice_0 : 'ice' substance 2 term velocity  |
-//                  w_ice_1 : liquid substance 2 term velocity | 'ice' term vel. sector
-//                  w_ice_2 : 'ice' substance 2 term velocity  |
+//                  w_ice_1 : liquid substance 2 term velocity | 'ice' term vel. sector,
+//                  w_ice_2 : 'ice' substance 2 term velocity  |  prescribed
 //                   ...
 //
-//                The terminal velocities in this state are prescribed,
+//                The base state & terminal velocities in this state are prescribed,
 //                if used; all others are evolved. If hydrometeor fallout
 //                is specified, then terminal velocities for all hydrometeors
-//                must be provided
-// 
-// 
+//                must be provided. Each vector may be either of length 1, 
+//                for which it's assumed to be a constant, or it may be 
+//                space-dependent, for which it provides the terminal 
+//                velocity in the preferred diection at all spatial locaions.
+//                PRESCRIBED quantities in state vector, such as base state 
+//                or terminal velocities, must be placed at at the end of the 
+//                state vector.
 // Copyright    : Copyright 2020. Colorado State University. All rights reserved.
 // Derived From : EquationBase.
 //==================================================================================
