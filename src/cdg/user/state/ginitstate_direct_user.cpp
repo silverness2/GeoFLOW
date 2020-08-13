@@ -658,7 +658,7 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
   GSIZET              nxy;
   GFTYPE              x, y, z, r;
   GFTYPE              delT, L, T0, Ts, P0;
-  GTVector<GFTYPE>   *db, *dtot, *e, *Pb, *Tb;
+  GTVector<GFTYPE>   *db, *dp, *e, *Pb, *Tb;
   std::vector<GFTYPE> xc, xr;  
 
   PropertyTree bubbptree   = ptree.getPropertyTree(sconfig);
@@ -674,7 +674,7 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
 
   Tb    = utmp[0];  // background temp
   e     = u  [GDIM];// int. energy density
-  dtot  = u[GDIM+1];// total density fluctuation
+  dp    = u[GDIM+1];// total density fluctuation
   db    = u[GDIM+2];// background density fluct
   Pb    = u[GDIM+3];// background pressure 
   nxy   = (*xnodes)[0].size(); // same size for x, y, z
@@ -691,7 +691,7 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
  *u[0]  = 0.0; // sx
  *u[1]  = 0.0; // sy
  if ( GDIM == 3 ) *u[2]  = 0.0; // sz
- *dtot  = 0.0;
+ *dp    = 0.0;
 
   for ( auto j=0; j<nxy; j++ ) { 
     x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
@@ -704,10 +704,10 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
     L        += GDIM == 3 ? pow((z-xc[2])/xr[2],2) : 0.0;
     L         = sqrt(L);
     delT      = L <= 1.0 ? -T0*pow(cos(0.5*PI*L),2.0) : 0.0;
-    (*d)[j]   = (*Pb)[j] / ( RD * ((*Tb)[j] + delT ) ) - (*db)[j];
-    (*e)[j]   = CVD * (*db)[j] * ( (*Tb)[j] + delT ); // e = Cv d (T+delT);
+    (*dp)[j]  = (*Pb)[j] / ( RD * ((*Tb)[j] + delT ) ) - (*db)[j];
+    (*e) [j]  = CVD * (*db)[j] * ( (*Tb)[j] + delT ); // e = Cv d (T+delT);
   }
-cout << "boxdrybubble: db=" << *db << endl;
+//cout << "boxdrybubble: db=" << *db << endl;
 
   return TRUE;
 
