@@ -83,7 +83,7 @@ void GMConv<TypePack>::dt_impl(const Time &t, State &u, Time &dt)
 {
    GString    serr = "GMConv<TypePack>::dt_impl: ";
    GFTYPE     dtmin, dt1, umax;
-   StateComp *p, *d;
+   StateComp *db, *dp, *p;
    StateComp *tmp1, *tmp2;
 
    assert(utmp_.size() >= 6 );
@@ -105,7 +105,8 @@ void GMConv<TypePack>::dt_impl(const Time &t, State &u, Time &dt)
    p    = utmp_[utmp_.size()-1];
    tmp1 = utmp_[utmp_.size()-2];
    tmp2 = utmp_[utmp_.size()-3];
-   d    = u[DENSITY];
+   dp   = u[DENSITY];
+   db   = u[BASESTATE]; // cannot use ubase, since it may not be set
 
    ubase_[0] = u[BASESTATE];
    compute_v(u, utmp_, v_); 
@@ -120,7 +121,7 @@ void GMConv<TypePack>::dt_impl(const Time &t, State &u, Time &dt)
    // Compute v^2 + c^2:
    compute_p(u, utmp_, *p);
    for ( auto j=0; j<p->size(); j++ ) {
-     (*tmp1)[j] += sqrt( (*p)[j] / (*d)[j] );
+     (*tmp1)[j] += sqrt( (*p)[j] / ( (*dp)[j] + (*db)[j] )  );
    }
   
    // Compute max(v^2 + c^2) for each element:
@@ -187,6 +188,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
 
   // Compute velocity for timestep:
   compute_v(u, utmp_, v_); // stored in v_
+cout << "dudt_impl: vx=" << *v_[0] << endl;
 
   // Get 1/rhoT:
   rhoT  =  u[DENSITY];
@@ -199,6 +201,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   // *************************************************************
 
   compute_div(*rhoT, v_, urhstmp_, *dudt[GDIM+1]); 
+cout << "dudt_impl: rhoT=" << *rhoT << endl;
   compute_falloutsrc(*rhoT, qi_, tvi_, -1, urhstmp_, *Ltot);
   GMTK::saxpy<Ftype>(*dudt[DENSITY], 1.0, *Ltot, 1.0);   // += Ltot
   if ( uf[DENSITY] != NULLPTR ) *dudt[DENSITY] -= *uf[DENSITY];//  += sdot(s_rhoT)
@@ -209,8 +212,8 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   // *************************************************************
   // Mass fraction equations (vapor + all hyrodmeteors) RHS:
   // We solve
-  //  dq_i/dt + u.Grad q_i = -div(q_i rhoT W_i)/rhoT 
-  //                       + q_i/rhoT Ltot + dot(s_i)/rhoT
+  //  dq_i/dt + u.Grad q_i + -div(q_i rhoT W_i)/rhoT 
+  //                       - q_i/rhoT Ltot + dot(s_i)/rhoT = 0
   // where Ltot is total fallout source over liq + ice sectors:
   // *************************************************************
   for ( auto j=0; j<nmoist_; j++ ) {
@@ -241,8 +244,10 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   // Energy equationu RHS:
   // *************************************************************
   
-  compute_ptemp(u, urhstmp_, *T, *p);              // find p, T
+  compute_ptemp(u, urhstmp_, *T, *p);              // find p', T
 
+cout << "dudt_impl: T=" << *T << endl;
+cout << "dudt_impl: p=" << *p << endl;
   GMTK::saxpy<Ftype>(*tmp1, *e, 1.0, *p, 1.0);     // h = p+e, enthalpy density
   compute_div(*tmp1, v_, urhstmp_, *dudt[GDIM]);   // Div (h v);
 
@@ -879,21 +884,22 @@ template<typename TypePack>
 void GMConv<TypePack>::compute_temp(const State &u, State &utmp, StateComp &temp)
 {
    GString    serr = "GMConv<TypePack>::compute_temp: ";
-   StateComp *cv, *d, *e; 
+   StateComp *cv, *db, *dp, *e; 
 
    assert(utmp.size() >= 2);
 
    // Set int energy and density:
-   e  = u[GDIM];   // sensible internal energy density
-   d  = u[GDIM+1]; // total density fluctuation
-   cv = utmp[1];   // Cv
+   e  = u[ENERGY];   // sensible internal energy density
+   dp = u[DENSITY];  // total density fluctuation
+   db = ubase_[0];   // total density fluctuation
+   cv = utmp[1];     // Cv
 
    // Get Cv:
    compute_cv(u, utmp, *cv); // utmp[0] only used in call
 
    // Compute temperature:
    for ( auto j=0; j<e->size(); j++ ) {
-     temp[j] = (*e)[j] / ( (*d)[j] * (*cv)[j] );
+     temp[j] = (*e)[j] / ( ( (*dp)[j] + (*db)[j] ) * (*cv)[j] );
    }
 
 } // end of method compute_temp
@@ -916,28 +922,29 @@ template<typename TypePack>
 void GMConv<TypePack>::compute_p(const State &u, State &utmp, StateComp &p)
 {
    GString    serr = "GMConv<TypePack>::compute_p: ";
-   StateComp *dt, *qd, *qv, *t; 
+   StateComp *db, *dp, *qd, *qv, *T; 
 
 
    assert(utmp.size() >= 3);
 
    // Set int energy and density:
-// es = u[GDIM];   // sensible internal energy density
-   dt = u[GDIM+1]; // total density fluctuation
+// es = u[GDIM];    // sensible internal energy density
+   dp = u[DENSITY]; // total density fluctuation
+   db = ubase_[0];  // base density
 
-   t = utmp[2];    // temp
-   compute_temp(u, utmp, *t);  // first 2 utmp arrays used
+   T = utmp[2];    // temp
+   compute_temp(u, utmp, *T);  // first 2 utmp arrays used
   
    if ( traits_.dodry ) { // if dry dynamics only
      // p' = rho'  Rd T:
      for ( auto j=0; j<p.size(); j++ ) {
-       p[j] = (*dt)[j] * RD  * (*t)[j];
+       p[j] = ( (*dp)[j] + (*db)[j] ) * RD  * (*T)[j];
      }
      return;
    }
 
    // Set vapor mass fraction:
-   qv = u[GDIM+2]; // qv, from state
+   qv = u[VAPOR]; // qv, from state
 
    // Get dry mass fraction:
    qd = utmp[1];
@@ -945,7 +952,7 @@ void GMConv<TypePack>::compute_p(const State &u, State &utmp, StateComp &p)
 
    // p' = rho' ( qd Rd + qv Rv ) T:
    for ( auto j=0; j<p.size(); j++ ) {
-     p[j] = (*dt)[j] * ( (*qd)[j]*RD + (*qv)[j]*RV ) * (*t)[j];
+     p[j] = (*dp)[j] * ( (*qd)[j]*RD + (*qv)[j]*RV ) * (*T)[j];
    }
 
 } // end of method compute_p 
@@ -971,27 +978,27 @@ template<typename TypePack>
 void GMConv<TypePack>::compute_ptemp(const State &u, State &utmp, StateComp &temp, StateComp &p)
 {
    GString    serr = "GMConv<TypePack>::compute_ptemp: ";
-   StateComp *dt, *qd, *qv, *t; 
+   StateComp *dp, *qd, *qv, *T; 
 
 
    assert(utmp.size() >= 3);
 
    // Set int energy and density:
-   dt  = u[GDIM+1]; // total density fluctuation
+   dp  = u[DENSITY]; // total density fluctuation
 
-   t = &temp;    // temp
-   compute_temp(u, utmp, *t);  // first 2 utmp arrays used
+   T = &temp;    // temp
+   compute_temp(u, utmp, *T);  // first 2 utmp arrays used
   
    if ( traits_.dodry ) { // if dry dynamics only
      // p' = rho'  Rd T:
      for ( auto j=0; j<p.size(); j++ ) {
-       p[j] = (*dt)[j] * RD  * (*t)[j];
+       p[j] = (*dp)[j] * RD  * (*T)[j];
      }
      return;
    }
 
    // Set vapor mass fraction:
-   qv = u[GDIM+2]; // qv, from state
+   qv = u[VAPOR]; // qv, from state
 
    // Get dry mass fraction:
    qd = utmp[1];
@@ -999,7 +1006,7 @@ void GMConv<TypePack>::compute_ptemp(const State &u, State &utmp, StateComp &tem
 
    // p' = rho' ( qd Rd + qv Rv ) T:
    for ( auto j=0; j<p.size(); j++ ) {
-     p[j] = (*dt)[j] * ( (*qd)[j]*RD + (*qv)[j]*RV ) * (*t)[j];
+     p[j] = (*dp)[j] * ( (*qd)[j]*RD + (*qv)[j]*RV ) * (*T)[j];
    }
 
 } // end of method compute_ptemp
@@ -1045,8 +1052,9 @@ void GMConv<TypePack>::compute_div(StateComp &q, State &v, State &utmp, StateCom
 //**********************************************************************************
 // METHOD : compute_v
 // DESC   : Compute velocity from momentum density in state vector.
-//             v_i = s_i/rhoT,
-//          where v_i is the member data array.
+//             v_i = s_i/(rhoT'+rhoB),
+//          where v_i is the member data array, rhoT' is (total) density 
+//          fluctuation, from base state rhoB.
 // ARGS   : u    : state
 //          utmp : tmp vectors; first array used. If traits.usemomden==FALSE,
 //                 then no tmp arrays are required
@@ -1057,7 +1065,7 @@ template<typename TypePack>
 void GMConv<TypePack>::compute_v(const State &u, State &utmp, State &v)
 {
    GString    serr = "GMConv<TypePack>::compute_v: ";
-   StateComp *irhoT, *rhoT;
+   StateComp *idp, *dp;
 
    assert(utmp.size() >= 1);
 
@@ -1071,20 +1079,19 @@ void GMConv<TypePack>::compute_v(const State &u, State &utmp, State &v)
    }
 
    // Compute inverse mass:
-   rhoT  = u[DENSITY]; 
+   dp  = u[DENSITY]; 
+   idp = utmp[0]; *idp = *dp;
    if ( traits_.usebase ) {
-     *rhoT += *ubase_[0];
+     *idp += *ubase_[0];
    }
-   irhoT  = utmp[0];
-   *irhoT = *rhoT;
-   irhoT->rpow(-1.0);
+   idp->rpow(-1.0);
 
    // Find velocity from momentum density:
    
    for ( auto j=0; j<GDIM; j++ ) {
       v[j]  = v_[j];    // set to allocated member data
      *v[j]  = *u[j];    // deep copy
-     *v[j] *= (*irhoT); // divide by density
+     *v[j] *= (*idp); // divide by density
    }
 
 } // end of method compute_v
