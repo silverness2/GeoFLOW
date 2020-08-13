@@ -273,7 +273,7 @@ GFTYPE GGrid::minlength(GTVector<GFTYPE> *dx)
   
    if ( dx != NULLPTR ) dx->resizem(gelems_.size());
 
-   lmin = std::numeric_limits<GFTYPE>::max();
+   emin = lmin = std::numeric_limits<GFTYPE>::max();
    for ( auto i=0; i<gelems_.size(); i++ ) {
      xverts = &gelems_[i]->xVertices();
      #if defined(_G_IS2D)
