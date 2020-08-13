@@ -27,6 +27,7 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
 
 	// Set the default state components to force:
 	std::vector<int> comps, default_comps;
+	std::vector<GFTYPE> dstd;
 
         PropertyTree eqn_ptree = ptree.getPropertyTree(equation_name);
         PropertyTree stp_ptree = ptree.getPropertyTree("stepper_props");
@@ -43,6 +44,9 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
                 btraits.bconserved= eqn_ptree.getValue<bool>  ("bconserved",false);
                 btraits.bforced   = eqn_ptree.getValue<bool>  ("use_forcing",false);
                 btraits.variabledt= stp_ptree.getValue<bool>  ("variable_dt",false);
+                btraits.nsolve    = btraits.doheat || btraits.bpureadv ? 1 : GDIM; 
+                btraits.nstate    =  btraits.nsolve
+                                  + (btraits.bpureadv ? GDIM : 0);
                 btraits.courant   = stp_ptree.getValue<double>("courant",0.5);
                 btraits.itorder   = stp_ptree.getValue<int>   ("time_deriv_order",4);
                 btraits.inorder   = stp_ptree.getValue<int>   ("extrap_order",2);
@@ -67,9 +71,19 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
                 ctraits.dodry     = eqn_ptree.getValue<bool>  ("dodry",true);
                 ctraits.dofallout = eqn_ptree.getValue<bool>  ("dofallout",false);
                 ctraits.dograv    = eqn_ptree.getValue<bool>  ("dogravity",false);
+                ctraits.nlsector  = eqn_ptree.getValue<bool>  ("nliq",0);
+                ctraits.nisector  = eqn_ptree.getValue<bool>  ("nice",0);
+                ctraits.nsolve    = GDIM + 2                 // mom + denTot + energy_den
+                                  + (!ctraits.dodry ? 1 : 0) // vapor
+                                  + ( ctraits.dofallout ? ctraits.nlsector 
+                                                        + ctraits.nisector : 0); // q_i
+                ctraits.nstate    =  ctraits.nsolve
+                                  + (ctraits.dofallout ? ctraits.nlsector 
+                                                       + ctraits.nisector : 0)
+                                  + (ctraits.usebase ? 2 : 0);
                 ctraits.bconserved= eqn_ptree.getValue<bool>  ("bconserved",false);
                 ctraits.bforced   = eqn_ptree.getValue<bool>  ("use_forcing",false);
-                ctraits.usemomden = stp_ptree.getValue<bool>  ("usemomden",true);
+                ctraits.usebase   = stp_ptree.getValue<bool>  ("usebase_state",true);
                 ctraits.variabledt= stp_ptree.getValue<bool>  ("variable_dt",false);
                 ctraits.bvarvterm = stp_ptree.getValue<bool>  ("variable_term_vel",false);
                 ctraits.itorder   = stp_ptree.getValue<int>   ("time_deriv_order",4);
@@ -82,6 +96,14 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
                 comps            = eqn_ptree.getArray<int>   ("forcing_comp",default_comps);
                 ctraits.iforced.resize(comps.size());
                 ctraits.iforced   = comps; // traits.iforced may be a different d.structure
+                if ( ctraits.docoriolis ) {
+                  dstd            = eqn_ptree.getArray<GFTYPE>("omega");
+                } 
+                else {
+                  dstd.resize(0);
+                }
+                ctraits.omega.resize(dstd.size());
+                ctraits.omega     = dstd; 
 
 		// Allocate equation Implementation
 		std::shared_ptr<EqnImpl> eqn_impl(new EqnImpl(grid, ctraits));
