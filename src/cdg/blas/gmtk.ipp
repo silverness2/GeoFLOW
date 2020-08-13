@@ -943,6 +943,77 @@ void cross_prod(GTVector<GTVector<T>*> &A, GTVector<GTVector<T>*> &B,
 
 } // end of method cross_prod (3)
 
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : cross_prod_s 
+// DESC   : Compute idir component of cross/vector product 
+//             C = A X B
+//          where A's components are constants
+//          
+// ARGS   : A    : Vector of constants, of same length as B.
+//          B    : array of pointers to vectors; must each have at least 3
+//                 elements for 3-d vector product. All vector elements must
+//                 have the same length. All components must be non-NULL
+//          iind : pointer to indirection array, used if non_NULLPTR.
+//          nind : number of indices in iind. This is the number of cross products
+//                 that will be computed, if iind is non-NULLPTR
+//          idir : which component to compute
+//          C    : idir component
+// RETURNS: GTVector & 
+//**********************************************************************************
+template<typename T>
+void cross_prod_s(GTVector<T> &A, GTVector<GTVector<T>*> &B, 
+                GINT idir, GTVector<T> &C)
+{
+  assert( A.size() == B.size() && "Incompatible input vectors");
+  assert(idir > 0 && idir < A.size());
+
+  T      x1, y1, z1;
+  T      x2, y2, z2;
+
+  if ( A.size() == 2 ) { // 2d vectors
+    if ( idir != 3 ) { // only a 3-component
+      C = 0.0;
+      return;
+    }
+    for ( auto n=0; n<B[0]->size(); n++ ) { // cycle over all elements
+      x1 = A[0]; y1 = A[1]; 
+      x2 = (*B[0])[n]; y2 = (*B[1])[n]; 
+      C[n] = x1*y2 - x2*y1;
+    }
+  }
+  else { // 3d vectors
+    switch ( idir ) {
+    case 1:
+      for ( auto n=0; n<B[1]->size(); n++ ) { // cycle over all coord pairs
+        y1 = A[1]      ; z1 = A[2];
+        y2 = (*B[1])[n]; z2 = (*B[2])[n];
+        C[n] = y1*z2 - z1*y2; 
+      }
+      break;
+    case 2:
+      for ( auto n=0; n<B[0]->size(); n++ ) { // cycle over all coord pairs
+        x1 = A[0]      ; z1 = A[2];
+        x2 = (*B[0])[n]; z2 = (*B[2])[n];
+        C[n] = z1*x2 - z2*x1; 
+      }
+      break;
+    case 3:
+      for ( auto n=0; n<B[0]->size(); n++ ) { // cycle over all coord pairs
+        x1 = A[0]      ; y1 = A[1];
+        x2 = (*B[0])[n]; y2 = (*B[1])[n];
+        C[n] = x1*y2 - x2*y1;
+      }
+      break;
+    default:
+      assert(FALSE);
+    }
+  }
+
+} // end of method cross_prod_s (3)
+
+
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : normalize_euclidean
