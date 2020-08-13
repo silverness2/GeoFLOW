@@ -19,7 +19,7 @@
 template<typename TypePack>
 GpdV<TypePack>::GpdV(Grid &grid)
 :
-bInitialized_   (FALSE),
+bInit_   (FALSE),
 grid_           (&grid),
 massop_       (&grid.massop())
 {
@@ -54,7 +54,7 @@ GpdV<TypePack>::~GpdV()
 template<typename TypePack>
 void GpdV<TypePack>::apply(StateComp &p, State &u, State &utmp, StateComp &po) 
 {
-  assert(bInitialized_ && "Operator not initialized");
+  assert(bInit_ && "Operator not initialized");
     
   if ( grid_->itype(GE_REGULAR).size() > 0 ) {
     reg_prod(p, u, utmp, po);
@@ -193,7 +193,7 @@ void GpdV<TypePack>::init()
     reg_init();
   }
 
-  bInitialized_ = TRUE;
+  bInit_ = TRUE;
 
 } // end, method init
 

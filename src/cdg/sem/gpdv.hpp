@@ -64,7 +64,7 @@ private:
         void              reg_prod(StateComp &p, State &u,  State &utmp, 
                                    StateComp &po);
 
-        GBOOL                        bInitialized_;
+        GBOOL                        bInit_;
         StateComp                    etmp1_;  // elem-based (non-global) tmp vector
         State                        G_;      // metric components
         Mass                         *massop_; // mass matrix, required
