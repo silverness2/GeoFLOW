@@ -11,7 +11,7 @@ namespace pdeint {
 
 template<typename ET>
 typename EquationFactory<ET>::EqnBasePtr
-EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid, State& utmp){
+EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
 
         int itmp;
 
@@ -55,7 +55,7 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid, State& u
                 btraits.iforced   = comps; // traits.iforced may be a different d.structure
 
 		// Allocate equation Implementation
-		std::shared_ptr<EqnImpl> eqn_impl(new EqnImpl(grid, btraits, utmp));
+		std::shared_ptr<EqnImpl> eqn_impl(new EqnImpl(grid, btraits));
 
 		// Set back to base type
 		base_ptr = eqn_impl;
@@ -84,7 +84,7 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid, State& u
                 ctraits.iforced   = comps; // traits.iforced may be a different d.structure
 
 		// Allocate equation Implementation
-		std::shared_ptr<EqnImpl> eqn_impl(new EqnImpl(grid, ctraits, utmp));
+		std::shared_ptr<EqnImpl> eqn_impl(new EqnImpl(grid, ctraits));
 
 		// Set back to base type
 		base_ptr = eqn_impl;

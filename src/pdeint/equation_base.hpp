@@ -136,6 +136,36 @@ public:
 		this->step_impl(t,uin,uf,ub,dt,uout);
 	}
 
+	/** Initialize solver
+	 *
+	 * \param[in]     utmp  tmp state vectors
+	 */
+	void init(State& utmp){
+		this->init_impl(utmp);
+	}
+
+  	/** Return state size 
+         * 
+         */
+        int state_size(){
+		return this->state_size_impl();
+        }
+
+  	/** Return tmp size 
+         * 
+         */
+        int tmp_size(){;
+		return this->tmp_size_impl();
+        }
+
+  	/** Return state component ids that are forced
+         * 
+         */
+        std::vector<int>& iforced(){
+		return this->iforced_impl();
+        }
+
+
 	/** Return StateInfo data
          * 
          */
@@ -179,6 +209,26 @@ protected:
 	 * Must be provided by implementation
 	 */
 	virtual void step_impl(const Time& t, const State& uin, State& uf, State& ub, const Time& dt, State& uout) = 0;
+  
+	/**
+	 * Must be provided by implementation
+	 */
+	virtual void init_impl(State& utmp) = 0;
+  
+	/**
+	 * Must be provided by implementation
+	 */
+	virtual int state_size_impl() = 0;
+  
+	/**
+	 * Must be provided by implementation
+	 */
+	virtual int tmp_size_impl() = 0;
+  
+	/**
+	 * Must be provided by implementation
+	 */
+	virtual std::vector<int> &iforced_impl() = 0;
   
         std::function<void(const Time &t, State &u, State &ub)> 
                  update_bdy_callback_;

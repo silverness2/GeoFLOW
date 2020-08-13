@@ -29,7 +29,7 @@ struct EquationFactory {
         using State       = typename EquationType::State;
 	using Grid        = typename EquationType::Grid;
 
-	static EqnBasePtr build(const tbox::PropertyTree& ptree, Grid& grid, State& utmp);
+	static EqnBasePtr build(const tbox::PropertyTree& ptree, Grid& grid);
 
 };
 
