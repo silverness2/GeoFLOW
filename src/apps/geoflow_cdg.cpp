@@ -480,8 +480,9 @@ void allocate(const PropertyTree &ptree)
 
   std::vector<GINT> *iforced;
 
-  iforced = &pEqn_->iforced();
+  nstate_ =  pEqn_->state_size();
   ntmp_   =  pEqn_->tmp_size();
+  iforced = &pEqn_->iforced();
   
   u_   .resize(nstate_);                // state
   ub_  .resize(nstate_); ub_ = NULLPTR; // bdy state array
@@ -913,7 +914,7 @@ void do_terrain(const PropertyTree &ptree, GGrid &grid)
 {
   GBOOL bret, bterr;
   GINT  iret, nc;
-  State xb, tmp;
+  State xb, tmp, utmp;
   
   nc = grid.xNodes().size();
   xb.resize(nc);
@@ -921,19 +922,20 @@ void do_terrain(const PropertyTree &ptree, GGrid &grid)
   // Cannot use utmp_ here because it
   // may not have been allocated yet, so
   // use local variable:
-  tmp.resize(GDIM);
-  for ( auto j=0; j<GDIM; j++ ) tmp[j] = new GTVector<GFTYPE>(grid_->ndof());
+  utmp.resize(2*nc);
+  tmp.resize(nc);
+  for ( auto j=0; j<utmp.size(); j++ ) utmp[j] = new GTVector<GFTYPE>(grid_->ndof());
 
   // Set terrain & tmp arrays from tmp array pool:
-  for ( auto j=0; j<nc        ; j++ ) xb [j] = utmp_[j];
-  for ( auto j=0; j<tmp.size(); j++ ) tmp[j] = utmp_[j+nc];
+  for ( auto j=0; j<nc        ; j++ ) xb [j] = utmp[j];
+  for ( auto j=0; j<tmp.size(); j++ ) tmp[j] = utmp[j+nc];
 
   bret = GSpecTerrainFactory<MyTypes>::spec(ptree, grid, tmp, xb, bterr);
   assert(bret);
 
   if ( bterr ) grid.add_terrain(xb, tmp);
 
-  for ( auto j=0; j<GDIM; j++ ) delete tmp[j];
+  for ( auto j=0; j<utmp.size(); j++ ) delete utmp[j];
 
 } // end of method do_terrain
 
