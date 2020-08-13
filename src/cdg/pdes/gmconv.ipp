@@ -129,7 +129,7 @@ GMConv<TypePack>::~GMConv()
 // DESC   : Compute time step, assuming a Courant number of 1:
 //            dt = min_grid(dx/u)
 // ARGS   : t : time
-//          u : state
+//          u : (full) state
 //          dt: timestep, returned
 // RETURNS: none.
 //**********************************************************************************
@@ -156,14 +156,13 @@ void GMConv<TypePack>::dt_impl(const Time &t, State &u, Time &dt)
    
    dtmin = std::numeric_limits<GFTYPE>::max();
 
-
-  
    // Assign pointers:
    p    = utmp_[utmp_.size()-1];
    tmp1 = utmp_[utmp_.size()-2];
    tmp2 = utmp_[utmp_.size()-3];
    d    = u[DENSITY];
 
+   ubase_[0] = u[BASESTATE];
    compute_v(u, utmp_, v_); 
 
    // Compute v^2:
@@ -176,7 +175,7 @@ void GMConv<TypePack>::dt_impl(const Time &t, State &u, Time &dt)
    // Compute v^2 + c^2:
    compute_p(u, utmp_, *p);
    for ( auto j=0; j<p->size(); j++ ) {
-     (*tmp1)[j] += (*p)[j] / (*d)[j];
+     (*tmp1)[j] += sqrt( (*p)[j] / (*d)[j] );
    }
   
    // Compute max(v^2 + c^2) for each element:
@@ -233,9 +232,6 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   // which this method is called.
 
   assert( !traits_.bconserved ); // don't allow conservative form yet
-
-  // Assign qi, tvi, qice, qliq, tvice, tvliq:
-  assign_helpers(u, uf);
 
   // Set tmp pool for RHS computations:
   assert(urhstmp_.size() >= szrhstmp());
@@ -407,10 +403,13 @@ void GMConv<TypePack>::step_impl(const Time &t, State &uin, State &uf, State &ub
 
   // Set evolved state vars from input state.
   // These are not deep copies:
-  for ( auto j=0; j<uin.size(); j++ ) uevolve_ [j] = uin[j];
+  for ( auto j=0; j<traits_.nsolve; j++ ) uevolve_ [j] = uin[j];
 
   switch ( traits_.isteptype ) {
     case GSTEPPER_EXRK:
+      // Assign qi, tvi, qice, qliq, tvice, tvliq:
+      assign_helpers(uin, uf);
+
       for ( auto j=0; j<uold_.size(); j++ ) *uold_[j] = *uevolve_[j];
       step_exrk(t, uold_, uf, ub, dt, uevolve_);
       break;
@@ -489,7 +488,6 @@ void GMConv<TypePack>::step_exrk(const Time &t, State &uin, State &uf, State &ub
 {
   assert(gexrk_ != NULLPTR && "GExRK operator not instantiated");
 
-
   // GExRK stepper steps entire state over one dt:
   gexrk_->step(t, uin, uf, ub, dt, urktmp_, uout);
 
@@ -544,8 +542,8 @@ void GMConv<TypePack>::init_impl(State &tmp)
 
   // Set up tmp pool:
   utmp_.resize(tmp.size()-nexcl); 
-  for ( auto j=nexcl; j<tmp.size(); j++ ) {
-    utmp_[j] = tmp[j];
+  for ( auto j=0; j<utmp_.size(); j++ ) {
+    utmp_[j] = tmp[j+nexcl];
   }
 
   // Check if specified stepper type is valid:
@@ -579,21 +577,16 @@ void GMConv<TypePack>::init_impl(State &tmp)
   for( auto j=0; j<GDIM; j++ ) icomptype->push_back(GSC_KINETIC); 
   icomptype->push_back(GSC_DENSITYT); 
   icomptype->push_back(GSC_ENERGY); 
-  if ( traits_.dodry )  {
-    traits_.nsolve = GDIM + 2;
-    traits_.nstate = traits_.nsolve;
-  }
-  else {
+  if ( !traits_.dodry ) {
     n = traits_.nlsector + traits_.nisector;
-    traits_.nsolve = GDIM + 2 + n;
-    traits_.nstate = traits_.nsolve;
     for( auto j=0; j<traits_.nlsector; j++ ) icomptype->push_back(GSC_MASSFRAC); 
     for( auto j=0; j<traits_.nisector; j++ ) icomptype->push_back(GSC_MASSFRAC); 
-    if ( traits_.dofallout ) { // include terminal velocities:
-      traits_.nstate += 
-                     traits_.nlsector + traits_.nisector;
+  }
+  if ( traits_.usebase ) { // base state components
+    for( auto j=0; j<2; j++ ) icomptype->push_back(GSC_PRESCRIBED); 
+  }
+  if ( !traits_.dodry && traits_.dofallout ) { // include terminal velocities:
     for( auto j=0; j<n; j++ ) icomptype->push_back(GSC_PRESCRIBED); 
-    }
   }
 
 
@@ -646,11 +639,14 @@ void GMConv<TypePack>::init_impl(State &tmp)
       gexrk_->set_ggfx(ggfx_);
       // Set 'helper' tmp arrays from main one, utmp_, so that
       // we're sure there's no overlap:
-      uold_   .resize(traits_.nsolve); // solution at time level n
+      uold_   .resize(traits_.nsolve); // RK-solution at time level n
+      uevolve_.resize(traits_.nsolve); // current RK solution
+      ubase_.resize(traits_.nbase); // points to base-state components
       urktmp_ .resize(traits_.nsolve*(traits_.itorder+1)+1); // RK stepping work space
       urhstmp_.resize(szrhstmp()); // work space for RHS
-      nrhstmp = utmp_.size()-uold_.size()-urktmp_.size()-urhstmp_.size();
-      assert(nrhstmp > szrhstmp() && "Invalid rhstmp array size");
+      nrhstmp = utmp_.size()-uold_.size()-urktmp_.size();
+
+      assert(nrhstmp >= szrhstmp() && "Invalid rhstmp array size");
       // Make sure there is no overlap between tmp arrays:
       n = 0;
       for ( GSIZET j=0; j<traits_.nsolve ; j++, n++ ) uold_   [j] = utmp_[n];
@@ -708,6 +704,7 @@ void GMConv<TypePack>::init_impl(State &tmp)
   if ( traits_.bconserved ) {
     assert(FALSE && "Conservation not yet supported");
     gpdv_  = new GpdV<TypePack>(*grid_);
+    gpdv_->init();
 //  gflux_ = new GFlux(*grid_);
     assert( (gmass_   != NULLPTR
           && ghelm_   != NULLPTR
@@ -716,6 +713,7 @@ void GMConv<TypePack>::init_impl(State &tmp)
   else {
     gadvect_ = new GAdvect(*grid_);
     gpdv_    = new GpdV<TypePack>(*grid_);
+    gpdv_->init();
     assert( (gmass_   != NULLPTR
           && ghelm_   != NULLPTR
           && gpdv_    != NULLPTR
@@ -750,7 +748,7 @@ void GMConv<TypePack>::init_impl(State &tmp)
   tvliq_.resize(traits_.nlsector);
   qice_ .resize(traits_.nisector);
   tvice_.resize(traits_.nisector);
-  fk_   .resize(GDIM); 
+  fv_   .resize(GDIM); 
   s_   . resize(GDIM); 
 
   qi_   = NULLPTR;
@@ -759,7 +757,7 @@ void GMConv<TypePack>::init_impl(State &tmp)
   tvliq_= NULLPTR;
   qice_ = NULLPTR;
   tvice_= NULLPTR;
-  fk_   = NULLPTR;
+  fv_   = NULLPTR;
   s_    = NULLPTR;
 
   bInit_ = TRUE;
@@ -1130,7 +1128,7 @@ void GMConv<TypePack>::compute_v(const State &u, State &utmp, State &v)
    // Compute inverse mass:
    rhoT  = u[DENSITY]; 
    if ( traits_.usebase ) {
-     *rhoT += *u[BASESTATE];
+     *rhoT += *ubase_[0];
    }
    irhoT  = utmp[0];
    *irhoT = *rhoT;
@@ -1405,10 +1403,10 @@ void GMConv<TypePack>::compute_pe(StateComp &rhoT, State &qi, State &tvi, State 
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : assign_helpers
-// DESC   : Assigns helper State components that are member data
+// DESC   : Assigns helper arrays to (full) state components 
 //       
-// ARGS   : u : incoming state vector
-//          uf: incoming forcing state vector
+// ARGS   : u : incoming _full_ state vector
+//          uf: incoming _full_ forcing state vector
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
@@ -1423,7 +1421,8 @@ void GMConv<TypePack>::assign_helpers(const State &u, const State &uf)
      qi_ [j] = u[GDIM+3+j]; // set mass frac vector
      tvi_[j] = u[GDIM+3+nhydro_+j]; // set term speed for each qi
    }
-   for ( auto j=0; j<GDIM; j++ ) fk_[j] = uf[j]; // kinetic forcing vector
+   for ( auto j=0; j<GDIM; j++ ) fv_[j] = uf[j]; // kinetic forcing vector
+   for ( auto j=0; j<traits_.nbase; j++ ) ubase_[j] = u[BASESTATE+j]; // base state
 
    GINT nliq = traits_.nlsector;
    GINT nice = traits_.nisector;
@@ -1477,8 +1476,11 @@ GINT GMConv<TypePack>::tmp_size_impl()
 {
   GINT sum = 0;
  
+  sum += GDIM;                               // for v_ 
+  sum += traits_.nlsector || traits_.nisector ? GDIM : 0;  // for W_
   sum += traits_.nsolve;                     // old state storage
-  sum += traits_.nsolve*(traits_.itorder+2); // RKK storage
+  sum += traits_.nsolve
+       * (traits_.itorder+1)+1;              // RKK storage
   sum += szrhstmp();                         // RHS tmp size
 
   return sum;

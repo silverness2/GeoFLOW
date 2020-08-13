@@ -111,13 +111,12 @@ public:
           GBOOL           usemomden   = TRUE;   // use momentum density form?
           GBOOL           usebase     = TRUE;   // use hydrostatic base state?
           GBOOL           variabledt  = FALSE;  // use variable timestep?
-          GBOOL           bvarvterm   = FALSE;  // time-variable term vel?
+          GBOOL           bvarvterm   = FALSE;  // time dep term velocities?
           GINT            nstate      = GDIM+2; // no. vars in state vec
           GINT            nsolve      = GDIM+2; // no. vars to solve for
           GINT            nlsector    = 0;      // no. vars in liq-sector
           GINT            nisector    = 0;      // no. vars in ice-sector
-          GINT            nbase       = 2;      // no. vars in base state
-          GINT            ntmp        = 8;
+          GINT            nbase       = 2;      // no. vars in base state (p, d)
           GINT            itorder     = 2;
           GINT            inorder     = 2;
           GStepperType    isteptype   = GSTEPPER_EXRK;
@@ -196,12 +195,12 @@ inline  GINT                szrhstmp();
         GTVector<GFTYPE>    tcoeffs_;       // coeffs for time deriv
         GTVector<GFTYPE>    acoeffs_;       // coeffs for NL adv term
         GTVector<GFTYPE>    dthist_;        // coeffs for NL adv term
-        State               uevolve_;       // helper array to specify evolved sstate components
-        State               utmp_;
         State               uold_;          // helper arrays set from utmp
+        State               uevolve_;       // helper array to specify evolved state components
+        State               ubase_;         // helper array pointing to base state components
+        State               utmp_;          // tmp pool
         State               urhstmp_;       // helper arrays set from utmp
         State               urktmp_;        // helper arrays set from utmp
-        State               fk_;            // kinetic forcing vector
         State               qi_;            // full mass fraction vector
         State               qice_;          // ice mass fraction vector
         State               qliq_;          // liquid mass fraction vector
