@@ -28,18 +28,15 @@
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : Constructor method  (1)
-// DESC   : Instantiate with grid + state + tmp. Use for fully nonlinear
-//          Burgers equation, heat equation.
-//          grid      : grid object
+// DESC   : Instantiate with grid, traits
+// ARGS   : grid      : grid object
 //          traits    : GBurgers:Traits struct
-//          tmp       : Array of tmp vector pointers, pointing to vectors
-//                      of same size as State. Must be MAX(2*DIM+2,iorder+1)
-//                      vectors
 // RETURNS: none
 //**********************************************************************************
 template<typename TypePack>
-GBurgers<TypePack>::GBurgers(Grid &grid, GBurgers<TypePack>::Traits &traits, GTVector<GTVector<GFTYPE>*> &tmp) :
+GBurgers<TypePack>::GBurgers(Grid &grid, GBurgers<TypePack>::Traits &traits) :
 EquationBase<TypePack>(),
+bInit_                   (FALSE),
 doheat_          (traits.doheat),
 bpureadv_      (traits.bpureadv),
 bconserved_  (traits.bconserved),
@@ -64,7 +61,6 @@ steptop_callback_      (NULLPTR)
 {
   static_assert(std::is_same<State,GTVector<GTVector<GFTYPE>*>>::value,
                 "State is of incorrect type"); 
-  assert(tmp.size() >= req_tmp_size() && "Insufficient tmp space provided");
   assert(!(doheat_ && bpureadv_) && "Invalid PDE configuration");
 
   // Check if specified stepper type is valid:
@@ -78,6 +74,9 @@ steptop_callback_      (NULLPTR)
   isteptype_ = static_cast<GStepperType>(itype);
   assert( bfound && "Invalid stepping method specified");
 
+  traits_ = traits;
+  traits_.iforced.resize(traits.iforced.size());
+
   // Set dissipation from traits. Note that
   // this is set to be constant, based on configuration,
   // even though the solver can accommodate spatially 
@@ -87,8 +86,6 @@ steptop_callback_      (NULLPTR)
 
   comm_ = ggfx_->getComm();
 
-  utmp_.resize(tmp.size()); utmp_ = tmp;
-  init(traits);
   
 } // end of constructor method (1)
 
@@ -269,8 +266,9 @@ void GBurgers<TypePack>::dudt_impl(const Time &t, const State &u, const State &u
 template<typename TypePack>
 void GBurgers<TypePack>::step_impl(const Time &t, State &uin, State &uf, State &ub, const Time &dt)
 {
-
   GBOOL bret;
+
+  assert(bInit_);
 
   // If there's a top-of-the-timestep callback, 
   // call it here:
@@ -402,13 +400,13 @@ void GBurgers<TypePack>::step_exrk(const Time &t, State &uin, State &uf, State &
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : init
+// METHOD : init_impl
 // DESC   : Initialize equation object
-// ARGS   : traits: GBurgers::Traits variable
+// ARGS   : tmp  : tmp pool
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-void GBurgers<TypePack>::init(GBurgers::Traits &traits)
+void GBurgers<TypePack>::init_impl(State &tmp)
 {
   GString serr = "GBurgers<TypePack>::init: ";
 
@@ -418,9 +416,19 @@ void GBurgers<TypePack>::init(GBurgers::Traits &traits)
   GINT       nop;
   CompDesc *icomptype = &this->stateinfo().icomptype;
 
+  assert(tmp.size() >= this->tmp_size());
+  utmp_.resize(tmp.size()); utmp_ = tmp;
+
   if ( !bpureadv_ &&  !doheat_ ) {
     nsolve = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
   }
+
+  // Set std::vector for traits.iforced:
+  stdiforced_.resize(traits_.iforced.size());
+  for ( auto j=0; j<stdiforced_.size(); j++ ) {
+    stdiforced_[j] = traits_.iforced[j];
+  }
+
 
   // Find multistep/multistage time stepping coefficients:
   GMultilevel_coeffs_base<GFTYPE> *tcoeff_obj=NULLPTR; // time deriv coeffs
@@ -554,7 +562,8 @@ void GBurgers<TypePack>::init(GBurgers::Traits &traits)
     }
   }
 
-} // end of method init
+  bInit_ = TRUE;
+} // end of method init_impl
 
 
 //**********************************************************************************
@@ -630,12 +639,12 @@ void GBurgers<TypePack>::apply_bc_impl(const Time &t, State &u, State &ub)
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : req_tmp_size
+// METHOD : tmp_size_impl
 // DESC   : Find required tmp size on GLL grid
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-GINT GBurgers<TypePack>::req_tmp_size()
+GINT GBurgers<TypePack>::tmp_size_impl()
 {
   GINT isize = 0;
   GINT nstate = 0;
@@ -650,5 +659,5 @@ GINT GBurgers<TypePack>::req_tmp_size()
 
   return isize;
   
-} // end of method req_tmp_size
+} // end of method tmp_size_impl
 

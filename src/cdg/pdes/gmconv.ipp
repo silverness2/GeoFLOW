@@ -67,14 +67,12 @@
 // DESC   : Instantiate with grid + state + tmp. 
 //          grid      : grid object
 //          traits    : GMConv:Traits struct
-//          tmp       : Array of tmp vector pointers, pointing to vectors
-//                      of same size as State. Must be MAX(2*DIM+2,iorder+1)
-//                      vectors
 // RETURNS: none
 //**********************************************************************************
 template<typename TypePack>
-GMConv<TypePack>::GMConv(Grid &grid, GMConv<TypePack>::Traits &traits, State &tmp) :
+GMConv<TypePack>::GMConv(Grid &grid, GMConv<TypePack>::Traits &traits) :
 EquationBase<TypePack>(),
+bInit_                   (FALSE),
 bforced_                 (FALSE),
 bsteptop_                (FALSE),
 bvterm_                  (FALSE),
@@ -96,43 +94,13 @@ comm_(grid.get_ggfx().getComm()),
 steptop_callback_      (NULLPTR)
 {
 
-  GINT      nexcl;
   GGridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
 
-  assert(tmp.size() >= req_tmp_size() && "Insufficient tmp space provided");
   assert(!(GDIM==2 && icos!=NULLPTR) && "Embedded 2D spherical grid not allowed");
 
   traits_.iforced.resize(traits.iforced.size());
   traits_ = traits;
 
-  v_.resize(GDIM); v_ = NULLPTR;
-  W_.resize(GDIM); W_ = NULLPTR;
-
-  nexcl = 0;
-  
-  // Set space for state velocity, if needed:
-  if ( traits_.usemomden ) {
-    for ( auto j=0; j<GDIM; j++ ) {
-      v_[j] = tmp[j];
-      nexcl++;
-    }
-  }
-  // Set space for terminal velocity, if needed:
-  if ( icos && (traits_.nlsector || traits_.nisector)) {
-    for ( auto j=0; j<GDIM; j++ ) {
-      W_[j] = tmp[j+v_.size()];
-      nexcl++;
-    }
-  }
-
-  // Set up tmp pool:
-  utmp_.resize(tmp.size()-nexcl); 
-  for ( auto j=nexcl; j<tmp.size(); j++ ) {
-    utmp_[j] = tmp[j];
-  }
-
-  init();
-  
 } // end of constructor method (1)
 
 
@@ -269,7 +237,6 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   // Assign qi, tvi, qice, qliq, tvice, tvliq:
   assign_helpers(u, uf);
 
-
   // Set tmp pool for RHS computations:
   assert(urhstmp_.size() >= szrhstmp());
   Ltot  = urhstmp_[urhstmp_.size()-1];
@@ -384,7 +351,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
     ghelm_->opVec_prod(*u[j], urhstmp_, *tmp1);       // nu Laplacian s_j
    *dudt[j] -= *tmp1;                                 // -= nu Laplacian s_j
     if ( traits_.docoriolis ) {
-      GMTK::cross_prod(v_, s_, j+1, *tmp1);
+      GMTK::cross_prod_s(traits_.omega, s_, j+1, *tmp1);
      *tmp1 *= *Jac; *tmp1 *= *Mass;             
       GMTK::saxpy<Ftype>(*dudt[j], 1.0, *tmp1, 2.0);  // += 2 Omega X (rhoT v) M J
     }
@@ -428,6 +395,8 @@ void GMConv<TypePack>::step_impl(const Time &t, State &uin, State &uf, State &ub
 {
 
   GBOOL bret;
+
+  assert(bInit_);
 
   // If there's a top-of-the-timestep callback, 
   // call it here:
@@ -533,19 +502,51 @@ void GMConv<TypePack>::step_exrk(const Time &t, State &uin, State &uf, State &ub
 //**********************************************************************************
 // METHOD : init
 // DESC   : Initialize equation object
-// ARGS   : traits: GMConv::Traits variable
+// ARGS   : tmp : Array of tmp vector pointers, pointing to vectors
+//                of same size as State. Must be MAX(2*DIM+2,iorder+1)
+//                vectors
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::init()
+void GMConv<TypePack>::init_impl(State &tmp)
 {
   GString serr = "GMConv<TypePack>::init: ";
 
   GBOOL      bmultilevel = FALSE;
   GSIZET     n;
   GSIZET     nc = grid_->gtype() == GE_2DEMBEDDED ? 3 : GDIM;
-  GINT       nrhstmp;
-  CompDesc *icomptype = &this->stateinfo().icomptype;
+  GINT       nexcl, nrhstmp;
+  GGridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
+  CompDesc  *icomptype = &this->stateinfo().icomptype;
+ 
+  assert(tmp.size() >= this->tmp_size());
+
+  v_.resize(GDIM); v_ = NULLPTR;
+  W_.resize(GDIM); W_ = NULLPTR;
+
+  
+  // Set space for state velocity, if needed:
+  nexcl = 0;
+  if ( traits_.usemomden ) {
+    for ( auto j=0; j<GDIM; j++ ) {
+      v_[j] = tmp[j];
+      nexcl++;
+    }
+  }
+
+  // Set space for terminal velocity, if needed:
+  if ( icos && (traits_.nlsector || traits_.nisector)) {
+    for ( auto j=0; j<GDIM; j++ ) {
+      W_[j] = tmp[j+v_.size()];
+      nexcl++;
+    }
+  }
+
+  // Set up tmp pool:
+  utmp_.resize(tmp.size()-nexcl); 
+  for ( auto j=nexcl; j<tmp.size(); j++ ) {
+    utmp_[j] = tmp[j];
+  }
 
   // Check if specified stepper type is valid:
   GBOOL  bfound;
@@ -560,6 +561,12 @@ void GMConv<TypePack>::init()
   traits_.isteptype = static_cast<GStepperType>(itype);
 
   if ( traits_.dodry ) traits_.dofallout = FALSE;
+
+  // Set std::vector for traits.iforced:
+  stdiforced_.resize(traits_.iforced.size());
+  for ( auto j=0; j<stdiforced_.size(); j++ ) {
+    stdiforced_[j] = traits_.iforced[j];
+  }
 
   // Set dissipation from traits. Note that
   // this is set to be constant, based on configuration,
@@ -755,7 +762,9 @@ void GMConv<TypePack>::init()
   fk_   = NULLPTR;
   s_    = NULLPTR;
 
-} // end of method init
+  bInit_ = TRUE;
+
+} // end of method init_impl
 
 
 //**********************************************************************************
@@ -827,28 +836,6 @@ void GMConv<TypePack>::apply_bc_impl(const Time &t, State &u, State &ub)
   }
 
 } // end of method apply_bc_impl
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : req_tmp_size
-// DESC   : Find required tmp size on GLL grid
-// RETURNS: none.
-//**********************************************************************************
-template<typename TypePack>
-GINT GMConv<TypePack>::req_tmp_size()
-{
-  GINT isize = 0;
- 
-  isize  = 2*GDIM + 3;
-
-  if ( traits_.isteptype == GSTEPPER_EXRK ) {
-    isize += traits_.nstate * traits_.itorder; 
-  }
-
-  return isize;
-  
-} // end of method req_tmp_size
 
 
 //**********************************************************************************
@@ -1461,10 +1448,10 @@ template<typename TypePack>
 GINT GMConv<TypePack>::szrhstmp()
 {
    GINT       sum = 0;
-   GGridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
+// GGridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
    GGridBox  *box  = dynamic_cast <GGridBox*>(grid_);
    
-   // Get tp size for operators:
+   // Get tmp size for operators:
    if ( box ) {
      sum += box->gtype() == GE_DEFORMED ? 2*GDIM : GDIM;
    }
@@ -1475,4 +1462,27 @@ GINT GMConv<TypePack>::szrhstmp()
   sum += 5;        // size for misc tmp space in dudt_impl
 
   return sum;
+
 } //end szrhstmp
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : tmp_size_impl
+// DESC   : Find required tmp size on GLL grid
+// RETURNS: none.
+//**********************************************************************************
+template<typename TypePack>
+GINT GMConv<TypePack>::tmp_size_impl()
+{
+  GINT sum = 0;
+ 
+  sum += traits_.nsolve;                     // old state storage
+  sum += traits_.nsolve*(traits_.itorder+2); // RKK storage
+  sum += szrhstmp();                         // RHS tmp size
+
+  return sum;
+  
+} // end of method tmp_size_impl
+
+

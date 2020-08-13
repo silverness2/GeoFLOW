@@ -123,13 +123,13 @@ public:
           GStepperType    isteptype   = GSTEPPER_EXRK;
           GFTYPE          courant     = 0.5;    // Courant factor
           GFTYPE          nu          = 0.0;    // viscosity constant
-          GTVector<GINT>  iforced;              // state comps to foce
+          GTVector<GINT>  iforced;              // state comps to force
           GTVector<Ftype> omega;                // rotation rate vector
           GString         ssteptype;            // stepping method
         };
 
         GMConv() = delete; 
-        GMConv(Grid &grid, GMConv<TypePack>::Traits &traits, State &tmp);
+        GMConv(Grid &grid, GMConv<TypePack>::Traits &traits);
        ~GMConv();
         GMConv(const GMConv &bu) = default;
         GMConv &operator=(const GMConv &bu) = default;
@@ -140,6 +140,8 @@ public:
                             std::function<void(const Time &t, State &u, 
                                                const Time &dt)> callback) 
                              { steptop_callback_ = callback; bsteptop_ = TRUE;}
+
+        GMConv<TypePack>::Traits &get_traits() { return traits_; }           // Get traits
                                             
 
 protected:
@@ -148,14 +150,18 @@ protected:
         void                step_impl(const Time &t, const State &uin, State &uf, State &ub,
                                       const Time &dt, State &uout);       // Take a step
         GBOOL               has_dt_impl() const {return traits_.variabledt;}  
+        GINT                tmp_size_impl();                              // required tmp size
+        GINT                state_size_impl()                             // required tmp size
+                            {return traits_.nstate;}
+        std::vector<GINT>  &iforced_impl()                                // required tmp size
+                            {return stdiforced_;}
+        void                init_impl(State &tmppool);                    // initialize 
                                                                           // Has dynamic dt?
         void                dt_impl(const Time &t, State &u, Time &dt);   // Get dt
         void                apply_bc_impl(const Time &t, State &u, 
                                           State &ub);                     // Apply bdy conditions
 private:
 
-        void                init();                                       // initialize 
-        GINT                req_tmp_size();                               // required tmp size
         void                dudt_impl  (const Time &t, const State &u, const State &uf, const State &ub,
                                         const Time &dt, Derivative &dudt);
         void                step_exrk  (const Time &t, State &uin, State &uf, State &ub,
@@ -179,6 +185,7 @@ inline  void                compute_pe   (StateComp &rhoT, State &qi, State &tvi
 inline  GINT                szrhstmp();
  
 
+        GBOOL               bInit_;         // object initialized?
         GBOOL               bforced_;       // use forcing vectors
         GBOOL               bsteptop_;      // is there a top-of-step callback?
         GBOOL               bvterm_;        // teminal vel. computed?
@@ -211,6 +218,7 @@ inline  GINT                szrhstmp();
         GTVector<GFTYPE>    nu_   ;         // dissipoation
         GTVector<GFTYPE>    dxmin_ ;        // element face mins
         GTVector<GFTYPE>    maxbyelem_ ;    // element-based maxima for dt
+        std::vector<GINT>   stdiforced_;    // traits_.iforced as a std::vector
         GGrid              *grid_;          // GGrid object
         GExRKStepper<GFTYPE>
                            *gexrk_;         // ExRK stepper, if needed
