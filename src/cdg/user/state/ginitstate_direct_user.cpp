@@ -670,7 +670,7 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
 
   GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
 
-  assert(u.size() != GDIM+4);
+  assert(u.size() == GDIM+4);
 
   Tb    = utmp[0];  // background temp
   e     = u  [GDIM];// int. energy density
