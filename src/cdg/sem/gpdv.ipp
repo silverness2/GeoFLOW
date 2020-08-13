@@ -74,7 +74,7 @@ void GpdV<TypePack>::apply(StateComp &p, State &u, State &utmp, StateComp &po)
 //          NOTE: must have 2 utmp vectors provided
 // ARGS   : p   : input vector (global)
 //          u   : input vector field (global)
-//          utmp: array of tmp arrays. 2 arrays are required.
+//          utmp: array of tmp arrays. 2 arrays required.
 //          po  : output (result) field (global)
 //             
 // RETURNS:  none
@@ -82,7 +82,7 @@ void GpdV<TypePack>::apply(StateComp &p, State &u, State &utmp, StateComp &po)
 template<typename TypePack>
 void GpdV<TypePack>::def_prod(StateComp &p, State &u, State &utmp, StateComp &po) 
 {
-  assert( utmp.size() >= GDIM+1
+  assert( utmp.size() >= 2
        && "Insufficient temp space specified");
 
   GElemList *gelems=&grid_->elems();
@@ -122,7 +122,7 @@ void GpdV<TypePack>::def_prod(StateComp &p, State &u, State &utmp, StateComp &po
 //          NOTE: must have 1 utmp vectors provided
 // ARGS   : p   : input vector (global)
 //          u   : input vector field (global)
-//          utmp: array of tmp arrays. One array required.
+//          utmp: array of tmp arrays. 1 array required.
 //          po  : output (result) field (global)
 //             
 // RETURNS:  none
@@ -131,7 +131,7 @@ template<typename TypePack>
 void GpdV<TypePack>::reg_prod(StateComp &p, State &u, State &utmp, StateComp &po) 
 {
 
-  assert( utmp.size() >= GDIM+1
+  assert( utmp.size() >= 1
        && "Insufficient temp space specified");
 
   GElemList *gelems=&grid_->elems();
