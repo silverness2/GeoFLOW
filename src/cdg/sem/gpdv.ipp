@@ -166,7 +166,7 @@ void GpdV<TypePack>::reg_prod(StateComp &p, State &u, State &utmp, StateComp &po
   }
 
   // apply mass:
-  massop_->opVec_prod(*utmp[0], utmp, po); // last arg is unused
+  po *= *massop_->data();
 
 } // end of method reg_prod
 
