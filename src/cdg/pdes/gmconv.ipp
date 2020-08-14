@@ -21,6 +21,7 @@ bInit_                   (FALSE),
 bforced_                 (FALSE),
 bsteptop_                (FALSE),
 bvterm_                  (FALSE),
+istage_                      (0),
 nevolve_                     (0),
 nhydro_                      (0),
 nmoist_                      (0),
@@ -41,10 +42,23 @@ steptop_callback_      (NULLPTR)
 
   GGridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
 
-  assert(!(GDIM==2 && icos!=NULLPTR) && "Embedded 2D spherical grid not allowed");
-
   traits_.iforced.resize(traits.iforced.size());
   traits_ = traits;
+
+  if ( GDIM == 2 && icos ) {
+    assert( !traits_.dograv && !traits_.dofallout  
+         && "Embedded 2D spherical grid not allowed with preferred directions");
+  }
+
+  if ( traits_.dofallout ) {
+    assert( !traits_.dodry
+         && "Must do moist convection with fallout");
+  }
+
+  if ( traits_.usebase ) {
+    assert( traits_.dograv
+         && "Must dograv with base state");
+  }
 
 } // end of constructor method (1)
 
@@ -81,63 +95,74 @@ GMConv<TypePack>::~GMConv()
 template<typename TypePack>
 void GMConv<TypePack>::dt_impl(const Time &t, State &u, Time &dt)
 {
-   GString    serr = "GMConv<TypePack>::dt_impl: ";
-   GFTYPE     dtmin, dt1, umax;
-   StateComp *db, *dp, *p;
-   StateComp *tmp1, *tmp2;
+  GString    serr = "GMConv<TypePack>::dt_impl: ";
+  GFTYPE     dtmin, dt1;
+  StateComp *csq, *p;
+  StateComp *rhoT, *tmp1, *tmp2;
 
-   assert(utmp_.size() >= 6 );
+  assert(utmp_.size() >= 6 );
 
-   // This is an estimate. We assume the timestep is
-   // is governed by fast sonic waves with speed
-   //  |v| + c,
-   // where 
-   //   c^2 = p/rho_dry; p ~ Rd e / Cv,
-   // and e is int. energy density, and
-   //   Cv = Cvd qd + Cvv qv + Sum_i(Cl_i ql_i) + Sum_j(Ci_j qi_j).
-   // Then, dt is computed element-by-element from
-   //   dt = dx_min/(v + c)_max
-   // where min and max are computed over the element.
+  // This is an estimate. We assume the timestep is
+  // is governed by fast sonic waves with speed
+  //  |v| + c,
+  // where 
+  //   c^2 = p/rho; 
+  // Then, dt is computed element-by-element from
+  //   dt = dx_min/(|v| + c)_max
+  // where min and max are computed over the element.
+  // Here, approximate |v| + c as sqrt(v^2 + c^2)
    
-   dtmin = std::numeric_limits<GFTYPE>::max();
+  dtmin = std::numeric_limits<Ftype>::max();
 
-   // Assign pointers:
-   p    = utmp_[utmp_.size()-1];
-   tmp1 = utmp_[utmp_.size()-2];
-   tmp2 = utmp_[utmp_.size()-3];
-   dp   = u[DENSITY];
-   db   = u[BASESTATE]; // cannot use ubase, since it may not be set
+  // Assign pointers:
+  p    = utmp_[utmp_.size()-1];
+  rhoT = utmp_[utmp_.size()-2];
+  tmp1 = utmp_[utmp_.size()-3];
+  tmp2 = utmp_[utmp_.size()-4];
 
-   ubase_[0] = u[BASESTATE];
-   compute_v(u, utmp_, v_); 
+ *rhoT = *u[DENSITY]; 
+  if ( traits_.usebase ) *rhoT += *u[BASESTATE];
+ *tmp1 = *rhoT; tmp1->rpow(-1.0);
+  compute_v(u, *tmp1, v_); 
 
-   // Compute v^2:
-  *tmp1 = *v_[0]; tmp1->rpow(2);
-   for ( auto k=1; k<u.size(); k++ ) { // each advecting v 
-     *tmp2 = *u[k]; tmp2->rpow(2);
-     *tmp1 += *tmp2;                   // v^2 += v_k^2
-   }
+  compute_cv(u, *tmp1, *tmp2);                  // Cv
+  geoflow::compute_temp(*u[ENERGY], *rhoT, *tmp2, *tmp1);  // temperature
+  compute_qd  (u, *tmp2);                       // dry mass ratio
+  geoflow::compute_p(*tmp1, *rhoT, *tmp2, RD, *p); // partial pressure for dry air
+  if ( !traits_.dodry ) {
+    geoflow::compute_p(*tmp1, *rhoT, *u[VAPOR], RV, *tmp2); // partial pressure for vapor
+   *p += *tmp2;
+  }
+
+  csq = utmp_[utmp_.size()-4];
+  for ( auto j=0; j<p->size(); j++ ) { // sound speed, csq
+    (*csq)[j] += (*p)[j] / (*rhoT)[j] ;
+  }
 
    // Compute v^2 + c^2:
-   compute_p(u, utmp_, *p);
-   for ( auto j=0; j<p->size(); j++ ) {
-     (*tmp1)[j] += sqrt( (*p)[j] / ( (*dp)[j] + (*db)[j] )  );
+  *tmp1 = *v_[0]; tmp1->rpow(2);
+   for ( auto k=1; k<v_.size(); k++ ) {    // each advecting v 
+     for ( auto j=0; j<v_[0]->size(); j++ ) { // v^2
+       (*tmp1)[j] += (*v_[k])[j] * (*v_[k])[j];
+     }
    }
+   *tmp1 += *csq; // v^2 + c^2
+
   
    // Compute max(v^2 + c^2) for each element:
-   GMTK::maxbyelem<GFTYPE>(*grid_, *tmp1, maxbyelem_);
+   GMTK::maxbyelem<Ftype>(*grid_, *tmp1, maxbyelem_);
    
    // Note: maxbyelem_ is an array with the max of v^2 + c^2 
    //       on each element
 
    // Find estimate of smallest dt on this task:
    for ( auto e=1; e<dxmin_.size(); e++ ) { // check each element
-     dt1 = dxmin_[e] / maxbyelem_[e]; // this dt^2
+     dt1 = dxmin_[e] * dxmin_[e] / maxbyelem_[e]; // this dt^2
      dtmin = MIN(dtmin, sqrt(dt1)); 
    }
 
    // Find minimum dt over all tasks:
-   GComm::Allreduce(&dtmin, &dt1, 1, T2GCDatatype<GFTYPE>() , GC_OP_MIN, comm_);
+   GComm::Allreduce(&dtmin, &dt1, 1, T2GCDatatype<Ftype>() , GC_OP_MIN, comm_);
 
    // Limit any timestep-to-timestep increae to 10%:
    dt = MIN(dt1*traits_.courant, 1.1*dt);
@@ -166,7 +191,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   GString    serr = "GMConv<TypePack>::dudt_impl: ";
   GINT       nice, nliq ;
   StateComp *irhoT, *Ltot;
-  StateComp *e, *p, *rhoT, *T; // energy den, pressure, temperature
+  StateComp *dp, *e, *p, *rhoT, *T; // energy, den, pressure, temperature
   StateComp *Jac, *Mass;
   StateComp *tmp1, *tmp2;
   State      g(GDIM); 
@@ -182,33 +207,38 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   // Set tmp pool for RHS computations:
   assert(urhstmp_.size() >= szrhstmp());
   Ltot  = urhstmp_[urhstmp_.size()-1];
-  irhoT = urhstmp_[urhstmp_.size()-2];
-  tmp1  = urhstmp_[urhstmp_.size()-3];
-  tmp2  = urhstmp_[urhstmp_.size()-4];
+  rhoT  = urhstmp_[urhstmp_.size()-2];
+  irhoT = urhstmp_[urhstmp_.size()-3];
+  tmp1  = urhstmp_[urhstmp_.size()-4];
+  tmp2  = urhstmp_[urhstmp_.size()-5];
+
+
+  // Get total density and inverse: *rhoT  = *u[DENSITY]; 
+ if ( traits_.usebase ) *rhoT +=  *ubase_[0];   
+ *irhoT = *rhoT;
+ irhoT->rpow(-1.0);
 
   // Compute velocity for timestep:
-  compute_v(u, utmp_, v_); // stored in v_
-cout << "dudt_impl: vx=" << *v_[0] << endl;
-
-  // Get 1/rhoT:
-  rhoT  =  u[DENSITY];
- *irhoT = *rhoT;
-  irhoT->rpow(-1.0);
+  compute_v(s_, *irhoT, v_); // stored in v_
+for ( auto j=0; j<v_.size(); j++ ) {
+cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax()  << endl;
+}
   
+  // Compute all operators as though they are on the LHS, then
+  // change the sign and add Mass at the end....
+
 
   // *************************************************************
   // Total density RHS:
   // *************************************************************
 
+cout << "dudt_impl: istage=" << istage_ << " dmax_0 = " << rhoT->amax()  << endl;
   compute_div(*rhoT, v_, urhstmp_, *dudt[GDIM+1]); 
-cout << "dudt_impl: rhoT=" << *rhoT << endl;
+cout << "dudt_impl: istage=" << istage_ << " rhoT= " << rhoT->amax()  << endl;
   compute_falloutsrc(*rhoT, qi_, tvi_, -1, urhstmp_, *Ltot);
   GMTK::saxpy<Ftype>(*dudt[DENSITY], 1.0, *Ltot, 1.0);   // += Ltot
   if ( uf[DENSITY] != NULLPTR ) *dudt[DENSITY] -= *uf[DENSITY];//  += sdot(s_rhoT)
   
-  // First, compute all operators as though they are on the LHS, then
-  // change the sign and add Mass at the very end....
-
   // *************************************************************
   // Mass fraction equations (vapor + all hyrodmeteors) RHS:
   // We solve
@@ -233,25 +263,36 @@ cout << "dudt_impl: rhoT=" << *rhoT << endl;
     }
   }
   
-  Ltot  = urhstmp_[urhstmp_.size()-1];
-  tmp1  = urhstmp_[urhstmp_.size()-2];
-  tmp2  = urhstmp_[urhstmp_.size()-3];
-  p     = urhstmp_[urhstmp_.size()-4]; // holds pressure
-  T     = urhstmp_[urhstmp_.size()-5]; // holds temperature
+  p     = urhstmp_[urhstmp_.size()-3]; // holds pressure
+  T     = urhstmp_[urhstmp_.size()-6]; // holds temperature
   e     = u[ENERGY];                   // internal energy density
+assert(e->isfinite());
 
   // *************************************************************
-  // Energy equationu RHS:
+  // Energy equation RHS:
   // *************************************************************
-  
-  compute_ptemp(u, urhstmp_, *T, *p);              // find p', T
+  compute_cv(u, *tmp1, *tmp2);                     // Cv
+  geoflow::compute_temp(*e, *rhoT, *tmp2, *T);     // temperature
+  compute_qd  (u, *tmp1);                          // dry mass ratio
+  geoflow::compute_p(*T, *rhoT, *tmp1, RD, *p);    // partial pressure for dry air
+//cout << "dudt_impl: p=" << *p << endl;
+  if ( !traits_.dodry ) {
+    geoflow::compute_p(*T, *rhoT, *u[VAPOR], RV, *tmp1); // partial pressure for vapor
+   *p += *tmp1;
+  }
+cout << "dudt_impl: istage=" << istage_ << " dmax = " << rhoT->amax()  << endl;
+cout << "dudt_impl: istage=" << istage_ << " pmax = " << p->amax()  << endl;
+cout << "dudt_impl: istage=" << istage_ << " emax = " << e->amax()  << endl;
+cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
 
-cout << "dudt_impl: T=" << *T << endl;
-cout << "dudt_impl: p=" << *p << endl;
+
   GMTK::saxpy<Ftype>(*tmp1, *e, 1.0, *p, 1.0);     // h = p+e, enthalpy density
-  compute_div(*tmp1, v_, urhstmp_, *dudt[GDIM]);   // Div (h v);
+cout << "dudt_impl: istage=" << istage_ << " hmax = " << tmp1->amax()  << endl;
+  compute_div(*tmp1, v_, urhstmp_, *dudt[ENERGY]); // Div (h v);
 
-  if ( traits_.dofallout || traits_.dodry ) {
+assert(dudt[ENERGY]->isfinite());
+
+  if ( traits_.dofallout || !traits_.dodry ) {
     GMTK::paxy(*tmp1, *rhoT, CVL, *T);             // tmp1 = C_liq rhoT T
     compute_falloutsrc(*tmp1, qliq_, tvliq_, -1.0, urhstmp_, *Ltot);
                                                    // liquid fallout src
@@ -264,8 +305,9 @@ cout << "dudt_impl: p=" << *p << endl;
 
   gadvect_->apply(*p, v_, urhstmp_, *tmp1);         // v.Grad p 
  *dudt[ENERGY] -= *tmp1;                            // -= v . Grad p
+assert(dudt[ENERGY]->isfinite());
 
-  if ( traits_.dograv ) {
+  if ( traits_.dograv && traits_.dofallout ) {
     compute_pe(*rhoT, qi_, tvi_, urhstmp_, *tmp1);
    *dudt[ENERGY] += *tmp1;                          // += Sum_i rhoT q_i g.W_i
   }
@@ -282,18 +324,25 @@ cout << "dudt_impl: p=" << *p << endl;
   // *************************************************************
   // Momentum equations RHS:
   // *************************************************************
-  Jac = &grid_->Jac();
+  dp   = urhstmp_[urhstmp_.size()-6];  // holds density fluctuation
+ *dp   = (*rhoT); 
+  if ( traits_.usebase ) {
+   *dp -= *ubase_[0];                 // density fluctuation
+   *p  -= *ubase_[1];                 // pressure fluctuation
+  }
+  Jac  = &grid_->Jac();
   Mass = grid_->massop().data();
-  for ( auto j=0; j<GDIM; j++ ) {
-
-    gadvect_->apply(*s_[j], v_, urhstmp_, *dudt[j]);  // v.Grad s_j
-    if ( traits_.dofallout || traits_.dodry ) {
+  for ( auto j=0; j<v_.size(); j++ ) { // for each component
+    compute_div(*s_[j], v_, urhstmp_, *dudt[j]); 
+assert(dudt[j]->isfinite());
+    if ( traits_.dofallout || !traits_.dodry ) {
       compute_falloutsrc(*u[j], qliq_, tvi_,-1.0, urhstmp_, *Ltot);
                                                       // hydrometeor fallout src
      *dudt[j] += *Ltot;                               // += L_tot
     }
     grid_->wderiv(*p, j+1, TRUE, *tmp2, *tmp1);       // Grad p'
    *dudt[j] += *tmp1;                                 // += Grad p'
+assert(dudt[j]->isfinite());
     ghelm_->opVec_prod(*u[j], urhstmp_, *tmp1);       // nu Laplacian s_j
    *dudt[j] -= *tmp1;                                 // -= nu Laplacian s_j
     if ( traits_.docoriolis ) {
@@ -301,13 +350,15 @@ cout << "dudt_impl: p=" << *p << endl;
      *tmp1 *= *Jac; *tmp1 *= *Mass;             
       GMTK::saxpy<Ftype>(*dudt[j], 1.0, *tmp1, 2.0);  // += 2 Omega X (rhoT v) M J
     }
-    if ( traits_.dograv ) {
+assert(dudt[j]->isfinite());
+    if ( traits_.dograv || traits_.usebase ) {
      *tmp1 = -GG; 
-      compute_vpref(*tmp1, j+1, *tmp2); // compute grav component
+      compute_vpref(*tmp1, j+1, *tmp2);               // compute grav component
       tmp2->pointProd(*rhoT, *tmp1);
      *tmp1 *= *Jac; *tmp1 *= *Mass;             
-     *dudt[j] -= *tmp1;                              // -= rhoT g M J
+     *dudt[j] -= *tmp1;                               // -= rho' vec{g} M J
     }
+assert(dudt[j]->isfinite());
     if ( traits_.bforced && uf[j] != NULLPTR ) {                    
       *tmp1 = *uf[j]; *tmp1 *= *Jac ; *tmp1 *= *Mass;
       GMTK::saxpy<Ftype>(*dudt[j], 1.0, *tmp1, -1.0); 
@@ -321,6 +372,8 @@ cout << "dudt_impl: p=" << *p << endl;
   for ( auto j=0; j<nevolve_; j++ ) {
     dudt[j]->apointProd(-1.0, *gimass_->data());// dudt -> -M^-1 dudt
   }
+
+  istage_++;
   
 } // end of method dudt_impl
 
@@ -359,7 +412,7 @@ void GMConv<TypePack>::step_impl(const Time &t, State &uin, State &uf, State &ub
     case GSTEPPER_EXRK:
       // Assign qi, tvi, qice, qliq, tvice, tvliq:
       assign_helpers(uin, uf);
-
+      istage_ = 0;
       for ( auto j=0; j<uold_.size(); j++ ) *uold_[j] = *uevolve_[j];
       step_exrk(t, uold_, uf, ub, dt, uevolve_);
       break;
@@ -544,8 +597,8 @@ void GMConv<TypePack>::init_impl(State &tmp)
   // (negative if invalid):
   MOMENTUM   = 0;
   ENERGY     = GDIM;
-  DENSITY    = GDIM+1;
-  VAPOR      = traits_.dodry ? -1 : GDIM+2;
+  DENSITY    = ENERGY+1;
+  VAPOR      = traits_.dodry ? -1 : DENSITY+1;
   LIQMASS    = traits_.dodry ? -1 : VAPOR+1;
   ICEMASS    = traits_.dodry ? -1 : LIQMASS+traits_.nlsector;
   PRESCRIBED = traits_.dodry ? GDIM+2 : ICEMASS+traits_.nisector;
@@ -556,8 +609,8 @@ void GMConv<TypePack>::init_impl(State &tmp)
   
 
   // Find multistep/multistage time stepping coefficients:
-  GMultilevel_coeffs_base<GFTYPE> *tcoeff_obj=NULLPTR; // time deriv coeffs
-  GMultilevel_coeffs_base<GFTYPE> *acoeff_obj=NULLPTR; // adv op. coeffs
+  GMultilevel_coeffs_base<Ftype> *tcoeff_obj=NULLPTR; // time deriv coeffs
+  GMultilevel_coeffs_base<Ftype> *acoeff_obj=NULLPTR; // adv op. coeffs
 
 
   std::function<void(const Time &t,                    // RHS callback function
@@ -583,7 +636,7 @@ void GMConv<TypePack>::init_impl(State &tmp)
   // Configure time stepping:
   switch ( traits_.isteptype ) {
     case GSTEPPER_EXRK:
-      gexrk_ = new GExRKStepper<GFTYPE>(*grid_, traits_.itorder);
+      gexrk_ = new GExRKStepper<Ftype>(*grid_, traits_.itorder);
       gexrk_->setRHSfunction(rhs);
       gexrk_->set_apply_bdy_callback(applybc);
       gexrk_->set_ggfx(ggfx_);
@@ -606,8 +659,8 @@ void GMConv<TypePack>::init_impl(State &tmp)
 /*
     case GSTEPPER_BDFAB:
       dthist_.resize(MAX(traits_.itorder,traits_.inorder));
-      tcoeff_obj = new G_BDF<GFTYPE>(traits_.itorder, dthist_);
-      acoeff_obj = new G_AB<GFTYPE> (traits_.inorder, dthist_);
+      tcoeff_obj = new G_BDF<Ftype>(traits_.itorder, dthist_);
+      acoeff_obj = new G_AB<Ftype> (traits_.inorder, dthist_);
       tcoeffs_.resize(tcoeff_obj->getCoeffs().size());
       acoeffs_.resize(acoeff_obj->getCoeffs().size());
       tcoeffs_ = tcoeff_obj->getCoeffs(); 
@@ -618,8 +671,8 @@ void GMConv<TypePack>::init_impl(State &tmp)
       break;
     case GSTEPPER_BDFEXT:
       dthist_.resize(MAX(traits_.itorder,traits_.inorder));
-      tcoeff_obj = new G_BDF<GFTYPE>(traits_.itorder, dthist_);
-      acoeff_obj = new G_EXT<GFTYPE>(traits_.inorder, dthist_);
+      tcoeff_obj = new G_BDF<Ftype>(traits_.itorder, dthist_);
+      acoeff_obj = new G_EXT<Ftype>(traits_.inorder, dthist_);
       tcoeffs_.resize(tcoeff_obj->getCoeffs().size());
       acoeffs_.resize(acoeff_obj->getCoeffs().size());
       tcoeffs_ = tcoeff_obj->getCoeffs(); 
@@ -676,7 +729,7 @@ void GMConv<TypePack>::init_impl(State &tmp)
     ukeep_ .resize(traits_.itorder);
     for ( auto i=0; i<traits_.itorder-1; i++ ) { // for each time level
       ukeep_[i].resize(traits_.nsolve);
-      for ( auto j=0; j<traits_.nsolve; j++ ) ukeep_[i][j] = new GTVector<GFTYPE>(grid_->ndof());
+      for ( auto j=0; j<traits_.nsolve; j++ ) ukeep_[i][j] = new GTVector<Ftype>(grid_->ndof());
     }
   }
 
@@ -751,7 +804,7 @@ void GMConv<TypePack>::cycle_keep(const State &u)
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::set_nu(GTVector<GFTYPE> &nu)
+void GMConv<TypePack>::set_nu(GTVector<Ftype> &nu)
 {
   assert(ghelm_ != NULLPTR && "Init must be called first");
   nu_ = nu; // Not sure this class actually needs this. May be removed later
@@ -794,12 +847,12 @@ void GMConv<TypePack>::apply_bc_impl(const Time &t, State &u, State &ub)
 //          where ql are the liquid mass fractions, and qi are the ice
 //          mass fractions. 
 // ARGS   : u    : state
-//          utmp : tmp vectors; 1 required; only first one used
+//          utmp : tmp vector
 //          cv   : cv field
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::compute_cv(const State &u, State &utmp, StateComp &cv)
+void GMConv<TypePack>::compute_cv(const State &u, StateComp &utmp, StateComp &cv)
 {
    GString    serr = "GMConv<TypePack>::compute_cv: ";
    GINT       ibeg;
@@ -810,21 +863,22 @@ void GMConv<TypePack>::compute_cv(const State &u, State &utmp, StateComp &cv)
      return;
    }
 
-  *utmp[0]  = 1.0;              // running total: subtract qi's  
-  *utmp[0] -= (*u[VAPOR]);      // -q_v
+   utmp     = 1.0;              // running total: subtract qi's  
+   utmp    -= (*u[VAPOR]);      // -q_v
    cv       = (*u[VAPOR])*CVV;  // Cv = Cvv * q_vapor
    ibeg     = LIQMASS;
    for ( auto k=ibeg; k<ibeg+traits_.nlsector+1; k++ ) { // liquids
-     *utmp[0] -= *u[k];         // subtract in ql_k
-      cv      += (*u[k]) * CVL; // add in Cvl * ql_k
+      utmp    -= *u[k];         // subtract in ql_k
+      GMTK::saxpy<Ftype>(cv, 0.0, *u[k], CVL); // add in Cvl * ql_k
    }
    ibeg = LIQMASS + traits_.nlsector;;
    for ( auto k=ibeg; k<ibeg+traits_.nisector; k++ ) { // ices
-     *utmp[0] -= *u[k];         // subtract in qi_k
+     utmp    -= *u[k];         // subtract in qi_k
      cv       += (*u[k]) * CVI; // add in Cvi * qi_k
+     GMTK::saxpy<Ftype>(cv, 0.0, *u[k], CVI); // add in Cvi * qi_k
    }
    // After subtracting q_i, final result is qd=q_dry, so:
-   cv  += (*utmp_[0])*CVD; // Final Cv += Cvd * qd
+   GMTK::saxpy<Ftype>(cv, 0.0, utmp, CVD); // Final Cv += Cvd * qd
 
 } // end of method compute_cv
 
@@ -835,17 +889,14 @@ void GMConv<TypePack>::compute_cv(const State &u, State &utmp, StateComp &cv)
 // DESC   : Compute dry mass fraction from other mass fractions:
 //             Cv = 1 - Sum_i q_i
 // ARGS   : u    : state
-//          utmp : tmp vectors; at least 1 required; only first one used
 //          qd   : dry mass fraction field
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::compute_qd(const State &u, State &utmp, StateComp &qd)
+void GMConv<TypePack>::compute_qd(const State &u, StateComp &qd)
 {
    GString    serr = "GMConv<TypePack>::compute_qd: ";
    GINT       ibeg;
-
-   assert(utmp.size() >= 1);
 
    // Compute qd:
    if ( traits_.dodry ) { // if dry dynamics only
@@ -865,151 +916,6 @@ void GMConv<TypePack>::compute_qd(const State &u, State &utmp, StateComp &qd)
    }
 
 } // end of method compute_qd
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : compute_temp
-// DESC   : Compute temperature from state
-//             T = eps / Cv = e_s /( rho' * Cv ),
-//          with e_s the sensible internal energy density, 
-//          rho' = total density fluctuations,
-//             Cv = Cvd qd + Cvv qv + Sum_i(Cl_i ql_i) + Sum_j(Ci_j qi_j).
-// ARGS   : u    : state
-//          utmp : tmp vectors; 2 required; only first two used
-//          temp : temperature field
-// RETURNS: none.
-//**********************************************************************************
-template<typename TypePack>
-void GMConv<TypePack>::compute_temp(const State &u, State &utmp, StateComp &temp)
-{
-   GString    serr = "GMConv<TypePack>::compute_temp: ";
-   StateComp *cv, *db, *dp, *e; 
-
-   assert(utmp.size() >= 2);
-
-   // Set int energy and density:
-   e  = u[ENERGY];   // sensible internal energy density
-   dp = u[DENSITY];  // total density fluctuation
-   db = ubase_[0];   // total density fluctuation
-   cv = utmp[1];     // Cv
-
-   // Get Cv:
-   compute_cv(u, utmp, *cv); // utmp[0] only used in call
-
-   // Compute temperature:
-   for ( auto j=0; j<e->size(); j++ ) {
-     temp[j] = (*e)[j] / ( ( (*dp)[j] + (*db)[j] ) * (*cv)[j] );
-   }
-
-} // end of method compute_temp
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : compute_p 
-// DESC   : Compute total pressure fluctuations from state
-//              p' = rho' ( qd Rd + qv Rv ) T,
-//          with total density fluctuation, rho', qd, qv the
-//          dry and vapor mass fractions, Rd, Rv, the dry and vapor
-//          gas constants, and T the temperature.
-// ARGS   : u    : state
-//          utmp : tmp vectors; 3 required; only first 3 used
-//          p    : pressure fluctuation field
-// RETURNS: none.
-//**********************************************************************************
-template<typename TypePack>
-void GMConv<TypePack>::compute_p(const State &u, State &utmp, StateComp &p)
-{
-   GString    serr = "GMConv<TypePack>::compute_p: ";
-   StateComp *db, *dp, *qd, *qv, *T; 
-
-
-   assert(utmp.size() >= 3);
-
-   // Set int energy and density:
-// es = u[GDIM];    // sensible internal energy density
-   dp = u[DENSITY]; // total density fluctuation
-   db = ubase_[0];  // base density
-
-   T = utmp[2];    // temp
-   compute_temp(u, utmp, *T);  // first 2 utmp arrays used
-  
-   if ( traits_.dodry ) { // if dry dynamics only
-     // p' = rho'  Rd T:
-     for ( auto j=0; j<p.size(); j++ ) {
-       p[j] = ( (*dp)[j] + (*db)[j] ) * RD  * (*T)[j];
-     }
-     return;
-   }
-
-   // Set vapor mass fraction:
-   qv = u[VAPOR]; // qv, from state
-
-   // Get dry mass fraction:
-   qd = utmp[1];
-   compute_qd(u, utmp, *qd); // first utmp array used 
-
-   // p' = rho' ( qd Rd + qv Rv ) T:
-   for ( auto j=0; j<p.size(); j++ ) {
-     p[j] = (*dp)[j] * ( (*qd)[j]*RD + (*qv)[j]*RV ) * (*T)[j];
-   }
-
-} // end of method compute_p 
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : compute_ptemp 
-// DESC   : Compute total pressure & temperature fluctuations from state
-//              p' = rho' ( qd Rd + qv Rv ) T,
-//          with total density fluctuation, rho', qd, qv the
-//          dry and vapor mass fractions, Rd, Rv, the dry and vapor
-//          gas constants, and T the temperature:
-//             T = eps / Cv = e_s /( rho' * Cv ),
-//          where e_s is the sensible internal energy density
-// ARGS   : u    : state
-//          utmp : tmp vectors; 2 required; only first 2 used
-//          temp : array to hold temperature
-//          p    : pressure fluctuation field
-// RETURNS: none.
-//**********************************************************************************
-template<typename TypePack>
-void GMConv<TypePack>::compute_ptemp(const State &u, State &utmp, StateComp &temp, StateComp &p)
-{
-   GString    serr = "GMConv<TypePack>::compute_ptemp: ";
-   StateComp *dp, *qd, *qv, *T; 
-
-
-   assert(utmp.size() >= 3);
-
-   // Set int energy and density:
-   dp  = u[DENSITY]; // total density fluctuation
-
-   T = &temp;    // temp
-   compute_temp(u, utmp, *T);  // first 2 utmp arrays used
-  
-   if ( traits_.dodry ) { // if dry dynamics only
-     // p' = rho'  Rd T:
-     for ( auto j=0; j<p.size(); j++ ) {
-       p[j] = (*dp)[j] * RD  * (*T)[j];
-     }
-     return;
-   }
-
-   // Set vapor mass fraction:
-   qv = u[VAPOR]; // qv, from state
-
-   // Get dry mass fraction:
-   qd = utmp[1];
-   compute_qd(u, utmp, *qd); // first utmp array used 
-
-   // p' = rho' ( qd Rd + qv Rv ) T:
-   for ( auto j=0; j<p.size(); j++ ) {
-     p[j] = (*dp)[j] * ( (*qd)[j]*RD + (*qv)[j]*RV ) * (*T)[j];
-   }
-
-} // end of method compute_ptemp
 
 
 //**********************************************************************************
@@ -1041,7 +947,9 @@ void GMConv<TypePack>::compute_div(StateComp &q, State &v, State &utmp, StateCom
      assert(gadvect_ != NULLPTR && gpdv_ != NULLPTR);    
      for ( auto j=0; j<GDIM; j++ ) tmp[j] = utmp[j];
      gadvect_->apply(q, v, tmp, div); 
+assert(div.isfinite());
      gpdv_   ->apply(q, v, tmp, *utmp[GDIM]); 
+assert(utmp[GDIM]->isfinite());
      div += *utmp[GDIM];
    }
 
@@ -1052,46 +960,33 @@ void GMConv<TypePack>::compute_div(StateComp &q, State &v, State &utmp, StateCom
 //**********************************************************************************
 // METHOD : compute_v
 // DESC   : Compute velocity from momentum density in state vector.
-//             v_i = s_i/(rhoT'+rhoB),
-//          where v_i is the member data array, rhoT' is (total) density 
-//          fluctuation, from base state rhoB.
+//             v_i = s_i/ d
+//          where v_i is the member data array, d  is (total) density 
 // ARGS   : u    : state
-//          utmp : tmp vectors; first array used. If traits.usemomden==FALSE,
-//                 then no tmp arrays are required
+//          id   : 1/denstiy
 //          v    : velocity state; components may change on exit
 // RETURNS: none. Member data, v_, is set here
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::compute_v(const State &u, State &utmp, State &v)
+void GMConv<TypePack>::compute_v(const State &u, StateComp &id, State &v)
 {
    GString    serr = "GMConv<TypePack>::compute_v: ";
-   StateComp *idp, *dp;
 
-   assert(utmp.size() >= 1);
 
    if ( !traits_.usemomden ) {
      // State uses velocity form already so 
      // do pointer assignment:
-     for ( auto j=0; j<GDIM; j++ ) { // v_i = u_i
+     for ( auto j=0; j<v.size(); j++ ) { // v_i = u_i
        v[j] = u[j];
      }
      return;
    }
 
-   // Compute inverse mass:
-   dp  = u[DENSITY]; 
-   idp = utmp[0]; *idp = *dp;
-   if ( traits_.usebase ) {
-     *idp += *ubase_[0];
-   }
-   idp->rpow(-1.0);
-
    // Find velocity from momentum density:
    
-   for ( auto j=0; j<GDIM; j++ ) {
-      v[j]  = v_[j];    // set to allocated member data
-     *v[j]  = *u[j];    // deep copy
-     *v[j] *= (*idp); // divide by density
+   for ( auto j=0; j<v.size(); j++ ) {
+     *v[j]  = *u[j];  // deep copy
+     *v[j] *= id[j];  // divide by density
    }
 
 } // end of method compute_v
@@ -1113,7 +1008,7 @@ void GMConv<TypePack>::compute_vpref(StateComp &tvi, State &W)
    GString    serr = "GMConv<TypePack>::compute_vpref(1): ";
    Ftype      r, x, y, z;
    Ftype      lat, lon;
-   GTVector<GTVector<GFTYPE>> 
+   GTVector<GTVector<Ftype>> 
              *xnodes = &grid_->xNodes();
 
    GGridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
@@ -1174,7 +1069,7 @@ void GMConv<TypePack>::compute_vpref(StateComp &tvi, GINT idir, StateComp &W)
    GString    serr = "GMConv<TypePack>::compute_vpref (2): ";
    Ftype      r, x, y, z;
    Ftype      lat, lon;
-   GTVector<GTVector<GFTYPE>> 
+   GTVector<GTVector<Ftype>> 
              *xnodes = &grid_->xNodes();
 
    GGridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
@@ -1410,7 +1305,9 @@ GINT GMConv<TypePack>::szrhstmp()
      sum += 2*GDIM;
    }
   sum += GDIM + 3; // size for compute_* methods
-  sum += 5;        // size for misc tmp space in dudt_impl
+  sum += 6;        // size for misc tmp space in dudt_impl
+
+sum += 0; //fudge factor
 
   return sum;
 
@@ -1434,7 +1331,7 @@ GINT GMConv<TypePack>::tmp_size_impl()
   sum += traits_.nsolve
        * (traits_.itorder+1)+1;              // RKK storage
   sum += szrhstmp();                         // RHS tmp size
-
+ 
   return sum;
   
 } // end of method tmp_size_impl

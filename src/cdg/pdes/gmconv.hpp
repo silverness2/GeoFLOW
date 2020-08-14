@@ -18,8 +18,9 @@
 //                Note:
 //                  Sum_i dot(s_i) = 0, where sum is over all densities,
 //                and dot(s_i) are the mass sources for vapor, and hydrometeors.
-//                This solver can be built in 2D or 3D for box grids,
-//                but is valid only for 3D spherical grids.
+//                This solver can be built in 2D or 3D for box or Icos grids, 
+//                but for the 2D embedded sphere, no 'preferred directions'
+//                are allowed (gravity, fallout).
 //
 //                The State vector consists of the following:
 //                  vx/sx   : x-velocity or momentum density 
@@ -85,8 +86,9 @@
 #include "gbutcherrk.hpp"
 #include "ggrid_box.hpp"
 #include "ggrid_icos.hpp"
-#include "gmtk.hpp"
 #include "ggfx.hpp"
+#include "gutils.hpp"
+#include "gmtk.hpp"
 #include "pdeint/equation_base.hpp"
 
 using namespace geoflow::pdeint;
@@ -185,15 +187,12 @@ private:
         void                step_multistep(const Time &t, State &uin, State &uf, State &ub,
                                            const Time &dt);
         void                cycle_keep   (const State &u);
-inline  void                compute_cv   (const State &u, State &utmp, StateComp &cv);
-inline  void                compute_qd   (const State &u, State &utmp, StateComp &qd);
-inline  void                compute_temp (const State &u, State &utmp, StateComp &t );
-inline  void                compute_p    (const State &u, State &utmp, StateComp &p );
-inline  void                compute_ptemp(const State &u, State &utmp, StateComp &temp, StateComp &p );
+inline  void                compute_cv   (const State &u, StateComp &utmp, StateComp &cv);
+inline  void                compute_qd   (const State &u, StateComp &qd);
 inline  void                compute_falloutsrc
                                          (StateComp &g, State &qi, State &v, GINT jexcl, State &utmp, StateComp &r );
 inline  void                compute_div  (StateComp &q, State &v, State &utmp, StateComp &div );
-inline  void                compute_v    (const State &u, State &utmp, State &v);
+inline  void                compute_v    (const State &u, StateComp &id, State &v);
 inline  void                compute_vpref(StateComp &tv, State &W);
 inline  void                compute_vpref(StateComp &tv, GINT idir, StateComp &W);
 inline  void                assign_helpers(const State &u, const State &uf);
@@ -205,6 +204,7 @@ inline  GINT                szrhstmp();
         GBOOL               bforced_;       // use forcing vectors
         GBOOL               bsteptop_;      // is there a top-of-step callback?
         GBOOL               bvterm_;        // teminal vel. computed?
+        GINT                istage_;        // RK stage number
         GINT                nevolve_;       // num StateComp's evolved
         GINT                nhydro_;        // num hydrometeors
         GINT                nmoist_;        // number of moist components
