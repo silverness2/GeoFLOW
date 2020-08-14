@@ -17,8 +17,8 @@
   "initstate_boxsod": {
     "P0"         : 1000.0,
     "T0"         : 300.0,
-    "Pfact"      : 100.0,
-    "x_center"   : 0.5
+    "Pfact"      : 10.0,
+    "x_center"   : 2000.0
   },
   "pde_mconv": {
     "docoriolis"      : false,
@@ -62,7 +62,7 @@
   "grid_box": {
     "grid_name" : "grid_box",
     "xyz0"      : [0.0, 0.0, 0.0],
-    "delxyz"    : [1, 1.0, 1.0],
+    "delxyz"    : [4000, 500.0, 1.0],
     "num_elems" : [8, 1, 1],
     "bdy_x_0"   : "fully_periodic",
     "bdy_x_1"   : "fully_periodic",
@@ -78,11 +78,11 @@
     "stepping_method"  : "GSTEPPER_EXRK",
     "time_deriv_order" : 4,
     "extrap_order"     : 2,
-    "variable_dt"      : true,
-    "courant"          : 0.0004 
+    "variable_dt"      : false,
+    "courant"          : 0.4 
   },
   "dissipation_traits": {
-    "nu"      : 1.0e-2,
+    "nu"      : 1.0e6,
     "nu_type" : "constant"
   },
   "gio": {
@@ -98,7 +98,7 @@
     "idir"               : "outs",
     "odir"               : "outs",
     "cadence_type"       : "cycle",
-    "cycle_interval"     : 100,
+    "cycle_interval"     : 1,
     "time_interval"      : 0.01,
     "state_index"        : [0],
     "state_names"        : ["u1", "u2", "e", "d"],
@@ -117,8 +117,8 @@
   "time_integration": {
     "integ_type" : "cycle",
     "time_end"   : 1.0e-1,
-    "cycle_end"  : 100,
-    "dt"         : 1.0e-4
+    "cycle_end"  : 1000,
+    "dt"         : 1.0e-1
   }
 
 }

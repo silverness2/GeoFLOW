@@ -737,7 +737,7 @@ GBOOL impl_boxsod(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Stat
   GString             serr = "impl_boxsod: ";
   GSIZET              nxy;
   GFTYPE              x, y, z;
-  GFTYPE              delT, T0, Pfact, P0, pj, xc;
+  GFTYPE              T0, Pfact, P0, pj, xc;
   GTVector<GFTYPE>   *dp, *e;
 
   PropertyTree sodptree   = ptree.getPropertyTree(sconfig);
@@ -750,12 +750,12 @@ GBOOL impl_boxsod(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Stat
   assert(u.size() == 4);
 
   e     = u  [GDIM];// int. energy density
-  dp    = u[GDIM+1];// total density fluctuation
+  dp    = u[GDIM+1];// total density 
   nxy   = (*xnodes)[0].size(); // same size for x, y, z
 
   T0    = sodptree.getValue<GFTYPE>("T0",300.0);   // ref. temp
   P0    = sodptree.getValue<GFTYPE>("P0",1000.0);  // ref. pressure 
-  Pfact = sodptree.getValue<GFTYPE>("Pfact",100.0);// Pleft/Pright
+  Pfact = sodptree.getValue<GFTYPE>("Pfact",10.0); // Pleft/Pright
   xc    = sodptree.getValue<GFTYPE>("x_center");   // center location
   P0   *= 1.0e2;  // convert P0 from mb to Pa
 
@@ -772,6 +772,7 @@ GBOOL impl_boxsod(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Stat
 //  (*dp)[j]  = (*Pb)[j] / ( RD * ( (*Tb)[j] + delT ) ) - (*db)[j];
     (*dp)[j]  = pj / ( RD * T0 );
     (*e) [j]  = CVD * (*dp)[j]  * T0;
+cout << "boxsod: p=" << pj << " d=" << (*dp)[j] <<  endl;
 
   }
 
