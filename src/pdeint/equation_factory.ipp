@@ -29,6 +29,9 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
 	std::vector<int> comps, default_comps;
 	std::vector<GFTYPE> dstd;
 
+        if ( !ptree.isPropertyTree(equation_name) ) {
+          cout << "EquationFactory::build: PropertyTree does not exist: " << equation_name << endl;
+        }
         PropertyTree eqn_ptree = ptree.getPropertyTree(equation_name);
         PropertyTree stp_ptree = ptree.getPropertyTree("stepper_props");
         PropertyTree dis_ptree = ptree.getPropertyTree("dissipation_traits");
@@ -67,10 +70,12 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
 	if( "pde_mconv" == equation_name ) {
 		using EqnImpl = GMConv<ET>;
 
-                ctraits.docoriolis= eqn_ptree.getValue<bool>  ("docoriolis",false);
-                ctraits.dodry     = eqn_ptree.getValue<bool>  ("dodry",true);
-                ctraits.dofallout = eqn_ptree.getValue<bool>  ("dofallout",false);
-                ctraits.dograv    = eqn_ptree.getValue<bool>  ("dogravity",false);
+                ctraits.docoriolis= eqn_ptree.getValue<bool>  ("docoriolis");
+                ctraits.dodry     = eqn_ptree.getValue<bool>  ("dodry");
+                ctraits.dofallout = eqn_ptree.getValue<bool>  ("dofallout");
+                ctraits.dograv    = eqn_ptree.getValue<bool>  ("dogravity");
+                ctraits.usebase   = eqn_ptree.getValue<bool>  ("usebase_state");
+                ctraits.nbase     = ctraits.usebase ? 2 : 0;
                 ctraits.nlsector  = eqn_ptree.getValue<bool>  ("nliq",0);
                 ctraits.nisector  = eqn_ptree.getValue<bool>  ("nice",0);
                 ctraits.nsolve    = GDIM + 2                 // mom + denTot + energy_den
@@ -83,7 +88,6 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
                                   + (ctraits.usebase ? 2 : 0);
                 ctraits.bconserved= eqn_ptree.getValue<bool>  ("bconserved",false);
                 ctraits.bforced   = eqn_ptree.getValue<bool>  ("use_forcing",false);
-                ctraits.usebase   = stp_ptree.getValue<bool>  ("usebase_state",true);
                 ctraits.variabledt= stp_ptree.getValue<bool>  ("variable_dt",false);
                 ctraits.bvarvterm = stp_ptree.getValue<bool>  ("variable_term_vel",false);
                 ctraits.itorder   = stp_ptree.getValue<int>   ("time_deriv_order",4);
