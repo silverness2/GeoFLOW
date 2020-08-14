@@ -95,10 +95,11 @@ void GpdV<TypePack>::def_prod(StateComp &p, State &u, State &utmp, StateComp &po
 // and Gj are the 'metric' terms computed in the element, dXi^j/dX^j
 // that include the weights and Jacobian
 
+  grid_->compute_grefdiv(u, etmp1_, FALSE, *utmp[0]); 
+
   // Compute po += Gj (D^j u_j): 
   po = 0.0;
   for ( auto j=0; j<GDIM; j++ ) { 
-    grid_->compute_grefdiv(u, etmp1_, FALSE, *utmp[0]); 
     utmp[0]->pointProd(*G_[j],*utmp[1]); // Gj * du^j. Mass included in Gj
     po += *utmp[1];
   }
@@ -152,7 +153,6 @@ void GpdV<TypePack>::reg_prod(StateComp &p, State &u, State &utmp, StateComp &po
   // Compute po += Gj (D^j u_j): 
   po = 0.0;
   for ( auto j=0; j<GDIM; j++ ) { 
-    grid_->compute_grefdiv(u, etmp1_, FALSE, *utmp[0]); 
     *utmp[0] *= (*G_[j])[0]; // remember, mass not included in G here
     po += *utmp[0];
   }
