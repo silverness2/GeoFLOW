@@ -657,13 +657,11 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
   GString             serr = "impl_boxdrybubble: ";
   GSIZET              nxy;
   GFTYPE              x, y, z, r;
-  GFTYPE              delT, L, T0, Ts, P0;
+  GFTYPE              delT, L, T0, Ts, P0, pj;
   GTVector<GFTYPE>   *db, *dp, *e, *Pb, *Tb;
   std::vector<GFTYPE> xc, xr;  
 
   PropertyTree bubbptree   = ptree.getPropertyTree(sconfig);
-  PropertyTree boxptreea   = ptree.getPropertyTree("grid_icos");
-  PropertyTree mconvptree  = ptree.getPropertyTree("pde_mconv");
 
   GGridBox  *box   = dynamic_cast <GGridBox*>(&grid);
   assert(box && "Must use a box grid");
@@ -704,14 +702,82 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
     L        += GDIM == 3 ? pow((z-xc[2])/xr[2],2) : 0.0;
     L         = sqrt(L);
     delT      = L <= 1.0 ? -T0*pow(cos(0.5*PI*L),2.0) : 0.0;
-    (*dp)[j]  = (*Pb)[j] / ( RD * ((*Tb)[j] + delT ) ) - (*db)[j];
-    (*e) [j]  = CVD * (*db)[j] * ( (*Tb)[j] + delT ); // e = Cv d (T+delT);
+
+    pj        = P0*pow(((*Tb)[j]+delT)/Ts,CPD/RD);
+//  (*dp)[j]  = (*Pb)[j] / ( RD * ( (*Tb)[j] + delT ) ) - (*db)[j];
+    (*dp)[j]  = pj / ( RD * ( (*Tb)[j] + delT ) );
+    (*e) [j]  = CVD * (*dp)[j]  * ( (*Tb)[j] + delT ); // e = Cv d (T+delT);
+(*db)[j]  = 0.0;
+(*Pb)[j]  = 0.0;
+
   }
 //cout << "boxdrybubble: db=" << *db << endl;
 
   return TRUE;
 
 } // end of method impl_boxdrybubble
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : impl_boxdrybubble
+// DESC   : Initialize state for GMConv solver with Sod shock tube.
+// ARGS   : ptree  : main prop tree
+//          sconfig: ptree block name containing variable config
+//          grid   : grid
+//          stinfo : StateInfo
+//          t      : time
+//          utmp   : tmp arrays
+//          ub     : bdy vectors (one for each state element)
+//          u      : current state
+// RETURNS: TRUE on success; else FALSE 
+//**********************************************************************************
+GBOOL impl_boxsod(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
+{
+
+  GString             serr = "impl_boxsod: ";
+  GSIZET              nxy;
+  GFTYPE              x, y, z;
+  GFTYPE              delT, T0, Pfact, P0, pj, xc;
+  GTVector<GFTYPE>   *dp, *e;
+
+  PropertyTree sodptree   = ptree.getPropertyTree(sconfig);
+
+  GGridBox  *box   = dynamic_cast <GGridBox*>(&grid);
+  assert(box && "Must use a box grid");
+
+  GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
+
+  assert(u.size() == 4);
+
+  e     = u  [GDIM];// int. energy density
+  dp    = u[GDIM+1];// total density fluctuation
+  nxy   = (*xnodes)[0].size(); // same size for x, y, z
+
+  T0    = sodptree.getValue<GFTYPE>("T0",300.0);   // ref. temp
+  P0    = sodptree.getValue<GFTYPE>("P0",1000.0);  // ref. pressure 
+  Pfact = sodptree.getValue<GFTYPE>("Pfact",100.0);// Pleft/Pright
+  xc    = sodptree.getValue<GFTYPE>("x_center");   // center location
+  P0   *= 1.0e2;  // convert P0 from mb to Pa
+
+ *u[0]  = 0.0; // sx
+ *u[1]  = 0.0; // sy
+ if ( GDIM == 3 ) *u[2]  = 0.0; // sz
+ *dp    = 0.0;
+
+  for ( auto j=0; j<nxy; j++ ) { 
+    x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
+    if ( GDIM == 3 ) z = (*xnodes)[2][j];
+    pj        = x < xc ? Pfact*P0 : P0;
+       
+//  (*dp)[j]  = (*Pb)[j] / ( RD * ( (*Tb)[j] + delT ) ) - (*db)[j];
+    (*dp)[j]  = pj / ( RD * T0 );
+    (*e) [j]  = CVD * (*dp)[j]  * T0;
+
+  }
+
+  return TRUE;
+
+} // end of method impl_boxsod
 
 
 
