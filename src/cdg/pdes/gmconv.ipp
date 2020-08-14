@@ -214,9 +214,10 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
 
 
   // Get total density and inverse: *rhoT  = *u[DENSITY]; 
- if ( traits_.usebase ) *rhoT +=  *ubase_[0];   
+ *rhoT = *u[DENSITY];
+  if ( traits_.usebase ) *rhoT +=  *ubase_[0];   
  *irhoT = *rhoT;
- irhoT->rpow(-1.0);
+  irhoT->rpow(-1.0);
 
   // Compute velocity for timestep:
   compute_v(s_, *irhoT, v_); // stored in v_
@@ -1307,7 +1308,7 @@ GINT GMConv<TypePack>::szrhstmp()
   sum += GDIM + 3; // size for compute_* methods
   sum += 6;        // size for misc tmp space in dudt_impl
 
-sum += 0; //fudge factor
+sum += 10; //fudge factor
 
   return sum;
 
