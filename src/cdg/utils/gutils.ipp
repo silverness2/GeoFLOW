@@ -132,5 +132,63 @@ void coord_dims(const geoflow::tbox::PropertyTree &ptree, GTVector<T> &xmin, GTV
 } // end, coord_dims method
 
 
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : compute_temp
+// DESC   : Compute temperature from state
+//             T =  e /( d * Cv ),
+//          with e the sensible internal energy density, 
+//          d = total density, and Cv is, e.g.
+//             Cv = Cvd qd + Cvv qv + Sum_i(Cl_i ql_i) + Sum_j(Ci_j qi_j).
+// ARGS   : e    : energy density
+//          d    : density
+//          cv   : specific heat
+//          temp : temperature
+// RETURNS: none.
+//**********************************************************************************
+template<typename T>
+void compute_temp(const GTVector<T> &e, const GTVector<T> &d, const GTVector<T> &cv,  GTVector<T> &temp)
+{
+   GString    serr = "compute_temp: ";
+
+   // Compute temperature:
+   for ( auto j=0; j<e.size(); j++ ) {
+     temp[j] = e[j] / ( d[j] * cv[j] );
+   }
+
+} // end of method compute_temp
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : compute_p 
+// DESC   : Compute total pressure from state
+//              p = d ( q R) T,
+//          with total density, d, q the
+//          dry mass fraction, R the gas constants, 
+//          and T the temperature.
+// ARGS   : Temp: temperature
+//          d: density
+//          q: mass fraction
+//          R: gas constant
+//          p: pressure fluctuation field returned
+// RETURNS: none.
+//**********************************************************************************
+template<typename T>
+void compute_p(const GTVector<T> &Temp, const GTVector<T> &d, const GTVector<T> &q, GFTYPE R, GTVector<T> &p)
+{
+   GString    serr = "compute_p: ";
+
+   // p' = d q R T:
+   for ( auto j=0; j<p.size(); j++ ) {
+     p[j] = d[j] * q[j] * R * Temp[j];
+   }
+
+} // end of method compute_p 
+
+
+
+
+
 } // end, namespace
 
