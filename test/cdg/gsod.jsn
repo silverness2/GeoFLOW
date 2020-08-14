@@ -1,0 +1,124 @@
+{ 
+  "exp_order"         : [4, 4, 8],
+  "exp_order_type"    : "constant",
+  "grid_type"         : "grid_box",
+  "pde_name"          : "pde_mconv",
+  "initstate_block"   : "initstate_boxsod",
+  "initforce_block"   : "",
+  "use_forcing"       : false,
+  "initstate_type"    : "direct",
+  "initforce_type"    : "",
+  "restart_index"     : 0,
+  "benchmark"         : false,
+  "do_comparison"     : true,
+  "observer_list"     : ["gio_observer", "global_diag_basic"],
+  "IO_implementation" : "gio",
+  "terrain_type"      : "none",
+  "initstate_boxsod": {
+    "P0"         : 1000.0,
+    "T0"         : 300.0,
+    "Pfact"      : 100.0,
+    "x_center"   : 0.5
+  },
+  "pde_mconv": {
+    "docoriolis"      : false,
+    "dodry"           : true,
+    "usebase_state"   : false,
+    "dofallout"       : false,
+    "dogravity"       : false,
+    "bconserved"      : false,
+    "nliq"            : 0,
+    "nice"            : 0,
+    "use_forcing"     : false,
+    "forcing_comp"    : [0, 1, 2]
+  },
+  "grid_icos": {
+    "grid_name"   : "grid_icos",
+    "ilevel"      : 1,
+    "refine_type" : "GICOS_BISECTION",
+    "radius"      : 1.0,
+    "maxit"       : 128,
+    "tol"         : 1.0e-8,
+    "norm_type"   : "GCG_NORM_INF"
+  },
+  "grid_sphere" : {
+    "grid_name" : "grid_sphere",
+    "radiusi"   : 1.0,
+    "radiuso"   : 2.0,
+    "num_elems" : [10, 10, 10],
+    "bdy_inner": "GBDY_DIRICHLET",
+    "bdy_outer": "GBDY_SPONGE"
+  },
+  "fully_periodic": {
+    "bdy_class"        : "uniform",
+    "base_type"        : ["GBDY_PERIODIC"],
+    "istate"           : [[0, 1, 2, 3]]
+  },
+  "0-flux": {
+    "bdy_class"        : "uniform",
+    "base_type"        : ["GBDY_0FLUX"],
+    "istate"           : [[0, 1]]
+  },
+  "grid_box": {
+    "grid_name" : "grid_box",
+    "xyz0"      : [0.0, 0.0, 0.0],
+    "delxyz"    : [1, 1.0, 1.0],
+    "num_elems" : [8, 1, 1],
+    "bdy_x_0"   : "fully_periodic",
+    "bdy_x_1"   : "fully_periodic",
+    "bdy_y_0"   : "fully_periodic",
+    "bdy_y_1"   : "fully_periodic",
+    "bdy_z_0"   : "fully_periodic",
+    "bdy_z_1"   : "fully_periodic",
+    "maxit"     : 128,
+    "tol"       : 1.0e-8,
+    "norm_type" : "GCG_NORM_INF"
+  },
+  "stepper_props": {
+    "stepping_method"  : "GSTEPPER_EXRK",
+    "time_deriv_order" : 4,
+    "extrap_order"     : 2,
+    "variable_dt"      : true,
+    "courant"          : 0.0004 
+  },
+  "dissipation_traits": {
+    "nu"      : 1.0e-2,
+    "nu_type" : "constant"
+  },
+  "gio": {
+    "ivers"   : 0,
+    "multivar" : false,
+    "io_type"  : "collective",
+    "wtime"    : 6,
+    "wtask"    : 5,
+    "wfile"    : 2048
+  },
+  "gio_observer": {
+    "observer_name"      : "gio_observer",
+    "idir"               : "outs",
+    "odir"               : "outs",
+    "cadence_type"       : "cycle",
+    "cycle_interval"     : 100,
+    "time_interval"      : 0.01,
+    "state_index"        : [0],
+    "state_names"        : ["u1", "u2", "e", "d"],
+    "grid_names"         : ["xgrid", "ygrid", "zgrid"],
+    "agg_state_name"     : "u",
+    "agg_grid_name "     : "grid",
+    "derived_quantities" : []
+  },
+  "global_diag_basic": {
+    "observer_name"      : "global_diag_basic",
+    "idir"               : ".",
+    "odir"               : ".",
+    "interval_freq_fact" : 10.0,
+    "treat_as_1d"        : false
+  },
+  "time_integration": {
+    "integ_type" : "cycle",
+    "time_end"   : 1.0e-1,
+    "cycle_end"  : 100,
+    "dt"         : 1.0e-4
+  }
+
+}
