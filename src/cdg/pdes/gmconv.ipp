@@ -236,8 +236,10 @@ cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax
 cout << "dudt_impl: istage=" << istage_ << " dmax_0 = " << rhoT->amax()  << endl;
   compute_div(*rhoT, v_, urhstmp_, *dudt[GDIM+1]); 
 cout << "dudt_impl: istage=" << istage_ << " rhoT= " << rhoT->amax()  << endl;
-  compute_falloutsrc(*rhoT, qi_, tvi_, -1, urhstmp_, *Ltot);
-  GMTK::saxpy<Ftype>(*dudt[DENSITY], 1.0, *Ltot, 1.0);   // += Ltot
+  if ( traits_.dofallout ) {
+    compute_falloutsrc(*rhoT, qi_, tvi_, -1, urhstmp_, *Ltot);
+    GMTK::saxpy<Ftype>(*dudt[DENSITY], 1.0, *Ltot, 1.0);   // += Ltot
+  }
   if ( uf[DENSITY] != NULLPTR ) *dudt[DENSITY] -= *uf[DENSITY];//  += sdot(s_rhoT)
   
   // *************************************************************
@@ -708,7 +710,6 @@ void GMConv<TypePack>::init_impl(State &tmp)
   if ( traits_.bconserved ) {
     assert(FALSE && "Conservation not yet supported");
     gpdv_  = new GpdV<TypePack>(*grid_);
-    gpdv_->init();
 //  gflux_ = new GFlux(*grid_);
     assert( (gmass_   != NULLPTR
           && ghelm_   != NULLPTR
@@ -717,7 +718,6 @@ void GMConv<TypePack>::init_impl(State &tmp)
   else {
     gadvect_ = new GAdvect(*grid_);
     gpdv_    = new GpdV<TypePack>(*grid_);
-    gpdv_->init();
     assert( (gmass_   != NULLPTR
           && ghelm_   != NULLPTR
           && gpdv_    != NULLPTR
@@ -934,25 +934,21 @@ void GMConv<TypePack>::compute_qd(const State &u, StateComp &qd)
 template<typename TypePack>
 void GMConv<TypePack>::compute_div(StateComp &q, State &v, State &utmp, StateComp &div)
 {
-   GString    serr = "GMConv<TypePack>::compute_div: ";
-   State      tmp(GDIM);
-   StateComp *qd, *qv, *t; 
+  GString    serr = "GMConv<TypePack>::compute_div: ";
+  State      tmp(GDIM);
 
-   assert(utmp.size() >= GDIM+1);
+  assert(utmp.size() >= GDIM+1);
 
-   if ( traits_.bconserved ) {
-     assert(FALSE); // conserved form not available yet
-   }
-   else {
-     //   Div (q v) = q Div v + v.Grad q 
-     assert(gadvect_ != NULLPTR && gpdv_ != NULLPTR);    
-     for ( auto j=0; j<GDIM; j++ ) tmp[j] = utmp[j];
-     gadvect_->apply(q, v, tmp, div); 
+  assert( !traits_.bconserved ); // conserved form not available yet
+
+  assert(gadvect_ != NULLPTR && gpdv_ != NULLPTR);    
+
+  //   Div (q v) = q Div v + v.Grad q 
+  gadvect_->apply(q, v, tmp, div); 
 assert(div.isfinite());
-     gpdv_   ->apply(q, v, tmp, *utmp[GDIM]); 
+  gpdv_   ->apply(q, v, tmp, *utmp[GDIM]); 
 assert(utmp[GDIM]->isfinite());
-     div += *utmp[GDIM];
-   }
+  div += *utmp[GDIM];
 
 } // end of method compute_div
 
