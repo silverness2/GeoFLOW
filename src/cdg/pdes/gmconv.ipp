@@ -943,6 +943,8 @@ void GMConv<TypePack>::compute_div(StateComp &q, State &v, State &utmp, StateCom
 
   assert(gadvect_ != NULLPTR && gpdv_ != NULLPTR);    
 
+  for ( auto j=0; j<GDIM; j++ ) tmp[j] = utmp[j];
+
   //   Div (q v) = q Div v + v.Grad q 
   gadvect_->apply(q, v, tmp, div); 
 assert(div.isfinite());
