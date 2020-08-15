@@ -54,19 +54,9 @@ public:
 
         void              apply(StateComp &p, State &u, State  &utmp, 
                                 StateComp &po);                              // Operator-field evaluation
-        void              init();                                            // must call after all 'sets'
 
 private:
-        void              def_init();
-        void              reg_init();
-        void              def_prod(StateComp &p, State &u, State &utmp,
-                                   StateComp &po);
-        void              reg_prod(StateComp &p, State &u,  State &utmp, 
-                                   StateComp &po);
-
-        GBOOL                        bInit_;
         StateComp                    etmp1_;  // elem-based (non-global) tmp vector
-        State                        G_;      // metric components
         Mass                         *massop_; // mass matrix, required
         Grid                         *grid_;   // grid set on construction
 
