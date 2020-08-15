@@ -736,8 +736,9 @@ GBOOL impl_boxsod(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Stat
 
   GString             serr = "impl_boxsod: ";
   GSIZET              nxy;
+  GFTYPE              a, b;
   GFTYPE              x, y, z;
-  GFTYPE              T0, Pfact, P0, pj, xc;
+  GFTYPE              Pfact, P0, pj, T0, width, xc;
   GTVector<GFTYPE>   *dp, *e;
 
   PropertyTree sodptree   = ptree.getPropertyTree(sconfig);
@@ -757,6 +758,7 @@ GBOOL impl_boxsod(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Stat
   P0    = sodptree.getValue<GFTYPE>("P0",1000.0);  // ref. pressure 
   Pfact = sodptree.getValue<GFTYPE>("Pfact",10.0); // Pleft/Pright
   xc    = sodptree.getValue<GFTYPE>("x_center");   // center location
+  width = sodptree.getValue<GFTYPE>("width");      // shock width
   P0   *= 1.0e2;  // convert P0 from mb to Pa
 
  *u[0]  = 0.0; // sx
@@ -764,10 +766,12 @@ GBOOL impl_boxsod(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Stat
  if ( GDIM == 3 ) *u[2]  = 0.0; // sz
  *dp    = 0.0;
 
+  a = P0*(1.0-Pfact)/PI;
+  b = P0*(1.0+Pfact)/2.0;
   for ( auto j=0; j<nxy; j++ ) { 
     x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
     if ( GDIM == 3 ) z = (*xnodes)[2][j];
-    pj        = x < xc ? Pfact*P0 : P0;
+    pj = a*atan((x-xc)/width) + b;
        
 //  (*dp)[j]  = (*Pb)[j] / ( RD * ( (*Tb)[j] + delT ) ) - (*db)[j];
     (*dp)[j]  = pj / ( RD * T0 );
