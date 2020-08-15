@@ -69,7 +69,7 @@ void GpdV<TypePack>::apply(StateComp &p, State &u, State &utmp, StateComp &po)
   // Compute po += Gj (D^j u_j): 
   grid_->deriv(*u[0], 1, *utmp[0], po );
   for ( auto j=1; j<GDIM; j++ ) { 
-     grid_->deriv(*u[j], TRUE, *utmp[0], *utmp[1] );
+     grid_->deriv(*u[j], j+1, *utmp[0], *utmp[1] );
      po += *utmp[1];
   }
 
