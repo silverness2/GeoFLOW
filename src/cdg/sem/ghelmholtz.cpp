@@ -335,7 +335,7 @@ void GHelmholtz::reg_prod(GTVector<GFTYPE> &u,
 
 
   // Compute deriviatives of u:
-  grid_->compute_grefderivs (u, etmp1_, FALSE, gdu); // utmp stores tensor-prod derivatives
+  grid_->compute_grefderivs (u, etmp1_, FALSE, gdu); // gdu stores tensor-prod derivatives
 
   // Multiply by (element-size const) metric factors, possibly x-dependent 
   // 'viscosity', and mass:
