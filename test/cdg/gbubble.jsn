@@ -55,6 +55,18 @@
     "base_type"        : ["GBDY_0FLUX"],
     "istate"           : [[0, 1]]
   },
+  "pde_mconv": {
+    "docoriolis"      : false,
+    "dodry"           : true,
+    "usebase_state"   : false,
+    "dofallout"       : false,
+    "dogravity"       : false,
+    "bconserved"      : false,
+    "nliq"            : 0,
+    "nice"            : 0,
+    "use_forcing"     : false,
+    "forcing_comp"    : [0, 1, 2]
+  },
   "grid_box": {
     "grid_name" : "grid_box",
     "xyz0"      : [0.0, 0.0, 0.0],
@@ -113,8 +125,8 @@
   "time_integration": {
     "integ_type" : "cycle",
     "time_end"   : 1.0e-1,
-    "cycle_end"  : 100,
-    "dt"         : 1.0e-4
+    "cycle_end"  : 1000,
+    "dt"         : 1.0e-1
   }
 
 }
