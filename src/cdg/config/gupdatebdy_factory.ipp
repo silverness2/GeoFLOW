@@ -76,16 +76,16 @@ GUpdateBdyFactory<Types>::get_inflow_callback(const GString& sname, const GINT i
     assert(FALSE); // Must have a named method
   }
   if      ( "myinflow"     == sname ) {
-    callback = NULLPTR;
-/*
-      [=](Grid      &grid,
+    callback = 
+
+         [](Grid      &grid,
           StateInfo &stinfo,
           Time      &time,
           const GINT id,
           State     &utmp,
           State     &u,
           State     &ub){GInflowBdyMethods::myinflow(grid, stinfo, time, id, utmp, u, ub);}; 
-*/
+
   }
   else {
     assert(FALSE && "Specified inflow bdy update method unknown");
