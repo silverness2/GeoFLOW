@@ -332,16 +332,14 @@ cout << "impl_boxdirgauss: sconfig=" << sconfig << endl;
 
   for ( GSIZET j=0; j<GDIM; j++ ) c[j] = u[j+1];
 
-  // Check bdy conditioins:
-  GTVector<GString> bc(6);
-  bc[0] = boxptree.getValue<GString>("bdy_x_0");
-  bc[1] = boxptree.getValue<GString>("bdy_x_1");
-  bc[2] = boxptree.getValue<GString>("bdy_y_0");
-  bc[3] = boxptree.getValue<GString>("bdy_y_1");
-  bc[4] = boxptree.getValue<GString>("bdy_z_0");
-  bc[5] = boxptree.getValue<GString>("bdy_z_1");
-  assert(bc.multiplicity("GBDY_INFLOW") >= 2*GDIM
-      && "GBDY_INFLOW boundaries must be set on all boundaries");
+  // Check bdy conditions:
+  GTVector<GTVector<GBdyType>>
+                           *igbdyt_face= &grid.igbdyt_bdyface();
+  for ( auto j=0; j<igbdyt_face->size(); j++ ) { // for each face
+cout << "boxpergauss: num=" << (*igbdyt_face)[j].size() << " igbdyt_face[" << j << "]=" << (*igbdyt_face)[j] << endl;
+    assert( (*igbdyt_face)[j].onlycontains(GBDY_INFLOW) 
+        &&  "Inflow conditions must be set on all boundaries");
+  }
 
   nxy = (*xnodes)[0].size(); // same size for x, y, z
 
