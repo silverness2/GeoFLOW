@@ -480,6 +480,7 @@ void allocate(const PropertyTree &ptree)
 
   std::vector<GINT> *iforced;
 
+  nsolve_ =  pEqn_->solve_size();
   nstate_ =  pEqn_->state_size();
   ntmp_   =  pEqn_->tmp_size();
   iforced = &pEqn_->iforced();
