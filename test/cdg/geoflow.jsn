@@ -1,9 +1,9 @@
 { 
   "exp_order"         : [8, 8, 8],
   "exp_order_type"    : "constant",
-  "grid_type"         : "grid_icos",
+  "grid_type"         : "grid_box",
   "pde_name"          : "pde_burgers",
-  "initstate_block"   : "initstate_icosgauss",
+  "initstate_block"   : "initstate_boxpergauss",
   "initforce_block"   : "",
   "use_forcing"       : false,
   "initstate_type"    : "direct",
@@ -14,13 +14,6 @@
   "observer_list"     : ["gio_observer", "global_diag_basic"],
   "IO_implementation" : "gio",
   "terrain_type"      : "none",
-  "poly_test": {
-    "xpoly" : 2,
-    "ypoly" : 4,
-    "zpoly" : 0,
-    "excise_angle" : 0.01,
-    "u0"    : 1.0
-  },
   "initstate_icosgauss": {
     "latitude0"  : [0.0], 
     "longitude0" : [-90.0],
