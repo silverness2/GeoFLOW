@@ -1099,22 +1099,22 @@ void GGrid::wderiv(GTVector<GFTYPE> &u, GINT idir, GBOOL bwghts, GTVector<GFTYPE
   // du/dx_idir = Sum_j=[1:N] dxi_j/dx_idir D_j u:
   if ( this->gtype() == GE_REGULAR ) {
     assert(idir > 0 && idir <= GDIM && "Invalid derivative");
-    compute_grefderiv(u, etmp_, idir, TRUE, du); // D^T_idir u
+    compute_grefderivW(u, etmp_, idir, FALSE, du); 
     du.pointProd((*dXidX)(idir-1, 0));
   }
   else {  // compute dXi_j/dX_idir D^j u:
     assert(idir > 0 && idir <= GDIM+1 && "Invalid derivative");
-    compute_grefderiv(u, etmp_, 1, TRUE, du); // D^T_xi u
+    compute_grefderivW(u, etmp_, 1, FALSE, du); 
     du.pointProd((*dXidX)(0,idir-1));
     for ( auto j=1; j<GDIM; j++ ) {
-      compute_grefderiv(u, etmp_, j+1, TRUE, utmp); // D^T_xi^j u
+      compute_grefderivW(u, etmp_, j+1, FALSE, utmp); 
       utmp.pointProd((*dXidX)(j,idir-1 ));
       du += utmp; 
     }
   }
   if ( bwghts ) {
     for ( auto i=0; i<du.size(); i++ ) {
-      du[i] *= -(*Jac)[i] * (*mass)[i];
+      du[i] *= (*Jac)[i] ; // * (*mass)[i];
     }
   }
     
@@ -1402,21 +1402,21 @@ void GGrid::compute_grefderiv(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 #if defined(_G_IS2D)
   switch (idir) {
   case 1:
-    for ( GSIZET e=0; e<gelems->size(); e++ ) {
+    for ( auto e=0; e<gelems->size(); e++ ) {
       ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
       u.range(ibeg, iend); // restrict global vecs to local range
       du.range(ibeg, iend);
-      for ( GSIZET k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
+      for ( auto k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
       Di = (*gelems)[e]->gbasis(0)->getDerivMatrix (dotrans);
       GMTK::I2_X_D1(*Di, u, N[0], N[1], du); 
     }
     break;
   case 2:
-    for ( GSIZET e=0; e<gelems->size(); e++ ) {
+    for ( auto e=0; e<gelems->size(); e++ ) {
       ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
       u.range(ibeg, iend); // restrict global vecs to local range
       du.range(ibeg, iend);
-      for ( GSIZET k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
+      for ( auto k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
       Di = (*gelems)[e]->gbasis(1)->getDerivMatrix(!dotrans);
       GMTK::D2_X_I1(*Di, u, N[0], N[1], du); 
     }
@@ -1436,33 +1436,33 @@ void GGrid::compute_grefderiv(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 
   switch (idir) {
   case 1:
-    for ( GSIZET e=0; e<gelems->size(); e++ ) {
+    for ( auto e=0; e<gelems->size(); e++ ) {
       ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
       u.range(ibeg, iend); // restrict global vecs to local range
       du.range(ibeg, iend);
-      for ( GSIZET k=0; k<GDIM  ; k++ ) N[k]= (*gelems)[e]->size(k);
+      for ( auto k=0; k<GDIM  ; k++ ) N[k]= (*gelems)[e]->size(k);
       Di = (*gelems)[e]->gbasis(0)->getDerivMatrix (dotrans); 
       GMTK::I3_X_I2_X_D1(*Di, u, N[0], N[1], N[2], du); 
     }
     break;
 
   case 2:
-    for ( GSIZET e=0; e<gelems->size(); e++ ) {
+    for ( auto e=0; e<gelems->size(); e++ ) {
       ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
       u.range(ibeg, iend); // restrict global vecs to local range
       du.range(ibeg, iend);
-      for ( GSIZET k=0; k<GDIM  ; k++ ) N[k]= (*gelems)[e]->size(k);
+      for ( auto k=0; k<GDIM  ; k++ ) N[k]= (*gelems)[e]->size(k);
       Di = (*gelems)[e]->gbasis(1)->getDerivMatrix(!dotrans); 
       GMTK::I3_X_D2_X_I1(*Di, u, N[0], N[1], N[2], du); 
     }
     break;
 
   case 3:
-    for ( GSIZET e=0; e<gelems->size(); e++ ) {
+    for ( auto e=0; e<gelems->size(); e++ ) {
       ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
       u.range(ibeg, iend); // restrict global vecs to local range
       du.range(ibeg, iend);
-      for ( GSIZET k=0; k<GDIM  ; k++ ) N[k]= (*gelems)[e]->size(k);
+      for ( auto k=0; k<GDIM  ; k++ ) N[k]= (*gelems)[e]->size(k);
       Di = (*gelems)[e]->gbasis(2)->getDerivMatrix(!dotrans); 
       GMTK::D3_X_I2_X_I1(*Di, u, N[0], N[1], N[2], du); 
     }
@@ -1477,6 +1477,131 @@ void GGrid::compute_grefderiv(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 #endif
 
 } // end of method compute_grefderiv
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : compute_grefderivW
+// DESC   : Compute weighted tensor product derivative in specified direction
+//          of specified field, u, in ref space, using grid object.
+//          Compute
+//            du = [ Mz_X_My_X_MxDx, or
+//                   Mz_X_MyDy_X_Mx, or
+//                   MzDz_X_My_X_Mx].
+//     
+//          depending on whether idir = 1, 2, or 3, respectively,
+//          where Dx, Dy, Dz are 1d derivative objects from basis functions     
+// ARGS   : 
+//          u      : input field whose derivative we want, allocated globally 
+//                   (e.g., for all elements).
+//          etmp   : tmp array (possibly resized here) for element-based ops.
+//                   Is not global.
+//          idir   : coordinate direction (1, 2, or 3)
+//          dotrans: flag telling us to tak transpose of deriv operators (TRUE) or
+//                   not (FALSE).
+//          du     : vector of length of u containing the derivative.
+//             
+// RETURNS:  none
+//**********************************************************************************
+void GGrid::compute_grefderivW(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
+                               GINT idir, GBOOL dotrans, GTVector<GFTYPE> &du)
+{
+  GSIZET               ibeg, iend; // beg, end indices for global array
+  GBOOL                bembedded;
+  GTVector<GSIZET>     N(GDIM);
+  GTVector<GTVector<GFTYPE>*>
+                       W(GDIM);    // element weights
+  GTMatrix<GFTYPE>    *Di;         // element-based 1d derivative operators
+  GElemList           *gelems = &this->elems();
+
+  bembedded = this->gtype() == GE_2DEMBEDDED;
+
+#if defined(_G_IS2D)
+  switch (idir) {
+  case 1:
+    for ( auto e=0; e<gelems->size(); e++ ) {
+      ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
+      u.range(ibeg, iend); // restrict global vecs to local range
+      du.range(ibeg, iend);
+      for ( auto k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
+      W[1]= (*gelems)[e]->gbasis(1)->getWeights();
+      Di  = (*gelems)[e]->gbasis(0)->getDerivMatrixW(dotrans);
+      GMTK::Dg2_X_D1(*Di, *W[1], u, etmp, du); 
+    }
+    break;
+  case 2:
+    for ( auto e=0; e<gelems->size(); e++ ) {
+      ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
+      u.range(ibeg, iend); // restrict global vecs to local range
+      du.range(ibeg, iend);
+      for ( auto k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
+      W[0]= (*gelems)[e]->gbasis(0)->getWeights();
+      Di  = (*gelems)[e]->gbasis(1)->getDerivMatrixW(!dotrans);
+      GMTK::D2_X_Dg1(*W[0], *Di, u, etmp, du); 
+    }
+    break;
+  case 3:
+    assert( GDIM == 3
+         && "Only GDIM reference derivatives");
+    du = 0.0; //u;
+    break;
+  default:
+    assert(FALSE && "Invalid coordinate direction");
+  }
+  u.range_reset(); // reset to global range
+  du.range_reset();
+
+#elif defined(_G_IS3D)
+
+  switch (idir) {
+  case 1:
+    for ( auto e=0; e<gelems->size(); e++ ) {
+      ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
+      u.range(ibeg, iend); // restrict global vecs to local range
+      du.range(ibeg, iend);
+      for ( auto k=0; k<GDIM  ; k++ ) N[k]= (*gelems)[e]->size(k);
+      W[1]= (*gelems)[e]->gbasis(1)->getWeights();
+      W[2]= (*gelems)[e]->gbasis(2)->getWeights();
+      Di  = (*gelems)[e]->gbasis(0)->getDerivMatrixW(dotrans); 
+      GMTK::Dg3_X_Dg2_X_D1(*Di, *W[1], *W[2], u, etmp, du); 
+    }
+    break;
+
+  case 2:
+    for ( auto e=0; e<gelems->size(); e++ ) {
+      ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
+      u.range(ibeg, iend); // restrict global vecs to local range
+      du.range(ibeg, iend);
+      for ( auto k=0; k<GDIM  ; k++ ) N[k]= (*gelems)[e]->size(k);
+      W[0]= (*gelems)[e]->gbasis(0)->getWeights();
+      W[2]= (*gelems)[e]->gbasis(2)->getWeights();
+      Di  = (*gelems)[e]->gbasis(1)->getDerivMatrixW(!dotrans); 
+      GMTK::Dg3_X_D2_X_Dg1(*W[0], *Di, *W[2], u, etmp, du); 
+    }
+    break;
+
+  case 3:
+    for ( auto e=0; e<gelems->size(); e++ ) {
+      ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
+      u.range(ibeg, iend); // restrict global vecs to local range
+      du.range(ibeg, iend);
+      for ( auto k=0; k<GDIM  ; k++ ) N[k]= (*gelems)[e]->size(k);
+      W[0]= (*gelems)[e]->gbasis(0)->getWeights();
+      W[1]= (*gelems)[e]->gbasis(1)->getWeights();
+      Di  = (*gelems)[e]->gbasis(2)->getDerivMatrix(!dotrans); 
+      GMTK::D3_X_Dg2_X_Dg1(*W[0], *W[1], *Di, u, etmp, du); 
+    }
+    break;
+
+  default:
+    assert(FALSE && "Invalid coordinate direction");
+  }
+  u.range_reset(); // reset global vec to globalrange
+  du.range_reset();
+
+#endif
+
+} // end of method compute_grefderivW
 
 
 //**********************************************************************************
@@ -1526,11 +1651,11 @@ void GGrid::compute_grefderivs(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 
 #if defined(_G_IS2D)
 
-  for ( GSIZET e=0; e<gelems->size(); e++ ) {
+  for ( auto e=0; e<gelems->size(); e++ ) {
     ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
     u.range(ibeg, iend); // restrict global vecs to local range
-    for ( GSIZET k=0; k<nxy ; k++ ) du[k]->range(ibeg, iend);
-    for ( GSIZET k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
+    for ( auto k=0; k<nxy ; k++ ) du[k]->range(ibeg, iend);
+    for ( auto k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
     Di[0] = (*gelems)[e]->gbasis(0)->getDerivMatrix (dotrans);
     Di[1] = (*gelems)[e]->gbasis(1)->getDerivMatrix(!dotrans);
     GMTK::I2_X_D1(*Di[0], u, N[0], N[1], *du[0]); 
@@ -1542,15 +1667,15 @@ void GGrid::compute_grefderivs(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 #endif
   }
   u.range_reset(); // reset to global range
-  for ( GSIZET k=0; k<GDIM; k++ ) du[k]->range_reset();
+  for ( auto k=0; k<GDIM; k++ ) du[k]->range_reset();
 
 #elif defined(_G_IS3D)
 
-  for ( GSIZET e=0; e<gelems->size(); e++ ) {
+  for ( auto e=0; e<gelems->size(); e++ ) {
     ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
     u.range(ibeg, iend); // restrict global vecs to local range
-    for ( GSIZET k=0; k<GDIM; k++ ) du[k]->range(ibeg, iend);
-    for ( GSIZET k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
+    for ( auto k=0; k<GDIM; k++ ) du[k]->range(ibeg, iend);
+    for ( auto k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
     Di[0] = (*gelems)[e]->gbasis(0)->getDerivMatrix (dotrans); 
     Di[1] = (*gelems)[e]->gbasis(1)->getDerivMatrix(!dotrans); 
     Di[2] = (*gelems)[e]->gbasis(2)->getDerivMatrix(!dotrans); 
@@ -1559,7 +1684,7 @@ void GGrid::compute_grefderivs(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
     GMTK::D3_X_I2_X_I1(*Di[2], u, N[0], N[1], N[2], *du[2]); 
   }
   u.range_reset(); // reset global vec to globalrange
-  for ( GSIZET k=0; k<nxy; k++ ) du[k]->range_reset();
+  for ( auto k=0; k<nxy; k++ ) du[k]->range_reset();
 
 #endif
 
@@ -1621,7 +1746,7 @@ void GGrid::compute_grefderivsW(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
   nxy = bembedded ? GDIM+1 : GDIM;
 
 #if defined(_G_IS2D)
-  for ( GSIZET e=0; e<gelems->size(); e++ ) {
+  for ( auto e=0; e<gelems->size(); e++ ) {
     ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
     u.range(ibeg, iend); // restrict global vecs to local range
     for ( k=0; k<nxy ; k++ ) du[k]->range(ibeg, iend);
@@ -1634,8 +1759,8 @@ void GGrid::compute_grefderivsW(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
     #if 0
     if ( bembedded ) { // ref 3-deriv is just W u:
       k = 0;
-      for ( GSIZET j=0; j<N[1]; j++ ) {
-        for ( GSIZET i=0; i<N[0]; i++ ) {
+      for ( auto j=0; j<N[1]; j++ ) {
+        for ( auto i=0; i<N[0]; i++ ) {
           (*du[2])[k] = u[k]*(*W[0])[i]*(*W[1])[j];  
           k++;
         }
@@ -1648,7 +1773,7 @@ void GGrid::compute_grefderivsW(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 
 #elif defined(_G_IS3D)
 
-  for ( GSIZET e=0; e<gelems->size(); e++ ) {
+  for ( auto e=0; e<gelems->size(); e++ ) {
     ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
     u.range(ibeg, iend); // restrict global vecs to local range
     for ( k=0; k<GDIM; k++ ) du[k]->range(ibeg, iend);
@@ -1724,12 +1849,12 @@ void GGrid::compute_grefdiv(GTVector<GTVector<GFTYPE>*> &u, GTVector<GFTYPE> &et
 
 #if defined(_G_IS2D)
 
-  for ( GSIZET e=0; e<gelems->size(); e++ ) {
+  for ( auto e=0; e<gelems->size(); e++ ) {
     // restrict global vecs to local range
     ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
     divu.range(ibeg,iend); 
-    for ( GSIZET k=0; k<u.size(); k++ ) if ( u[k]!=NULLPTR) u[k]->range(ibeg, iend); 
-    for ( GSIZET k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
+    for ( auto k=0; k<u.size(); k++ ) if ( u[k]!=NULLPTR) u[k]->range(ibeg, iend); 
+    for ( auto k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
     Di[0] = (*gelems)[e]->gbasis(0)->getDerivMatrix (dotrans);
     Di[1] = (*gelems)[e]->gbasis(1)->getDerivMatrix(!dotrans);
     etmp.resizem((*gelems)[e]->nnodes());
@@ -1746,15 +1871,15 @@ void GGrid::compute_grefdiv(GTVector<GTVector<GFTYPE>*> &u, GTVector<GFTYPE> &et
 #endif
   }
   divu.range_reset();  // reset range to global scope
-  for ( GSIZET k=0; k<u.size(); k++ ) u[k]->range_reset(); 
+  for ( auto k=0; k<u.size(); k++ ) u[k]->range_reset(); 
 
 #elif defined(_G_IS3D)
 
-  for ( GSIZET e=0; e<gelems->size(); e++ ) {
+  for ( auto e=0; e<gelems->size(); e++ ) {
     ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
     divu.range(ibeg,iend); 
-    for ( GSIZET k=0; k<u.size(); k++ ) if (u[k]!=NULLPTR) u[k]->range(ibeg, iend); 
-    for ( GSIZET k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
+    for ( auto k=0; k<u.size(); k++ ) if (u[k]!=NULLPTR) u[k]->range(ibeg, iend); 
+    for ( auto k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
     etmp.resizem((*gelems)[e]->nnodes());
     Di[0] = (*gelems)[e]->gbasis(0)->getDerivMatrix (dotrans); 
     Di[1] = (*gelems)[e]->gbasis(1)->getDerivMatrix(!dotrans); 
@@ -1774,7 +1899,7 @@ void GGrid::compute_grefdiv(GTVector<GTVector<GFTYPE>*> &u, GTVector<GFTYPE> &et
     }
   }
   divu.range_reset();  // reset range to global scope
-  for ( GSIZET k=0; k<u.size(); k++ ) u[k]->range_reset(); 
+  for ( auto k=0; k<u.size(); k++ ) u[k]->range_reset(); 
 
 #endif
 

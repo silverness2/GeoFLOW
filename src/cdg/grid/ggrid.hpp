@@ -203,6 +203,9 @@ virtual void                 config_bdy(const PropertyTree &ptree,
         void                 compute_grefderiv(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
                                                GINT idir, GBOOL dotrans, GTVector<GFTYPE> &du);
 
+        void                 compute_grefderivW(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
+                                                GINT idir, GBOOL dotrans, GTVector<GFTYPE> &du);
+
         void                 compute_grefderivs(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
                                                 GBOOL btrans, GTVector<GTVector<GFTYPE>*> &du);
         void                 compute_grefderivsW(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
