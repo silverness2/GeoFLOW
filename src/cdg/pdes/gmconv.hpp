@@ -169,6 +169,8 @@ protected:
                                       const Time &dt, State &uout);       // Take a step
         GBOOL               has_dt_impl() const {return traits_.variabledt;}  
         GINT                tmp_size_impl();                              // required tmp size
+        GINT                solve_size_impl()                             // required solve size
+                            {return traits_.nsolve;}
         GINT                state_size_impl()                             // required tmp size
                             {return traits_.nstate;}
         std::vector<GINT>  &iforced_impl()                                // required tmp size

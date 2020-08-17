@@ -114,6 +114,8 @@ protected:
         void                step_impl(const Time &t, const State &uin, State &uf, State &ub,
                                       const Time &dt, State &uout);       // Take a step
         GINT                tmp_size_impl();                              // required tmp size
+        GINT                solve_size_impl()                             // required solve size
+                            {return traits_.nsolve;}
         GINT                state_size_impl()                             // required state size
                             {return traits_.nstate;}
         std::vector<GINT>  &iforced_impl()                                // required force comps
