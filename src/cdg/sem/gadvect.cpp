@@ -128,15 +128,15 @@ void GAdvect::def_prod(GTVector<GFTYPE> &p, const GTVector<GTVector<GFTYPE>*> &u
   GTVector<GFTYPE>           *Jac   = &grid_->Jac  (); // get J
 
   // Get derivatives with weights:
-  grid_->compute_grefderivsW(p, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj p
+  grid_->compute_grefderivs(p, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj p
 
 
   // Compute po += ui Rij (D^j p).
   // Note: if u[j]=NULL, assume it's 0:
   po = 0.0;
-  for ( GSIZET j=0; j<nxy; j++ ) { 
+  for ( auto j=0; j<nxy; j++ ) { 
     *utmp[nxy+1]=0.0;
-    for ( GSIZET i=0; i<nxy && u[j] != NULLPTR; i++ ) {
+    for ( auto i=0; i<nxy && u[j] != NULLPTR; i++ ) {
       (*dXidX)(i,j).pointProd(*utmp[i],*utmp[nxy]); // Rij Dj p
       *utmp[nxy+1] += *utmp[nxy];
     }
@@ -171,7 +171,8 @@ void GAdvect::reg_prod(GTVector<GFTYPE> &p, const GTVector<GTVector<GFTYPE>*> &u
        && "Insufficient temp space specified");
 
 // Must compute:
-//    po = u . Grad p => W J (G1 u1 D1 + G2 u2 D2 + G3 u3 D3 ) p
+//    po = u . Grad p  u_j dp/dx_j
+//                     => W J (G1 u1 D1 + G2 u2 D2 + G3 u3 D3 ) p
 //
 // where
 //    D1u = (I_X_I_X_Dx)u; D2u = (I_X_Dy_X_I)u; D3u = (Dz_X_I_X_I)u
@@ -180,6 +181,7 @@ void GAdvect::reg_prod(GTVector<GFTYPE> &p, const GTVector<GTVector<GFTYPE>*> &u
 // Jacobians, and weights are inclued in the computation of 
 // the derivative:
 
+#if 0
   // Get reference derivatives:
   grid_->compute_grefderivsW(p, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj p
 
@@ -188,16 +190,32 @@ void GAdvect::reg_prod(GTVector<GFTYPE> &p, const GTVector<GTVector<GFTYPE>*> &u
   po = *utmp[0];
   po.pointProd(*G_[0]);// remember, mass & Jac included in G
   po.pointProd(*u[0]); // do uj * (Gj * Dj p)
-  for ( GSIZET j=1; j<GDIM; j++ ) { 
+  for ( auto j=1; j<GDIM; j++ ) { 
     if ( u[j] == NULLPTR ) continue;
-    utmp [j]->pointProd(*G_[j]);// remember, mass & Jac included in G
+    utmp [j]->pointProd(*G_[j]);// remember, Jac included in G
     if ( u[j]->size() >  1 )
       utmp [j]->pointProd(*u[j]); // do uj * (Gj * Dj p)
     else
      *utmp [j] *= (*u[j])[0];
     po += *utmp[j];
   }
+#else
+  if ( u[0] != NULLPTR ) {
+    grid_->wderiv(p, 1, FALSE, *utmp[0], po);
+    po.pointProd(*u[0]); // do u_1 * dp/dx_1)
+  }
+  else {
+    po = 0.0;
+  }
+  for ( auto j=1; j<GDIM; j++ ) { 
+    if ( u[j] == NULLPTR ) continue;
+    grid_->wderiv(p, j+1, FALSE, *utmp[1], *utmp[0]);
+    utmp[0]->pointProd(*u[j]);
+    po += *utmp[0];
+  }
+  po.pointProd(grid_->Jac());
 
+#endif
 } // end of method reg_prod
 
 
@@ -253,7 +271,7 @@ void GAdvect::def_init()
   GSIZET ibeg, iend; // beg, end indices for global array
   G_ .resize(nxy);
   G_ = NULLPTR;
-  for ( GSIZET j=0; j<nxy; j++ ) {
+  for ( auto j=0; j<nxy; j++ ) {
     G_ [j] = new GTVector<GFTYPE>(grid_->ndof());
   }
 
@@ -261,25 +279,25 @@ void GAdvect::def_init()
   dXidX = &grid_->dXidX();
 
   // Cycle through all elements; fill metric elements
-  for ( GSIZET e=0; e<grid_->elems().size(); e++ ) {
+  for ( auto e=0; e<grid_->elems().size(); e++ ) {
     if ( (*gelems)[e]->elemtype() != GE_DEFORMED 
       && (*gelems)[e]->elemtype() != GE_2DEMBEDDED ) continue;
 
     ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
-    for ( GSIZET j=0; j<GDIM; j++ ) {
+    for ( auto j=0; j<GDIM; j++ ) {
       W[j]= (*gelems)[e]->gbasis(j)->getWeights();
       N[j]= (*gelems)[e]->size(j);
     }
     Jac->range(ibeg, iend); // Restrict range of global vectors:
-    for ( GSIZET j=0; j<nxy; j++ )
-      for ( GSIZET i=0; i<nxy; i++ ) (*dXidX)(i,j).range(ibeg, iend);
+    for ( auto j=0; j<nxy; j++ )
+      for ( auto i=0; i<nxy; i++ ) (*dXidX)(i,j).range(ibeg, iend);
 
 #if defined(_G_IS2D)
 
-    for ( GSIZET j=0; j<nxy; j++ ) { // G vector element 
+    for ( auto j=0; j<nxy; j++ ) { // G vector element 
       (*G_[j]).range(ibeg, iend); // restrict global vec to local range
-      for ( GSIZET m=0, n=0; m<N[1]; m++ ) {
-        for ( GSIZET l=0; l<N[0]; l++,n++ ) {
+      for ( auto m=0, n=0; m<N[1]; m++ ) {
+        for ( auto l=0; l<N[0]; l++,n++ ) {
           (*G_[j])[n] = (*dXidX)(j,j)[n] 
                       * (*W[0])[l] * (*W[1])[m] * (*Jac)[n];
         }
@@ -289,11 +307,11 @@ void GAdvect::def_init()
 
 #else
 
-    for ( GSIZET j=0; j<nxy; j++ ) { // G vector element 
+    for ( auto j=0; j<nxy; j++ ) { // G vector element 
       (*G_[j]).range(ibeg, iend); // restrict global vec to local range
-        for ( GSIZET p=0, n=0; p<N[2]; p++ ) {
-          for ( GSIZET m=0; m<N[1]; m++ ) {
-            for ( GSIZET l=0; l<N[0]; l++,n++ ) {
+        for ( auto p=0, n=0; p<N[2]; p++ ) {
+          for ( auto m=0; m<N[1]; m++ ) {
+            for ( auto l=0; l<N[0]; l++,n++ ) {
               (*G_[j])[n] = (*dXidX)(j,j)[n] 
                           * (*W[0])[l] * (*W[1])[m] * (*W[2])[p] * (*Jac)[n];
             }
@@ -307,8 +325,8 @@ void GAdvect::def_init()
 
   // Reset ranges to global scope:
   Jac->range_reset();
-  for ( GSIZET j=0; j<nxy; j++ )
-    for ( GSIZET i=0; i<nxy; i++ ) (*dXidX)(i,j).range_reset();
+  for ( auto j=0; j<nxy; j++ )
+    for ( auto i=0; i<nxy; i++ ) (*dXidX)(i,j).range_reset();
 
 } // end of method def_init
 
@@ -350,15 +368,15 @@ void GAdvect::reg_init()
   GSIZET ibeg, iend; // beg, end indices for global array
   G_ .resize(nxy);
   G_ = NULLPTR;
-  for ( GSIZET j=0; j<nxy; j++ ) {
+  for ( auto j=0; j<nxy; j++ ) {
     G_ [j] = new GTVector<GFTYPE>(grid_->ndof());
   }
 
   // Set G_, and include Jacobian & mass:
-  for ( GSIZET j=0; j<GDIM; j++ ) {
+  for ( auto j=0; j<GDIM; j++ ) {
    *G_[j] = (*dXidX)(j,0);
     G_[j]->pointProd(*Jac);
-//  G_[j]->pointProd(*(mass.data()));
+//  G_[j]->pointProd(*(grid_->massop().data()));
   }
 
 
