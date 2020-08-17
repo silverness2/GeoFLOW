@@ -1076,7 +1076,36 @@ void normalize_euclidean(GTVector<GTVector<T>*> &x, GINT *iind, GINT nind, T x0)
 // RETURNS: none
 //**********************************************************************************
 template<typename T>
-void paxy(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y) 
+void paxy(GTVector<T> &z, const GTVector<T> &x, T a, const GTVector<T> &y) 
+{
+  if ( y.size() > 1 ) {
+    for ( auto j=0; j<x.size(); j++ ) { 
+      z[j] = a*x[j]*y[j];
+    }
+  }
+  else { // to make consistent with GTVector
+    for ( auto j=0; j<x.size(); j++ ) { 
+      z[j] = a*x[j]*y[0];
+    }
+  }
+} // end of method paxy (1)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD :    paxy (2)
+// DESC   : 
+//             compute x = axy
+//          
+// ARGS   : 
+//          x : vector factor, returned
+//          a : const multiplying x
+//          y : vector factor
+//          
+// RETURNS: none
+//**********************************************************************************
+template<typename T>
+void paxy(GTVector<T> &x, T a, const GTVector<T> &y) 
 {
   if ( y.size() > 1 ) {
     for ( auto j=0; j<x.size(); j++ ) { 
@@ -1088,7 +1117,7 @@ void paxy(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y)
       x[j] = a*x[j]*y[0];
     }
   }
-} // end of method paxy (1)
+} // end of method paxy (2)
 
 
 //**********************************************************************************
