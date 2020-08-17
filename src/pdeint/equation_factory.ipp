@@ -67,7 +67,7 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
 		// Set back to base type
 		base_ptr = eqn_impl;
 	}
-	if( "pde_mconv" == equation_name ) {
+	else if( "pde_mconv" == equation_name ) {
 		using EqnImpl = GMConv<ET>;
 
                 ctraits.docoriolis= eqn_ptree.getValue<bool>  ("docoriolis");

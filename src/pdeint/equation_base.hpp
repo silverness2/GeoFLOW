@@ -151,6 +151,13 @@ public:
 		return this->state_size_impl();
         }
 
+  	/** Return solve size 
+         * 
+         */
+        int solve_size(){
+		return this->solve_size_impl();
+        }
+
   	/** Return tmp size 
          * 
          */
@@ -219,6 +226,11 @@ protected:
 	 * Must be provided by implementation
 	 */
 	virtual int state_size_impl() = 0;
+  
+	/**
+	 * Must be provided by implementation
+	 */
+	virtual int solve_size_impl() = 0;
   
 	/**
 	 * Must be provided by implementation
