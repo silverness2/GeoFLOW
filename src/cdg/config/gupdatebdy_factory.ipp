@@ -84,7 +84,7 @@ GUpdateBdyFactory<Types>::get_inflow_callback(const GString& sname, const GINT i
           const GINT id,
           State     &utmp,
           State     &u,
-          State     &ub){GInflowBdyMethods::myinflow(grid, stinfo, time, id, utmp, u, ub);}; 
+          State     &ub)->bool{return GInflowBdyMethods::myinflow(grid, stinfo, time, id, utmp, u, ub);}; 
 
   }
   else {
