@@ -1667,7 +1667,7 @@ void GGrid::compute_grefderivs(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 #endif
   }
   u.range_reset(); // reset to global range
-  for ( auto k=0; k<GDIM; k++ ) du[k]->range_reset();
+  for ( auto k=0; k<nxy; k++ ) du[k]->range_reset();
 
 #elif defined(_G_IS3D)
 
@@ -1776,8 +1776,8 @@ void GGrid::compute_grefderivsW(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
   for ( auto e=0; e<gelems->size(); e++ ) {
     ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
     u.range(ibeg, iend); // restrict global vecs to local range
-    for ( k=0; k<GDIM; k++ ) du[k]->range(ibeg, iend);
-    for ( k=0; k<GDIM; k++ ) {
+    for ( k=0; k<nxy; k++ ) du[k]->range(ibeg, iend);
+    for ( k=0; k<nxy; k++ ) {
       N[k]= (*gelems)[e]->size(k);
       W[k]= (*gelems)[e]->gbasis(k)->getWeights();
     }
@@ -1789,7 +1789,7 @@ void GGrid::compute_grefderivsW(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
     GMTK::D3_X_Dg2_X_Dg1(*W [0], *W [1], *Di[2], u, etmp, *du[2]); 
   }
   u.range_reset(); // reset global vec to globalrange
-  for ( k=0; k<GDIM; k++ ) du[k]->range_reset();
+  for ( k=0; k<nxy; k++ ) du[k]->range_reset();
 
 #endif
 
