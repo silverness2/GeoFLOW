@@ -120,7 +120,7 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
   }
 
   tdenom  = 1.0/(4.0*nu*time);
-  for ( GINT ilump=0; ilump<nlump; ilump++ ) {
+  for ( auto ilump=0; ilump<nlump; ilump++ ) {
     r0[0]  = xinit[ilump]; r0[1]  = yinit[ilump]; 
     if ( GDIM > 2 ) r0[2]  = zinit[ilump]; 
     kprop[0] = kxprop[ilump]; kprop[1] = kyprop[ilump];
@@ -480,8 +480,8 @@ cout << "boxpergauss: num=" << (*igbdyt_face)[j].size() << " igbdyt_face[" << j 
     for ( k=0; k<GDIM; k++ ) {
       // Note: following c t is actually Integral_0^t c(t') dt', 
       //       so if c(t) changes, change this term accordingly:
-      f [k]  = modf((*c[k])[j]*time/gL[k],&pint);
-//    f [k]  = (*c[k])[n]*t/gL[k];
+//    f [k]  = modf((*c[k])[j]*time/gL[k],&pint);
+      f [k]  = (*c[k])[n]*time/gL[k];
       xx[k]  = (*xnodes)[k][n] - r0[k] - f[k]*gL[k];
 
       isum    = 0.0;
