@@ -295,6 +295,7 @@ cout << "dudt_impl: istage=" << istage_ << " hmax = " << tmp1->amax()  << endl;
 
 assert(dudt[ENERGY]->isfinite());
 
+#if 0
   if ( traits_.dofallout || !traits_.dodry ) {
     GMTK::paxy(*tmp1, *rhoT, CVL, *T);             // tmp1 = C_liq rhoT T
     compute_falloutsrc(*tmp1, qliq_, tvliq_, -1.0, urhstmp_, *Ltot);
@@ -305,11 +306,13 @@ assert(dudt[ENERGY]->isfinite());
                                                    // ice fallout src
    *dudt[ENERGY] += *Ltot;                         // += L_ice
   }
+#endif
 
   gadvect_->apply(*p, v_, urhstmp_, *tmp1);         // v.Grad p 
  *dudt[ENERGY] -= *tmp1;                            // -= v . Grad p
 assert(dudt[ENERGY]->isfinite());
 
+#if 0
   if ( traits_.dograv && traits_.dofallout ) {
     compute_pe(*rhoT, qi_, tvi_, urhstmp_, *tmp1);
    *dudt[ENERGY] += *tmp1;                          // += Sum_i rhoT q_i g.W_i
@@ -323,6 +326,7 @@ assert(dudt[ENERGY]->isfinite());
     GMTK::saxpy<Ftype>(*dudt[ENERGY], 1.0, *tmp1, -1.0); 
                                                     // -= q_heat
   }
+#endif
 
   // *************************************************************
   // Momentum equations RHS:
@@ -338,22 +342,27 @@ assert(dudt[ENERGY]->isfinite());
   for ( auto j=0; j<v_.size(); j++ ) { // for each component
     compute_div(*s_[j], v_, urhstmp_, *dudt[j]); 
 assert(dudt[j]->isfinite());
+#if 0
     if ( traits_.dofallout || !traits_.dodry ) {
       compute_falloutsrc(*u[j], qliq_, tvi_,-1.0, urhstmp_, *Ltot);
                                                       // hydrometeor fallout src
      *dudt[j] += *Ltot;                               // += L_tot
     }
+#endif
     grid_->wderiv(*p, j+1, TRUE, *tmp2, *tmp1);       // Grad p'
+   *tmp1 *= *Jac; 
    *dudt[j] += *tmp1;                                 // += Grad p'
 assert(dudt[j]->isfinite());
-    ghelm_->opVec_prod(*v_[j], urhstmp_, *tmp1);      // nu Laplacian v_j
-   *tmp1 *= *rhoT;
+    ghelm_->opVec_prod(*s_[j], urhstmp_, *tmp1);      // nu Laplacian v_j
+// *tmp1 *= *rhoT;
    *dudt[j] -= *tmp1;                                 // -= nu Laplacian s_j
+#if 0
     if ( traits_.docoriolis ) {
       GMTK::cross_prod_s(traits_.omega, s_, j+1, *tmp1);
      *tmp1 *= *Jac; *tmp1 *= *Mass;             
       GMTK::saxpy<Ftype>(*dudt[j], 1.0, *tmp1, 2.0);  // += 2 Omega X (rhoT v) M J
     }
+#endif
 assert(dudt[j]->isfinite());
     if ( traits_.dograv || traits_.usebase ) {
      *tmp1 = -GG; 
@@ -363,11 +372,13 @@ assert(dudt[j]->isfinite());
      *dudt[j] -= *tmp1;                               // -= rho' vec{g} M J
     }
 assert(dudt[j]->isfinite());
+#if 0
     if ( traits_.bforced && uf[j] != NULLPTR ) {                    
       *tmp1 = *uf[j]; *tmp1 *= *Jac ; *tmp1 *= *Mass;
       GMTK::saxpy<Ftype>(*dudt[j], 1.0, *tmp1, -1.0); 
                                                       // -= f_v
     }
+#endif
 
   } // end, momentum loop
 
