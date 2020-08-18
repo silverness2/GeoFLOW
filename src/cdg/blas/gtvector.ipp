@@ -2046,6 +2046,58 @@ GTVector<T>::onlycontains(T val)
 
 } // end of method onlycontains 
 
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : findfirst
+// DESC   : Find index of first occurrence of val in array, else -1
+// ARGS   : val : member to search for in buffer
+// RETURNS: index of first occurrence, else -1
+//**********************************************************************************
+#pragma acc routine vector
+template<class T>
+GLONG
+GTVector<T>::findfirst(T val)
+{
+
+  if ( this->data_ == NULLPTR ) return -1;
+
+  GLLONG i=this->gindex_.beg();
+
+  while ( i <= this->gindex_.edd() && this->data_[i] != val ) i+=this->gindex_.stride();
+
+  if ( i > this->gindex_.end() ) return i = -1;
+
+  return i;
+
+} // end of method findfirst
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : findlast
+// DESC   : Find index of last occurrence of val in array, else -1
+// ARGS   : val : member to search for in buffer
+// RETURNS: index of last occurrence, else -1
+//**********************************************************************************
+#pragma acc routine vector
+template<class T>
+GLONG
+GTVector<T>::findlast(T val)
+{
+
+  if ( this->data_ == NULLPTR ) return -1;
+
+  GLLONG i=this->gindex_.end();
+
+  while ( i >= this->gindex_.beg() && this->data_[i] != val ) i-=this->gindex_.stride();
+
+  if ( i < this->gindex_.beg() ) return i = -1;
+
+  return i;
+
+} // end of method findlast 
+
+
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : contains (1)

@@ -194,6 +194,10 @@ template <class T> class GTVector
     #pragma acc routine vector
         void abs();
     #pragma acc routine vector
+inline GLONG findfirst(T val);    // Find first occurrence of val, else -1
+    #pragma acc routine vector
+inline GLONG findlast(T val);     // Find last occurrence of val, else -1
+    #pragma acc routine vector
 inline GBOOL onlycontains(T val); // Buffer contains only val?
     #pragma acc routine vector
 inline GBOOL contains(T val);     // Buffer contains val?
