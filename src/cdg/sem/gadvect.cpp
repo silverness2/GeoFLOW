@@ -127,8 +127,9 @@ void GAdvect::def_prod(GTVector<GFTYPE> &p, const GTVector<GTVector<GFTYPE>*> &u
   GTMatrix<GTVector<GFTYPE>> *dXidX = &grid_->dXidX(); // get Rij
   GTVector<GFTYPE>           *Jac   = &grid_->Jac  (); // get J
 
+#if 0
   // Get derivatives with weights:
-  grid_->compute_grefderivs(p, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj p
+  grid_->compute_grefderivsW(p, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj p
 
 
   // Compute po += ui Rij (D^j p).
@@ -147,6 +148,23 @@ void GAdvect::def_prod(GTVector<GFTYPE> &p, const GTVector<GTVector<GFTYPE>*> &u
      *utmp [nxy+1] *= (*u[j])[0];
     po += *utmp[nxy+1];
   }
+#else
+  if ( u[0] != NULLPTR ) {
+    grid_->wderiv(p, 1, FALSE, *utmp[0], po);
+    po.pointProd(*u[0]); // do u_1 * dp/dx_1)
+  }
+  else {
+    po = 0.0;
+  }
+  for ( auto j=1; j<GDIM; j++ ) { 
+    if ( u[j] == NULLPTR ) continue;
+    grid_->wderiv(p, j+1, FALSE, *utmp[1], *utmp[0]);
+    utmp[0]->pointProd(*u[j]);
+    po += *utmp[0];
+  }
+  po.pointProd(grid_->Jac());
+
+#endif
 
 } // end of method def_prod
 
@@ -232,6 +250,7 @@ void GAdvect::init()
   assert(grid_->ntype().multiplicity(0) == GE_MAX-1 
         && "Only a single element type allowed on grid");
 
+#if 0
   if ( grid_->gtype() == GE_2DEMBEDDED 
     || grid_->gtype() == GE_DEFORMED ) {
     def_init();
@@ -239,6 +258,7 @@ void GAdvect::init()
   if ( grid_->gtype() == GE_REGULAR ) {
     reg_init();
   }
+#endif
 
   bInitialized_ = TRUE;
 
