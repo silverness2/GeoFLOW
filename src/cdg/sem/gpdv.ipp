@@ -67,10 +67,10 @@ void GpdV<TypePack>::apply(StateComp &p, State &u, State &utmp, StateComp &po)
   StateComp *Jac = &grid_->Jac();
 
   // Compute po += Gj (D^j u_j): 
-  grid_->deriv(*u[0], 1, *utmp[0], po );
+  grid_->wderiv(*u[0], 1, FALSE, *utmp[0], po );
   for ( auto j=1; j<GDIM; j++ ) { 
-     grid_->deriv(*u[j], j+1, *utmp[0], *utmp[1] );
-     po += *utmp[1];
+     grid_->wderiv(*u[j], j+1, FALSE, *utmp[1], *utmp[0] );
+     po += *utmp[0];
   }
 
   // Point-multiply by p:
@@ -81,11 +81,8 @@ void GpdV<TypePack>::apply(StateComp &p, State &u, State &utmp, StateComp &po)
     po *= p[0];
   }
 
-  // apply mass:
-#if 1
-  po *= *massop_->data();
+  // Apply Jacobian:
   po *= *Jac;
-#endif
 
 } // end of method apply
 
