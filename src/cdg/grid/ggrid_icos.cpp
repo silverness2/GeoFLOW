@@ -938,11 +938,11 @@ void GGridIcos::config_bdy(const geoflow::tbox::PropertyTree &ptree,
     igbdyf [j].resize(itmp.size()); igbdyf [j] = itmp;
     igbdyft[j].resize(itmp.size()); igbdyft[j] = GBDY_NONE;
     nind = 0;
-    for ( auto j=0; j<igbdyf.size(); j++ ) nind += igbdyf[j].size();
+    for ( auto k=0; k<igbdyf.size(); k++ ) nind += igbdyf[k].size();
     this->igbdy_  .resize(nind); // vol indices of bdy nodes in base; bdy update needs this
     nind = 0;
-    for ( auto j=0; j<igbdyf.size(); j++ ) { // over can. bdy faces
-      for ( auto i=0; i<igbdyf[j].size(); i++ ) this->igbdy_[nind++] = igbdyf[j][i];
+    for ( auto k=0; k<igbdyf.size(); k++ ) { // over can. bdy faces
+      for ( auto i=0; i<igbdyf[k].size(); i++ ) this->igbdy_[nind++] = igbdyf[k][i];
     }
 
     geoflow::get_bdy_block(bdytree, stblock);
