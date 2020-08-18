@@ -28,3 +28,4 @@ done in master:17. Command line args in main driver: push off to a method; set t
 done.35. terrain-following coordinates
 36. We no longer require the boundary state in equation_base, et seq. Remove it?
 37. Style: make template typepacks consistent; change Value to Ftype everywhere
+38. GTVector: the 'contains' & related methods don't use stride, but should. Also, we need to modify gindex so that it doesn't contain unnecessary fields
