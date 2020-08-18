@@ -50,9 +50,9 @@ GBOOL myinflow(GGrid &grid, StateInfo &stinfo, Time &time, const GINT id, State 
     }
   }
 
-  return TRUE;
-
 #endif
+  
+   return TRUE;
 
 } // end, myinflow
 
