@@ -910,20 +910,20 @@ void GGridBox::find_subdomain()
 // METHOD : config_bdy
 // DESC   : Configure 2d & 3d box boundary from ptree
 // ARGS   : 
-//          ptree : main prop tree 
-//          igbdy : For each natural/canonical global boundary face,
-//                  gives vector of global bdy ids. Allocated here.
-//          igbdyt: bdy type ids for each index in igbdy. Allocated here.
+//          ptree  : main prop tree 
+//          igbdyf : For each natural/canonical global boundary face,
+//                   gives vector of global bdy ids. Allocated here.
+//          igbdyft: bdy type ids for each index in igbdyf. Allocated here.
 // RETURNS: none.
 //**********************************************************************************
 void GGridBox::config_bdy(const PropertyTree &ptree, 
-                          GTVector<GTVector<GSIZET>> &igbdy, 
-                          GTVector<GTVector<GBdyType>> &igbdyt)
+                          GTVector<GTVector<GSIZET>> &igbdyf, 
+                          GTVector<GTVector<GBdyType>> &igbdyft)
 {
   // Cycle over all geometric boundaries, and configure:
 
   GBOOL              bret, bperiodic=FALSE;
-  GSIZET             iwhere;
+  GSIZET             nind;
   GTVector<GBOOL>    buniform(2*GDIM);
   GTVector<GBdyType> bdytype(2*GDIM);
   GTVector<GSIZET>   itmp;
@@ -950,8 +950,8 @@ void GGridBox::config_bdy(const PropertyTree &ptree,
 
 
   // Clear input arrays:
-  igbdy .resize(2*GDIM);
-  igbdyt.resize(2*GDIM);
+  igbdyf .resize(2*GDIM);
+  igbdyft.resize(2*GDIM);
 
   bdy_update_list_.resize(2*GDIM);
 
@@ -960,22 +960,28 @@ void GGridBox::config_bdy(const PropertyTree &ptree,
   //       user MUST supply a method to configure it.
   for ( auto j=0; j<2*GDIM; j++ ) { 
     sbdy         = gridptree.getValue<GString>(bdynames[j]);
-cout << "config_bdy: getting bdy tree: " << sbdy << endl;
     bdytree      = ptree.getPropertyTree(sbdy);
     bdyclass     = bdytree.getValue<GString>("bdy_class", "uniform");
     if ( ndim_ == 2 ) 
       find_bdy_ind2d(j, TRUE, itmp);
     if ( ndim_ == 3 ) 
       find_bdy_ind3d(j, TRUE, itmp);
-    igbdy [j].resize(itmp.size()); igbdy [j] = itmp;
-    igbdyt[j].resize(itmp.size()); igbdyt[j] = GBDY_NONE;
+    igbdyf [j].resize(itmp.size()); igbdyf [j] = itmp;
+    igbdyft[j].resize(itmp.size()); igbdyft[j] = GBDY_NONE;
+    nind = 0;
+    for ( auto j=0; j<igbdyf.size(); j++ ) nind += igbdyf[j].size(); 
+    this->igbdy_  .resize(nind); // vol indices of bdy nodes in base; bdy update needs this
+    nind = 0;
+    for ( auto j=0; j<igbdyf.size(); j++ ) { // over can. bdy faces
+      for ( auto i=0; i<igbdyf[j].size(); i++ ) this->igbdy_[nind++] = igbdyf[j][i];
+    }
     if ( "uniform" == bdyclass ) { // uniform bdy conditions
 cout << "config_bdy: extracting data from bdy tree: " << sbdy << endl;
       geoflow::get_bdy_block(bdytree, stblock);
       if ( stblock.tbdy.contains(GBDY_PERIODIC) ) {
         assert(stblock.tbdy.onlycontains(GBDY_PERIODIC) && "All variables must be GBDY_PERIODIC");
-        bdytype  [j] = GBDY_PERIODIC;
-        igbdyt   [j] = GBDY_PERIODIC;
+        bdytype [j] = GBDY_PERIODIC;
+        igbdyft [j] = GBDY_PERIODIC;
         bperiodic    = bperiodic || bdytype[j] == GBDY_PERIODIC;
       
       }
@@ -984,7 +990,7 @@ cout << "config_bdy: extracting data from bdy tree: " << sbdy << endl;
 cout << "config_bdy: building bc for bdy cond " << k << endl;
         base_ptr = GUpdateBdyFactory<BdyTypePack>::build(ptree, sbdy, *this,  j,
                                             stblock.tbdy[k], stblock.istate[k], itmp);
-        igbdyt[j] = stblock.tbdy[k];
+        igbdyft[j] = stblock.tbdy[k];
         bdy_update_list_[j].push_back(base_ptr);
       }
     }
@@ -1002,9 +1008,9 @@ cout << "config_bdy: building bc for bdy cond " << k << endl;
                                               stblock.tbdy[k], stblock.istate[k], itmp);
 
           for ( auto m=0; m<itmp.size(); m++ ) {
-            if ( igbdy[j].contains(itmp[m]) ) igbdyt[j][m] = stblock.tbdy[k];
+            if ( igbdyf[j].contains(itmp[m]) ) igbdyft[j][m] = stblock.tbdy[k];
           }
-          if ( stblock.tbdy[k] != GBDY_NONE ) igbdyt[j] = stblock.tbdy[k];
+          if ( stblock.tbdy[k] != GBDY_NONE ) igbdyft[j] = stblock.tbdy[k];
           bdy_update_list_[j].push_back(base_ptr);
         }
       }

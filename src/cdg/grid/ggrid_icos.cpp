@@ -873,18 +873,19 @@ void GGridIcos::print(const GString &filename, GCOORDSYST icoord)
 // DESC   : Configure 3d spherical boundaries from ptree
 // ARGS   : 
 //          ptree : main prop tree 
-//          igbdy : For each natural/canonical global boundary face,
+//          igbdyf : For each natural/canonical global boundary face,
 //                  gives vector of global bdy ids. Allocated here.
-//          igbdyt: bdy type ids for each index in igbdy. Allocated here.
+//          igbdyft: bdy type ids for each index in igbdyf. Allocated here.
 // RETURNS: none.
 //**********************************************************************************
 void GGridIcos::config_bdy(const geoflow::tbox::PropertyTree &ptree, 
-                           GTVector<GTVector<GSIZET>> &igbdy, 
-                           GTVector<GTVector<GBdyType>> &igbdyt)
+                           GTVector<GTVector<GSIZET>> &igbdyf, 
+                           GTVector<GTVector<GBdyType>> &igbdyft)
 {
   // Cycle over all geometric boundaries, and configure:
 
   GBOOL              bret;
+  GSIZET             nind;
   GTVector<GSIZET>   itmp;
   GTVector<GFTYPE>   rbdy(2);
   GTVector<GString>  bdynames(2);
@@ -895,8 +896,8 @@ void GGridIcos::config_bdy(const geoflow::tbox::PropertyTree &ptree,
   stBdyBlock         stblock;
 
   // Clear input arrays:
-  igbdy .clear();
-  igbdyt.clear();
+  igbdyf .clear();
+  igbdyft.clear();
 
   if ( ndim_ == 2 ) return; // no boundaries to configure
  
@@ -918,8 +919,8 @@ void GGridIcos::config_bdy(const geoflow::tbox::PropertyTree &ptree,
   rbdy[0] = radiusi_;
   rbdy[1] = radiuso_;
 
-  igbdy.resize(2); // 2 canonical bdys
-  igbdyt.resize(2); // 2 canonical bdys
+  igbdyf.resize(2); // 2 canonical bdys
+  igbdyft.resize(2); // 2 canonical bdys
 
   bdy_update_list_.resize(2*GDIM);
  
@@ -934,8 +935,16 @@ void GGridIcos::config_bdy(const geoflow::tbox::PropertyTree &ptree,
     bdytree      = ptree.getPropertyTree(sbdy);
     bdyclass     = bdytree.getValue<GString>("bdy_class", "uniform");
     find_bdy_ind3d(rbdy[j], itmp); 
-    igbdy[j].resize(itmp.size()); igbdy[j] = itmp;
-    igbdyt[j].resize(itmp.size()); igbdyt[j] = GBDY_NONE;
+    igbdyf [j].resize(itmp.size()); igbdyf [j] = itmp;
+    igbdyft[j].resize(itmp.size()); igbdyft[j] = GBDY_NONE;
+    nind = 0;
+    for ( auto j=0; j<igbdyf.size(); j++ ) nind += igbdyf[j].size();
+    this->igbdy_  .resize(nind); // vol indices of bdy nodes in base; bdy update needs this
+    nind = 0;
+    for ( auto j=0; j<igbdyf.size(); j++ ) { // over can. bdy faces
+      for ( auto i=0; i<igbdyf[j].size(); i++ ) this->igbdy_[nind++] = igbdyf[j][i];
+    }
+
     geoflow::get_bdy_block(bdytree, stblock);
     if ( "uniform" == bdyclass ) { // uniform bdy conditions
       assert(!stblock.tbdy.contains(GBDY_PERIODIC) && "Invalid boundary condition");
@@ -943,7 +952,7 @@ void GGridIcos::config_bdy(const geoflow::tbox::PropertyTree &ptree,
       for ( auto k=0; k<stblock.tbdy.size(); k++ ) { 
         base_ptr = GUpdateBdyFactory<BdyTypePack>::build(ptree, sbdy, *this,  j, 
                                             stblock.tbdy[k], stblock.istate[k], itmp);
-        if ( stblock.tbdy[k] != GBDY_NONE ) igbdyt[j] = stblock.tbdy[k];
+        if ( stblock.tbdy[k] != GBDY_NONE ) igbdyft[j] = stblock.tbdy[k];
         bdy_update_list_[j].push_back(base_ptr);
       }
     }
@@ -960,9 +969,9 @@ void GGridIcos::config_bdy(const geoflow::tbox::PropertyTree &ptree,
                                               stblock.tbdy[k], stblock.istate[k], itmp);
           
           for ( auto m=0; m<itmp.size(); m++ ) {
-            if ( igbdy[j].contains(itmp[m]) ) igbdyt[j][m] = stblock.tbdy[k];
+            if ( igbdyf[j].contains(itmp[m]) ) igbdyft[j][m] = stblock.tbdy[k];
           }
-          if ( stblock.tbdy[k] != GBDY_NONE ) igbdyt[j] = stblock.tbdy[k];
+          if ( stblock.tbdy[k] != GBDY_NONE ) igbdyft[j] = stblock.tbdy[k];
           bdy_update_list_[j].push_back(base_ptr);
         }
       } 

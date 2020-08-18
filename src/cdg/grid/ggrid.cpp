@@ -734,6 +734,8 @@ void GGrid::reg_geom_init()
    Jac_.range_reset();
    faceJac_.range_reset();
 
+   do_normals();
+
    GComm::Synch(comm_);
    
 } // end of method reg_geom_init
@@ -1183,27 +1185,16 @@ void GGrid::init_local_face_info()
 //**********************************************************************************
 void GGrid::init_bc_info()
 {
-  GBdyType                     btype;
+  GSIZET   nind;
+  GBdyType btype;
 
 
   // Find boundary indices & types from config file 
   // specification, for _each_ natural/canonical domain face:
   config_bdy(ptree_, igbdy_bdyface_, igbdyt_bdyface_);
 
-  // Flatten bdy index indirection array:
-  GSIZET      nind=0, nw=0;
-  for ( auto j=0; j<igbdy_bdyface_.size(); j++ ) { // over dom can. bdy faces
-    nind += igbdy_bdyface_[j].size(); // by-domain-face
-  }
-  igbdy_  .resize(nind); // indices of bdy nodes in volume
-
-  nind = 0;
-  for ( auto j=0; j<igbdy_bdyface_.size(); j++ ) { // over can. bdy faces
-    for ( auto i=0; i<igbdy_bdyface_[j].size(); i++ ) {
-      igbdy_  [nind] = igbdy_bdyface_ [j][i];
-      nind++;
-    }
-  }
+  // Flatten bdy index indirection array; this is
+  // done in child classes, and stored in igbdy_.
 
   // Create bdy type bins for each domain bdy:
   //   [Dom bdy][bdytype][volume index]:
@@ -1218,20 +1209,15 @@ void GGrid::init_bc_info()
   // a given bdy node corresponds:
   n = 0; // cycle over all bdy nodes
   igbdy_binned_.resize(igbdy_bdyface_.size());
-//ilbdy_binned_.resize(igbdy_bdyface_.size());
   for ( auto k=0; k<igbdy_bdyface_.size(); k++ ) { // cycle over canonical bdy face
     nbdy = igbdyt_bdyface_[k].size();
     igbdy_binned_ [k].resize(GBDY_MAX);
-//  ilbdy_binned_ [k].resize(GBDY_MAX); // index into bdy arrays for each bdy type
     for ( auto j=0; j<GBDY_MAX; j++ ) { // cycle over each bc type
       itype = static_cast<GBdyType>(j);
-//    val  = igbdyt_bdyface_[k][itype];
       nbdy = igbdyt_bdyface_[k].multiplicity(itype, ind, nind);
       igbdy_binned_[k][j].resize(nbdy);
-//    ilbdy_binned_[k][j].resize(nbdy);
       for ( auto i=0; i<nbdy; i++ ) { // assign comp. volume index
         igbdy_binned_[k][j][i] = igbdy_bdyface_[k][ind[i]];
-//      ilbdy_binned_[k][j]    = n;     
         n++;
       }
     } // end, bdy cond type loop
