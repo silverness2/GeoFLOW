@@ -21,6 +21,6 @@
   #define RD       287.0    // gas const for dry air J/kg-K
   #define RV       461.0    // gas const for water vapor J/kg-K
   #define TKREF    273.15   // ref temp K
-  #define KBOLTZ   1.38064852 × 10-23 // Boltznann constat, kg m^2/s^2-K
+  #define KBOLTZ   1.38064852e-23 // Boltznann constat, kg m^2/s^2-K
 #endif // !defined(_GPHYSICS_H)
 
