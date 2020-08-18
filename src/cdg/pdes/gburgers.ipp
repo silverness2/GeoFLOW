@@ -70,6 +70,20 @@ steptop_callback_      (NULLPTR)
   nu_.resize(1);
   nu_ = traits.nu; 
 
+  // Normally, traits are set outside class, but
+  // we can alter them here:
+  GINT nsolve, nstate;
+  if ( bpureadv_ || doheat_ ) {
+    nsolve  = nstate = 1;
+    nstate += grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
+  }
+  else {
+    nsolve = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
+    nstate = nsolve; 
+  }
+  traits_.nsolve = nsolve;
+  traits_.nstate = nstate;
+
   comm_ = ggfx_->getComm();
 
   
@@ -397,7 +411,7 @@ void GBurgers<TypePack>::init_impl(State &tmp)
   GString serr = "GBurgers<TypePack>::init: ";
 
   GBOOL      bmultilevel = FALSE;
-  GSIZET     n, nsolve = bpureadv_ || doheat_ ? 1 : GDIM;
+  GSIZET     n, nsolve, nstate;
   GSIZET     nc = grid_->gtype() == GE_2DEMBEDDED ? 3 : GDIM;
   GINT       nop;
   CompDesc *icomptype = &this->stateinfo().icomptype;
@@ -405,16 +419,14 @@ void GBurgers<TypePack>::init_impl(State &tmp)
   assert(tmp.size() >= this->tmp_size());
   utmp_.resize(tmp.size()); utmp_ = tmp;
 
-  if ( !bpureadv_ &&  !doheat_ ) {
-    nsolve = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
-  }
+  nsolve = traits_.nsolve;
+  nstate = traits_.nstate;
 
   // Set std::vector for traits.iforced:
   stdiforced_.resize(traits_.iforced.size());
   for ( auto j=0; j<stdiforced_.size(); j++ ) {
     stdiforced_[j] = traits_.iforced[j];
   }
-
 
   // Find multistep/multistage time stepping coefficients:
   GMultilevel_coeffs_base<GFTYPE> *tcoeff_obj=NULLPTR; // time deriv coeffs
@@ -633,14 +645,11 @@ template<typename TypePack>
 GINT GBurgers<TypePack>::tmp_size_impl()
 {
   GINT isize = 0;
-  GINT nstate = 0;
  
   isize  = 2*GDIM + 3;
-  nstate = GDIM;
-  if ( doheat_ || bpureadv_ ) nstate = 1;
 
   if ( isteptype_ == GSTEPPER_EXRK ) {
-    isize += nstate * itorder_; 
+    isize += traits_.nsolve*(traits_.itorder+1)+1;
   }
 
   return isize;
