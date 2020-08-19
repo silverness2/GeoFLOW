@@ -699,14 +699,12 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
     L         = pow((x-xc[0])/xr[0],2) + pow((y-xc[1])/xr[1],2);
     L        += GDIM == 3 ? pow((z-xc[2])/xr[2],2) : 0.0;
     L         = sqrt(L);
-    delT      = L <= 1.0 ? -T0*pow(cos(0.5*PI*L),2.0) : 0.0;
+    delT      = L <= 1.0 ? 2.0*T0*pow(cos(0.5*PI*L),2.0) : 0.0;
 
     pj        = P0*pow(((*Tb)[j]+delT)/Ts,CPD/RD);
 //  (*dp)[j]  = (*Pb)[j] / ( RD * ( (*Tb)[j] + delT ) ) - (*db)[j];
     (*dp)[j]  = pj / ( RD * ( (*Tb)[j] + delT ) );
     (*e) [j]  = CVD * (*dp)[j]  * ( (*Tb)[j] + delT ); // e = Cv d (T+delT);
-(*db)[j]  = 0.0;
-(*Pb)[j]  = 0.0;
 
   }
 //cout << "boxdrybubble: db=" << *db << endl;
