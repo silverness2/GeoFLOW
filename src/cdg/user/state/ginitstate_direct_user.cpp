@@ -655,7 +655,7 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
   GString             serr = "impl_boxdrybubble: ";
   GSIZET              nxy;
   GFTYPE              x, y, z, r;
-  GFTYPE              delT, L, T0, Ts, P0, pj;
+  GFTYPE              delT, dj, L, T0, Ts, P0, pj;
   GTVector<GFTYPE>   *db, *dp, *e, *Pb, *Tb;
   std::vector<GFTYPE> xc, xr;  
 
@@ -701,10 +701,14 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
     L         = sqrt(L);
     delT      = L <= 1.0 ? 2.0*T0*pow(cos(0.5*PI*L),2.0) : 0.0;
 
-    pj        = P0*pow(((*Tb)[j]+delT)/Ts,CPD/RD);
+    pj        = P0*pow(((*Tb)[j]+delT)/Ts,RD/CPD);
+//  (*dp)[j]  = -(*Pb)[j] / ( RD * (*Tb)[j] * (*Tb)[j] ) * delT;
 //  (*dp)[j]  = (*Pb)[j] / ( RD * ( (*Tb)[j] + delT ) ) - (*db)[j];
-    (*dp)[j]  = pj / ( RD * ( (*Tb)[j] + delT ) );
-    (*e) [j]  = CVD * (*dp)[j]  * ( (*Tb)[j] + delT ); // e = Cv d (T+delT);
+    (*dp)[j]  = pj / ( RD * ( (*Tb)[j] + delT ) ); // - (*db)[j];
+    dj        = (*dp)[j];
+    (*e) [j]  = CVD * dj  * ( (*Tb)[j] + delT ); // e = Cv d (T+delT);
+(*Pb)[j]  = 0.0;
+(*db)[j]  = 0.0;
 
   }
 //cout << "boxdrybubble: db=" << *db << endl;
