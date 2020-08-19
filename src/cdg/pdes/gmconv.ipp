@@ -125,9 +125,9 @@ void GMConv<TypePack>::dt_impl(const Time &t, State &u, Time &dt)
  *tmp1 = *rhoT; tmp1->rpow(-1.0);
   compute_v(u, *tmp1, v_); 
 
-  compute_cv(u, *tmp1, *tmp2);                  // Cv
+  compute_cv(u, *tmp1, *tmp2);                     // Cv
   geoflow::compute_temp(*u[ENERGY], *rhoT, *tmp2, *tmp1);  // temperature
-  compute_qd  (u, *tmp2);                       // dry mass ratio
+  compute_qd(u, *tmp2);                            // dry mass ratio
   geoflow::compute_p(*tmp1, *rhoT, *tmp2, RD, *p); // partial pressure for dry air
   if ( !traits_.dodry ) {
     geoflow::compute_p(*tmp1, *rhoT, *u[VAPOR], RV, *tmp2); // partial pressure for vapor
@@ -192,7 +192,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   GINT       nice, nliq ;
   StateComp *irhoT, *Ltot;
   StateComp *dp, *e, *p, *rhoT, *T; // energy, den, pressure, temperature
-  StateComp *Jac, *Mass;
+  StateComp *Mass;
   StateComp *tmp1, *tmp2;
   State      g(GDIM); 
 
@@ -221,9 +221,11 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
 
   // Compute velocity for timestep:
   compute_v(s_, *irhoT, v_); // stored in v_
+#if 0
 for ( auto j=0; j<v_.size(); j++ ) {
 cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax()  << endl;
 }
+#endif
   
   // Compute all operators as though they are on the LHS, then
   // change the sign and add Mass at the end....
@@ -233,9 +235,9 @@ cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax
   // Total density RHS:
   // *************************************************************
 
-cout << "dudt_impl: istage=" << istage_ << " dmax_0 = " << rhoT->amax()  << endl;
-  compute_div(*rhoT, v_, urhstmp_, *dudt[GDIM+1]); 
-cout << "dudt_impl: istage=" << istage_ << " rhoT= " << rhoT->amax()  << endl;
+//cout << "dudt_impl: istage=" << istage_ << " dmax_0 = " << rhoT->amax()  << endl;
+  compute_div(*rhoT, v_, urhstmp_, *dudt[DENSITY]); 
+//cout << "dudt_impl: istage=" << istage_ << " rhoT= " << rhoT->amax()  << endl;
   if ( traits_.dofallout ) {
     compute_falloutsrc(*rhoT, qi_, tvi_, -1, urhstmp_, *Ltot);
     GMTK::saxpy<Ftype>(*dudt[DENSITY], 1.0, *Ltot, 1.0);   // += Ltot
@@ -249,6 +251,7 @@ cout << "dudt_impl: istage=" << istage_ << " rhoT= " << rhoT->amax()  << endl;
   //                       - q_i/rhoT Ltot + dot(s_i)/rhoT = 0
   // where Ltot is total fallout source over liq + ice sectors:
   // *************************************************************
+#if 0
   for ( auto j=0; j<nmoist_; j++ ) {
     gadvect_->apply(*qi_[j], v_, urhstmp_, *dudt[VAPOR+j]); // apply advection
     compute_vpref(*tvi_[j], W_);
@@ -260,12 +263,13 @@ cout << "dudt_impl: istage=" << istage_ << " rhoT= " << rhoT->amax()  << endl;
     *dudt[VAPOR+j] -= *tmp1;                    // += -q_i/rhoT Ltot
     if ( uf[VAPOR+j] != NULLPTR ) {             // add in sdot(s_i)/rhoT
       *tmp1 = *uf[VAPOR+1]; *tmp1 *= *irhoT;    // dot(s)/rhoT 
-      *tmp1 *= *Jac ; *tmp1 *= *Mass;
+      *tmp1 *= *Mass;
       GMTK::saxpy<Ftype>(*dudt[VAPOR+j], 1.0, *tmp1, -1.0); 
                                                // -= dot(s)/rhoT
     }
   }
-  
+ #endif
+ 
   p     = urhstmp_[urhstmp_.size()-3]; // holds pressure
   T     = urhstmp_[urhstmp_.size()-6]; // holds temperature
   e     = u[ENERGY];                   // internal energy density
@@ -283,14 +287,16 @@ assert(e->isfinite());
     geoflow::compute_p(*T, *rhoT, *u[VAPOR], RV, *tmp1); // partial pressure for vapor
    *p += *tmp1;
   }
+#if 0
 cout << "dudt_impl: istage=" << istage_ << " dmax = " << rhoT->amax()  << endl;
 cout << "dudt_impl: istage=" << istage_ << " pmax = " << p->amax()  << endl;
 cout << "dudt_impl: istage=" << istage_ << " emax = " << e->amax()  << endl;
 cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
+#endif
 
 
   GMTK::saxpy<Ftype>(*tmp1, *e, 1.0, *p, 1.0);     // h = p+e, enthalpy density
-cout << "dudt_impl: istage=" << istage_ << " hmax = " << tmp1->amax()  << endl;
+//cout << "dudt_impl: istage=" << istage_ << " hmax = " << tmp1->amax()  << endl;
   compute_div(*tmp1, v_, urhstmp_, *dudt[ENERGY]); // Div (h v);
 
 assert(dudt[ENERGY]->isfinite());
@@ -322,7 +328,7 @@ assert(dudt[ENERGY]->isfinite());
  *dudt[ENERGY] += *tmp1;                            // += f_kinetic . v
 
   if ( uf[ENERGY] != NULLPTR ) {                    
-    *tmp1 = *uf[ENERGY]; *tmp1 *= *Jac ; *tmp1 *= *Mass;
+    *tmp1 = *uf[ENERGY]; *tmp1 *= *Mass;
     GMTK::saxpy<Ftype>(*dudt[ENERGY], 1.0, *tmp1, -1.0); 
                                                     // -= q_heat
   }
@@ -337,7 +343,6 @@ assert(dudt[ENERGY]->isfinite());
    *dp -= *ubase_[0];                 // density fluctuation
    *p  -= *ubase_[1];                 // pressure fluctuation
   }
-  Jac  = &grid_->Jac();
   Mass = grid_->massop().data();
   for ( auto j=0; j<v_.size(); j++ ) { // for each component
     compute_div(*s_[j], v_, urhstmp_, *dudt[j]); 
@@ -349,8 +354,10 @@ assert(dudt[j]->isfinite());
      *dudt[j] += *Ltot;                               // += L_tot
     }
 #endif
-    grid_->wderiv(*p, j+1, TRUE, *tmp2, *tmp1);       // Grad p'
-   *tmp1 *= *Jac; 
+//  grid_->wderiv(*p, j+1, TRUE, *tmp2, *tmp1);       // Grad p'
+// *tmp1 *= *Jac; 
+    grid_-> deriv(*p, j+1, *tmp2, *tmp1);             // Grad p'
+   *tmp1 *= *Mass; 
    *dudt[j] += *tmp1;                                 // += Grad p'
 assert(dudt[j]->isfinite());
     ghelm_->opVec_prod(*s_[j], urhstmp_, *tmp1);      // nu Laplacian v_j
@@ -359,7 +366,7 @@ assert(dudt[j]->isfinite());
 #if 0
     if ( traits_.docoriolis ) {
       GMTK::cross_prod_s(traits_.omega, s_, j+1, *tmp1);
-     *tmp1 *= *Jac; *tmp1 *= *Mass;             
+     *tmp1 *= *Mass;             
       GMTK::saxpy<Ftype>(*dudt[j], 1.0, *tmp1, 2.0);  // += 2 Omega X (rhoT v) M J
     }
 #endif
@@ -368,13 +375,13 @@ assert(dudt[j]->isfinite());
      *tmp1 = -GG; 
       compute_vpref(*tmp1, j+1, *tmp2);               // compute grav component
       tmp2->pointProd(*rhoT, *tmp1);
-     *tmp1 *= *Jac; *tmp1 *= *Mass;             
+     *tmp1 *= *Mass;             
      *dudt[j] -= *tmp1;                               // -= rho' vec{g} M J
     }
 assert(dudt[j]->isfinite());
 #if 0
     if ( traits_.bforced && uf[j] != NULLPTR ) {                    
-      *tmp1 = *uf[j]; *tmp1 *= *Jac ; *tmp1 *= *Mass;
+      *tmp1 = *uf[j]; *tmp1 *= *Mass;
       GMTK::saxpy<Ftype>(*dudt[j], 1.0, *tmp1, -1.0); 
                                                       // -= f_v
     }
