@@ -1000,9 +1000,9 @@ void GGridIcos::find_bdy_ind3d(GFTYPE radius, GTVector<GSIZET> &ibdy)
   GTPoint<GFTYPE> pt(ndim_);
 
   ibdy.clear();
-  eps = 100*std::numeric_limits<GFTYPE>::epsilon();
+  eps = 1.0e4*std::numeric_limits<GFTYPE>::epsilon();
 
-  for ( auto i=0; i<xNodes_[0].size(); i++ ) { // face 0
+  for ( auto i=0; i<xNodes_[0].size(); i++ ) { 
       r = sqrt(pow(xNodes_[0][i],2)+pow(xNodes_[1][i],2)+pow(xNodes_[2][i],2));
       if ( FUZZYEQ(r, radius, eps) ) {
         ibdy.push_back(i);
