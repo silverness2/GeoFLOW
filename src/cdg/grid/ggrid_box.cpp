@@ -81,7 +81,7 @@ lshapefcn_             (NULLPTR)
   snorm                 = gridptree.getValue<GString>("norm_type");
   this->cgtraits_.normtype = LinSolverBase<CGTypePack>::str2normtype(snorm);
 
-  eps_ = 100*std::numeric_limits<GFTYPE>::epsilon();
+  eps_ = 1.0e4*std::numeric_limits<GFTYPE>::epsilon();
   // compute global bdy range, and global vertices:
   for ( auto j=0; j<GDIM; j++ ) dP_[j] = spt[j];
   P1_ = P0_ + dP_;
@@ -1082,7 +1082,7 @@ void GGridBox::find_bdy_ind2d(GINT bdyid, GBOOL incl_vert, GTVector<GSIZET> &ibd
       for( auto i=0; i<xNodes_[0].size(); i++ ) { // bdy 2
         if ( FUZZYEQ(P1_.x2,xNodes_[1][i],eps_) ) {
           pt.assign(xNodes_, i);
-          if ( incl_vert  || !!is_global_vertex(pt) ) ibdy.push_back(i);
+          if ( incl_vert  || !is_global_vertex(pt) ) ibdy.push_back(i);
         }
       }
       break;
