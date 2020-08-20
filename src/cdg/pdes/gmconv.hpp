@@ -139,7 +139,8 @@ public:
           GINT            itorder     = 2;
           GINT            inorder     = 2;
           GStepperType    isteptype   = GSTEPPER_EXRK;
-          GFTYPE          Ts          = 300.0;  // base state surf temp
+          GFTYPE          Ts_base     = 300.0;  // base state surf temp (K)
+          GFTYPE          P0_base     = 1000.0; // base state ref pressure (mb)
           GFTYPE          courant     = 0.5;    // Courant factor
           GFTYPE          nu          = 0.0;    // viscosity constant
           GTVector<GINT>  iforced;              // state comps to force
@@ -200,7 +201,7 @@ inline  void                compute_vpref(StateComp &tv, State &W);
 inline  void                compute_vpref(StateComp &tv, GINT idir, StateComp &W);
 inline  void                assign_helpers(const State &u, const State &uf);
 inline  void                compute_pe   (StateComp &rhoT, State &qi, State &tvi, State &utmp, StateComp      &r);
-        void                compute_base  (State &u);
+        void                compute_base  ();
 inline  GINT                szrhstmp();
  
 
@@ -208,7 +209,7 @@ inline  GINT                szrhstmp();
         GBOOL               bforced_;       // use forcing vectors
         GBOOL               bsteptop_;      // is there a top-of-step callback?
         GBOOL               bvterm_;        // teminal vel. computed?
-        GBOOL               bbase_computed_;// base state computed?
+        GBOOL               bbase_assigned_;// base state assigned?
         GINT                istage_;        // RK stage number
         GINT                nevolve_;       // num StateComp's evolved
         GINT                nhydro_;        // num hydrometeors
@@ -233,6 +234,8 @@ inline  GINT                szrhstmp();
         State               s_;             // state momentum components
         State               v_;             // state velocity components
         State               W_;             // terminal velocity components
+        StateComp           dtmp_;          // density base state temp array
+        StateComp           ptmp_;          // pressure base state temp array
         GTVector<State>     ukeep_;         // state at prev. time levels
         GTVector<GString>
                             valid_types_;   // valid stepping methods supported

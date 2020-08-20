@@ -21,7 +21,7 @@ bInit_                   (FALSE),
 bforced_                 (FALSE),
 bsteptop_                (FALSE),
 bvterm_                  (FALSE),
-bbase_computed_          (FALSE),
+bbase_assigned_          (FALSE),
 istage_                      (0),
 nevolve_                     (0),
 nhydro_                      (0),
@@ -400,8 +400,6 @@ void GMConv<TypePack>::step_impl(const Time &t, State &uin, State &uf, State &ub
 
   assert(bInit_);
 
-  compute_base(uin); // compute base state, if necessary
-
   // If there's a top-of-the-timestep callback, 
   // call it here:
   if ( bsteptop_ ) {
@@ -765,6 +763,8 @@ void GMConv<TypePack>::init_impl(State &tmp)
   tvice_= NULLPTR;
   fv_   = NULLPTR;
   s_    = NULLPTR;
+
+  compute_base();
 
   bInit_ = TRUE;
 
@@ -1255,7 +1255,7 @@ void GMConv<TypePack>::compute_pe(StateComp &rhoT, State &qi, State &tvi, State 
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-void GMConv<TypePack>::compute_base(State &u)
+void GMConv<TypePack>::compute_base()
 {
    GString    serr = "GMConv<TypePack>::compute_base: ";
    Ftype      x, y, z;
@@ -1269,8 +1269,8 @@ void GMConv<TypePack>::compute_base(State &u)
    GGridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
    GGridBox  *box  = dynamic_cast <GGridBox*>(grid_);
 
-   d = u[BASESTATE];
-   p = u[BASESTATE+1];
+   dtmp_.resize(grid_->ndof());
+   ptmp_.resize(grid_->ndof());
    // Specify components for Cartesian grid:
    if ( box != NULLPTR ) {
      // In Cartesian coords, select the 'z' direction
@@ -1279,10 +1279,10 @@ void GMConv<TypePack>::compute_base(State &u)
      for ( auto j=0; j<(*xnodes)[0].size(); j++ ) {
        x = (*xnodes)[0][j]; y = (*xnodes)[1][j];
        if ( GDIM == 3 ) z = (*xnodes)[2][j];
-       r        = GDIM == 3 ? z : y;
-       T        = traits_.Ts_base - GG*r/CPD;
-       (*p)[j]  = traits_.P0_base*pow(T/traits_.Ts_base,CPD/RD);
-       (*d)[j]  = (*p)[j] / ( RD * T );
+       r         = GDIM == 3 ? z : y;
+       T         = traits_.Ts_base - GG*r/CPD;
+       ptmp_[j]  = traits_.P0_base*pow(T/traits_.Ts_base,CPD/RD);
+       dtmp_[j]  = (*p)[j] / ( RD * T );
      }
      return;
    }
@@ -1293,11 +1293,10 @@ void GMConv<TypePack>::compute_base(State &u)
      x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
      r        = sqrt(x*x + y*y + z*z);
      T        = traits_.Ts_base - GG*r/CPD;
-     (*p)[j]  = traits_.P0_base*pow(T/traits_.Ts_base,CPD/RD);
-     (*d)[j]  = (*p)[j] / ( RD * T );
+     ptmp_[j]  = traits_.P0_base*pow(T/traits_.Ts_base,CPD/RD);
+     dtmp_[j]  = (*p)[j] / ( RD * T );
    }
 
-   bbase_computed_ = TRUE;
 
 } // end of method compute_base
 
@@ -1333,6 +1332,15 @@ void GMConv<TypePack>::assign_helpers(const State &u, const State &uf)
    for ( auto j=0; j<nice; j++ ) qice_ [j] = u[GDIM+3+nliq+j];
    for ( auto j=0; j<nliq; j++ ) tvliq_[j] = u[GDIM+3+  nliq+nice+j];
    for ( auto j=0; j<nice; j++ ) tvice_[j] = u[GDIM+3+2*nliq+nice+j];
+
+   // Assign base state
+  if ( !bbase_assigned_ ) {
+    *u  [BASESTATE] = dtmp_;
+    *u[BASESTATE+1] = ptmp_;
+    bbase_assigned_ = TRUE;
+    dtmp_.clear();
+    ptmp_.clear();
+  }
 
 } // end of method assign_helpers
 

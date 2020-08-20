@@ -656,10 +656,13 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
   GSIZET              nxy;
   GFTYPE              x, y, z, r;
   GFTYPE              delT, dj, L, T0, Ts, P0, pj;
-  GTVector<GFTYPE>   *db, *dp, *e, *Pb, *Tb;
+  GTVector<GFTYPE>   *db, *d, *e, *pb, *Tb;
   std::vector<GFTYPE> xc, xr;  
+  GString             sblock;
 
   PropertyTree bubbptree   = ptree.getPropertyTree(sconfig);
+  sblock                   = ptree.getValue<GString>("pde_name");
+  PropertyTree convptree   = ptree.getPropertyTree(sblock);
 
   GGridBox  *box   = dynamic_cast <GGridBox*>(&grid);
   assert(box && "Must use a box grid");
@@ -670,48 +673,42 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
 
   Tb    = utmp[0];  // background temp
   e     = u  [GDIM];// int. energy density
-  dp    = u[GDIM+1];// total density fluctuation
-  db    = u[GDIM+2];// background density fluct
-  Pb    = u[GDIM+3];// background pressure 
+  d     = u[GDIM+1];// total density fluctuation
+  db    = u[GDIM+2];// background density fluct, from solver
+  pb    = u[GDIM+3];// background pressure  , from solver
   nxy   = (*xnodes)[0].size(); // same size for x, y, z
 
-  P0    = bubbptree.getValue<GFTYPE>("P0",1000.0);       // ref. pressure (mb)
-  Ts    = bubbptree.getValue<GFTYPE>("T_surf", 300.0);   // surf. temp (K)
   T0    = bubbptree.getValue<GFTYPE>("T_pert", 15.0);    // temp. perturb. magnitude (K)
   xc    = bubbptree.getArray<GFTYPE>("x_center");        // center location
   xr    = bubbptree.getArray<GFTYPE>("x_width");         // bubble width
-  P0   *= 1.0e2;  // convert P0 from mb to Pa
+  P0    = convptree.getValue<GFTYPE>("P0");                      // ref pressure 
+  Ts    = convptree.getValue<GFTYPE>("T_surf");                  // surf temp
 
   assert(xc.size() >= GDIM && xr.size() >= GDIM);
 
  *u[0]  = 0.0; // sx
  *u[1]  = 0.0; // sy
  if ( GDIM == 3 ) *u[2]  = 0.0; // sz
- *dp    = 0.0;
+ *d     = 0.0;
 
   for ( auto j=0; j<nxy; j++ ) { 
     x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
     if ( GDIM == 3 ) z = (*xnodes)[2][j];
     r = GDIM == 3 ? z : y;
-    (*Tb)[j]  = Ts - GG*r/CPD;
-    (*Pb)[j]  = P0*pow((*Tb)[j]/Ts,CPD/RD);
-//  (*Pb)[j]  = P0*pow((*Tb)[j]/Ts,RD/CPD);
-    (*db)[j]  = (*Pb)[j] / ( RD * (*Tb)[j] );
     L         = pow((x-xc[0])/xr[0],2) + pow((y-xc[1])/xr[1],2);
     L        += GDIM == 3 ? pow((z-xc[2])/xr[2],2) : 0.0;
     L         = sqrt(L);
     delT      = L <= 1.0 ? 2.0*T0*pow(cos(0.5*PI*L),2.0) : 0.0;
     pj        = P0*pow(((*Tb)[j]+delT)/Ts,CPD/RD);
 //  pj        = P0*pow(((*Tb)[j]+delT)/Ts,RD/CPD);
-#if 1
-    pj        = (*Pb)[j]; 
-    (*dp)[j]  = pj / ( RD * ( (*Tb)[j] + delT ) ) - (*db)[j];
-    dj        = (*dp)[j] + (*db)[j];
-    (*e) [j]  = CVD * dj * ( (*Tb)[j] + delT ); // e = Cv d (T+delT);
+#if 0
+    pj        = (*pb)[j]; 
+    (*d)[j]   = pj / ( RD * ( (*Tb)[j] + delT ) ) - (*db)[j];
+    dj        = (*d)[j] + (*db)[j];
+    (*e)[j]   = CVD * dj * ( (*Tb)[j] + delT ); // e = Cv d (T+delT);
 #else
-    delT      = 0.0;
-    (*dp)[j]  = 0.0;
-    (*e) [j]  = CVD * (*db)[j] * ( (*Tb)[j] + delT ); // e = Cv d (T+delT);
+    (*d)[j]   = 0.0;
+    (*e)[j]   = CVD * (*db)[j] * ( (*Tb)[j] ); // e = Cv d (T);
 #endif
 
   }
@@ -743,7 +740,7 @@ GBOOL impl_boxsod(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Stat
   GFTYPE              a, b;
   GFTYPE              x, y, z;
   GFTYPE              Pfact, P0, pj, T0, width, xc;
-  GTVector<GFTYPE>   *dp, *e;
+  GTVector<GFTYPE>   *d, *e;
 
   PropertyTree sodptree   = ptree.getPropertyTree(sconfig);
 
@@ -755,7 +752,7 @@ GBOOL impl_boxsod(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Stat
   assert(u.size() == 4);
 
   e     = u  [GDIM];// int. energy density
-  dp    = u[GDIM+1];// total density 
+  d     = u[GDIM+1];// total density 
   nxy   = (*xnodes)[0].size(); // same size for x, y, z
 
   T0    = sodptree.getValue<GFTYPE>("T0",300.0);   // ref. temp
@@ -768,7 +765,7 @@ GBOOL impl_boxsod(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Stat
  *u[0]  = 0.0; // sx
  *u[1]  = 0.0; // sy
  if ( GDIM == 3 ) *u[2]  = 0.0; // sz
- *dp    = 0.0;
+ *d     = 0.0;
 
   a = P0*(1.0-Pfact)/PI;
   b = P0*(1.0+Pfact)/2.0;
@@ -777,10 +774,10 @@ GBOOL impl_boxsod(const PropertyTree &ptree, GString &sconfig, GGrid &grid, Stat
     if ( GDIM == 3 ) z = (*xnodes)[2][j];
     pj = a*atan((x-xc)/width) + b;
        
-//  (*dp)[j]  = (*Pb)[j] / ( RD * ( (*Tb)[j] + delT ) ) - (*db)[j];
-    (*dp)[j]  = pj / ( RD * T0 );
-    (*e) [j]  = CVD * (*dp)[j]  * T0;
-cout << "boxsod: p=" << pj << " d=" << (*dp)[j] <<  endl;
+//  (*d)[j]   = (*pb)[j] / ( RD * ( (*Tb)[j] + delT ) ) - (*db)[j];
+    (*d)[j]   = pj / ( RD * T0 );
+    (*e) [j]  = CVD * (*d)[j]  * T0;
+cout << "boxsod: p=" << pj << " d=" << (*d)[j] <<  endl;
 
   }
 
