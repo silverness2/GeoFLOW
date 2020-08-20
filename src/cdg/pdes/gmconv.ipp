@@ -235,9 +235,7 @@ cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax
   // Total density RHS:
   // *************************************************************
 
-//cout << "dudt_impl: istage=" << istage_ << " dmax_0 = " << rhoT->amax()  << endl;
   compute_div(*rhoT, v_, urhstmp_, *dudt[DENSITY]); 
-//cout << "dudt_impl: istage=" << istage_ << " rhoT= " << rhoT->amax()  << endl;
   if ( traits_.dofallout ) {
     compute_falloutsrc(*rhoT, qi_, tvi_, -1, urhstmp_, *Ltot);
     GMTK::saxpy<Ftype>(*dudt[DENSITY], 1.0, *Ltot, 1.0);   // += Ltot
@@ -279,7 +277,6 @@ cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax
   geoflow::compute_temp(*e, *rhoT, *tmp2, *T);     // temperature
   compute_qd  (u, *tmp1);                          // dry mass ratio
   geoflow::compute_p(*T, *rhoT, *tmp1, RD, *p);    // partial pressure for dry air
-//cout << "dudt_impl: p=" << *p << endl;
   if ( !traits_.dodry ) {
     geoflow::compute_p(*T, *rhoT, *u[VAPOR], RV, *tmp1); // partial pressure for vapor
    *p += *tmp1;
@@ -293,7 +290,6 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
 
 
   GMTK::saxpy<Ftype>(*tmp1, *e, 1.0, *p, 1.0);     // h = p+e, enthalpy density
-//cout << "dudt_impl: istage=" << istage_ << " hmax = " << tmp1->amax()  << endl;
   compute_div(*tmp1, v_, urhstmp_, *dudt[ENERGY]); // Div (h v);
 
   if ( traits_.dofallout || !traits_.dodry ) {
@@ -342,15 +338,13 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
                                                       // hydrometeor fallout src
      *dudt[j] += *Ltot;                               // += L_tot
     }
-cout << "dudt_impl: istage=" << istage_ << " vz_max_0 = " << dudt[1]->amax()  << endl;
 
     grid_-> deriv(*p, j+1, *tmp2, *tmp1);             // Grad p'
    *tmp1 *= *Mass; 
    *dudt[j] += *tmp1;                                 // += Grad p'
 
-cout << "dudt_impl: istage=" << istage_ << " vz_max_1 = " << dudt[1]->amax()  << endl;
-    ghelm_->opVec_prod(*s_[j], urhstmp_, *tmp1);      // nu Laplacian v_j
-// *tmp1 *= *rhoT;
+    ghelm_->opVec_prod(*v_[j], urhstmp_, *tmp1);      // rhoT nu Laplacian v_j
+   *tmp1 *= *rhoT;
    *dudt[j] -= *tmp1;                                 // -= nu Laplacian s_j
 
     if ( traits_.docoriolis ) {
@@ -366,7 +360,6 @@ cout << "dudt_impl: istage=" << istage_ << " vz_max_1 = " << dudt[1]->amax()  <<
      *tmp1 *= *Mass;             
      *dudt[j] -= *tmp1;                               // -= rho' vec{g} M J
     }
-cout << "dudt_impl: istage=" << istage_ << " vz_max_2 = " << dudt[1]->amax()  << endl;
 
     if ( traits_.bforced && uf[j] != NULLPTR ) {                    
       *tmp1 = *uf[j]; *tmp1 *= *Mass;
