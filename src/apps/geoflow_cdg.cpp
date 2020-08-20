@@ -107,7 +107,7 @@ int main(int argc, char **argv)
     // Initialize PDE:
     //***************************************************
     EH_MESSAGE("geoflow: initialize PDE...");
-    pEqn_->init(utmp_);
+    pEqn_->init(u_, utmp_);
 
     //***************************************************
     // Create the mixer (to update forcing)
