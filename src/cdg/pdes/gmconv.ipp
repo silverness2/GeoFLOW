@@ -342,13 +342,13 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
                                                       // hydrometeor fallout src
      *dudt[j] += *Ltot;                               // += L_tot
     }
+cout << "dudt_impl: istage=" << istage_ << " vz_max_0 = " << dudt[1]->amax()  << endl;
 
-//  grid_->wderiv(*p, j+1, TRUE, *tmp2, *tmp1);       // Grad p'
-// *tmp1 *= *Jac; 
     grid_-> deriv(*p, j+1, *tmp2, *tmp1);             // Grad p'
    *tmp1 *= *Mass; 
    *dudt[j] += *tmp1;                                 // += Grad p'
 
+cout << "dudt_impl: istage=" << istage_ << " vz_max_1 = " << dudt[1]->amax()  << endl;
     ghelm_->opVec_prod(*s_[j], urhstmp_, *tmp1);      // nu Laplacian v_j
 // *tmp1 *= *rhoT;
    *dudt[j] -= *tmp1;                                 // -= nu Laplacian s_j
@@ -366,6 +366,7 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
      *tmp1 *= *Mass;             
      *dudt[j] -= *tmp1;                               // -= rho' vec{g} M J
     }
+cout << "dudt_impl: istage=" << istage_ << " vz_max_2 = " << dudt[1]->amax()  << endl;
 
     if ( traits_.bforced && uf[j] != NULLPTR ) {                    
       *tmp1 = *uf[j]; *tmp1 *= *Mass;
