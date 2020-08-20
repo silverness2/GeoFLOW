@@ -15,9 +15,7 @@
   "IO_implementation" : "gio",
   "terrain_type"      : "none",
   "initstate_boxdrybubble": {
-    "T_surf"     : 300.0,
     "T_pert"     : -15.0,
-    "P0"         : 1000.0,
     "x_center"   : [0, 3000.0, 1000.0],
     "x_width"    : [4000.0, 2000.0, 2000.0]
   },
@@ -54,6 +52,8 @@
     "nice"            : 0,
     "use_forcing"     : false,
     "forcing_comp"    : [0, 1, 2]
+    "T_surf"          : 300.0,
+    "P0"              : 1000.0,
   },
   "grid_box": {
     "grid_name" : "grid_box",
