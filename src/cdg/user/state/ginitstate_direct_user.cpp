@@ -692,23 +692,25 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
   for ( auto j=0; j<nxy; j++ ) { 
     x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
     if ( GDIM == 3 ) z = (*xnodes)[2][j];
-    (*Tb)[j]  = Ts - GG*z/CPD;
-//  (*Pb)[j]  = P0*pow((*Tb)[j]/Ts,CPD/RD);
-    (*Pb)[j]  = P0*pow((*Tb)[j]/Ts,RD/CPD);
+    r = GDIM == 3 ? z : y;
+    (*Tb)[j]  = Ts - GG*r/CPD;
+    (*Pb)[j]  = P0*pow((*Tb)[j]/Ts,CPD/RD);
+//  (*Pb)[j]  = P0*pow((*Tb)[j]/Ts,RD/CPD);
     (*db)[j]  = (*Pb)[j] / ( RD * (*Tb)[j] );
     L         = pow((x-xc[0])/xr[0],2) + pow((y-xc[1])/xr[1],2);
     L        += GDIM == 3 ? pow((z-xc[2])/xr[2],2) : 0.0;
     L         = sqrt(L);
     delT      = L <= 1.0 ? 2.0*T0*pow(cos(0.5*PI*L),2.0) : 0.0;
-//  pj        = P0*pow(((*Tb)[j]+delT)/Ts,CPD/RD);
+    pj        = P0*pow(((*Tb)[j]+delT)/Ts,CPD/RD);
 //  pj        = P0*pow(((*Tb)[j]+delT)/Ts,RD/CPD);
-    pj        = (*Pb)[j];
-delT      = 0.0;
-    (*dp)[j]  = (*Pb)[j] / ( RD * ( (*Tb)[j] + delT ) ) - (*db)[j];
-//  (*dp)[j]  = pj / ( RD * ( (*Tb)[j] + delT ) ); // - (*db)[j];
-delT      = 0.0;
-dj        = (*dp)[j];
-    (*e) [j]  = CVD * dj  * ( (*Tb)[j] + delT ); // e = Cv d (T+delT);
+#if 1
+    (*dp)[j]  = pj / ( RD * ( (*Tb)[j] + delT ) ); // - (*db)[j];
+    (*e) [j]  = CVD * dj * ( (*Tb)[j] + delT ); // e = Cv d (T+delT);
+#else
+    delT      = 0.0;
+    (*dp)[j]  = (*db)[j];
+    (*e) [j]  = CVD * (*dp)[j] * ( (*Tb)[j] + delT ); // e = Cv d (T+delT);
+#endif
 (*Pb)[j]  = 0.0;
 (*db)[j]  = 0.0;
 
