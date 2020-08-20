@@ -21,6 +21,7 @@ bInit_                   (FALSE),
 bforced_                 (FALSE),
 bsteptop_                (FALSE),
 bvterm_                  (FALSE),
+bbase_computed_          (FALSE),
 istage_                      (0),
 nevolve_                     (0),
 nhydro_                      (0),
@@ -398,6 +399,8 @@ void GMConv<TypePack>::step_impl(const Time &t, State &uin, State &uf, State &ub
   GBOOL bret;
 
   assert(bInit_);
+
+  compute_base(uin); // compute base state, if necessary
 
   // If there's a top-of-the-timestep callback, 
   // call it here:
@@ -1243,6 +1246,60 @@ void GMConv<TypePack>::compute_pe(StateComp &rhoT, State &qi, State &tvi, State 
    r.pointProd(rhoT);                  // rhoT Sum_i q_i vec{g}.vec{W}_i
 
 } // end of method compute_pe
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : compute_base
+// DESC   : Compute base state. Is grid-dependent.
+// RETURNS: none.
+//**********************************************************************************
+template<typename TypePack>
+void GMConv<TypePack>::compute_base(State &u)
+{
+   GString    serr = "GMConv<TypePack>::compute_base: ";
+   Ftype      x, y, z;
+   Ftype      r, T;
+   StateComp *d, *p;
+   GTVector<GTVector<Ftype>> 
+             *xnodes = &grid_->xNodes();
+
+   if ( !traits_.usebase ) return;
+
+   GGridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
+   GGridBox  *box  = dynamic_cast <GGridBox*>(grid_);
+
+   d = u[BASESTATE];
+   p = u[BASESTATE+1];
+   // Specify components for Cartesian grid:
+   if ( box != NULLPTR ) {
+     // In Cartesian coords, select the 'z' direction
+     // as preferred 'fallout' direction. In 2d, this
+     // will be the 2-coord; in 3d, the 3-coord:
+     for ( auto j=0; j<(*xnodes)[0].size(); j++ ) {
+       x = (*xnodes)[0][j]; y = (*xnodes)[1][j];
+       if ( GDIM == 3 ) z = (*xnodes)[2][j];
+       r        = GDIM == 3 ? z : y;
+       T        = traits_.Ts_base - GG*r/CPD;
+       (*p)[j]  = traits_.P0_base*pow(T/traits_.Ts_base,CPD/RD);
+       (*d)[j]  = (*p)[j] / ( RD * T );
+     }
+     return;
+   }
+
+   // Specify state for spherical grid. Here,
+   // the preferred direction is along radial direction:
+   for ( auto j=0; j<(*xnodes)[0].size(); j++ ) {
+     x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
+     r        = sqrt(x*x + y*y + z*z);
+     T        = traits_.Ts_base - GG*r/CPD;
+     (*p)[j]  = traits_.P0_base*pow(T/traits_.Ts_base,CPD/RD);
+     (*d)[j]  = (*p)[j] / ( RD * T );
+   }
+
+   bbase_computed_ = TRUE;
+
+} // end of method compute_base
 
 
 //**********************************************************************************

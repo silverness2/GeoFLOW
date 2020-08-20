@@ -139,6 +139,7 @@ public:
           GINT            itorder     = 2;
           GINT            inorder     = 2;
           GStepperType    isteptype   = GSTEPPER_EXRK;
+          GFTYPE          Ts          = 300.0;  // base state surf temp
           GFTYPE          courant     = 0.5;    // Courant factor
           GFTYPE          nu          = 0.0;    // viscosity constant
           GTVector<GINT>  iforced;              // state comps to force
@@ -199,6 +200,7 @@ inline  void                compute_vpref(StateComp &tv, State &W);
 inline  void                compute_vpref(StateComp &tv, GINT idir, StateComp &W);
 inline  void                assign_helpers(const State &u, const State &uf);
 inline  void                compute_pe   (StateComp &rhoT, State &qi, State &tvi, State &utmp, StateComp      &r);
+        void                compute_base  (State &u);
 inline  GINT                szrhstmp();
  
 
@@ -206,6 +208,7 @@ inline  GINT                szrhstmp();
         GBOOL               bforced_;       // use forcing vectors
         GBOOL               bsteptop_;      // is there a top-of-step callback?
         GBOOL               bvterm_;        // teminal vel. computed?
+        GBOOL               bbase_computed_;// base state computed?
         GINT                istage_;        // RK stage number
         GINT                nevolve_;       // num StateComp's evolved
         GINT                nhydro_;        // num hydrometeors
