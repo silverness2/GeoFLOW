@@ -88,6 +88,9 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
                                   + (ctraits.usebase ? 2 : 0);
                 ctraits.bconserved= eqn_ptree.getValue<bool>  ("bconserved",false);
                 ctraits.bforced   = eqn_ptree.getValue<bool>  ("use_forcing",false);
+                ctraits.Ts_base   = eqn_ptree.getValue<double>("T_surf");
+                ctraits.P0_base   = eqn_ptree.getValue<double>("P0");
+                ctraits.P0_base *= 100.0; // convert from mb to Pa
                 ctraits.variabledt= stp_ptree.getValue<bool>  ("variable_dt",false);
                 ctraits.bvarvterm = stp_ptree.getValue<bool>  ("variable_term_vel",false);
                 ctraits.itorder   = stp_ptree.getValue<int>   ("time_deriv_order",4);
@@ -95,9 +98,6 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
                 ctraits.courant   = stp_ptree.getValue<double>("courant",0.5);
                 ctraits.ssteptype = stp_ptree.getValue<std::string>
                                                              ("stepping_method","GSTEPPER_EXRK");
-                ctraits.Ts_base   = stp_ptree.getValue<double>("T_surf");
-                ctraits.P0_base   = stp_ptree.getValue<double>("P0");
-                ctraits.P0_base *= 100.0; // convert from mb to Pa
                 ctraits.nu        = dis_ptree.getValue<double>("nu");
                 for ( auto i=0; i<GDIM; i++ ) default_comps.push_back(i);
                 comps            = eqn_ptree.getArray<int>   ("forcing_comp",default_comps);
