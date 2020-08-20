@@ -712,8 +712,6 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
     (*dp)[j]  = 0.0;
     (*e) [j]  = CVD * (*db)[j] * ( (*Tb)[j] + delT ); // e = Cv d (T+delT);
 #endif
-//(*Pb)[j]  = 0.0;
-//(*db)[j]  = 0.0;
 
   }
 //cout << "boxdrybubble: db=" << *db << endl;
