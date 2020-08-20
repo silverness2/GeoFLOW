@@ -702,12 +702,13 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
     (*Tb)[j]  = (*pb)[j] / ( RD * (*db)[j] );
     pj        = P0*pow(((*Tb)[j]+delT)/Ts,CPD/RD);
 //  pj        = P0*pow(((*Tb)[j]+delT)/Ts,RD/CPD);
-#if 0
+#if 1
     pj        = (*pb)[j]; 
     (*d)[j]   = pj / ( RD * ( (*Tb)[j] + delT ) ) - (*db)[j];
     dj        = (*d)[j] + (*db)[j];
     (*e)[j]   = CVD * dj * ( (*Tb)[j] + delT ); // e = Cv d (T+delT);
 #else
+    // Check that hydrostatic state is maintained:
     (*d)[j]   = 0.0;
     (*e)[j]   = CVD * (*db)[j] * ( (*Tb)[j] ); // e = Cv d (T);
 #endif
