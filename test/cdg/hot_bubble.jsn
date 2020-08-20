@@ -51,7 +51,7 @@
     "nliq"            : 0,
     "nice"            : 0,
     "use_forcing"     : false,
-    "forcing_comp"    : [0, 1, 2]
+    "forcing_comp"    : [0, 1, 2],
     "T_surf"          : 300.0,
     "P0"              : 1000.0,
   },
