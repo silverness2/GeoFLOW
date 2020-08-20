@@ -704,7 +704,7 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
     pj        = P0*pow(((*Tb)[j]+delT)/Ts,CPD/RD);
 //  pj        = P0*pow(((*Tb)[j]+delT)/Ts,RD/CPD);
 #if 1
-pj        = (*Pb)[j];
+    pj        = (*Pb)[j]; 
     (*dp)[j]  = pj / ( RD * ( (*Tb)[j] + delT ) ) - (*db)[j];
     dj        = (*dp)[j] + (*db)[j];
     (*e) [j]  = CVD * dj * ( (*Tb)[j] + delT ); // e = Cv d (T+delT);
