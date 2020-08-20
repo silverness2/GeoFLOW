@@ -345,7 +345,7 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
 
     ghelm_->opVec_prod(*v_[j], urhstmp_, *tmp1);      // rhoT nu Laplacian v_j
    *tmp1 *= *rhoT;
-   *dudt[j] -= *tmp1;                                 // -= nu Laplacian s_j
+   *dudt[j] += *tmp1;                                 // -= nu Laplacian s_j
 
     if ( traits_.docoriolis ) {
       GMTK::cross_prod_s(traits_.omega, s_, j+1, *tmp1);
