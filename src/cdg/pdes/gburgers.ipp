@@ -406,7 +406,7 @@ void GBurgers<TypePack>::step_exrk(const Time &t, State &uin, State &uf, State &
 // RETURNS: none.
 //**********************************************************************************
 template<typename TypePack>
-void GBurgers<TypePack>::init_impl(State &tmp)
+void GBurgers<TypePack>::init_impl(State &u, State &tmp)
 {
   GString serr = "GBurgers<TypePack>::init: ";
 

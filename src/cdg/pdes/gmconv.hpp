@@ -177,7 +177,7 @@ protected:
                             {return traits_.nstate;}
         std::vector<GINT>  &iforced_impl()                                // required tmp size
                             {return stdiforced_;}
-        void                init_impl(State &tmppool);                    // initialize 
+        void                init_impl(State &u, State &tmppool);                    // initialize 
                                                                           // Has dynamic dt?
         void                dt_impl(const Time &t, State &u, Time &dt);   // Get dt
         void                apply_bc_impl(const Time &t, State &u, 
@@ -201,7 +201,7 @@ inline  void                compute_vpref(StateComp &tv, State &W);
 inline  void                compute_vpref(StateComp &tv, GINT idir, StateComp &W);
 inline  void                assign_helpers(const State &u, const State &uf);
 inline  void                compute_pe   (StateComp &rhoT, State &qi, State &tvi, State &utmp, StateComp      &r);
-        void                compute_base  ();
+        void                compute_base  (State &u);
 inline  GINT                szrhstmp();
  
 
@@ -209,7 +209,6 @@ inline  GINT                szrhstmp();
         GBOOL               bforced_;       // use forcing vectors
         GBOOL               bsteptop_;      // is there a top-of-step callback?
         GBOOL               bvterm_;        // teminal vel. computed?
-        GBOOL               bbase_assigned_;// base state assigned?
         GINT                istage_;        // RK stage number
         GINT                nevolve_;       // num StateComp's evolved
         GINT                nhydro_;        // num hydrometeors

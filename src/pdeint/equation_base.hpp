@@ -140,8 +140,8 @@ public:
 	 *
 	 * \param[in]     utmp  tmp state vectors
 	 */
-	void init(State& utmp){
-		this->init_impl(utmp);
+	void init(State &u, State& utmp){
+		this->init_impl(u, utmp);
 	}
 
   	/** Return state size 
@@ -220,7 +220,7 @@ protected:
 	/**
 	 * Must be provided by implementation
 	 */
-	virtual void init_impl(State& utmp) = 0;
+	virtual void init_impl(State &u, State& utmp) = 0;
   
 	/**
 	 * Must be provided by implementation

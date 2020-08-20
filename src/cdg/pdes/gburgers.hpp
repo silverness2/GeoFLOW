@@ -121,7 +121,7 @@ protected:
         std::vector<GINT>  &iforced_impl()                                // required force comps
                             {return stdiforced_;}
 
-        void                init_impl(State &tmppool);                    // initialize 
+        void                init_impl(State &u, State &tmppool);          // initialize 
         GTVector<GFTYPE>    &get_nu() { return nu_; };                    // Set nu/viscosity
         GBOOL               has_dt_impl() const {return bvariabledt_;}    // Has dynamic dt?
         void                dt_impl(const Time &t, State &u, Time &dt);   // Get dt
