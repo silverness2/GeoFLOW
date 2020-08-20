@@ -976,7 +976,6 @@ void GGridBox::config_bdy(const PropertyTree &ptree,
       for ( auto i=0; i<igbdyf[k].size(); i++ ) this->igbdy_[nind++] = igbdyf[k][i];
     }
     if ( "uniform" == bdyclass ) { // uniform bdy conditions
-cout << "config_bdy: extracting data from bdy tree: " << sbdy << endl;
       geoflow::get_bdy_block(bdytree, stblock);
       if ( stblock.tbdy.contains(GBDY_PERIODIC) ) {
         assert(stblock.tbdy.onlycontains(GBDY_PERIODIC) && "All variables must be GBDY_PERIODIC");
@@ -987,7 +986,6 @@ cout << "config_bdy: extracting data from bdy tree: " << sbdy << endl;
       }
       // May have different uniform bdys for different state comps:
       for ( auto k=0; k<stblock.tbdy.size() && !bperiodic; k++ ) {
-cout << "config_bdy: building bc for bdy cond " << k << endl;
         base_ptr = GUpdateBdyFactory<BdyTypePack>::build(ptree, sbdy, *this,  j,
                                             stblock.tbdy[k], stblock.istate[k], itmp);
         igbdyft[j] = stblock.tbdy[k];
