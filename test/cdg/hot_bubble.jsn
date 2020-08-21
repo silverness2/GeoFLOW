@@ -116,7 +116,7 @@
     "cadence_type"       : "time",
     "cycle_interval"     : 100,
     "time_interval"      : 10.0,
-    "state_names"        : ["u1", "u2", "e", "d"],
+    "state_names"        : ["s1", "s2", "e", "d"],
     "grid_names"         : ["xgrid", "ygrid", "zgrid"],
     "agg_state_name"     : "u",
     "agg_grid_name "     : "grid",
