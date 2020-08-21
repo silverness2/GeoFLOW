@@ -2966,113 +2966,113 @@ void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GStrin
 GINT                        ib, nxy;
 GTVector<GTVector<GFTYPE>*> tmp(3);
 
-if      ( "div"  == sop ) { // operates on a vector field...
-// produces a scalar field:
-nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
-assert(utmp .size() >= 1   && "Insufficient temp space");
-assert(uin  .size() >= nxy && "Insufficient no. input components");
-assert(uout .size() >= 1   && "Incorrect no. output components");
-GMTK::grad(grid, *uin[0], 1, utmp, *uout[0]);
-iuout.resize(1); iuout[0] = 0;
-for ( auto j=1; j<nxy; j++ ) {
-GMTK::grad(grid, *uin[j], j+1, utmp, *utmp[utmp.size()-1]);
-*uout[0] += *utmp[utmp.size()-1];
-}
-}
-else if ( "grad" == sop ) {  // operates on a scalar field...
-// produces a vector field:
-nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
-assert(utmp .size() >= 1   && "Insufficient temp space");
-assert(uin  .size() >= 1   && "Incorrect no. input components");
-assert(uout .size() >= nxy && "Insufficient no. output components");
-iuout.resize(nxy); 
-for ( auto j=0; j<nxy; j++ ) {
-GMTK::grad(grid, *uin[0], j+1, utmp, *uout[j]);
-iuout[j] = j; 
-}
-}
-else if ( "gradmag" == sop ) {  // operates on a scalar field...
-// produces a scalar field:
-nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
-assert(utmp .size() >= 2   && "Insufficient temp space");
-assert(uin  .size() >= 1   && "Incorrect no. input components");
-assert(uout .size() >= 1   && "Insufficient no. output components");
-iuout.resize(1); iuout[0] = 0; 
-tmp[0] = utmp[0]; tmp[1] = utmp[1];
-GMTK::grad(grid, *uin[0], 1, tmp, *uout[0]);
-uout[0]->rpow(2);
-for ( auto j=1; j<nxy; j++ ) {
-GMTK::grad(grid, *uin[0], j+1, tmp, *tmp[1]);
-tmp[1]->rpow(2);
-*uout[0] += *tmp[1];
-}
-uout[0]->rpow(0.5);
-}
-else if ( "curl" == sop ) { // operates on a vector field...
-// produces a vector field:
-nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
-ib = 1; 
-if ( GDIM == 2 && grid.gtype() != GE_2DEMBEDDED ) { nxy = 1; ib = 3; }
-assert(utmp .size() >= 2   && "Insufficient temp space");
-assert(uin  .size() >= nxy && "Insufficient no. input components");
-assert(uout .size() >= nxy && "Insufficient no. output components");
-iuout.resize(nxy); 
-for ( auto j=0; j<nxy; j++ ) {
-GMTK::curl(grid, uin, j+ib, utmp, *uout[j]);
-iuout[j] = j; 
-}
-}
-else if ( "curlmag" == sop ) { // operates on a vector field...
-// produces a scalar field:
-nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
-ib = 1; 
-if ( GDIM == 2 && grid.gtype() != GE_2DEMBEDDED ) { nxy = 1; ib = 3; }
-assert(utmp .size() >= 3   && "Insufficient temp space");
-assert(uin  .size() >= nxy && "Insufficient no. input components");
-assert(uout .size() >= 1   && "Insufficient no. output components");
-iuout.resize(1); iuout[0] = 0; 
-tmp[0] = utmp[0]; tmp[1] = utmp[1]; tmp[2] = utmp[2];
-GMTK::curl(grid, uin, ib, utmp, *uout[0]);
-uout[0]->rpow(2);
-for ( auto j=1; j<nxy; j++ ) {
-GMTK::curl(grid, uin, j+ib, tmp, *tmp[2]);
-tmp[2]->rpow(2);
-*uout[0] += *tmp[2];
-}
-uout[0]->rpow(0.5);
-}
-else if ( "vmag" == sop ) { // operates on a vector field...
-// produces a scalar field:
-nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
-assert(utmp .size() >= 1   && "Insufficient temp space");
-assert(uin  .size() >= nxy && "Insufficient no. input components");
-assert(uout .size() >= 1   && "Insufficient no. output components");
-iuout.resize(1); iuout[0] = 0; 
-tmp[0] = utmp[0]; ;
-*uout[0] = *uin[0]; uout[0]->rpow(2);
-for ( auto j=1; j<nxy; j++ ) {
-*tmp[0] = *uin[j]; tmp[0]->rpow(2);
-*uout[0] += *tmp[0];
-}
-uout[0]->rpow(0.5);
-}
-else if ( "lapderivs" == sop ) { // operates on a scalar field
-// produces a vector field of each termin Laplacnin:
-nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
-assert(utmp .size() >= 3   && "Insufficient temp space");
-assert(uin  .size() >= 1   && "Insufficient no. input components");
-assert(uout .size() >= nxy && "Insufficient no. output components");
-for ( auto j=0; j<3; j++ ) tmp[j] = utmp[j];
-iuout.resize(nxy); 
-for ( auto j=0; j<nxy; j++ ) {
-GMTK::grad(grid, *uin[0], j+1, tmp , *tmp[2]);
-GMTK::grad(grid, *tmp[2], j+1, utmp, *uout[j]);
-iuout[j] = j; 
-}
-}
-else {
-assert(FALSE && "Invalid math operation");
-}
+  if      ( "div"  == sop ) { // operates on a vector field...
+    // produces a scalar field:
+    nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+    assert(utmp .size() >= 1   && "Insufficient temp space");
+    assert(uin  .size() >= nxy && "Insufficient no. input components");
+    assert(uout .size() >= 1   && "Incorrect no. output components");
+    GMTK::grad(grid, *uin[0], 1, utmp, *uout[0]);
+    iuout.resize(1); iuout[0] = 0;
+    for ( auto j=1; j<nxy; j++ ) {
+      GMTK::grad(grid, *uin[j], j+1, utmp, *utmp[utmp.size()-1]);
+      *uout[0] += *utmp[utmp.size()-1];
+    }
+  }
+  else if ( "grad" == sop ) {  // operates on a scalar field...
+    // produces a vector field:
+  nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+    assert(utmp .size() >= 1   && "Insufficient temp space");
+    assert(uin  .size() >= 1   && "Incorrect no. input components");
+    assert(uout .size() >= nxy && "Insufficient no. output components");
+    iuout.resize(nxy); 
+      for ( auto j=0; j<nxy; j++ ) {
+      GMTK::grad(grid, *uin[0], j+1, utmp, *uout[j]);
+      iuout[j] = j; 
+    }
+  }
+  else if ( "gradmag" == sop ) {  // operates on a scalar field...
+    // produces a scalar field:
+    nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+    assert(utmp .size() >= 2   && "Insufficient temp space");
+    assert(uin  .size() >= 1   && "Incorrect no. input components");
+    assert(uout .size() >= 1   && "Insufficient no. output components");
+    iuout.resize(1); iuout[0] = 0; 
+    tmp[0] = utmp[0]; tmp[1] = utmp[1];
+    GMTK::grad(grid, *uin[0], 1, tmp, *uout[0]);
+    uout[0]->rpow(2);
+    for ( auto j=1; j<nxy; j++ ) {
+      GMTK::grad(grid, *uin[0], j+1, tmp, *tmp[1]);
+      tmp[1]->rpow(2);
+      *uout[0] += *tmp[1];
+    }
+    uout[0]->rpow(0.5);
+  }
+  else if ( "curl" == sop ) { // operates on a vector field...
+    // produces a vector field:
+    nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+    ib = 1; 
+    if ( GDIM == 2 && grid.gtype() != GE_2DEMBEDDED ) { nxy = 1; ib = 3; }
+    assert(utmp .size() >= 2   && "Insufficient temp space");
+    assert(uin  .size() >= nxy && "Insufficient no. input components");
+    assert(uout .size() >= nxy && "Insufficient no. output components");
+    iuout.resize(nxy); 
+    for ( auto j=0; j<nxy; j++ ) {
+      GMTK::curl(grid, uin, j+ib, utmp, *uout[j]);
+      iuout[j] = j; 
+    }
+  }
+  else if ( "curlmag" == sop ) { // operates on a vector field...
+    // produces a scalar field:
+    nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+    ib = 1; 
+    if ( GDIM == 2 && grid.gtype() != GE_2DEMBEDDED ) { nxy = 1; ib = 3; }
+    assert(utmp .size() >= 3   && "Insufficient temp space");
+    assert(uin  .size() >= nxy && "Insufficient no. input components");
+    assert(uout .size() >= 1   && "Insufficient no. output components");
+    iuout.resize(1); iuout[0] = 0; 
+    tmp[0] = utmp[0]; tmp[1] = utmp[1]; tmp[2] = utmp[2];
+    GMTK::curl(grid, uin, ib, utmp, *uout[0]);
+    uout[0]->rpow(2);
+    for ( auto j=1; j<nxy; j++ ) {
+      GMTK::curl(grid, uin, j+ib, tmp, *tmp[2]);
+      tmp[2]->rpow(2);
+      *uout[0] += *tmp[2];
+    }
+    uout[0]->rpow(0.5);
+  }
+  else if ( "vmag" == sop ) { // operates on a vector field...
+    // produces a scalar field:
+    nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+    assert(utmp .size() >= 1   && "Insufficient temp space");
+    assert(uin  .size() >= nxy && "Insufficient no. input components");
+    assert(uout .size() >= 1   && "Insufficient no. output components");
+    iuout.resize(1); iuout[0] = 0; 
+    tmp[0] = utmp[0]; ;
+    *uout[0] = *uin[0]; uout[0]->rpow(2);
+    for ( auto j=1; j<nxy; j++ ) {
+      *tmp[0] = *uin[j]; tmp[0]->rpow(2);
+      *uout[0] += *tmp[0];
+    }
+    uout[0]->rpow(0.5);
+  }
+  else if ( "lapderivs" == sop ) { // operates on a scalar field
+    // produces a vector field of each termin Laplacnin:
+    nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+    assert(utmp .size() >= 3   && "Insufficient temp space");
+    assert(uin  .size() >= 1   && "Insufficient no. input components");
+    assert(uout .size() >= nxy && "Insufficient no. output components");
+    for ( auto j=0; j<3; j++ ) tmp[j] = utmp[j];
+    iuout.resize(nxy); 
+    for ( auto j=0; j<nxy; j++ ) {
+      GMTK::grad(grid, *uin[0], j+1, tmp , *tmp[2]);
+      GMTK::grad(grid, *tmp[2], j+1, utmp, *uout[j]);
+      iuout[j] = j; 
+    }
+  }
+  else {
+  assert(FALSE && "Invalid math operation");
+  }
 
 } // end of method domathop 
 
