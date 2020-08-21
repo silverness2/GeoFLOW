@@ -138,11 +138,24 @@ public:
 
 	/** Initialize solver
 	 *
+	 * \param[in]     u     state vectors
 	 * \param[in]     utmp  tmp state vectors
 	 */
 	void init(State &u, State& utmp){
 		this->init_impl(u, utmp);
 	}
+
+	/** Compute derived quantity 
+	 *
+	 * \param[in]     u     state vector
+	 * \param[in]     sop   operation/quantity to compute
+	 * \param[in]     utmp  tmp state vectors
+	 * \param[out]    uout  resultant quantity
+	 * \param[out]    iuout indices pointing to quantity(-ies) in uout
+	 */
+	void compute_derived(const State& u, const std::string sop, State& utmp, State& uout, std::vector<int>& iuout){
+                 this->compute_derived_impl(u, sop, utmp, uout, iuout);
+        }
 
   	/** Return state size 
          * 
@@ -220,7 +233,12 @@ protected:
 	/**
 	 * Must be provided by implementation
 	 */
-	virtual void init_impl(State &u, State& utmp) = 0;
+	virtual void init_impl(State& u, State& utmp) = 0;
+  
+	/**
+	 * Must be provided by implementation
+	 */
+	virtual void compute_derived_impl(const State& u, const std::string sop, State& utmp, State& uout, std::vector<int>& iuout) = 0;
   
 	/**
 	 * Must be provided by implementation
