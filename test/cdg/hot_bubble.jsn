@@ -89,6 +89,26 @@
     "wtask"    : 5,
     "wfile"    : 2048
   },
+  "temp": {
+    "names"       : ["T"],
+    "mathop"      : "temp"
+  },
+  "ptemp": {
+    "names"       : ["theta"],
+    "mathop"      : "ptemp"
+  },
+  "press": {
+    "names"       : ["p"],
+    "mathop"      : "press"
+  },
+  "den": {
+    "names"       : ["dtotal"],
+    "mathop"      : "den"
+  },
+  "vel": {
+    "names"       : ["v1","v2"],
+    "mathop"      : "vel"
+  },
   "gio_observer": {
     "observer_name"      : "gio_observer",
     "idir"               : "outs",
@@ -96,12 +116,12 @@
     "cadence_type"       : "time",
     "cycle_interval"     : 100,
     "time_interval"      : 10.0,
-    "state_index"        : [0],
     "state_names"        : ["u1", "u2", "e", "d"],
     "grid_names"         : ["xgrid", "ygrid", "zgrid"],
     "agg_state_name"     : "u",
     "agg_grid_name "     : "grid",
-    "derived_quantities" : []
+    "derived_quantities"       : [],
+    "state_derived_quantities" : ["temp","press","vel","ptemp","den"]
   },
   "global_diag_basic": {
     "observer_name"      : "global_diag_basic",
