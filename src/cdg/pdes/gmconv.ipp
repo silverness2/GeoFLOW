@@ -1410,7 +1410,7 @@ void GMConv<TypePack>::compute_derived_impl(const State &u, GString sop,
                                             State &utmp, State &uout, 
                                             std::vector<GINT> &iuout)
 { 
-  Ftype  fact1, fact2;
+  Ftype  fact1, fact2, tb;
   State  tu(1);
 
   if      ( "temp"     == sop ) { // temperature
@@ -1449,6 +1449,14 @@ void GMConv<TypePack>::compute_derived_impl(const State &u, GString sop,
     // Note: Do we need to change definition for moist dynamics?
     for ( auto j=0; j<uout[0]->size(); j++ ) {
       (*uout[0])[j] = (*utmp[3])[j] * pow(fact2*(*uout[0])[j], fact1);
+    }
+    if ( traits_.usebase ) { // subtract base potl temp
+      // theta_base = P0/(RD *rho_base) (P_base/P0)^(1-R/Cp)
+      for ( auto j=0; j<uout[0]->size(); j++ ) {
+        tb = (traits_.P0_base/(RD*(*u[BASESTATE])[j])) 
+           * pow((*u[BASESTATE+1])[j]/traits_.P0_base,1.0+fact1);
+        (*uout[0])[j] -= tb;
+      }
     }
 
   }
