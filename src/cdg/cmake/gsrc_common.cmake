@@ -29,7 +29,6 @@
  set(CDG_SEM_SRC    ${GHOME}/sem/gelem_base.cpp
                     ${GHOME}/sem/gmass.cpp
                     ${GHOME}/sem/ghelmholtz.cpp
-                    ${GHOME}/sem/gadvect.cpp
     )
 
  set(CDG_USER_SRC  
