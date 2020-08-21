@@ -1415,10 +1415,10 @@ void GMConv<TypePack>::compute_derived_impl(const State &u, GString sop,
 
   if      ( "temp"     == sop ) { // temperature
     assert(uout .size() >= 1   && "Incorrect no. output components");
-    assert(utmp .size() >= 3   && "Incorrect no. tmp components");
+    assert(utmp .size() >= 2   && "Incorrect no. tmp components");
     compute_cv(u, *utmp[0], *utmp[1]);                      // Cv
-   *uout[0] = *u[DENSITY];
-    if ( traits_.usebase ) *uout[0] += *u[BASESTATE];       // total density
+   *utmp[0] = *u[DENSITY];
+    if ( traits_.usebase ) *utmp[0] += *u[BASESTATE];       // total density
     geoflow::compute_temp(*u[ENERGY], *utmp[0], *utmp[1], *uout[0]);  // temperature
     iuout.resize(1); iuout[0] = 0;
   }
@@ -1426,13 +1426,13 @@ void GMConv<TypePack>::compute_derived_impl(const State &u, GString sop,
     assert(uout .size() >= 1   && "Incorrect no. output components");
     assert(utmp .size() >= 4   && "Incorrect no. tmp components");
     compute_cv(u, *utmp[0], *utmp[1]);                     // Cv
-   *utmp[3] = *u[DENSITY];
-    if ( traits_.usebase ) *utmp[3] += *u[BASESTATE];       // total density
-    geoflow::compute_temp(*u[ENERGY], *utmp[0], *utmp[1], *utmp[2]);  // temperature
+   *utmp[2] = *u[DENSITY];
+    if ( traits_.usebase ) *utmp[2] += *u[BASESTATE];       // total density
+    geoflow::compute_temp(*u[ENERGY], *utmp[2], *utmp[1], *utmp[3]);  // temperature
     compute_qd(u, *utmp[0]);
-    geoflow::compute_p(*utmp[2], *utmp[3], *utmp[0], RD, *uout[0]);
+    geoflow::compute_p(*utmp[3], *utmp[2], *utmp[0], RD, *uout[0]);
     if ( !traits_.dodry ) {
-      geoflow::compute_p(*utmp[2], *utmp[3], *u[VAPOR], RV, *utmp[0]);
+      geoflow::compute_p(*utmp[3], *utmp[2], *u[VAPOR], RV, *utmp[0]);
      *uout[0] += *utmp[0];
     }
     iuout.resize(1); iuout[0] = 0;
