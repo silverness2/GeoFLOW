@@ -2963,8 +2963,8 @@ template<>
 void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GString sop, GTVector<GTVector<GFTYPE>*> &utmp, GTVector<GTVector<GFTYPE>*> &uout, GTVector<GINT> &iuout)
 {
 
-GINT                        ib, nxy;
-GTVector<GTVector<GFTYPE>*> tmp(3);
+  GINT                        ib, nxy;
+  GTVector<GTVector<GFTYPE>*> tmp(3);
 
   if      ( "div"  == sop ) { // operates on a vector field...
     // produces a scalar field:
