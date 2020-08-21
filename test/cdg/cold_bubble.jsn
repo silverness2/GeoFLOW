@@ -95,7 +95,7 @@
   },
   "ptemp": {
     "names"       : ["theta"],
-    "mathop"      : "dptemp"
+    "mathop"      : "ptemp"
   },
   "press": {
     "names"       : ["p"],
