@@ -72,9 +72,11 @@ public:
                 std::vector<std::string>
                           grid_names;                 // file/ref names for each grid comp
                 std::string 
-                          agg_grid_name          ;   // accumulated grid filename
+                          agg_grid_name          ;    // accumulated grid filename
                 std::vector<dqTraits>
                           derived_quantities;         // derived types: [ [type, function, output name],..]
+                std::vector<dqTraits>
+                          state_derived_quantities;   // derived types: [ [type, function, output name],..]
                 size_t    start_ocycle   = 0  ;       // starting output cycle 
 //              size_t    start_cycle    = 0  ;       // starting evol cycle 
                 size_t    cycle_interval = 10 ;       // cycle interval for observation

@@ -1394,3 +1394,97 @@ GINT GMConv<TypePack>::tmp_size_impl()
 } // end of method tmp_size_impl
 
 
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : compute_derived_impl
+// DESC   : Compute quantities derived from state
+// ARGS   : u     : input state (full)
+//          sop   : operation/quantity to compute
+//          utmp  : tmp space
+//          uout  : resultant quantity
+//          iuout : indices in uout used to contain result
+// RETURNS: none.
+//**********************************************************************************
+template<typename TypePack>
+void GMConv<TypePack>::compute_derived_impl(const State &u, GString sop,
+                                            State &utmp, State &uout, 
+                                            std::vector<GINT> &iuout)
+{ 
+  Ftype  fact1, fact2;
+  State  tu(1);
+
+  if      ( "temp"     == sop ) { // temperature
+    assert(uout .size() >= 1   && "Incorrect no. output components");
+    assert(utmp .size() >= 3   && "Incorrect no. tmp components");
+    compute_cv(u, *utmp[0], *utmp[1]);                      // Cv
+   *uout[0] = *u[DENSITY];
+    if ( traits_.usebase ) *uout[0] += *u[BASESTATE];       // total density
+    geoflow::compute_temp(*u[ENERGY], *utmp[0], *utmp[1], *uout[0]);  // temperature
+    iuout.resize(1); iuout[0] = 0;
+  }
+  else if ( "press"    == sop ) { // pressure (total)
+    assert(uout .size() >= 1   && "Incorrect no. output components");
+    assert(utmp .size() >= 4   && "Incorrect no. tmp components");
+    compute_cv(u, *utmp[0], *utmp[1]);                     // Cv
+   *utmp[3] = *u[DENSITY];
+    if ( traits_.usebase ) *utmp[3] += *u[BASESTATE];       // total density
+    geoflow::compute_temp(*u[ENERGY], *utmp[0], *utmp[1], *utmp[2]);  // temperature
+    compute_qd(u, *utmp[0]);
+    geoflow::compute_p(*utmp[2], *utmp[3], *utmp[0], RD, *uout[0]);
+    if ( !traits_.dodry ) {
+      geoflow::compute_p(*utmp[2], *utmp[3], *u[VAPOR], RV, *utmp[0]);
+     *uout[0] += *utmp[0];
+    }
+    iuout.resize(1); iuout[0] = 0;
+  }
+  else if ( "ptemp"    == sop ) { // potential temp
+    assert(uout .size() >= 1   && "Incorrect no. output components");
+    assert(utmp .size() >= 4   && "Incorrect no. tmp components");
+    tu[0] = utmp[3];
+    this->compute_derived_impl(u, "press", utmp, uout, iuout);
+    this->compute_derived_impl(u, "temp" , utmp, tu  , iuout);
+    fact1 = -RD / CPD;
+    fact2 = 1.0/traits_.P0_base;
+    // Compute theta from T = theta * (P/P0)^(R/C_p)
+    // Note: Do we need to change definition for moist dynamics?
+    for ( auto j=0; j<uout[0]->size(); j++ ) {
+      (*uout[0])[j] = (*utmp[3])[j] * pow(fact2*(*uout[0])[j], fact1);
+    }
+
+  }
+  else if ( "den"      == sop ) { // density (total)
+    assert(uout .size() >= 1   && "Incorrect no. output components");
+    if ( traits_.usebase ) {
+      GMTK::saxpy(*uout[0], *u[DENSITY], 1.0, *u[BASESTATE], 1.0); 
+    }
+    else {
+      *uout[0] = *u[DENSITY];
+    }
+    iuout.resize(1); iuout[0] = 0;
+  }
+  else if ( "vel"      == sop ) { // x-velocity
+    assert(uout .size() >= GDIM   && "Incorrect no. output components");
+    assert(utmp .size() >= 1   && "Incorrect no. tmp components");
+    iuout.resize(GDIM); 
+    if ( !traits_.usemomden ) {
+     for ( auto j=0; j<GDIM; j++ ) {
+       *uout[j] = *u[j];
+       iuout[j] = j;
+     }
+    }
+    else {
+     *utmp[0] = *u[DENSITY];
+      if ( traits_.usebase ) *utmp[0] += *u[BASESTATE];
+      utmp[0]->rpow(-1.0);
+      for ( auto j=0; j<GDIM; j++ ) {
+       *uout[j] = *u[j]; *uout[j] *= *utmp[0];
+       iuout[j] = j;
+     }
+    }
+  }
+  else {
+    assert(FALSE);
+  }
+
+} // end of method compute_derived_impl
+

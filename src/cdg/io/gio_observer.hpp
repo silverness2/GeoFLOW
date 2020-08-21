@@ -81,6 +81,7 @@ private:
         State              gp_         ;// current grid 'state' array
         StateInfo          stateinfo_  ;// info struct for state
         StateInfo          gridinfo_   ;// info struct for grid
+        EqnBasePtr         pEqn_       ;// equation object pointer
 
 };
 

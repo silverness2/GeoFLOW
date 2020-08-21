@@ -656,3 +656,24 @@ GINT GBurgers<TypePack>::tmp_size_impl()
   
 } // end of method tmp_size_impl
 
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : compute_derived_impl
+// DESC   : Compute quantities derived from state
+// ARGS   : uin   : input state (full)
+//          sop   : operation/quantity to compute
+//          utmp  : tmp space
+//          uout  : resultant quantity
+//          iuout : indices in uout used to contain result
+// RETURNS: none.
+//**********************************************************************************
+template<typename TypePack>
+void GBurgers<TypePack>::compute_derived_impl(const State &uin, GString sop, 
+                                              State &utmp, State &uout, 
+                                              std::vector<GINT> &iuout)
+{
+  assert(FALSE); 
+} // end of method compute_derived_impl
+

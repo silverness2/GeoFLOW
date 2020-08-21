@@ -113,6 +113,9 @@ protected:
                                       const Time &dt);                    // Take a step
         void                step_impl(const Time &t, const State &uin, State &uf, State &ub,
                                       const Time &dt, State &uout);       // Take a step
+        void                compute_derived_impl(const State &uin, GString sop, 
+                                      State &utmp, State &uout, 
+                                      std::vector<GINT> &iuout);          // Compute derived quantity
         GINT                tmp_size_impl();                              // required tmp size
         GINT                solve_size_impl()                             // required solve size
                             {return traits_.nsolve;}

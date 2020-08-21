@@ -179,6 +179,10 @@ protected:
                             {return stdiforced_;}
         void                init_impl(State &u, State &tmppool);                    // initialize 
                                                                           // Has dynamic dt?
+        void                compute_derived_impl(const State &uin, GString sop,
+                                      State &utmp, State &uout,
+                                      std::vector<GINT> &iuout);          // Compu
+
         void                dt_impl(const Time &t, State &u, Time &dt);   // Get dt
         void                apply_bc_impl(const Time &t, State &u, 
                                           State &ub);                     // Apply bdy conditions
