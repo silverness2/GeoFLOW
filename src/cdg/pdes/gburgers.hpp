@@ -172,7 +172,7 @@ private:
                            *gexrk_;         // ExRK stepper, if needed
         GMass              *gmass_;         // mass op
         GMass              *gimass_;        // inverse mass op
-        GAdvect            *gadvect_;       // advection op
+        GAdvect<TypePack>  *gadvect_;       // advection op
         GHelmholtz         *ghelm_;         // Helmholz and Laplacian op
         GpdV<TypePack>     *gpdv_;          // pdV op
 //      GFlux              *gflux_;         // flux op

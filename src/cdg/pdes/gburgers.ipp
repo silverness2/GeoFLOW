@@ -544,7 +544,7 @@ void GBurgers<TypePack>::init_impl(State &u, State &tmp)
           && gpdv_    != NULLPTR) && "1 or more operators undefined");
   }
   if ( !bconserved_ && !doheat_ ) {
-    gadvect_ = new GAdvect(*grid_);
+    gadvect_ = new GAdvect<TypePack>(*grid_);
     assert( (gmass_   != NULLPTR
           && ghelm_   != NULLPTR
           && gadvect_ != NULLPTR) && "1 or more operators undefined");

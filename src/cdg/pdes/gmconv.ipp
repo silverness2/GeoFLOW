@@ -715,7 +715,7 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
           && gpdv_    != NULLPTR) && "1 or more operators undefined");
   }
   else {
-    gadvect_ = new GAdvect(*grid_);
+    gadvect_ = new GAdvect<TypePack>(*grid_);
     gpdv_    = new GpdV<TypePack>(*grid_);
     assert( (gmass_   != NULLPTR
           && ghelm_   != NULLPTR
