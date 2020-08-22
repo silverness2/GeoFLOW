@@ -125,7 +125,7 @@ MixBasePtr       pMixer_;      // mixer object
 PropertyTree     ptree_;       // main prop tree
 
 GGFX<GFTYPE>    *ggfx_=NULLPTR;// DSS operator
-IOBasePtr        pIO_;         // ptr to IOBase operator
+IOBasePtr        pIO_=NULLPTR; // ptr to IOBase operator
 std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>>
                  pObservers_(new std::vector<std::shared_ptr<ObserverBase<MyTypes>>>()); // observer array
 GC_COMM          comm_ ;       // communicator
