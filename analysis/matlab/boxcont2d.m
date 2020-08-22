@@ -1,6 +1,6 @@
-function [c h] = boxcont2d(svar, tindex, blog, nlev, dtype, isz, varargin)
+function [c h] = boxcont2d(svar, tindex, blog, xlev, levtype, dtype, isz )
 %
-%   function h = boxcont2d(svar, tindex, blog, nlev, dtype, isz, varargin)
+%   function h = boxcont2d(svar, tindex, blog, xlev, dtype, isz)
 %
 % Plots contour plots for 2D GeoFLOW Posix or collective data. 
 %
@@ -11,10 +11,14 @@ function [c h] = boxcont2d(svar, tindex, blog, nlev, dtype, isz, varargin)
 %    svar    : prefix for field file. Required
 %    tindex  : time index for output. Required
 %    blog    : take log of data? Default is 0
-%    nlev    : number of levels. Default is 5
+%    xlev    : number of levels, if levtype = 'num'; contour
+%              increment if levtype = 'delta'. Default is 5 if
+%              not specified, and levtype='num' is the default.
+%    levtype : if 'num', then lev is the number of levels to use.
+%              If levtype=='delta', then lev is the difference between
+%              contour levels. Default is 'num'.
 %    dtype   : data file type: 'POSIX', 'COLL'. Default is 'COLL'
 %    isz    : floating point size (4 or 8). Default is 8.
-%    varargin: 
 %
 %  Output:
 %    c       : contour matrix
@@ -26,20 +30,27 @@ end
 
 if nargin < 3
   blog = 0;
-  nlev = 5;
+  xlev  = 5;
+  levtype = 'num';
   dtype = 'COLL';;
   isz = 8;
 end 
 if nargin < 4
-  nlev = 5;
+  xlev  = 5;
+  levtype = 'num';
   dtype = 'COLL';
   isz = 8;
 end 
 if nargin < 5
+  levtype = 'num';
   dtype = 'COLL';
   isz = 8;
 end 
 if nargin < 6
+  dtype = 'COLL';
+  isz = 8;
+end 
+if nargin < 7
   isz = 8;
 end 
 
@@ -52,22 +63,7 @@ end
 lwidth = 2;
 szfont = 16;
 
-vartmp = varargin;
 bcolorbarlims = 0;
-n = length(varargin);
-j = 1;
-while j <= n
-  if strcmpi(vartmp{j},'colorbarlims') == 1
-    if n < j+1
-      error(sprintf('colorbarlims variable requires array [a b] of limits'));
-    end
-    colorbarlims = vartmp{j+1}
-    bcolorbarlims = 1
-    varargin = { vartmp{1:j-1}, vartmp{j+2:end} }
-    j = j + 1
-  end
-  j = j + 1
-end
 
 scoord = {'xgrid','ygrid' 'zgrid'};
 
@@ -99,8 +95,6 @@ for itask = 0:ntasks-1
   if ( dim ~= 2 )
     error('Grid must be 2D');
   end 
-dim
-nelems
 
   if strcmp(dtype,'POSIX')
     fname = sprintf('%s.%06d.%05d.out', svar, tindex, itask);
@@ -115,16 +109,41 @@ nelems
     u = log10(abs(u));
   end
 
-  [X,Y] = ndgrid(linspace(min(x{1}(:)),max(x{1}(:)),100),linspace(min(x{2}(:)),max(x{2}(:)),100));
+
+  dx = diff(x{1}(:));
+  I  = find(abs(dx) > 0.0 );
+  ngridx = ( max(x{1}(:)) - min(x{1}(:)) ) / min(abs(dx(I)))
+  ngridy = ngridx;
+  
+  [X,Y] = ndgrid(linspace(min(x{1}(:)),max(x{1}(:)),ngridx),linspace(min(x{2}(:)),max(x{2}(:)),ngridy));
 
   Z = griddata(x{1}(:),x{2}(:),u(:),X,Y,'cubic');
-X(100:200)
-Y(200:300)
+
 Z(200:300)
-  [c h] = contour(X, Y, Z, nlev); 
+
+  zmin = min(min(Z));
+  zmax = max(max(Z));
+  if strcmpi(levtype,'num')
+    nlev = int32(xlev);
+    dc = (zmax - zmin)/(double(nlev)+1);
+    dcvec = [0:double(nlev)].*dc + zmin;
+  elseif strcmpi(levtype,'delta')
+    nlev = int32((zmax - zmin)/xlev);
+    dc = (zmax - zmin)/(double(nlev)+1);
+    dcvec = [0:double(nlev)].*dc + zmin;
+  else
+    error(['Invalid levtype: ' levtype]);
+  end
+
+  [c h] = contour(X, Y, Z, dcvec); 
   axis equal
+
+  hold on;
 
 end % end, task loop
 
+title(sprintf('%s t=%f', svar, time));
+xlabel('x (m)');
+ylabel('z (m)');
 
 end
