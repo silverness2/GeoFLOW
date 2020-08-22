@@ -1364,7 +1364,6 @@ GINT GMConv<TypePack>::szrhstmp()
   sum += GDIM + 3; // size for compute_* methods
   sum += 6;        // size for misc tmp space in dudt_impl
 
-sum += 10; //fudge factor
 
   return sum;
 
