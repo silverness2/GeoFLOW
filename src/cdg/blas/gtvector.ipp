@@ -2064,7 +2064,7 @@ GTVector<T>::findfirst(T val)
 
   GLLONG i=this->gindex_.beg();
 
-  while ( i <= this->gindex_.edd() && this->data_[i] != val ) i+=this->gindex_.stride();
+  while ( i <= this->gindex_.end() && this->data_[i] != val ) i+=this->gindex_.stride();
 
   if ( i > this->gindex_.end() ) return i = -1;
 
