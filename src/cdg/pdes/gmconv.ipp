@@ -503,7 +503,7 @@ void GMConv<TypePack>::step_exrk(const Time &t, State &uin, State &uf, State &ub
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : init
+// METHOD : init_impl
 // DESC   : Initialize equation object
 // ARGS   : tmp : Array of tmp vector pointers, pointing to vectors
 //                of same size as State. Must be MAX(2*DIM+2,iorder+1)
