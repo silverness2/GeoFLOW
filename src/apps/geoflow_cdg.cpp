@@ -283,6 +283,8 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
 
     if ( bench_ ) return; // don't need IO
 
+    stateinfo = pEqn->stateinfo();
+
     std::vector<GString> default_obslist; default_obslist.push_back(dstr);
     std::vector<GString> obslist = ptree.getArray<GString>("observer_list",default_obslist);
     dstr = "constant";
@@ -971,8 +973,9 @@ void do_restart(const PropertyTree &ptree, GGrid &, State &u,
   StateInfo          stateinfo;
   ObsTraitsType      binobstraits = (*pObservers_)[irestobs_]->get_traits();
 
-
   itindex            = ptree.getValue<GSIZET>("restart_index", 0);
+  stateinfo.icomptype.resize(pEqn_->stateinfo().icomptype.size());
+  stateinfo.icomptype= pEqn_->stateinfo().icomptype;
   stateinfo.sttype   = 0; // state variable type
   stateinfo.svars.resize(binobstraits.state_names.size());
   stateinfo.svars    = binobstraits.state_names;
