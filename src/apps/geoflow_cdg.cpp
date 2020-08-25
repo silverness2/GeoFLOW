@@ -313,7 +313,6 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
     for ( GSIZET j=0; j<obslist.size(); j++ ) {
       if ( "none" != obslist[j] ) {
         obsptree = ptree.getPropertyTree(obslist[j]);
-cout << "create_observers: creating observer: " << obslist[j] <<  endl;
         // Set output version based on exp_order_type:
         if ( "constant" == ptype 
          && "gio_observer" == obslist[j]  ) obsptree.setValue<GINT>("misc",ivers);
@@ -336,15 +335,12 @@ cout << "create_observers: creating observer: " << obslist[j] <<  endl;
         }
         ptree.setPropertyTree(obslist[j],obsptree); // set obs tree with new values
 
-cout << "create_observers: creating pIO..." << endl;
         // Create pIO object factory call:
         if ( pIO_ == NULLPTR ) {
           pIO_ = IOFactory<MyTypes>::build(ptree, *grid_, comm_);
         }
-cout << "create_observers: creating observer..." << endl;
         pObservers->push_back(ObserverFactory<MyTypes>::build(ptree, obslist[j], pEqn, *grid_, pIO_));
         (*pObservers)[j]->set_tmp(utmp_);
-cout << "create_observers: observer created." << endl;
         
         if ( "gio_observer" == obslist[j]  ) {
           spref            = obsptree.getValue<std::string>("agg_state_name","state");
@@ -363,7 +359,6 @@ cout << "create_observers: observer created." << endl;
       }
     }
 
-cout << "create_observers: done." << endl;
 
 } // end method create_observers
 
