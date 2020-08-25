@@ -101,10 +101,6 @@ void GIO<IOType>::init()
   // Get extents of a single state component on each task:
   GComm::Allgather(&ndof, 1, T2GCDatatype<GSIZET>(), extent.data(), 1, T2GCDatatype<GSIZET>(), comm_);
 
-  if ( extent.size() > 1 && myrank_ == 1 ) {
-    cout << "GIO<IOType>::init: extent=" << extent << endl;
-  }
-
   if ( myrank_ == 0 ) {
     state_disp   = 0; // count
     state_extent = extent[0]; // count
