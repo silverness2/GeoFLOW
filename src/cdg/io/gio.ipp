@@ -101,6 +101,10 @@ void GIO<IOType>::init()
   // Get extents of a single state component on each task:
   GComm::Allgather(&ndof, 1, T2GCDatatype<GSIZET>(), extent.data(), 1, T2GCDatatype<GSIZET>(), comm_);
 
+  if ( extent.size() > 1 && myrank_ == 1 ) {
+    cout << "GIO<IOType>::init: extent=" << extent << endl;
+  }
+
   if ( myrank_ == 0 ) {
     state_disp   = 0; // count
     state_extent = extent[0]; // count
@@ -249,12 +253,13 @@ void GIO<IOType>::read_state_impl(std::string filepref, StateInfo &info, State  
   Traits               ttraits;
 
   assert(bInit_ && "Object uninitialized");
+  assert(info.icomptype.size() >= u.size() && "Stateinfo structure invalid");
 
   update_type(info);
 
   nc = this->grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM; 
 
-  if ( bstate && info.sttype == 0 ) { // Check if reading grid components:
+  if ( bstate && info.sttype != 0 ) { // Check if reading grid components:
     assert(u.size() == nc && "Incorrect number of grid components");
   }
 
@@ -265,6 +270,7 @@ void GIO<IOType>::read_state_impl(std::string filepref, StateInfo &info, State  
     assert(info.svars.size() >= 1);
     nt = bstate ? u.size() : 1;
     for ( GSIZET j=0; j<nt; j++ ) { // Retrieve all state/grid components
+      if ( info.icomptype[j] == GSC_PRESCRIBED ) continue;
       svarname_.str(""); svarname_.clear();
       assert(info.svars[j].length() > 0);
       svarname_ << info.svars[j];
