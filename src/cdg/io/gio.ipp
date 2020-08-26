@@ -585,7 +585,7 @@ GSIZET GIO<IOType>::read_header(GString filename, StateInfo &info, Traits &trait
                                    , sizeof(GINT)  , numr, fp); nb += nh*sizeof(GINT);
       nh = fread(&info.gtype       , sizeof(GINT)  ,    1, fp); nb += nh*sizeof(GINT);
       nh = fread(&info.cycle       , sizeof(GSIZET),    1, fp); nb += nh*sizeof(GSIZET);
-      nh = fread(&info.time        , sizeof(Value),    1, fp); nb += nh*sizeof(Value);
+      nh = fread(&info.time        , sizeof(Value) ,    1, fp); nb += nh*sizeof(Value);
       nh = fread(&imulti           , sizeof(GINT)  ,    1, fp); nb += nh*sizeof(GINT);
       traits.multivar = static_cast<GBOOL>(imulti);
     
