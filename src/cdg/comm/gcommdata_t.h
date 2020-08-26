@@ -41,7 +41,7 @@
 #elif SIZE_MAX == ULLONG_MAX
    #define my_MPI_SIZE_T MPI_UNSIGNED_LONG_LONG
 #else
-   #error "what is happening here?"
+   #error "Invalid SIZE_MAX"
 #endif
 
 //  Just take the MPI defs...
