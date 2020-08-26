@@ -125,7 +125,7 @@ void GIOObserver<EquationType>::init_impl(StateInfo &info)
 {
 
    time_last_  = info.time ;
-   ocycle_     = info.cycle;
+   ocycle_     = info.index;
  
    bInit_      = TRUE;
 
