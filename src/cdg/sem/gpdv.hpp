@@ -56,7 +56,6 @@ public:
                                 StateComp &po);                              // Operator-field evaluation
 
 private:
-        StateComp                    etmp1_;  // elem-based (non-global) tmp vector
         Mass                         *massop_; // mass matrix, required
         Grid                         *grid_;   // grid set on construction
 
