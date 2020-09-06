@@ -1,6 +1,6 @@
-function [c h] = boxcont2d(svar, tindex, blog, xlev, levtype, dtype, isz )
+function [c h] = boxcont2d(svar, tindex, blog, xlev, levtype, nozero, dtype, isz )
 %
-%   function h = boxcont2d(svar, tindex, blog, xlev, dtype, isz)
+%   function h = boxcont2d(svar, tindex, blog, xlev, levtype, nozero, dtype, isz)
 %
 % Plots contour plots for 2D GeoFLOW Posix or collective data. 
 %
@@ -16,6 +16,7 @@ function [c h] = boxcont2d(svar, tindex, blog, xlev, levtype, dtype, isz )
 %              not specified, and levtype='num' is the default.
 %    levtype : if 'num', then lev is the number of levels to use.
 %              If levtype=='delta', then lev is the difference between
+%    nozero  : if >0, don't include zero-contour; else do. Default is 1.
 %              contour levels. Default is 'num'.
 %    dtype   : data file type: 'POSIX', 'COLL'. Default is 'COLL'
 %    isz    : floating point size (4 or 8). Default is 8.
@@ -32,25 +33,33 @@ if nargin < 3
   blog = 0;
   xlev  = 5;
   levtype = 'num';
+  nozero = 0;
   dtype = 'COLL';;
   isz = 8;
 end 
 if nargin < 4
   xlev  = 5;
   levtype = 'num';
+  nozero = 0;
   dtype = 'COLL';
   isz = 8;
 end 
 if nargin < 5
   levtype = 'num';
+  nozero = 0;
   dtype = 'COLL';
   isz = 8;
 end 
 if nargin < 6
+  nozero = 0;
   dtype = 'COLL';
   isz = 8;
 end 
 if nargin < 7
+  dtype = 'COLL';
+  isz = 8;
+end 
+if nargin < 8
   isz = 8;
 end 
 
@@ -135,7 +144,15 @@ Z(200:300)
     error(['Invalid levtype: ' levtype]);
   end
 
-  [c h] = contour(X, Y, Z, dcvec); 
+  % Remove zero-contour:
+  if nozero > 0
+    II = find(abs(dcvec) > 1.0e-6);
+    levels = dcvec(II);
+  else
+    levels = dcvec;
+  end
+
+  [c h] = contour(X, Y, Z, levels); 
   axis equal
 
   hold on;
