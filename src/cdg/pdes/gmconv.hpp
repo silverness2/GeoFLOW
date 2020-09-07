@@ -254,7 +254,8 @@ inline  GINT                szrhstmp();
         GMass              *gimass_;        // inverse mass op
         GAdvect<TypePack>  *gadvect_;       // advection op
         GHelmholtz         *ghelm_;         // Helmholz and Laplacian op
-        GStressEnOp        *gstressen_;     // viscous stress-energy
+        GStressEnOp<TypePack>
+                           *gstressen_;     // viscous stress-energy
         GpdV<TypePack>     *gpdv_;          // pdV op
 //      GFlux              *gflux_;         // flux op
         GC_COMM             comm_;          // communicator

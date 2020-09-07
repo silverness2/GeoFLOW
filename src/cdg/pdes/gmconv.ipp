@@ -294,7 +294,7 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
   GMTK::saxpy<Ftype>(*tmp1, *e, 1.0, *p, 1.0);     // h = p+e, enthalpy density
   compute_div(*tmp1, v_, urhstmp_, *dudt[ENERGY]); // Div (h v);
 
-  gstressen_->opVec_prod(v_, urhstmp_, *tmp1);     // mu u_i s^{ij},j
+  gstressen_->apply(v_, urhstmp_, *tmp1);          // mu u_i s^{ij},j
  *dudt[ENERGY] += *tmp1;                           // -= mu u^i s^{ij},j
 
   if ( traits_.dofallout || !traits_.dodry ) {
@@ -350,7 +350,7 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
 
 //  ghelm_->opVec_prod(*v_[j], urhstmp_, *tmp1);      // rhoT nu Laplacian v_j
 // *tmp1 *= *rhoT;
-    gstressen_->opVec_prod(v_, j+1, urhstmp_, *tmp1); // mu s^{ij},j
+    gstressen_->apply(v_, j+1, urhstmp_, *tmp1);      // mu s^{ij},j
    *dudt[j] += *tmp1;                                 // -= mu s^{ij},j
 
     if ( traits_.docoriolis ) {
@@ -699,7 +699,7 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
   // Instantiate spatial discretization operators:
   gmass_      = &grid_->massop();
 //ghelm_      = new GHelmholtz(*grid_);
-  gstressem_  = new GHelmholtz(*grid_);
+  gstressen_  = new GStressEnOp<TypePack>(*grid_);
 
 //ghelm_->set_Lap_scalar(nu_);
   gstressen_->set_mu(nu_);

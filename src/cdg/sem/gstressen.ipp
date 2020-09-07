@@ -166,13 +166,11 @@ template<typename TypePack>
 void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo) 
 {
 
-  assert( utmp.size() >= 4
+  assert( utmp.size() >= 3
        && "Insufficient temp space specified");
 
   GINT       nxy = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
   GElemList *gelems=&grid_->elems();
-
-  assert( idir > 0 && idir <= nxy );
 
 
   // eo = D^{T,j} [mu u^i [D_i u_j + Dj u_i)]:

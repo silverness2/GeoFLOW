@@ -37,28 +37,28 @@ public:
         using StateComp  = typename Interface::StateComp;
         using Grid       = typename Interface::Grid;
         using Mass       = typename Interface::Mass;
-        using Value      = typename Interface::Value;
+        using Ftype      = typename Interface::Value;
         using Derivative = typename Interface::Derivative;
         using Time       = typename Interface::Time;
         using CompDesc   = typename Interface::CompDesc;
         using Jacobian   = typename Interface::Jacobian;
         using Size       = typename Interface::Size;
 
-        static_assert(std::is_same<State,GTVector<GTVector<Value>*>>::value,
+        static_assert(std::is_same<State,GTVector<GTVector<Ftype>*>>::value,
                "State is of incorrect type");
-        static_assert(std::is_same<StateComp,GTVector<Value>>::value,
+        static_assert(std::is_same<StateComp,GTVector<Ftype>>::value,
                "StateComp is of incorrect type");
-        static_assert(std::is_same<Derivative,GTVector<GTVector<Value>*>>::value,
+        static_assert(std::is_same<Derivative,GTVector<GTVector<Ftype>*>>::value,
                "Derivative is of incorrect type");
         static_assert(std::is_same<Grid,GGrid>::value,
                "Grid is of incorrect type");
 
 public:
 
-                          GstressEnOp() = delete;
-                          GstressEnOp(Grid &grid);
-                          GstressEnOp(const GstressEnOp &);
-                         ~GstressEnOp();
+                          GStressEnOp() = delete;
+                          GStressEnOp(Grid &grid);
+                          GStressEnOp(const GStressEnOp &);
+                         ~GStressEnOp();
 
         void              apply(State &u, GINT idir, State  &utmp, 
                                 StateComp &si);                              // stress op evaluation in idir
@@ -68,6 +68,7 @@ public:
 
 
 private:
+        GBOOL                        bown_mu_; // flag telling instance if it owns mu_
         Mass                         *massop_; // mass matrix, required
         Grid                         *grid_;   // grid set on construction
         StateComp                    *mu_;     // viscosity
