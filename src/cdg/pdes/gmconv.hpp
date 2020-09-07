@@ -81,6 +81,7 @@
 #include "gmass.hpp"
 #include "gadvect.hpp"
 #include "ghelmholtz.hpp"
+#include "gstressen.hpp"
 //#include "gflux.hpp"
 #include "gexrk_stepper.hpp"
 #include "gbutcherrk.hpp"
@@ -253,6 +254,7 @@ inline  GINT                szrhstmp();
         GMass              *gimass_;        // inverse mass op
         GAdvect<TypePack>  *gadvect_;       // advection op
         GHelmholtz         *ghelm_;         // Helmholz and Laplacian op
+        GStressEnOp        *gstressen_;     // viscous stress-energy
         GpdV<TypePack>     *gpdv_;          // pdV op
 //      GFlux              *gflux_;         // flux op
         GC_COMM             comm_;          // communicator

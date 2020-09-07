@@ -31,6 +31,7 @@ gimass_                (NULLPTR),
 gflux_                 (NULLPTR),
 */
 ghelm_                 (NULLPTR),
+gstressen_             (NULLPTR),
 gadvect_               (NULLPTR),
 gexrk_                 (NULLPTR),
 gpdv_                  (NULLPTR),
@@ -73,11 +74,12 @@ steptop_callback_      (NULLPTR)
 template<typename TypePack>
 GMConv<TypePack>::~GMConv()
 {
-//if ( gflux_   != NULLPTR ) delete gflux_;
-  if ( ghelm_   != NULLPTR ) delete ghelm_;
-  if ( gadvect_ != NULLPTR ) delete gadvect_;
-  if ( gpdv_    != NULLPTR ) delete gpdv_;
-  if ( gexrk_   != NULLPTR ) delete gexrk_;
+//if ( gflux_     != NULLPTR ) delete gflux_;
+  if ( ghelm_     != NULLPTR ) delete ghelm_;
+  if ( gstressen_ != NULLPTR ) delete gstressen_;
+  if ( gadvect_   != NULLPTR ) delete gadvect_;
+  if ( gpdv_      != NULLPTR ) delete gpdv_;
+  if ( gexrk_     != NULLPTR ) delete gexrk_;
 
 } // end, destructor
 
@@ -292,6 +294,9 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
   GMTK::saxpy<Ftype>(*tmp1, *e, 1.0, *p, 1.0);     // h = p+e, enthalpy density
   compute_div(*tmp1, v_, urhstmp_, *dudt[ENERGY]); // Div (h v);
 
+  gstressen_->opVec_prod(v_, urhstmp_, *tmp1);     // mu u_i s^{ij},j
+ *dudt[ENERGY] += *tmp1;                           // -= mu u^i s^{ij},j
+
   if ( traits_.dofallout || !traits_.dodry ) {
     GMTK::paxy(*tmp1, *rhoT, CVL, *T);             // tmp1 = C_liq rhoT T
     compute_falloutsrc(*tmp1, qliq_, tvliq_, -1.0, urhstmp_, *Ltot);
@@ -343,9 +348,10 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
    *tmp1 *= *Mass; 
    *dudt[j] += *tmp1;                                 // += Grad p'
 
-    ghelm_->opVec_prod(*v_[j], urhstmp_, *tmp1);      // rhoT nu Laplacian v_j
-   *tmp1 *= *rhoT;
-   *dudt[j] += *tmp1;                                 // -= nu Laplacian s_j
+//  ghelm_->opVec_prod(*v_[j], urhstmp_, *tmp1);      // rhoT nu Laplacian v_j
+// *tmp1 *= *rhoT;
+    gstressen_->opVec_prod(v_, j+1, urhstmp_, *tmp1); // mu s^{ij},j
+   *dudt[j] += *tmp1;                                 // -= mu s^{ij},j
 
     if ( traits_.docoriolis ) {
       GMTK::cross_prod_s(traits_.omega, s_, j+1, *tmp1);
@@ -691,10 +697,12 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
   if ( acoeff_obj != NULLPTR ) delete acoeff_obj;
   
   // Instantiate spatial discretization operators:
-  gmass_   = &grid_->massop();
-  ghelm_   = new GHelmholtz(*grid_);
+  gmass_      = &grid_->massop();
+//ghelm_      = new GHelmholtz(*grid_);
+  gstressem_  = new GHelmholtz(*grid_);
 
-  ghelm_->set_Lap_scalar(nu_);
+//ghelm_->set_Lap_scalar(nu_);
+  gstressen_->set_mu(nu_);
 
   if ( traits_.isteptype ==  GSTEPPER_EXRK ) {
     gimass_ = &grid_->imassop();
@@ -710,17 +718,19 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
     assert(FALSE && "Conservation not yet supported");
     gpdv_  = new GpdV<TypePack>(*grid_);
 //  gflux_ = new GFlux(*grid_);
-    assert( (gmass_   != NULLPTR
-          && ghelm_   != NULLPTR
-          && gpdv_    != NULLPTR) && "1 or more operators undefined");
+    assert( (gmass_     != NULLPTR
+//        && ghelm_     != NULLPTR
+          && gstressen_ != NULLPTR
+          && gpdv_      != NULLPTR) && "1 or more operators undefined");
   }
   else {
     gadvect_ = new GAdvect<TypePack>(*grid_);
     gpdv_    = new GpdV<TypePack>(*grid_);
-    assert( (gmass_   != NULLPTR
-          && ghelm_   != NULLPTR
-          && gpdv_    != NULLPTR
-          && gadvect_ != NULLPTR) && "1 or more operators undefined");
+    assert( (gmass_     != NULLPTR
+//        && ghelm_     != NULLPTR
+          && gstressen_ != NULLPTR
+          && gpdv_      != NULLPTR
+          && gadvect_   != NULLPTR) && "1 or more operators undefined");
   }
 
   // If doing a multi-step method, instantiate (deep) space for 
