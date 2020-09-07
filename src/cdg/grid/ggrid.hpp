@@ -125,6 +125,8 @@ virtual void                 print(const GString &filename){}          // print 
         GElemType            gtype() { return gtype_; }               // get unique elem type on grid       
         void                 deriv(GTVector<GFTYPE> &u, GINT idir, GTVector<GFTYPE> &tmp,
                                    GTVector<GFTYPE> &du );            // derivative of global vector
+        void                 deriv(GTVector<GFTYPE> &u, GINT idir, GBOOL dotrans, GTVector<GFTYPE> &tmp,
+                                   GTVector<GFTYPE> &du );            // derivative of global vector
        void                  wderiv(GTVector<GFTYPE> &q, GINT idir, GBOOL bwghts, 
                                    GTVector<GFTYPE> &utmp, GTVector<GFTYPE> &du); // weak derivative
                            

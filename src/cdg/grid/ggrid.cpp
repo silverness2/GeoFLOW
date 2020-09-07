@@ -1035,7 +1035,7 @@ GFTYPE GGrid::integrate(GTVector<GFTYPE> &u, GTVector<GFTYPE> &tmp, GBOOL bgloba
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : deriv
+// METHOD : deriv (1)
 // DESC   : Compute spatial derivative of u in direction idir, and
 //          return in du.
 // ARGS   : u   : 'global' integral argument
@@ -1071,7 +1071,49 @@ void GGrid::deriv(GTVector<GFTYPE> &u, GINT idir, GTVector<GFTYPE> &utmp,
     }
   }
     
-} // end of method deriv
+} // end of method deriv (1)
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : deriv (2)
+// DESC   : Compute spatial derivative of u in direction idir, and
+//          return in du. Allow user to select transpose of reference 
+//          derivative matrix.
+// ARGS   : u      : 'global' integral argument
+//          idir   : coord wrt which to take derivative (1, 2, or 3)
+//          dotrans: select transpose (TRUE) or not (FALSE)
+//          utmp   : tmp vector of same size as u
+//          du     : derivtive, returned
+// RETURNS: none.
+//**********************************************************************************
+void GGrid::deriv(GTVector<GFTYPE> &u, GINT idir, GBOOL dotrans, 
+                  GTVector<GFTYPE> &utmp, GTVector<GFTYPE> &du)
+{
+  assert(bInitialized_ && "Object not inititialized");
+
+
+  GTMatrix<GTVector<GFTYPE>> *dXidX = &this->dXidX();
+
+
+  // du/dx_idir = Sum_j=[1:N] dxi_j/dx_idir D_j u:
+  if ( this->gtype() == GE_REGULAR ) {
+    assert(idir > 0 && idir <= GDIM && "Invalid derivative");
+    compute_grefderiv(u, etmp_, idir, dotrans, du); // D_idir u
+    du.pointProd((*dXidX)(idir-1, 0));
+  }
+  else {  // compute dXi_j/dX_idir D^j u:
+    assert(idir > 0 && idir <= GDIM+1 && "Invalid derivative");
+    compute_grefderiv(u, etmp_, 1, dotrans, du); // D_xi u
+    du.pointProd((*dXidX)(0,idir-1));
+    for ( auto j=1; j<GDIM; j++ ) {
+      compute_grefderiv(u, etmp_, j+1, dotrans, utmp); // D_xi^j u
+      utmp.pointProd((*dXidX)(j,idir-1));
+      du += utmp; 
+
+    }
+  }
+    
+} // end of method deriv (2)
 
 
 //**********************************************************************************
