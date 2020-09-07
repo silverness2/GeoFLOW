@@ -9,10 +9,10 @@
 //                    s_{ij} = (Del_i u_j + Del_j u_i)/2
 //                and the viscous stress-energy for the energy equation is
 //                    2 [mu u_i s_{ij} ],j
-//                where u_i is the velocity, and mu, the viscosity
-//                For the energy, this is a nonlinear operator, so should not 
-//                derive from GLinOp.  This operator requires that grid consist 
-//                of elements of only one type.
+//                where u_i is the velocity, and mu, the viscosity. Repeated
+//                indices are summed here.  For the energy, this is a nonlinear 
+//                operator, so should not derive from GLinOp. Operator requires 
+//                that grid consist of elements of only one type.
 // Copyright    : Copyright 2020. Colorado State University. All rights reserved.
 // Derived From : none
 //==================================================================================

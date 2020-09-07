@@ -9,10 +9,10 @@
 //                    s_{ij} = (Del_i u_j + Del_j u_i)/2
 //                and the viscous stress-energy for the energy equation is
 //                    2 [mu u_i s_{ij} ],j
-//                where u_i is the velocity, and mu, the viscosity
-//                For the energy, this is a nonlinear operator, so should not 
-//                derive from GLinOp.  This operator requires that grid consist 
-//                of elements of only one type.
+//                where u_i is the velocity, and mu, the viscosity. Repeated
+//                indices are summed here.  For the energy, this is a nonlinear 
+//                operator, so should not derive from GLinOp. Operator requires 
+//                that grid consist of elements of only one type.
 // Copyright    : Copyright 2020. Colorado State University. All rights reserved.
 // Derived From : none
 //==================================================================================
@@ -80,9 +80,9 @@ void GStressEnOp<TypePack>::set_mu(StateComp &mu)
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : apply
+// METHOD : apply (1)
 // DESC   : Compute application of this operator to input momentum vector:
-//            so = mu [Del_i u_j + Del_j u_i),j
+//            so = [ mu (Del_i u_j + Del_j u_i)],j
 //          Remember, normally, this discretization would be multiplied by
 //          -1 to represent this operation. We do not apply this sign here.
 // ARGS   : u   : input vector field
@@ -146,6 +146,80 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
   // Point-multiply by mass & Jacobian:
   so *= *(massop_->data());
 
-} // end of method apply
+} // end of method apply (1)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : apply (2)
+// DESC   : Compute application of this operator to input energy:
+//            eo = [ mu u_i (Del_i u_j + Del_j u_i)],j
+//          Remember, normally, this discretization would be multiplied by
+//          -1 to represent this operation. We do not apply this sign here.
+// ARGS   : u   : input vector field
+//          utmp: array of tmp arrays
+//          eo  : output (result) vector component, idir
+//             
+// RETURNS:  none
+//**********************************************************************************
+template<typename TypePack>
+void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo) 
+{
+
+  assert( utmp.size() >= 4
+       && "Insufficient temp space specified");
+
+  GINT       nxy = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
+  GElemList *gelems=&grid_->elems();
+
+  assert( idir > 0 && idir <= nxy );
+
+
+  // eo = D^{T,j} [mu u^i [D_i u_j + Dj u_i)]:
+
+  // Do D^{T,j} [ mu u^i (D_j u_i) ] terms:
+  eo = 0.0;
+  for ( auto j=0; j<nxy; j++ ) { 
+    *utmp[1] = 0.0;
+    for ( auto i=0; i<nxy; i++ ) {
+       grid_->deriv(*u[i], j+1, FALSE, *utmp[0], *utmp[2]);
+       utmp[2]->pointProd(*u[i]);
+       *utmp[1] += *utmp[1];
+    }
+    // Point-multiply by mu before taking 'divergence':
+    if ( mu_->size() > 1 ) {
+      utmp[1]->pointProd(*mu_);
+    }
+    else {
+      *utmp[1] *= (*mu_)[0];
+    }
+    grid_->deriv(*utmp[1]  , j+1, TRUE , *utmp[0], *utmp[2]);
+    eo += *utmp[2];
+  }
+
+
+  // Do D^{T,j} [ mu u^i (D_i u_j) ] terms:
+  for ( auto j=0; j<nxy; j++ ) { 
+    *utmp[1] = 0.0;
+    for ( auto i=0; i<nxy; i++ ) {
+       grid_->deriv(*u[j], i+1, FALSE, *utmp[0], *utmp[2]);
+       utmp[2]->pointProd(*u[i]);
+       *utmp[1] += *utmp[1];
+    }
+    // Point-multiply by mu before taking 'divergence':
+    if ( mu_->size() > 1 ) {
+      utmp[1]->pointProd(*mu_);
+    }
+    else {
+      *utmp[1] *= (*mu_)[0];
+    }
+    grid_->deriv(*utmp[1]  , j+1, TRUE , *utmp[0], *utmp[2]);
+    eo += *utmp[2];
+  }
+
+  // Point-multiply by mass & Jacobian:
+  eo *= *(massop_->data());
+
+} // end of method apply (2)
 
 
