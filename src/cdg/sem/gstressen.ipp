@@ -159,7 +159,7 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
 
   // Do D^{T,j} [mu(D_i u_j) ] terms:
   for ( auto j=0; j<nxy; j++ ) { 
-     grid_->deriv(*u[j+1], idir, FALSE, *utmp[0], *utmp[1]);
+     grid_->deriv(*u[j], idir, FALSE, *utmp[0], *utmp[1]);
      // Point-multiply by mu before taking 'divergence':
      if ( mu_->size() > 1 ) {
        utmp[1]->pointProd(*mu_);
