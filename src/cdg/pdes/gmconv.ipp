@@ -239,8 +239,11 @@ cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax
   // Total density RHS:
   // *************************************************************
 
+#if 1
   gdiv_->apply(*rhoT, v_, urhstmp_, *dudt[DENSITY]); 
-//compute_div(*rhoT, v_, urhstmp_, *dudt[DENSITY]); 
+#else
+  compute_div(*rhoT, v_, urhstmp_, *dudt[DENSITY]); 
+#endif
   if ( traits_.dofallout ) {
     compute_falloutsrc(*rhoT, qi_, tvi_, -1, urhstmp_, *Ltot);
     GMTK::saxpy<Ftype>(*dudt[DENSITY], 1.0, *Ltot, 1.0);   // += Ltot
@@ -258,8 +261,11 @@ cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax
     gadvect_->apply(*qi_[j], v_, urhstmp_, *dudt[VAPOR+j]); // apply advection
     compute_vpref(*tvi_[j], W_);
     *tmp1 = (*qi_[j]) * (*rhoT);                // q_i rhoT
+#if 1
     gdiv_->apply(*tmp1, W_, urhstmp_, *tmp2); 
-//  compute_div(*tmp1, W_, urhstmp_, *tmp2);    // Div(q_i rhoT W)
+#else
+    compute_div(*tmp1, W_, urhstmp_, *tmp2);    // Div(q_i rhoT W)
+#endif
     *tmp2 *= *irhoT;                            // Div(q_i rhoT W)/rhoT
     *dudt[VAPOR+j] += *tmp2;                    // += Div(q_i rhoT W)/rhoT
     *tmp1  = (*Ltot) * (*irhoT); *tmp1 *= (*qi_[j]);// q_i/rhoT Ltot
@@ -296,8 +302,11 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
 
 
   GMTK::saxpy<Ftype>(*tmp1, *e, 1.0, *p, 1.0);     // h = p+e, enthalpy density
+#if 1
   gdiv_->apply(*tmp1, v_, urhstmp_, *dudt[ENERGY]); 
-//compute_div(*tmp1, v_, urhstmp_, *dudt[ENERGY]); // Div (h v);
+#else
+  compute_div(*tmp1, v_, urhstmp_, *dudt[ENERGY]); // Div (h v);
+#endif
 
   gstressen_->apply(v_, urhstmp_, *tmp1);          // mu u_i s^{ij},j
  *dudt[ENERGY] += *tmp1;                           // -= mu u^i s^{ij},j
@@ -341,9 +350,11 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
   }
   Mass = grid_->massop().data();
   for ( auto j=0; j<v_.size(); j++ ) { // for each component
+#if 1
     gdiv_->apply(*s_[j], v_, urhstmp_, *dudt[j]); 
-//  compute_div(*s_[j], v_, urhstmp_, *dudt[j]); 
-
+#else
+    compute_div(*s_[j], v_, urhstmp_, *dudt[j]); 
+#endif
     if ( traits_.dofallout || !traits_.dodry ) {
       compute_falloutsrc(*u[j], qliq_, tvi_,-1.0, urhstmp_, *Ltot);
                                                       // hydrometeor fallout src
@@ -725,23 +736,23 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
 
   if ( traits_.bconserved ) {
     assert(FALSE && "Conservation not yet supported");
-//  gpdv_  = new GpdV<TypePack>(*grid_);
+    gpdv_  = new GpdV<TypePack>(*grid_);
     gdiv_  = new GDivOp<TypePack>(*grid_);
 //  gflux_ = new GFlux(*grid_);
     assert( (gmass_     != NULLPTR
 //        && ghelm_     != NULLPTR
           && gstressen_ != NULLPTR
-//        && gpdv_      != NULLPTR
+          && gpdv_      != NULLPTR
           && gdiv_      != NULLPTR ) && "1 or more operators undefined");
   }
   else {
     gadvect_ = new GAdvect<TypePack>(*grid_);
-//  gpdv_    = new GpdV<TypePack>(*grid_);
+    gpdv_    = new GpdV<TypePack>(*grid_);
     gdiv_    = new GDivOp<TypePack>(*grid_);
     assert( (gmass_     != NULLPTR
 //        && ghelm_     != NULLPTR
           && gstressen_ != NULLPTR
-//        && gpdv_      != NULLPTR
+          && gpdv_      != NULLPTR
           && gdiv_      != NULLPTR
           && gadvect_   != NULLPTR) && "1 or more operators undefined");
   }
@@ -1202,8 +1213,11 @@ void GMConv<TypePack>::compute_falloutsrc(StateComp &g, State &qi, State &tvi, G
      compute_vpref(*tvi[j], W_);
 
      // Compute i_th contribution to source term:
+#if 1
      gdiv_->apply(*qg, W_, utmp, *div); 
-//   compute_div(*qg, W_, utmp, *div);
+#else
+     compute_div(*qg, W_, utmp, *div);
+#endif
      r += *div;
    }
 
