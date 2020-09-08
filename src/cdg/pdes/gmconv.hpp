@@ -144,6 +144,7 @@ public:
           GFTYPE          P0_base     = 1000.0; // base state ref pressure (mb)
           GFTYPE          courant     = 0.5;    // Courant factor
           GFTYPE          nu          = 0.0;    // viscosity constant
+          GFTYPE          kappa       = 0.0;    // viscosity constant
           GTVector<GINT>  iforced;              // state comps to force
           GTVector<Ftype> omega;                // rotation rate vector
           GString         ssteptype;            // stepping method

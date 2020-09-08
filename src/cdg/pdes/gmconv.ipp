@@ -583,6 +583,8 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
   // variable dissipation:
   nu_.resize(1);
   nu_ = traits_.nu;
+  kappa_.resize(1);
+  kappa_ = traits_.kappa;
 
   // Find no. state and solve members, and component types:
   for( auto j=0; j<GDIM; j++ ) icomptype->push_back(GSC_KINETIC); 
@@ -703,6 +705,7 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
 
 //ghelm_->set_Lap_scalar(nu_);
   gstressen_->set_mu(nu_);
+  gstressen_->set_kappa(kappa_);
 
   if ( traits_.isteptype ==  GSTEPPER_EXRK ) {
     gimass_ = &grid_->imassop();

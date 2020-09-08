@@ -99,6 +99,7 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
                 ctraits.ssteptype = stp_ptree.getValue<std::string>
                                                              ("stepping_method","GSTEPPER_EXRK");
                 ctraits.nu        = dis_ptree.getValue<double>("nu");
+                ctraits.kappa     = dis_ptree.getValue<double>("kappa");
                 for ( auto i=0; i<GDIM; i++ ) default_comps.push_back(i);
                 comps            = eqn_ptree.getArray<int>   ("forcing_comp",default_comps);
                 ctraits.iforced.resize(comps.size());
