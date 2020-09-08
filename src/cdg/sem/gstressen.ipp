@@ -29,14 +29,17 @@ template<typename TypePack>
 GStressEnOp<TypePack>::GStressEnOp(Grid &grid)
 :
 bown_mu_      (TRUE),
+bown_kappa_   (TRUE),
 grid_         (&grid),
 massop_       (&grid.massop()),
 mu_           (NULLPTR)
 {
   assert(grid_->ntype().multiplicity(0) == GE_MAX-1 
         && "Only a single element type allowed on grid");
-  mu_ = new GTVector<Ftype>(1);
-  *mu_ = 1.0;
+  mu_     = new GTVector<Ftype>(1);
+  *mu_    = 1.0;
+  kappa_  = new GTVector<Ftype>(1);
+  *kappa_ = 1.0;
 } // end of constructor method (1)
 
 
@@ -50,15 +53,16 @@ mu_           (NULLPTR)
 template<typename TypePack>
 GStressEnOp<TypePack>::~GStressEnOp()
 {
-  if ( mu_ != NULLPTR && bown_mu_ ) delete mu_;
+  if ( mu_    != NULLPTR && bown_mu_    ) delete mu_;
+  if ( kappa_ != NULLPTR && bown_kappa_ ) delete kappa_;
 } // end, destructor
 
 
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : set_mu
-// DESC   : Set viscosity. This may be a field if length>1, or a constant
-//          if length == 1.
+// DESC   : Set viscosity (for momentum). This may be a field if length>1, 
+//          or a constant if length == 1.
 // ARGS   : 
 //          mu    : 'viscosity' parameter, global
 //             
@@ -75,7 +79,31 @@ void GStressEnOp<TypePack>::set_mu(StateComp &mu)
   mu_ = &mu;
   bown_mu_ = FALSE;
 
-} // end of method set_Lap_scalar
+} // end of method set_mu
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : set_kappa
+// DESC   : Set kappa (for stress energy). This may be a field if length>1, 
+//          or a constant if length == 1.
+// ARGS   : 
+//          kappa : 'kappa' parameter, global
+//             
+// RETURNS:  none
+//**********************************************************************************
+template<typename TypePack>
+void GStressEnOp<TypePack>::set_kappa(StateComp &kappa)
+{
+  assert(kappa.size() == 1 || kappa.size() >= grid_->ndof()
+       && "Energy dissipation parameter of invalid size");
+
+  if ( kappa_ != NULLPTR && bown_kappa_ ) delete kappa_;
+
+  kappa_ = &kappa;
+  bown_kappa_ = FALSE;
+
+} // end of method set_kappa
 
 
 //**********************************************************************************
@@ -184,12 +212,12 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
        utmp[2]->pointProd(*u[i]);
        *utmp[1] += *utmp[1];
     }
-    // Point-multiply by mu before taking 'divergence':
-    if ( mu_->size() > 1 ) {
-      utmp[1]->pointProd(*mu_);
+    // Point-multiply by kappa before taking 'divergence':
+    if ( kappa_->size() > 1 ) {
+      utmp[1]->pointProd(*kappa_);
     }
     else {
-      *utmp[1] *= (*mu_)[0];
+      *utmp[1] *= (*kappa_)[0];
     }
     grid_->deriv(*utmp[1]  , j+1, TRUE , *utmp[0], *utmp[2]);
     eo += *utmp[2];
@@ -204,12 +232,12 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
        utmp[2]->pointProd(*u[i]);
        *utmp[1] += *utmp[1];
     }
-    // Point-multiply by mu before taking 'divergence':
-    if ( mu_->size() > 1 ) {
-      utmp[1]->pointProd(*mu_);
+    // Point-multiply by kappa before taking 'divergence':
+    if ( kappa_->size() > 1 ) {
+      utmp[1]->pointProd(*kappa_);
     }
     else {
-      *utmp[1] *= (*mu_)[0];
+      *utmp[1] *= (*kappa_)[0];
     }
     grid_->deriv(*utmp[1]  , j+1, TRUE , *utmp[0], *utmp[2]);
     eo += *utmp[2];

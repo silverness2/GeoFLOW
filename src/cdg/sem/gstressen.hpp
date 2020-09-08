@@ -65,13 +65,16 @@ public:
         void              apply(State &u, State  &utmp,  
                                 StateComp &e);                               // stress-energy op evaluation
         void              set_mu(StateComp &mu);                             // set viscosity
+        void              set_kappa(StateComp &kappa);                       // set energy kappa
 
 
 private:
-        GBOOL                        bown_mu_; // flag telling instance if it owns mu_
-        Mass                         *massop_; // mass matrix, required
-        Grid                         *grid_;   // grid set on construction
-        StateComp                    *mu_;     // viscosity
+        GBOOL                        bown_mu_;    // flag telling instance if it owns mu_
+        GBOOL                        bown_kappa_; // flag telling instance if it owns kappa_
+        Mass                         *massop_;    // mass matrix, required
+        Grid                         *grid_;      // grid set on construction
+        StateComp                    *mu_;        // viscosity
+        StateComp                    *kappa_;     // viscosity
 
 
 };
