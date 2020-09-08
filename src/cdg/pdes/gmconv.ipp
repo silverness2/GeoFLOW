@@ -140,7 +140,7 @@ void GMConv<TypePack>::dt_impl(const Time &t, State &u, Time &dt)
 
   csq = utmp_[utmp_.size()-4];
   for ( auto j=0; j<p->size(); j++ ) { // sound speed, csq
-    (*csq)[j] += (*p)[j] / (*rhoT)[j] ;
+    (*csq)[j] = (*p)[j] / (*rhoT)[j] ;
   }
 
    // Compute v^2 + c^2:
