@@ -1,4 +1,4 @@
-function [c h] = boxcont2d(svar, tindex, blog, xlev, levtype, nozero, dtype, isz )
+function [c h levels] = boxcont2d(svar, tindex, blog, xlev, levtype, nozero, dtype, isz )
 %
 %   function h = boxcont2d(svar, tindex, blog, xlev, levtype, nozero, dtype, isz)
 %
@@ -112,23 +112,38 @@ for itask = 0:ntasks-1
   end
   [u dim nelems porder gtype icycle time mvar] = rgeoflow(fname, isz, 'ieee-le');
 
+ umax = max(u);
+ umin = min(u);
  
   NN = double(porder + 1); 
   if blog == 1 
     u = log10(abs(u));
   end
 
+  xorig = [x{1}(:) x{2}(:)];
+  [xd, II]  = unique(xorig,'rows');
+  clear x ;
+  [x z] = deal(xd(:,1), xd(:,2));
+  clear xd xorig;
+  U = u(II);
+  clear u;
 
-  dx = diff(x{1}(:));
-  I  = find(abs(dx) > 0.0 );
-  ngridx = ( max(x{1}(:)) - min(x{1}(:)) ) / min(abs(dx(I)))
-  ngridy = ngridx;
-  
-  [X,Y] = ndgrid(linspace(min(x{1}(:)),max(x{1}(:)),ngridx),linspace(min(x{2}(:)),max(x{2}(:)),ngridy));
+  dx = diff(x);
+  I  = find(abs(dx) > 1.0e-6 );
+  ngridx = 2*( max(x) - min(x) ) / min(abs(dx(I)));
+  ngridx = int32(ngridx);
 
-  Z = griddata(x{1}(:),x{2}(:),u(:),X,Y,'cubic');
+  dx = diff(z);
+  I  = find(abs(dx) > 1.0e-6 );
+  ngridy = 2*( max(z) - min(z) ) / min(abs(dx(I)));
+  ngridy = int32(ngridy);
+ 
+  [X,Y] = ndgrid(linspace(min(x),max(x),ngridx),linspace(min(z),max(z),ngridy));
 
-Z(200:300)
+  Z = griddata(x,z,U(:),X,Y,'v4');
+  clear x, z, U;
+
+%Z(200:300)
 
   zmin = min(min(Z));
   zmax = max(max(Z));
@@ -146,20 +161,23 @@ Z(200:300)
 
   % Remove zero-contour:
   if nozero > 0
-    II = find(abs(dcvec) > 1.0e-6);
+    II = find(dcvec > 0.0 );
     levels = dcvec(II);
+levels
   else
     levels = dcvec;
   end
 
+
   [c h] = contour(X, Y, Z, levels); 
-  axis equal
+  axis equal;
 
   hold on;
 
 end % end, task loop
-
-title(sprintf('%s t=%f', svar, time));
+sminmax = sprintf('min=%0.5g; max=%0.5g', umin, umax); 
+stitle  = sprintf('%s, t=%0.5g: \n %s', svar, time, sminmax);
+title(stitle);
 xlabel('x (m)');
 ylabel('z (m)');
 
