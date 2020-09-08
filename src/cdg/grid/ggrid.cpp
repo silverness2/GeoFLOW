@@ -1092,24 +1092,42 @@ void GGrid::deriv(GTVector<GFTYPE> &u, GINT idir, GBOOL dotrans,
   assert(bInitialized_ && "Object not inititialized");
 
 
+  GINT       nxy = this->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
   GTMatrix<GTVector<GFTYPE>> *dXidX = &this->dXidX();
 
+GTVector<GFTYPE> t1(ndof());
+
+  assert(idir > 0 && idir <= nxy && "Invalid derivative");
 
   // du/dx_idir = Sum_j=[1:N] dxi_j/dx_idir D_j u:
   if ( this->gtype() == GE_REGULAR ) {
-    assert(idir > 0 && idir <= GDIM && "Invalid derivative");
-    compute_grefderiv(u, etmp_, idir, dotrans, du); // D_idir u
-    du.pointProd((*dXidX)(idir-1, 0));
+    if ( dotrans ) {
+      u.pointProd((*dXidX)(idir-1,0), utmp);
+      compute_grefderiv(utmp, etmp_, idir, dotrans, du); // D_idir u
+    }
+    else {
+      compute_grefderiv(u, etmp_, idir, dotrans, du); // D_idir u
+      du.pointProd((*dXidX)(idir-1, 0));
+    }
   }
   else {  // compute dXi_j/dX_idir D^j u:
-    assert(idir > 0 && idir <= GDIM+1 && "Invalid derivative");
-    compute_grefderiv(u, etmp_, 1, dotrans, du); // D_xi u
-    du.pointProd((*dXidX)(0,idir-1));
-    for ( auto j=1; j<GDIM; j++ ) {
-      compute_grefderiv(u, etmp_, j+1, dotrans, utmp); // D_xi^j u
-      utmp.pointProd((*dXidX)(j,idir-1));
-      du += utmp; 
-
+    if ( dotrans ) {
+      u.pointProd((*dXidX)(0,idir-1), utmp);
+      compute_grefderiv(utmp, etmp_, 1, dotrans, du); // D_xi u
+      for ( auto j=1; j<GDIM; j++ ) {
+        u.pointProd((*dXidX)(j,idir-1),t1);
+        compute_grefderiv(t1, etmp_, j+1, dotrans, utmp); // D_xi^j u
+        du += utmp; 
+      }
+    }
+    else {
+      compute_grefderiv(u, etmp_, 1, dotrans, du); // D_xi u
+      du.pointProd((*dXidX)(0,idir-1));
+      for ( auto j=1; j<GDIM; j++ ) {
+        compute_grefderiv(u, etmp_, j+1, dotrans, utmp); // D_xi^j u
+        utmp.pointProd((*dXidX)(j,idir-1));
+        du += utmp; 
+      }
     }
   }
     
