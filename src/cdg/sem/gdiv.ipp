@@ -72,10 +72,10 @@ void GDivOp<TypePack>::apply(StateComp &d, State &u, State &utmp, StateComp &div
 
   // div = D^{T,j} ( d u_j ):
   d.pointProd(*u[0], *utmp[1]);
-  grid_->deriv(*utmp[1], 1, FALSE, *utmp[0], div);
+  grid_->deriv(*utmp[1], 1, TRUE, *utmp[0], div);
   for ( auto j=1; j<nxy; j++ ) { 
      d.pointProd(*u[j], *utmp[1]);
-     grid_->deriv(*utmp[1], j+1, FALSE, *utmp[0], *utmp[2]);
+     grid_->deriv(*utmp[1], j+1, TRUE, *utmp[0], *utmp[2]);
      div += *utmp[2];
   }
 
