@@ -59,7 +59,7 @@
     "grid_name" : "grid_box",
     "xyz0"      : [0.0, 0.0, 0.0],
     "delxyz"    : [20000.0, 10000.0, 1.0],
-    "num_elems" : [20, 10, 1],
+    "num_elems" : [50, 25, 1],
     "bdy_x_0"   : "0-flux",
     "bdy_x_1"   : "0-flux",
     "bdy_y_0"   : "0-flux",
@@ -75,10 +75,11 @@
     "time_deriv_order" : 4,
     "extrap_order"     : 2,
     "variable_dt"      : false,
-    "courant"          : 0.05 
+    "courant"          : 0.025 
   },
   "dissipation_traits": {
-    "nu"      : 750.0,
+    "nu"      : 1500.0,
+    "kappa"   : 1500.0, 
     "nu_type" : "constant"
   },
   "gio": {
@@ -114,7 +115,7 @@
     "idir"               : "outs",
     "odir"               : "outs",
     "cadence_type"       : "time",
-    "cycle_interval"     : 100,
+    "cycle_interval"     : 1,
     "time_interval"      : 10.0,
     "state_names"        : ["s1", "s2", "e", "d"],
     "grid_names"         : ["xgrid", "ygrid", "zgrid"],
@@ -127,14 +128,14 @@
     "observer_name"      : "global_diag_basic",
     "idir"               : ".",
     "odir"               : ".",
-    "interval_freq_fact" : 10.0,
+    "interval_freq_fact" : 100.0,
     "treat_as_1d"        : false
   },
   "time_integration": {
     "integ_type" : "time",
-    "time_end"   : 1000.0,
-    "cycle_end"  : 1000,
-    "dt"         : 5.0e-2
+    "time_end"   : 1101.0,
+    "cycle_end"  : 10,
+    "dt"         : 0.1
   }
 
 }
