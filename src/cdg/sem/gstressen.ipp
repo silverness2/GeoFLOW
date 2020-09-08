@@ -138,10 +138,10 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
   // Do D^{T,j} [mu(D_j u_i) ] terms:
   grid_->deriv(*u[idir-1], 1, FALSE, *utmp[0], *utmp[1]);
   if ( mu_->size() > 1 ) { // point-multiply by mu:
-    utmp[2]->pointProd(*mu_);
+    utmp[1]->pointProd(*mu_);
   }
   else {
-    *utmp[2] *= (*mu_)[0];
+    *utmp[1] *= (*mu_)[0];
   }
   grid_->deriv(*utmp[1]  , 1, TRUE , *utmp[0], so);
   for ( auto j=1; j<nxy; j++ ) { 
@@ -157,7 +157,7 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
      so += *utmp[2];
   }
 
-  // Do D^{T,j} [mu(D_i u_j) ] terms:
+  // Do D^{T,j} [mu (D_i u_j) ] terms:
   for ( auto j=0; j<nxy; j++ ) { 
      grid_->deriv(*u[j], idir, FALSE, *utmp[0], *utmp[1]);
      // Point-multiply by mu before taking 'divergence':
@@ -181,7 +181,7 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
 //**********************************************************************************
 // METHOD : apply (2)
 // DESC   : Compute application of this operator to input energy:
-//            eo = [ mu u_i (Del_i u_j + Del_j u_i)],j
+//            eo = [ kappa u_i (Del_i u_j + Del_j u_i)],j
 //          Remember, normally, this discretization would be multiplied by
 //          -1 to represent this operation. We do not apply this sign here.
 // ARGS   : u   : input vector field
@@ -201,16 +201,16 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
   GElemList *gelems=&grid_->elems();
 
 
-  // eo = D^{T,j} [mu u^i [D_i u_j + Dj u_i)]:
+  // eo = D^{T,j} [kappa u^i [D_i u_j + Dj u_i)]:
 
-  // Do D^{T,j} [ mu u^i (D_j u_i) ] terms:
+  // Do D^{T,j} [ kappa u^i (D_j u_i) ] terms:
   eo = 0.0;
   for ( auto j=0; j<nxy; j++ ) { 
     *utmp[1] = 0.0;
     for ( auto i=0; i<nxy; i++ ) {
        grid_->deriv(*u[i], j+1, FALSE, *utmp[0], *utmp[2]);
        utmp[2]->pointProd(*u[i]);
-       *utmp[1] += *utmp[1];
+       *utmp[1] += *utmp[2];
     }
     // Point-multiply by kappa before taking 'divergence':
     if ( kappa_->size() > 1 ) {
@@ -224,13 +224,13 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
   }
 
 
-  // Do D^{T,j} [ mu u^i (D_i u_j) ] terms:
+  // Do D^{T,j} [ kappa u^i (D_i u_j) ] terms:
   for ( auto j=0; j<nxy; j++ ) { 
     *utmp[1] = 0.0;
     for ( auto i=0; i<nxy; i++ ) {
        grid_->deriv(*u[j], i+1, FALSE, *utmp[0], *utmp[2]);
        utmp[2]->pointProd(*u[i]);
-       *utmp[1] += *utmp[1];
+       *utmp[1] += *utmp[2];
     }
     // Point-multiply by kappa before taking 'divergence':
     if ( kappa_->size() > 1 ) {
