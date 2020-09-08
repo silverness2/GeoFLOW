@@ -1410,7 +1410,7 @@ void GGrid::smooth(GGFX_OP op, GTVector<GFTYPE> &tmp, GTVector<GFTYPE> &u)
 //          etmp   : tmp array (possibly resized here) for element-based ops.
 //                   Is not global.
 //          idir   : coordinate direction (1, 2, or 3)
-//          dotrans: flag telling us to tak transpose of deriv operators (TRUE) or
+//          dotrans: flag telling us to take transpose of deriv operators (TRUE) or
 //                   not (FALSE).
 //          du     : vector of length of u containing the derivative.
 //             
