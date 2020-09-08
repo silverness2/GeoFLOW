@@ -82,6 +82,7 @@
 #include "gadvect.hpp"
 #include "ghelmholtz.hpp"
 #include "gstressen.hpp"
+#include "gdiv.hpp"
 //#include "gflux.hpp"
 #include "gexrk_stepper.hpp"
 #include "gbutcherrk.hpp"
@@ -261,6 +262,7 @@ inline  GINT                szrhstmp();
                            *gstressen_;     // viscous stress-energy
         GpdV<TypePack>     *gpdv_;          // pdV op
 //      GFlux              *gflux_;         // flux op
+        GDivOp<TypePack>   *gdiv_;          // volumetric divergence op
         GC_COMM             comm_;          // communicator
         GGFX<GFTYPE>       *ggfx_;          // gather-scatter operator
         GMConv<TypePack>::Traits 

@@ -35,6 +35,7 @@ gstressen_             (NULLPTR),
 gadvect_               (NULLPTR),
 gexrk_                 (NULLPTR),
 gpdv_                  (NULLPTR),
+gdiv_                  (NULLPTR),
 grid_                    (&grid),
 ggfx_         (&grid.get_ggfx()),
 comm_(grid.get_ggfx().getComm()),
@@ -79,6 +80,7 @@ GMConv<TypePack>::~GMConv()
   if ( gstressen_ != NULLPTR ) delete gstressen_;
   if ( gadvect_   != NULLPTR ) delete gadvect_;
   if ( gpdv_      != NULLPTR ) delete gpdv_;
+  if ( gdiv_      != NULLPTR ) delete gdiv_;
   if ( gexrk_     != NULLPTR ) delete gexrk_;
 
 } // end, destructor
@@ -237,7 +239,8 @@ cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax
   // Total density RHS:
   // *************************************************************
 
-  compute_div(*rhoT, v_, urhstmp_, *dudt[DENSITY]); 
+  gdiv_->apply(*rhoT, v_, urhstmp_, *dudt[DENSITY]); 
+//compute_div(*rhoT, v_, urhstmp_, *dudt[DENSITY]); 
   if ( traits_.dofallout ) {
     compute_falloutsrc(*rhoT, qi_, tvi_, -1, urhstmp_, *Ltot);
     GMTK::saxpy<Ftype>(*dudt[DENSITY], 1.0, *Ltot, 1.0);   // += Ltot
@@ -255,7 +258,8 @@ cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax
     gadvect_->apply(*qi_[j], v_, urhstmp_, *dudt[VAPOR+j]); // apply advection
     compute_vpref(*tvi_[j], W_);
     *tmp1 = (*qi_[j]) * (*rhoT);                // q_i rhoT
-    compute_div(*tmp1, W_, urhstmp_, *tmp2);    // Div(q_i rhoT W)
+    gdiv_->apply(*tmp1, W_, urhstmp_, *tmp2); 
+//  compute_div(*tmp1, W_, urhstmp_, *tmp2);    // Div(q_i rhoT W)
     *tmp2 *= *irhoT;                            // Div(q_i rhoT W)/rhoT
     *dudt[VAPOR+j] += *tmp2;                    // += Div(q_i rhoT W)/rhoT
     *tmp1  = (*Ltot) * (*irhoT); *tmp1 *= (*qi_[j]);// q_i/rhoT Ltot
@@ -292,7 +296,8 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
 
 
   GMTK::saxpy<Ftype>(*tmp1, *e, 1.0, *p, 1.0);     // h = p+e, enthalpy density
-  compute_div(*tmp1, v_, urhstmp_, *dudt[ENERGY]); // Div (h v);
+  gdiv_->apply(*tmp1, v_, urhstmp_, *dudt[ENERGY]); 
+//compute_div(*tmp1, v_, urhstmp_, *dudt[ENERGY]); // Div (h v);
 
   gstressen_->apply(v_, urhstmp_, *tmp1);          // mu u_i s^{ij},j
  *dudt[ENERGY] += *tmp1;                           // -= mu u^i s^{ij},j
@@ -336,7 +341,8 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
   }
   Mass = grid_->massop().data();
   for ( auto j=0; j<v_.size(); j++ ) { // for each component
-    compute_div(*s_[j], v_, urhstmp_, *dudt[j]); 
+    gdiv_->apply(*s_[j], v_, urhstmp_, *dudt[j]); 
+//  compute_div(*s_[j], v_, urhstmp_, *dudt[j]); 
 
     if ( traits_.dofallout || !traits_.dodry ) {
       compute_falloutsrc(*u[j], qliq_, tvi_,-1.0, urhstmp_, *Ltot);
@@ -719,20 +725,24 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
 
   if ( traits_.bconserved ) {
     assert(FALSE && "Conservation not yet supported");
-    gpdv_  = new GpdV<TypePack>(*grid_);
+//  gpdv_  = new GpdV<TypePack>(*grid_);
+    gdiv_  = new GDivOp<TypePack>(*grid_);
 //  gflux_ = new GFlux(*grid_);
     assert( (gmass_     != NULLPTR
 //        && ghelm_     != NULLPTR
           && gstressen_ != NULLPTR
-          && gpdv_      != NULLPTR) && "1 or more operators undefined");
+//        && gpdv_      != NULLPTR
+          && gdiv_      != NULLPTR ) && "1 or more operators undefined");
   }
   else {
     gadvect_ = new GAdvect<TypePack>(*grid_);
-    gpdv_    = new GpdV<TypePack>(*grid_);
+//  gpdv_    = new GpdV<TypePack>(*grid_);
+    gdiv_    = new GDivOp<TypePack>(*grid_);
     assert( (gmass_     != NULLPTR
 //        && ghelm_     != NULLPTR
           && gstressen_ != NULLPTR
-          && gpdv_      != NULLPTR
+//        && gpdv_      != NULLPTR
+          && gdiv_      != NULLPTR
           && gadvect_   != NULLPTR) && "1 or more operators undefined");
   }
 
@@ -955,15 +965,14 @@ void GMConv<TypePack>::compute_div(StateComp &q, State &v, State &utmp, StateCom
 
   assert( !traits_.bconserved ); // conserved form not available yet
 
-  assert(gadvect_ != NULLPTR && gpdv_ != NULLPTR);    
-
   for ( auto j=0; j<GDIM; j++ ) tmp[j] = utmp[j];
 
-  //   Div (q v) = q Div v + v.Grad q 
+
+  // Div (q v) = q Div v + v.Grad q 
   gadvect_->apply(q, v, tmp, div); 
-assert(div.isfinite());
+    assert(div.isfinite());
   gpdv_   ->apply(q, v, tmp, *utmp[GDIM]); 
-assert(utmp[GDIM]->isfinite());
+    assert(utmp[GDIM]->isfinite());
   div += *utmp[GDIM];
 
 } // end of method compute_div
@@ -1193,7 +1202,8 @@ void GMConv<TypePack>::compute_falloutsrc(StateComp &g, State &qi, State &tvi, G
      compute_vpref(*tvi[j], W_);
 
      // Compute i_th contribution to source term:
-     compute_div(*qg, W_, utmp, *div);
+     gdiv_->apply(*qg, W_, utmp, *div); 
+//   compute_div(*qg, W_, utmp, *div);
      r += *div;
    }
 
