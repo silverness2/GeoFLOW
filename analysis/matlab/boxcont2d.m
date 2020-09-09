@@ -163,7 +163,6 @@ for itask = 0:ntasks-1
   if nozero > 0
     II = find(dcvec > 0.0 );
     levels = dcvec(II);
-levels
   else
     levels = dcvec;
   end
