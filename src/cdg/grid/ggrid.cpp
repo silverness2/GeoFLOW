@@ -1036,8 +1036,8 @@ GFTYPE GGrid::integrate(GTVector<GFTYPE> &u, GTVector<GFTYPE> &tmp, GBOOL bgloba
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : deriv (1)
-// DESC   : Compute spatial derivative of u in direction idir, and
-//          return in du.
+// DESC   : Compute (collocated) spatial derivative of u in direction idir, 
+//          and return in du.
 // ARGS   : u   : 'global' integral argument
 //          idir: coord wrt which to take derivative (1, 2, or 3)
 //          utmp: tmp vector of same size as u
@@ -1094,6 +1094,7 @@ void GGrid::deriv(GTVector<GFTYPE> &u, GINT idir, GBOOL dotrans,
 
   GINT       nxy = this->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
   GTMatrix<GTVector<GFTYPE>> *dXidX = &this->dXidX();
+  GTVector<GFTYPE> *mass = this->massop().data();
 
 GTVector<GFTYPE> t1(ndof());
 
@@ -1103,19 +1104,23 @@ GTVector<GFTYPE> t1(ndof());
   if ( this->gtype() == GE_REGULAR ) {
     if ( dotrans ) {
       u.pointProd((*dXidX)(idir-1,0), utmp);
+      utmp.pointProd(*mass);
       compute_grefderiv(utmp, etmp_, idir, dotrans, du); // D_idir u
     }
     else {
       compute_grefderiv(u, etmp_, idir, dotrans, du); // D_idir u
       du.pointProd((*dXidX)(idir-1, 0));
+      du.pointProd(*mass);
     }
   }
   else {  // compute dXi_j/dX_idir D^j u:
     if ( dotrans ) {
       u.pointProd((*dXidX)(0,idir-1), utmp);
+      utmp.pointProd(*mass);
       compute_grefderiv(utmp, etmp_, 1, dotrans, du); // D_xi u
       for ( auto j=1; j<GDIM; j++ ) {
         u.pointProd((*dXidX)(j,idir-1),t1);
+        t1.pointProd(*mass);
         compute_grefderiv(t1, etmp_, j+1, dotrans, utmp); // D_xi^j u
         du += utmp; 
       }
@@ -1126,6 +1131,7 @@ GTVector<GFTYPE> t1(ndof());
       for ( auto j=1; j<GDIM; j++ ) {
         compute_grefderiv(u, etmp_, j+1, dotrans, utmp); // D_xi^j u
         utmp.pointProd((*dXidX)(j,idir-1));
+        utmp.pointProd(*mass);
         du += utmp; 
       }
     }
