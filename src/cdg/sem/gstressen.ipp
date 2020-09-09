@@ -143,7 +143,8 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
   else {
     *utmp[1] *= (*mu_)[0];
   }
-  grid_->deriv(*utmp[1]  , 1, TRUE , *utmp[0], so);
+//grid_->deriv(*utmp[1]  , 1, TRUE , *utmp[0], so);
+  grid_->deriv(*utmp[1]  , 1, FALSE, *utmp[0], so);
   for ( auto j=1; j<nxy; j++ ) { 
      grid_->deriv(*u[idir-1], j+1, FALSE, *utmp[0], *utmp[1]);
      // Point-multiply by mu before taking 'divergence':
@@ -153,7 +154,8 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
      else {
        *utmp[1] *= (*mu_)[0];
      }
-     grid_->deriv(*utmp[1]  , j+1, TRUE , *utmp[0], *utmp[2]);
+//   grid_->deriv(*utmp[1]  , j+1, TRUE , *utmp[0], *utmp[2]);
+     grid_->deriv(*utmp[1]  , j+1, FALSE, *utmp[0], *utmp[2]);
      so += *utmp[2];
   }
 
@@ -167,7 +169,8 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
      else {
        *utmp[1] *= (*mu_)[0];
      }
-     grid_->deriv(*utmp[1]  , j+1, TRUE , *utmp[0], *utmp[2]);
+//   grid_->deriv(*utmp[1]  , j+1, TRUE , *utmp[0], *utmp[2]);
+     grid_->deriv(*utmp[1]  , j+1, FALSE, *utmp[0], *utmp[2]);
      so += *utmp[2];
   }
 
@@ -219,7 +222,8 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
     else {
       *utmp[1] *= (*kappa_)[0];
     }
-    grid_->deriv(*utmp[1]  , j+1, TRUE , *utmp[0], *utmp[2]);
+//  grid_->deriv(*utmp[1]  , j+1, TRUE , *utmp[0], *utmp[2]);
+    grid_->deriv(*utmp[1]  , j+1, FALSE, *utmp[0], *utmp[2]);
     eo += *utmp[2];
   }
 
@@ -239,7 +243,8 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
     else {
       *utmp[1] *= (*kappa_)[0];
     }
-    grid_->deriv(*utmp[1]  , j+1, TRUE , *utmp[0], *utmp[2]);
+//  grid_->deriv(*utmp[1]  , j+1, TRUE , *utmp[0], *utmp[2]);
+    grid_->deriv(*utmp[1]  , j+1, FALSE, *utmp[0], *utmp[2]);
     eo += *utmp[2];
   }
 
