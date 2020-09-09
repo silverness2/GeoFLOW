@@ -64,12 +64,12 @@ void GpdV<TypePack>::apply(StateComp &p, State &u, State &utmp, StateComp &po)
 // Must compute:
 //    po = p Div u 
 //
-  StateComp *Jac = &grid_->Jac();
+  StateComp *mass = &grid_->massop();
 
   // Compute po += Gj (D^j u_j): 
-  grid_->wderiv(*u[0], 1, FALSE, *utmp[0], po );
+  grid_->deriv(*u[0], 1, *utmp[0], po );
   for ( auto j=1; j<GDIM; j++ ) { 
-     grid_->wderiv(*u[j], j+1, FALSE, *utmp[1], *utmp[0] );
+     grid_->deriv(*u[j], j+1, *utmp[1], *utmp[0] );
      po += *utmp[0];
   }
 
@@ -82,7 +82,7 @@ void GpdV<TypePack>::apply(StateComp &p, State &u, State &utmp, StateComp &po)
   }
 
   // Apply Jacobian:
-  po *= *Jac;
+  po *= *(mass->data());;
 
 } // end of method apply
 
