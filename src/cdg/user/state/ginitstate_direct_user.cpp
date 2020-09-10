@@ -655,7 +655,7 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
   GString             serr = "impl_boxdrybubble: ";
   GSIZET              nxy;
   GFTYPE              x, y, z, r;
-  GFTYPE              delT, dj, L, T0, Ts, P0, pj;
+  GFTYPE              delT, dj, exner, L, P0, pj, theta, T0, Ts;
   GTVector<GFTYPE>   *db, *d, *e, *pb, *Tb;
   std::vector<GFTYPE> xc, xr;  
   GString             sblock;
@@ -699,15 +699,19 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
     L         = pow((x-xc[0])/xr[0],2) + pow((y-xc[1])/xr[1],2);
     L        += GDIM == 3 ? pow((z-xc[2])/xr[2],2) : 0.0;
     L         = sqrt(L);
+    exner     = pow((*pb)[j]/P0, RD/CPD);
+    theta     = (*pb)[j]/((*db)[j]*RD) / exner; // potl temp = T/exner
     delT      = L <= 1.0 ? 2.0*T0*pow(cos(0.5*PI*L),2.0) : 0.0;
-    delT     *= pow((*pb)[j]/P0, RD/CPD); // multiply by exner pressure
-    (*Tb)[j]  = (*pb)[j] / ( RD * (*db)[j] );
+    delT     *= exner; // multiply by exner pressure to get potl temp fluct
+//  (*Tb)[j]  = (*pb)[j] / ( RD * (*db)[j] );
 //  pj        = P0*pow(((*Tb)[j]+delT)/Ts,RD/CPD);
 #if 1
-    pj        = (*pb)[j]; 
-    (*d)[j]   = pj / ( RD * ( (*Tb)[j] + delT ) ) - (*db)[j];
+//  pj        = (*pb)[j]; 
+//  (*d)[j]   = pj / ( RD * ( (*Tb)[j] + delT ) ) - (*db)[j];
+    (*d)[j]   = P0 / ( RD * (theta+delT))*pow(exner,CVD/RD)  - (*db)[j];
     dj        = (*d)[j] + (*db)[j];
-    (*e)[j]   = CVD * dj * ( (*Tb)[j] + delT ); // e = Cv d (T+delT);
+//  (*e)[j]   = CVD * dj * ( (*Tb)[j] + delT ); // e = Cv d (T+delT);
+    (*e)[j]   = CVD * dj * (theta+delT)*exner; // e = Cv d (theta+dtheta) * exner;
 #else
     // Check that hydrostatic state is maintained:
     (*d)[j]   = 0.0;
