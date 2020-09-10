@@ -1075,8 +1075,8 @@ void GGrid::deriv(GTVector<GFTYPE> &u, GINT idir, GTVector<GFTYPE> &utmp,
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : deriv (2)
-// DESC   : Compute spatial derivative of u in direction idir, and
+// METHOD : wderiv 
+// DESC   : Compute weak spatial derivative of u in direction idir, and
 //          return in du. Allow user to select transpose of reference 
 //          derivative matrix.
 // ARGS   : u      : 'global' integral argument
@@ -1086,7 +1086,7 @@ void GGrid::deriv(GTVector<GFTYPE> &u, GINT idir, GTVector<GFTYPE> &utmp,
 //          du     : derivtive, returned
 // RETURNS: none.
 //**********************************************************************************
-void GGrid::deriv(GTVector<GFTYPE> &u, GINT idir, GBOOL dotrans, 
+void GGrid::wderiv(GTVector<GFTYPE> &u, GINT idir, GBOOL dotrans, 
                   GTVector<GFTYPE> &utmp, GTVector<GFTYPE> &du)
 {
   assert(bInitialized_ && "Object not inititialized");
@@ -1137,9 +1137,10 @@ GTVector<GFTYPE> t1(ndof());
     }
   }
     
-} // end of method deriv (2)
+} // end of method wderiv 
 
 
+#if 0
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : wderiv
@@ -1187,6 +1188,7 @@ void GGrid::wderiv(GTVector<GFTYPE> &u, GINT idir, GBOOL bwghts, GTVector<GFTYPE
   }
     
 } // end of method wderiv
+#endif
 
 
 //**********************************************************************************
