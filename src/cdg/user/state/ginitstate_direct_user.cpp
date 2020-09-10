@@ -681,7 +681,8 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
   T0    = bubbptree.getValue<GFTYPE>("T_pert", 15.0);    // temp. perturb. magnitude (K)
   xc    = bubbptree.getArray<GFTYPE>("x_center");        // center location
   xr    = bubbptree.getArray<GFTYPE>("x_width");         // bubble width
-  P0    = convptree.getValue<GFTYPE>("P0");              // ref pressure 
+  P0    = convptree.getValue<GFTYPE>("P0");              // ref pressure (mb or hPa)
+  P0   *= 100.0;                                         // convert to Pa
   Ts    = convptree.getValue<GFTYPE>("T_surf");          // surf temp
 
   assert(xc.size() >= GDIM && xr.size() >= GDIM);
