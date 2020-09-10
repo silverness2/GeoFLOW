@@ -17,7 +17,7 @@
 #include "pdeint/io_base.hpp"
 #include "gio_observer.hpp"
 #include "io_factory.hpp"
-#include "gglobaldiag_basic.hpp"
+#include "gburgersdiag.hpp"
 
 
 namespace geoflow {

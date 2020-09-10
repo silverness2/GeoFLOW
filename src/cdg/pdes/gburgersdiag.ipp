@@ -1,5 +1,5 @@
 //==================================================================================
-// Module       : gglobaldiag_basic.ipp
+// Module       : gburgersdiag.ipp
 // Date         : 3/28/19 (DLR)
 // Description  : Observer object for carrying out L2 & extrema diagnostics for
 //                kinetic quantities
@@ -14,7 +14,7 @@
 // ARGS   : traits: Traits sturcture
 //**********************************************************************************
 template<typename EquationType>
-GGlobalDiag_basic<EquationType>::GGlobalDiag_basic(const EqnBasePtr &equation, Grid &grid, typename ObserverBase<EquationType>::Traits &traits):
+GBurgersDiag<EquationType>::GBurgersDiag(const EqnBasePtr &equation, Grid &grid, typename ObserverBase<EquationType>::Traits &traits):
 ObserverBase<EquationType>(equation, grid, traits),
 bInit_          (FALSE),
 cycle_          (0),
@@ -43,7 +43,7 @@ grid_           (&grid)
 // RETURNS    : none.
 //**********************************************************************************
 template<typename EquationType>
-void GGlobalDiag_basic<EquationType>::observe_impl(const Time &t, const State &u, const State &uf)
+void GBurgersDiag<EquationType>::observe_impl(const Time &t, const State &u, const State &uf)
 {
   StateInfo info;
 
@@ -76,7 +76,7 @@ void GGlobalDiag_basic<EquationType>::observe_impl(const Time &t, const State &u
 // RETURNS    : none.
 //**********************************************************************************
 template<typename EquationType>
-void GGlobalDiag_basic<EquationType>::init_impl(StateInfo &info)
+void GBurgersDiag<EquationType>::init_impl(StateInfo &info)
 {
    assert(utmp_ != NULLPTR && this->utmp_->size() > 1
        && "tmp space not set, or is insufficient");
@@ -121,7 +121,7 @@ void GGlobalDiag_basic<EquationType>::init_impl(StateInfo &info)
 // RETURNS    : none.
 //**********************************************************************************
 template<typename EquationType>
-void GGlobalDiag_basic<EquationType>::do_kinetic_L2(const Time t, const State &u, const State &uf, const GString fname)
+void GBurgersDiag<EquationType>::do_kinetic_L2(const Time t, const State &u, const State &uf, const GString fname)
 {
   assert(utmp_ != NULLPTR && utmp_->size() > 3
       && "tmp space not set, or is insufficient");
@@ -219,7 +219,7 @@ void GGlobalDiag_basic<EquationType>::do_kinetic_L2(const Time t, const State &u
 // RETURNS    : none.
 //**********************************************************************************
 template<typename EquationType>
-void GGlobalDiag_basic<EquationType>::do_kinetic_max(const Time t, const State &u, const State &uf, const GString fname)
+void GBurgersDiag<EquationType>::do_kinetic_max(const Time t, const State &u, const State &uf, const GString fname)
 {
   assert(utmp_ != NULLPTR && utmp_->size() > 5
       && "tmp space not set, or is insufficient");
