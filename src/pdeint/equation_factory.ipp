@@ -88,8 +88,8 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
                                   + (ctraits.usebase ? 2 : 0);
                 ctraits.bconserved= eqn_ptree.getValue<bool>  ("bconserved",false);
                 ctraits.bforced   = eqn_ptree.getValue<bool>  ("use_forcing",false);
-                ctraits.Ts_base   = eqn_ptree.getValue<double>("T_surf");
-                ctraits.P0_base   = eqn_ptree.getValue<double>("P0");
+                ctraits.Ts_base   = eqn_ptree.getValue<double>("T_surf"); // K
+                ctraits.P0_base   = eqn_ptree.getValue<double>("P0"); // millibar = hPa
                 ctraits.P0_base *= 100.0; // convert from mb to Pa
                 ctraits.variabledt= stp_ptree.getValue<bool>  ("variable_dt",false);
                 ctraits.bvarvterm = stp_ptree.getValue<bool>  ("variable_term_vel",false);
