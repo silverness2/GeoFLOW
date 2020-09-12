@@ -342,7 +342,7 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
   // *************************************************************
   // Momentum equations RHS:
   // *************************************************************
-  dp   = urhstmp_[urhstmp_.size()-6];  // holds density fluctuation
+  dp   = urhstmp_[urhstmp_.size()-6]; // holds density fluctuation
  *dp   = (*rhoT); 
   if ( traits_.usebase ) {
    *dp -= *ubase_[0];                 // density fluctuation
@@ -361,9 +361,9 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
      *dudt[j] += *Ltot;                               // += L_tot
     }
 
-    grid_-> deriv(*p, j+1, *tmp2, *tmp1);             // Grad p'
-   *tmp1 *= *Mass; 
-   *dudt[j] += *tmp1;                                 // += Grad p'
+    grid_->wderiv(*p, j+1, TRUE, *tmp2, *tmp1);       // Grad p'
+// *tmp1 *= *Mass; 
+   *dudt[j] -= *tmp1;                                 // += Grad p'
 
 //  ghelm_->opVec_prod(*v_[j], urhstmp_, *tmp1);      // rhoT nu Laplacian v_j
 // *tmp1 *= *rhoT;
@@ -1473,6 +1473,29 @@ void GMConv<TypePack>::compute_derived_impl(const State &u, GString sop,
     }
     iuout.resize(1); iuout[0] = 0;
   }
+  else if ( "dptemp"    == sop ) { // potential temp fluctuation
+    assert(uout .size() >= 1   && "Incorrect no. output components");
+    assert(utmp .size() >= 4   && "Incorrect no. tmp components");
+    tu[0] = utmp[3];
+    this->compute_derived_impl(u, "press", utmp, uout, iuout);
+    this->compute_derived_impl(u, "temp" , utmp, tu  , iuout);
+    fact1 = -RD / CPD;
+    fact2 = 1.0/traits_.P0_base;
+    // Compute theta from T = theta * (P/P0)^(R/C_p)
+    // Note: Do we need to change definition for moist dynamics?
+    for ( auto j=0; j<uout[0]->size(); j++ ) {
+      (*uout[0])[j] = (*tu[0])[j] * pow(fact2*(*uout[0])[j], fact1);
+    }
+    if ( traits_.usebase ) { // subtract base potl temp
+      // theta_base = P0/(RD *rho_base) (P_base/P0)^(1-R/Cp)
+      for ( auto j=0; j<uout[0]->size(); j++ ) {
+        tb = (traits_.P0_base/(RD*(*u[BASESTATE])[j])) 
+           * pow((*u[BASESTATE+1])[j]/traits_.P0_base,1.0+fact1);
+        (*uout[0])[j] -= tb;
+      }
+    }
+
+  }
   else if ( "ptemp"    == sop ) { // potential temp
     assert(uout .size() >= 1   && "Incorrect no. output components");
     assert(utmp .size() >= 4   && "Incorrect no. tmp components");
@@ -1484,17 +1507,8 @@ void GMConv<TypePack>::compute_derived_impl(const State &u, GString sop,
     // Compute theta from T = theta * (P/P0)^(R/C_p)
     // Note: Do we need to change definition for moist dynamics?
     for ( auto j=0; j<uout[0]->size(); j++ ) {
-      (*uout[0])[j] = (*utmp[3])[j] * pow(fact2*(*uout[0])[j], fact1);
+      (*uout[0])[j] = (*tu[0])[j] * pow(fact2*(*uout[0])[j], fact1);
     }
-    if ( traits_.usebase ) { // subtract base potl temp
-      // theta_base = P0/(RD *rho_base) (P_base/P0)^(1-R/Cp)
-      for ( auto j=0; j<uout[0]->size(); j++ ) {
-        tb = (traits_.P0_base/(RD*(*u[BASESTATE])[j])) 
-           * pow((*u[BASESTATE+1])[j]/traits_.P0_base,1.0+fact1);
-        (*uout[0])[j] -= tb;
-      }
-    }
-
   }
   else if ( "den"      == sop ) { // density (total)
     assert(uout .size() >= 1   && "Incorrect no. output components");
