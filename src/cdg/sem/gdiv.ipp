@@ -67,7 +67,6 @@ void GDivOp<TypePack>::apply(StateComp &d, State &u, State &utmp, StateComp &div
        && "Insufficient temp space specified");
 
   GINT       nxy = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
-  GElemList *gelems=&grid_->elems();
 
 
   // div = D^{T,j} ( d u_j ):
@@ -106,7 +105,6 @@ void GDivOp<TypePack>::apply(State &u, State &utmp, StateComp &div)
        && "Insufficient temp space specified");
 
   GINT       nxy = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
-  GElemList *gelems=&grid_->elems();
 
 
   // div = D^{T,j} ( u_j ):
