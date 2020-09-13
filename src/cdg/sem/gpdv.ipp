@@ -64,7 +64,7 @@ void GpdV<TypePack>::apply(StateComp &p, State &u, State &utmp, StateComp &po)
 // Must compute:
 //    po = p Div u 
 //
-  StateComp *mass = &grid_->massop();
+  GMass *mass = &grid_->massop();
 
   // Compute po += Gj (D^j u_j): 
   grid_->deriv(*u[0], 1, *utmp[0], po );
