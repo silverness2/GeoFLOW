@@ -241,6 +241,7 @@ cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax
 
 #if 1
   gdiv_->apply(*rhoT, v_, urhstmp_, *dudt[DENSITY]); 
+ *dudt[DENSITY] *= -1.0;                                   // bring to LHS
 #else
   compute_div(*rhoT, v_, urhstmp_, *dudt[DENSITY]); 
 #endif
@@ -263,6 +264,7 @@ cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax
     *tmp1 = (*qi_[j]) * (*rhoT);                // q_i rhoT
 #if 1
     gdiv_->apply(*tmp1, W_, urhstmp_, *tmp2); 
+   *tmp2 *= -1.0;                               // bring to LHS
 #else
     compute_div(*tmp1, W_, urhstmp_, *tmp2);    // Div(q_i rhoT W)
 #endif
@@ -304,9 +306,11 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
   GMTK::saxpy<Ftype>(*tmp1, *e, 1.0, *p, 1.0);     // h = p+e, enthalpy density
 #if 1
   gdiv_->apply(*tmp1, v_, urhstmp_, *dudt[ENERGY]); 
+ *dudt[ENERGY] *= -1.0;                            // bring to LHS
 #else
   compute_div(*tmp1, v_, urhstmp_, *dudt[ENERGY]); // Div (h v);
 #endif
+
 
   gstressen_->apply(v_, urhstmp_, *tmp1);          // mu u_i s^{ij},j
  *dudt[ENERGY] += *tmp1;                           // -= mu u^i s^{ij},j
@@ -352,6 +356,7 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
   for ( auto j=0; j<v_.size(); j++ ) { // for each component
 #if 1
     gdiv_->apply(*s_[j], v_, urhstmp_, *dudt[j]); 
+   *dudt[j] *= -1.0;                                   // bring to LHS
 #else
     compute_div(*s_[j], v_, urhstmp_, *dudt[j]); 
 #endif
@@ -1215,6 +1220,7 @@ void GMConv<TypePack>::compute_falloutsrc(StateComp &g, State &qi, State &tvi, G
      // Compute i_th contribution to source term:
 #if 1
      gdiv_->apply(*qg, W_, utmp, *div); 
+     *div *= -1.0; // required for discretization 
 #else
      compute_div(*qg, W_, utmp, *div);
 #endif
