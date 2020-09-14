@@ -239,7 +239,7 @@ cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax
   // Total density RHS:
   // *************************************************************
 
-#if 1
+#if 0
   gdiv_->apply(*rhoT, v_, urhstmp_, *dudt[DENSITY]); 
  *dudt[DENSITY] *= -1.0;                                   // bring to LHS
 #else
@@ -262,14 +262,15 @@ cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax
     gadvect_->apply(*qi_[j], v_, urhstmp_, *dudt[VAPOR+j]); // apply advection
     compute_vpref(*tvi_[j], W_);
     *tmp1 = (*qi_[j]) * (*rhoT);                // q_i rhoT
-#if 1
+#if 0
     gdiv_->apply(*tmp1, W_, urhstmp_, *tmp2); 
-   *tmp2 *= -1.0;                               // bring to LHS
+    *tmp2 *= *irhoT;                            // Div(q_i rhoT W)/rhoT
+    *dudt[VAPOR+j] -= *tmp2;                    // += Div(q_i rhoT W)/rhoT
 #else
     compute_div(*tmp1, W_, urhstmp_, *tmp2);    // Div(q_i rhoT W)
-#endif
     *tmp2 *= *irhoT;                            // Div(q_i rhoT W)/rhoT
-    *dudt[VAPOR+j] += *tmp2;                    // += Div(q_i rhoT W)/rhoT
+    *dudt[VAPOR+j] = *tmp2;                     // += Div(q_i rhoT W)/rhoT
+#endif
     *tmp1  = (*Ltot) * (*irhoT); *tmp1 *= (*qi_[j]);// q_i/rhoT Ltot
     *dudt[VAPOR+j] -= *tmp1;                    // += -q_i/rhoT Ltot
     if ( uf[VAPOR+j] != NULLPTR ) {             // add in sdot(s_i)/rhoT
@@ -304,13 +305,12 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
 
 
   GMTK::saxpy<Ftype>(*tmp1, *e, 1.0, *p, 1.0);     // h = p+e, enthalpy density
-#if 1
+#if 0
   gdiv_->apply(*tmp1, v_, urhstmp_, *dudt[ENERGY]); 
  *dudt[ENERGY] *= -1.0;                            // bring to LHS
 #else
   compute_div(*tmp1, v_, urhstmp_, *dudt[ENERGY]); // Div (h v);
 #endif
-
 
   gstressen_->apply(v_, urhstmp_, *tmp1);          // mu u_i s^{ij},j
  *dudt[ENERGY] += *tmp1;                           // -= mu u^i s^{ij},j
@@ -354,7 +354,7 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
   }
   Mass = grid_->massop().data();
   for ( auto j=0; j<v_.size(); j++ ) { // for each component
-#if 1
+#if 0
     gdiv_->apply(*s_[j], v_, urhstmp_, *dudt[j]); 
    *dudt[j] *= -1.0;                                   // bring to LHS
 #else
@@ -366,9 +366,14 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
      *dudt[j] += *Ltot;                               // += L_tot
     }
 
+#if 1
     grid_->wderiv(*p, j+1, TRUE, *tmp2, *tmp1);       // Grad p'
-// *tmp1 *= *Mass; 
    *dudt[j] -= *tmp1;                                 // += Grad p'
+#else
+    grid_->deriv(*p, j+1, *tmp2, *tmp1);              // Grad p'
+   *tmp1 *= *Mass; 
+   *dudt[j] += *tmp1;                                 // += Grad p'
+#endif
 
 //  ghelm_->opVec_prod(*v_[j], urhstmp_, *tmp1);      // rhoT nu Laplacian v_j
 // *tmp1 *= *rhoT;
@@ -986,9 +991,7 @@ void GMConv<TypePack>::compute_div(StateComp &q, State &v, State &utmp, StateCom
 
   // Div (q v) = q Div v + v.Grad q 
   gadvect_->apply(q, v, tmp, div); 
-    assert(div.isfinite());
   gpdv_   ->apply(q, v, tmp, *utmp[GDIM]); 
-    assert(utmp[GDIM]->isfinite());
   div += *utmp[GDIM];
 
 } // end of method compute_div
@@ -1218,7 +1221,7 @@ void GMConv<TypePack>::compute_falloutsrc(StateComp &g, State &qi, State &tvi, G
      compute_vpref(*tvi[j], W_);
 
      // Compute i_th contribution to source term:
-#if 1
+#if 0
      gdiv_->apply(*qg, W_, utmp, *div); 
      *div *= -1.0; // required for discretization 
 #else
