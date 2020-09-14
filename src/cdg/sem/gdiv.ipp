@@ -69,16 +69,27 @@ void GDivOp<TypePack>::apply(StateComp &d, State &u, State &utmp, StateComp &div
   GINT       nxy = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
 
 
-  // div = D^{T,j} ( d u_j ):
+#if 1
+  // div = D^{T,j} ( d u_j MJ ):
   d.pointProd(*u[0], *utmp[1]);
-  grid_->wderiv(*utmp[1], 1, FALSE, *utmp[0], div);
+  grid_->wderiv(*utmp[1], 1, TRUE, *utmp[0], div);
   for ( auto j=1; j<nxy; j++ ) { 
      d.pointProd(*u[j], *utmp[1]);
-     grid_->wderiv(*utmp[1], j+1, FALSE, *utmp[0], *utmp[2]);
+     grid_->wderiv(*utmp[1], j+1, TRUE, *utmp[0], *utmp[2]);
      div += *utmp[2];
   }
+#else
+  // div = MJ d/dx_j ( d u_j ):
+  d.pointProd(*u[0], *utmp[1]);
+  grid_->deriv(*utmp[1], 1, *utmp[0], div);
+  for ( auto j=1; j<nxy; j++ ) { 
+     d.pointProd(*u[j], *utmp[1]);
+     grid_->deriv(*utmp[1], j+1, *utmp[0], *utmp[2]);
+     div += *utmp[2];
+  }
+  div *= *(massop_->data());
+#endif
 
-//div *= *(massop_->data());
 
 } // end of method apply (1)
 
@@ -108,9 +119,9 @@ void GDivOp<TypePack>::apply(State &u, State &utmp, StateComp &div)
 
 
   // div = D^{T,j} ( u_j ):
-  grid_->wderiv(*u[0], 1, FALSE, *utmp[0], div);
+  grid_->wderiv(*u[0], 1, TRUE, *utmp[0], div);
   for ( auto j=1; j<nxy; j++ ) { 
-     grid_->wderiv(*u[j], j+1, FALSE, *utmp[0], *utmp[1]);
+     grid_->wderiv(*u[j], j+1, TRUE, *utmp[0], *utmp[1]);
      div += *utmp[1];
   }
 

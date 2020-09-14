@@ -72,7 +72,7 @@ void GAdvect<TypePack>::apply(StateComp &p, const State &u, State &utmp, StateCo
   else {
     po = 0.0;
   }
-  for ( auto j=1; j<GDIM; j++ ) { 
+  for ( auto j=1; j<u.size(); j++ ) { 
     if ( u[j] == NULLPTR ) continue;
     grid_->deriv(p, j+1, *utmp[1], *utmp[0]);
     utmp[0]->pointProd(*u[j]);

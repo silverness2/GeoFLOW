@@ -43,7 +43,8 @@ GpdV<TypePack>::~GpdV()
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : apply
-// DESC   : Compute application of this operator to input vector:
+// DESC   : Compute application of this operator to input vector
+//          & scalar field:
 //            po = p Div u
 // ARGS   : p   : input p field
 //          u   : input vector field
@@ -68,7 +69,7 @@ void GpdV<TypePack>::apply(StateComp &p, State &u, State &utmp, StateComp &po)
 
   // Compute po += Gj (D^j u_j): 
   grid_->deriv(*u[0], 1, *utmp[0], po );
-  for ( auto j=1; j<GDIM; j++ ) { 
+  for ( auto j=1; j<u.size(); j++ ) { 
      grid_->deriv(*u[j], j+1, *utmp[1], *utmp[0] );
      po += *utmp[0];
   }
@@ -82,7 +83,7 @@ void GpdV<TypePack>::apply(StateComp &p, State &u, State &utmp, StateComp &po)
   }
 
   // Apply Jacobian:
-  po *= *(mass->data());;
+  po *= *(mass->data());
 
 } // end of method apply
 
