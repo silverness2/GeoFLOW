@@ -58,7 +58,7 @@ public:
 	}
 
 	/**
-	 * Apply flter.
+	 * Apply filter, in-place.
 	 *
 	 * Apply the filter to the state u, in place.
 	 *
