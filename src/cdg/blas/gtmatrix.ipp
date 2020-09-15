@@ -342,14 +342,16 @@ void GTMatrix<T>::operator-=(const T a)
     "Invalid template type: GTMatrix<T>::operator+=(T)");
 
   data_ -= a;
-}
+
+} // end of -= operator
+
 
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : operator *=
 // DESC   : multiplies this by constant, and returns
 //          result, modifying *this data
-// ARGS   :
+// ARGS   : a : constant factor
 // RETURNS: product matrix
 //**********************************************************************************
 template<class T>
@@ -361,6 +363,7 @@ void GTMatrix<T>::operator*=(const T a)
   data_ *= a;
 
 } // end of *= operator
+
 
 //**********************************************************************************
 //**********************************************************************************
