@@ -139,18 +139,19 @@ GLLBasis<T,TE>::GLLBasis(const GLLBasis &b)
 
 
     //  matrices, and node data:
-    xiNodes_      = b.xiNodes_;
-    weights_      = b.weights_;
-    Pn_           = b.Pn_;
-    dPn_          = b.dPn_;
-    Phi_          = b.Phi_;
-    dPhi_         = b.dPhi_;
-    dPhiT_        = b.dPhiT_;
-    stiffMatrix_  = b.stiffMatrix_;
-    LegMatrix_    = b.LegMatrix_;
-    LegTransform_ = b.LegTransform_;
-    iLegTransform_= b.iLegTransform_;
-    LegTransWeightMat_ = b.LegTransWeightMat_;
+    xiNodes_       = b.xiNodes_;
+    weights_       = b.weights_;
+    Pn_            = b.Pn_;
+    dPn_           = b.dPn_;
+    Phi_           = b.Phi_;
+    dPhi_          = b.dPhi_;
+    dPhiT_         = b.dPhiT_;
+    stiffMatrix_   = b.stiffMatrix_;
+    LegMatrix_     = b.LegMatrix_;
+    LegTransform_  = b.LegTransform_;
+    iLegTransform_ = b.iLegTransform_;
+    LegFiltertMat_ = b.LegFilterMat_;
+    LegFiltertMatT_= b.LegFilterMatT_;
 
 }
 
@@ -201,7 +202,8 @@ void GLLBasis<T,TE>::operator=(const GLLBasis &b)
     LegMatrix_    = b.LegMatrix_;
     LegTransform_ = b.LegTransform_;
     iLegTransform_= b.iLegTransform_;
-    LegTransWeightMat_ = b.LegTransWeightMat_;
+    LegFilterMat_ = b.LegFilterMat_;
+    LegFilterMatT_= b.LegFilterMatT_;
   }
 
 }
@@ -377,10 +379,11 @@ GBOOL GLLBasis<T,TE>::resize(GINT  newOrder)
   stiffMatrixEv_.resize(Np_+1,Np_+1);
 
   //  resize LegMatrix_:
-  LegMatrix_.resize(Np_+1,Np_+1);
-  LegTransform_.resize(Np_+1,Np_+1);
+  LegMatrix_    .resize(Np_+1,Np_+1);
+  LegTransform_ .resize(Np_+1,Np_+1);
   iLegTransform_.resize(Np_+1,Np_+1);
-  LegTransWeightMat_.resize(Np_+1,Np_+1);
+  LegFilterMat_ .resize(Np_+1,Np_+1);
+  LegFilterMatT_.resize(Np_+1,Np_+1);
 
   if ( !init() ) return FALSE; 
 
@@ -1043,17 +1046,20 @@ void GLLBasis<T,TE>::getLegMatrix(GTMatrix<TE> &ret)
 
 //************************************************************************************
 //************************************************************************************
-// METHOD : getLegTransWeightMat_
-// DESC   : Get pointer to Legendre transformation weight matrix
-// ARGS   : none
+// METHOD : getFilterMat
+// DESC   : Get pointer to Legendre transformation filter matrix. This
+//          isn't filled here, but may be set from caller, and stored
+//          here
+// ARGS   : btranspose: return transpose?
 // RETURNS: GTMatrix *
 //************************************************************************************
 template<typename T, typename TE>
-GTMatrix<T> *GLLBasis<T,TE>::getLegTransWeightMat_()
+GTMatrix<T> *GLLBasis<T,TE>::getFilterMat(GBOOL btranspose)
 {
-  return &LegTransWeightMat_;
+  if ( btranspose ) return &LegFilterMatT_;
+  else              return &LegFilterMat_;
 
-} // end of method getLegTransWeightMat
+} // end of method getFilterMat
 
 
 //************************************************************************************
