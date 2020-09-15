@@ -2,6 +2,17 @@
 // Module       : gboyd_filter.hpp
 // Date         : 9/14/20 (DLR)
 // Description  : Computes the Boyd filter to diminish aliasing errors.
+//                Taken from Giraldo & Rosemont 2004, MWR:132 133:
+//                    u <-- F u
+//                where
+//                    F = L Lambda L^-1; s.t.
+//                and 
+//                    Lambda = 1 if i< ifilter
+//                             mu [(i-ifilter)/(N - ifilter)]^2, i>= ifilter.
+//                L is the Legendre transform matrix:
+//                    L = | P_0(xi0), P_1(xi0) ... P_i(xi0)-P_{i-2)(xi0) ... |
+//                        | P_0(xi1), P_1(xi1) ... P_i(xi1)-P_{i-2)(xi1) ... |
+//                        |  ...                                             |.
 // Copyright    : Copyright 2020. Colorado State University. All rights reserved.
 // Derived From : FilterBase
 //==================================================================================
@@ -26,7 +37,7 @@ public:
         using StateComp  = typename Interface::StateComp;
         using Grid       = typename Interface::Grid;
         using Mass       = typename Interface::Mass;
-        using Value      = typename Interface::Value;
+        using Ftype      = typename Interface::Value;
         using Derivative = typename Interface::Derivative;
         using Time       = typename Interface::Time;
         using CompDesc   = typename Interface::CompDesc;
@@ -42,16 +53,21 @@ public:
         static_assert(std::is_same<Grid,GGrid>::value,
                "Grid is of incorrect type");
 
-public:
+        // GBoydFilter traits:
+        struct Traits {
+          GINT   ifilter;    // filter starting mode
+          Ftype  mufilter;   // filter trunc amount
+        };
+
 
                           GBoydFilter() = delete;
-                          GBoydFilter(Grid &grid);
+                          GBoydFilter(Traits &traits, Grid &grid);
                           GBoydFilter(const GBoydFilter &);
                          ~GBoydFilter();
 
-        void              apply(Time t, StateComp &u, State  &utmp, 
+        void              apply(Time &t, StateComp &u, State  &utmp, 
                                 StateComp &po);
-        void              apply(Time t, StateComp &u, State  &utmp); 
+        void              apply(Time &t, StateComp &u, State  &utmp); 
 
 private:
         void              init();
