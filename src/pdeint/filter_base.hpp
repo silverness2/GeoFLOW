@@ -53,8 +53,8 @@ public:
 	 * \param[in]   utmp  tmp state vectors
 	 * @param[out]  uo    filtered state 
 	 */
-	void apply(const Time &t, State &u, State utmp, State &uo){
-		this->apply_impl(t,u,ub,uo);
+	void apply(const Time &t, StateComp &u, State utmp, StateComp &uo){
+		this->apply_impl(t,u,utmp,uo);
 	}
 
 	/**
@@ -66,7 +66,7 @@ public:
 	 * @param[in,out] u     Is the state of the system of equations
 	 * \param[in]     utmp  tmp state vectors
 	 */
-	void apply(const Time &t, State &u, State utmp){
+	void apply(const Time &t, StateComp &u, State utmp){
 		this->apply_impl(t,u,utmp);
 	}
 
