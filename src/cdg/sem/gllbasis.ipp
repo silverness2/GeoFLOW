@@ -139,15 +139,18 @@ GLLBasis<T,TE>::GLLBasis(const GLLBasis &b)
 
 
     //  matrices, and node data:
-    xiNodes_     = b.xiNodes_;
-    weights_     = b.weights_;
-    Pn_          = b.Pn_;
-    dPn_         = b.dPn_;
-    Phi_         = b.Phi_;
-    dPhi_        = b.dPhi_;
-    dPhiT_       = b.dPhiT_;
-    stiffMatrix_ = b.stiffMatrix_;
-    LegMatrix_   = b.LegMatrix_;
+    xiNodes_      = b.xiNodes_;
+    weights_      = b.weights_;
+    Pn_           = b.Pn_;
+    dPn_          = b.dPn_;
+    Phi_          = b.Phi_;
+    dPhi_         = b.dPhi_;
+    dPhiT_        = b.dPhiT_;
+    stiffMatrix_  = b.stiffMatrix_;
+    LegMatrix_    = b.LegMatrix_;
+    LegTransform_ = b.LegTransform_;
+    iLegTransform_= b.iLegTransform_;
+    LegTransWeightMat_ = b.LegTransWeightMat_;
 
 }
 
@@ -187,15 +190,18 @@ void GLLBasis<T,TE>::operator=(const GLLBasis &b)
 
 
     //  matrices, and node data:
-    xiNodes_     = b.xiNodes_;
-    weights_     = b.weights_;
-    Pn_          = b.Pn_;
-    dPn_         = b.dPn_;
-    Phi_         = b.Phi_;
-    dPhi_        = b.dPhi_;
-    dPhiT_       = b.dPhiT_;
-    stiffMatrix_ = b.stiffMatrix_;
-    LegMatrix_   = b.LegMatrix_;
+    xiNodes_      = b.xiNodes_;
+    weights_      = b.weights_;
+    Pn_           = b.Pn_;
+    dPn_          = b.dPn_;
+    Pppn_i * weights_[j];hi_         = b.Phi_;
+    dPhi_         = b.dPhi_;
+    dPhiT_        = b.dPhiT_;
+    stiffMatrix_  = b.stiffMatrix_;
+    LegMatrix_    = b.LegMatrix_;
+    LegTransform_ = b.LegTransform_;
+    iLegTransform_= b.iLegTransform_;
+    LegTransWeightMat_ = b.LegTransWeightMat_;
   }
 
 }
@@ -372,6 +378,9 @@ GBOOL GLLBasis<T,TE>::resize(GINT  newOrder)
 
   //  resize LegMatrix_:
   LegMatrix_.resize(Np_+1,Np_+1);
+  LegTransform_.resize(Np_+1,Np_+1);
+  iLegTransform_.resize(Np_+1,Np_+1);
+  LegTransWeightMat_.resize(Np_+1,Np_+1);
 
   if ( !init() ) return FALSE; 
 
@@ -723,6 +732,8 @@ GBOOL GLLBasis<T,TE>::init()
   getDerivMatrixiW(dPhiiWEv_,FALSE); //  Diag(W^-1)*D
   getDerivMatrixiW(dPhiiWTEv_,TRUE); // (Diag(W^-1)*D)^T
 
+  if ( !computeLegTransform() ) return FALSE; // Legendre transform matrix
+
   bInit_ = TRUE;
 
   return TRUE;
@@ -758,6 +769,39 @@ GBOOL GLLBasis<T,TE>::computeLegendreMatrix()
   return TRUE;
 
 } // end of method computeLegendreMatrix
+
+
+//************************************************************************************
+//************************************************************************************
+// METHOD : computeLegTransform
+// DESC   : Computes Legendre transform matrix that
+//          enables conversion to modal space. 
+// ARGS   : none.
+// RETURNS: TRUE on success; else FALSE 
+//************************************************************************************
+template<typename T, typename TE>
+GBOOL GLLBasis<T,TE>::computeLegTransform()
+{
+
+  GINT  i, j;
+  T     ppn, pder, pm1, pdm1, pm2, pdm2;
+
+  for ( i=0; i<Np_+1; i++ ) {
+    for ( j=0; j<Np_+1; j++ ) {
+      if ( j < 2 ) {
+        LegTransform_(i,j) =  evalBasis(j,xiNodes_[i]);
+      }
+      else {
+        LegTransform_(i,j) = evalBasis(j,xiNodes_[i]) - evalBasis(j-2,xiNodes_[i]);
+      }
+    }
+  }
+  LegTransform_.inverse(iLegTransform_);  
+
+
+  return TRUE;
+
+} // end of method computeLegTransform
 
 
 //************************************************************************************
@@ -995,6 +1039,51 @@ void GLLBasis<T,TE>::getLegMatrix(GTMatrix<TE> &ret)
       ret(i,j) = static_cast<TE>(LegMatrix_(i,j));
 
 } // end of method getLegMatrix
+
+
+//************************************************************************************
+//************************************************************************************
+// METHOD : getLegTransWeightMat_
+// DESC   : Get pointer to Legendre transformation weight matrix
+// ARGS   : none
+// RETURNS: GTMatrix *
+//************************************************************************************
+template<typename T, typename TE>
+GTMatrix<T> *GLLBasis<T,TE>::getLegTransWeightMat_()
+{
+  return &LegTransWeightMat_;
+
+} // end of method getLegTransWeightMat
+
+
+//************************************************************************************
+//************************************************************************************
+// METHOD : getLegTransform
+// DESC   : Get pointer to Legendre transformation matrix
+// ARGS   : none
+// RETURNS: GTMatrix *
+//************************************************************************************
+template<typename T, typename TE>
+GTMatrix<T> *GLLBasis<T,TE>::getLegTransform()
+{
+  return &LegTransform_;
+
+} // end of method getLegTransform
+
+
+//************************************************************************************
+//************************************************************************************
+// METHOD : getiLegTransform
+// DESC   : Get pointer to inverse of Legendre transformation matrix
+// ARGS   : none
+// RETURNS: GTMatrix *
+//************************************************************************************
+template<typename T, typename TE>
+GTMatrix<T> *GLLBasis<T,TE>::getiLegTransform()
+{
+  return &iLegTransform_;
+
+} // end of method getiLegTransform
 
 
 //************************************************************************************

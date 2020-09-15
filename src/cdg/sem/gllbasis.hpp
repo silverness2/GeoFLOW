@@ -76,6 +76,9 @@ virtual  void             getDerivMatrixW(GTMatrix<TE> &ret, GBOOL btranspose=FA
 virtual  void             getDerivMatrixiW(GTMatrix<TE> &ret, GBOOL btranspose=FALSE);
 
 virtual  void             getLegMatrix(GTMatrix<TE> &ret);
+virtual  GTMatrix<T>     *getLegTransform ();
+virtual  GTMatrix<T>     *getiLegTransform();
+virtual  GTMatrix<T>     *getLegTransWeightMat();
 
 // Evaluation methods:
 virtual  TE               evalBasis(GINT  i, TE eta);
@@ -97,6 +100,7 @@ virtual  GBOOL             computeNodes       ();
 virtual  GBOOL             computeWeights     ();
 virtual  GBOOL             computeDerivMatrix ();
 virtual  GBOOL             computeLegendreMatrix ();
+virtual  GBOOL             computeLegTransform();
          void              computeJacobi(GINT  & , T  alpha, T  beta , T &Pn, 
                                          T &dPn  , T &Pnm1 , T &dPnm1, T &Pnm2,
                                          T &dPnm2, T &xi);
@@ -129,6 +133,9 @@ GTMatrix<T>      dPhi_;
 GTMatrix<T>      dPhiT_;
 GTMatrix<T>      stiffMatrix_;
 GTMatrix<T>      LegMatrix_;
+GTMatrix<T>      LegTransform_;
+GTMatrix<T>      iLegTransform_;
+GTMatrix<T>      LegTransWeightMat_;
 
 // Data evaluated at the TE type:
 GTVector<TE>     xiNodesEv_;
