@@ -150,8 +150,8 @@ GLLBasis<T,TE>::GLLBasis(const GLLBasis &b)
     LegMatrix_     = b.LegMatrix_;
     LegTransform_  = b.LegTransform_;
     iLegTransform_ = b.iLegTransform_;
-    LegFiltertMat_ = b.LegFilterMat_;
-    LegFiltertMatT_= b.LegFilterMatT_;
+    LegFilterMat_  = b.LegFilterMat_;
+    LegFilterMatT_ = b.LegFilterMatT_;
 
 }
 
@@ -195,7 +195,6 @@ void GLLBasis<T,TE>::operator=(const GLLBasis &b)
     weights_      = b.weights_;
     Pn_           = b.Pn_;
     dPn_          = b.dPn_;
-    Pppn_i * weights_[j];hi_         = b.Phi_;
     dPhi_         = b.dPhi_;
     dPhiT_        = b.dPhiT_;
     stiffMatrix_  = b.stiffMatrix_;

@@ -66,6 +66,10 @@ virtual  void             getDerivMatrixW(GTMatrix<TE> &ret, GBOOL btrans=FALSE)
 virtual  void             getDerivMatrixiW(GTMatrix<TE> &ret, GBOOL btrans=FALSE)=0;
 
 virtual  void             getLegMatrix(GTMatrix<TE> &ret)=0;
+virtual  GTMatrix<T>     *getLegTransform ()=0;
+virtual  GTMatrix<T>     *getiLegTransform()=0;
+virtual  GTMatrix<T>     *getFilterMat    (GBOOL btranspose=FALSE)=0;
+
 
 // Evaluation methods:
 virtual  TE               evalBasis(GINT  i, TE eta)=0;

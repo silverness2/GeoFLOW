@@ -65,7 +65,7 @@ GBoydFilter<TypePack>::~GBoydFilter()
 // RETURNS:  none
 //**********************************************************************************
 template<typename TypePack>
-void GBoydFilter<TypePack>::apply(Time &t, StateComp &u, State &utmp, StateComp &uo) 
+void GBoydFilter<TypePack>::apply_impl(const Time &t, const StateComp &u, State &utmp, StateComp &uo) 
 {
 
   GSIZET           ibeg, iend; // beg, end indices in global array
@@ -106,13 +106,13 @@ void GBoydFilter<TypePack>::apply(Time &t, StateComp &u, State &utmp, StateComp 
 // RETURNS:  none
 //**********************************************************************************
 template<typename TypePack>
-void GBoydFilter<TypePack>::apply(Time &t, StateComp &u, State &utmp) 
+void GBoydFilter<TypePack>::apply_impl(const Time &t, StateComp &u, State &utmp) 
 {
 
   assert( utmp.size() >= 1
        && "Insufficient temp space provided");
 
-  apply(t, u, utmp, *utmp[0]) 
+  apply(t, u, utmp, *utmp[0]); 
   u = *utmp[0];
 
 } // end of method apply
@@ -143,8 +143,8 @@ void GBoydFilter<TypePack>::init()
   //            mu [(i-ifilter)/(N - ifilter)]^2, i>= ifilter
   for ( auto e=0; e<gelems->size(); e++ ) {
     for ( auto k=0; k<GDIM; k++ ) {
-      F  = (*gelems)[e]->gbasis(k)->getLegFilterMat(); // storage for filter
-      FT = (*gelems)[e]->gbasis(k)->getLegFilterMat(TRUE); // transpose 
+      F  = (*gelems)[e]->gbasis(k)->getFilterMat(); // storage for filter
+      FT = (*gelems)[e]->gbasis(k)->getFilterMat(TRUE); // transpose 
       nnodes = (*gelems)[e]->gbasis(k)->getOrder()+1;
       Lambda.resize(nnodes,nnodes); Lambda = 0.0;
       tmp   .resize(nnodes,nnodes);

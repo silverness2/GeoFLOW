@@ -29,7 +29,7 @@
 
 
 template<typename TypePack>
-class GBoydFilter : public FilterBase
+class GBoydFilter : public FilterBase<TypePack>
 {
 public:
         using Interface  = EquationBase<TypePack>;
@@ -65,9 +65,11 @@ public:
                           GBoydFilter(const GBoydFilter &);
                          ~GBoydFilter();
 
-        void              apply(Time &t, StateComp &u, State  &utmp, 
+protected:
+
+        void              apply_impl(const Time &t, const StateComp &u, State  &utmp, 
                                 StateComp &po);
-        void              apply(Time &t, StateComp &u, State  &utmp); 
+        void              apply_impl(const Time &t, StateComp &u, State  &utmp); 
 
 private:
         void              init();
