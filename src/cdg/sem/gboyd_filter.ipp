@@ -54,7 +54,7 @@ GBoydFilter<TypePack>::~GBoydFilter()
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : apply
+// METHOD : apply_impl
 // DESC   : Compute application of this filter to input vector
 //           
 // ARGS   : t   : Time
@@ -65,12 +65,12 @@ GBoydFilter<TypePack>::~GBoydFilter()
 // RETURNS:  none
 //**********************************************************************************
 template<typename TypePack>
-void GBoydFilter<TypePack>::apply_impl(const Time &t, const StateComp &u, State &utmp, StateComp &uo) 
+void GBoydFilter<TypePack>::apply_impl(const Time &t, StateComp &u, State &utmp, StateComp &uo) 
 {
 
   GSIZET           ibeg, iend; // beg, end indices in global array
   GTVector<Ftype>  tmp;
-  GTMatrix<Ftype> *F(GDIM);
+  GTMatrix<Ftype> *F[GDIM];
   GElemList       *gelems=&grid_->elems();
 
   if ( !bInit_ ) init();
@@ -91,12 +91,12 @@ void GBoydFilter<TypePack>::apply_impl(const Time &t, const StateComp &u, State 
   u .range_reset(); 
   uo.range_reset(); 
 
-} // end of method apply
+} // end of method apply_impl
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : apply
+// METHOD : apply_impl
 // DESC   : In-place application of this filter to input vector
 //           
 // ARGS   : t   : Time
@@ -112,10 +112,10 @@ void GBoydFilter<TypePack>::apply_impl(const Time &t, StateComp &u, State &utmp)
   assert( utmp.size() >= 1
        && "Insufficient temp space provided");
 
-  apply(t, u, utmp, *utmp[0]); 
+  apply_impl(t, u, utmp, *utmp[0]); 
   u = *utmp[0];
 
-} // end of method apply
+} // end of method apply_impl
 
 
 //**********************************************************************************

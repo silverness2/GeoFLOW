@@ -55,8 +55,8 @@ public:
 
         // GBoydFilter traits:
         struct Traits {
-          GINT   ifilter;    // filter starting mode
-          Ftype  mufilter;   // filter trunc amount
+          int    ifilter;    // filter starting mode
+          double mufilter;   // filter trunc amount
         };
 
 
@@ -67,7 +67,7 @@ public:
 
 protected:
 
-        void              apply_impl(const Time &t, const StateComp &u, State  &utmp, 
+        void              apply_impl(const Time &t, StateComp &u, State  &utmp, 
                                 StateComp &po);
         void              apply_impl(const Time &t, StateComp &u, State  &utmp); 
 

@@ -53,7 +53,7 @@ public:
 	 * \param[in/out]  utmp  tmp state vectors
 	 * @param[out]     uo    filtered state 
 	 */
-	void apply(const Time &t, const StateComp& u, State& utmp, StateComp& uo){
+	void apply(const Time &t, StateComp& u, State& utmp, StateComp& uo){
 		this->apply_impl(t,u,utmp,uo);
 	}
 
@@ -76,7 +76,7 @@ protected:
 	/**
 	 * Must be provided by implementation
 	 */
-	virtual void apply_impl(const Time& t, const StateComp& u, State& utmp, StateComp& uo) = 0;
+	virtual void apply_impl(const Time& t, StateComp& u, State& utmp, StateComp& uo) = 0;
 	virtual void apply_impl(const Time& t, StateComp& u, State& utmp) = 0;
 
 };
