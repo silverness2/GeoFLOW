@@ -734,9 +734,11 @@ GBOOL GLLBasis<T,TE>::init()
   getDerivMatrixiW(dPhiiWEv_,FALSE); //  Diag(W^-1)*D
   getDerivMatrixiW(dPhiiWTEv_,TRUE); // (Diag(W^-1)*D)^T
 
+  bInit_ = TRUE;
+
+  // Note: following call must have bInit_ = TRUE
   if ( !computeLegTransform() ) return FALSE; // Legendre transform matrix
 
-  bInit_ = TRUE;
 
   return TRUE;
 
