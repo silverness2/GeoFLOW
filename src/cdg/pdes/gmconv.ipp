@@ -409,9 +409,9 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
   }
 
   // Do filtering, if any:
-  FilterList *fl = this->get_filter_list();
-  for ( auto j=0; j<fl->size((); j++ ) {
-    (*fl)[j].apply(t, *dudt[j], urhstmp_);
+  FilterList *fl = &this->get_filter_list();
+  for ( auto j=0; j<fl->size(); j++ ) {
+    (*fl)[j]->apply(t, *dudt[j], urhstmp_);
   }
 
   istage_++;
@@ -813,7 +813,7 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
   fv_   = NULLPTR;
   s_    = NULLPTR;
 
-  assert(this->get_filter_list_().size == nevolve_ );
+  assert(this->get_filter_list().size() == nevolve_ );
 
   compute_base(u);
 
