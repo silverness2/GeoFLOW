@@ -150,11 +150,11 @@ void GBoydFilter<TypePack>::init()
       tmp   .resize(nnodes,nnodes);
       L      = (*gelems)[e]->gbasis(k)->getLegTransform();
       iL     = (*gelems)[e]->gbasis(k)->getiLegTransform();
-      for ( auto i=0; i<nnodes; i++ ) {
+      for ( auto i=0; i<nnodes; i++ ) { // build weight matix, Lambda
         Lambda(i,i) = 1.0;
         if ( i >= ifilter_ ) {
           Lambda(i,i) = mufilter_
-                      * pow((i-ifilter_)/(nnodes-ifilter_),2);
+                      * pow( ( (Ftype)(i-ifilter_) / ( (Ftype)(nnodes-ifilter_) ) ), 2);
         }
       } // end, node/mode loop 
       tmp = Lambda * (*iL);
