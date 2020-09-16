@@ -111,6 +111,7 @@ public:
         using CompDesc   = typename Interface::CompDesc;
         using Jacobian   = typename Interface::Jacobian;
         using Size       = typename Interface::Size;
+        using FilterList = typename Interface::FilterList;
 
         static_assert(std::is_same<State,GTVector<GTVector<GFTYPE>*>>::value,
                "State is of incorrect type");
