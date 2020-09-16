@@ -43,6 +43,7 @@
 #include "pdeint/integrator_factory.hpp"
 #include "pdeint/mixer_factory.hpp"
 #include "pdeint/observer_factory.hpp"
+#include "pdeint/filter_factory.hpp"
 #include "pdeint/null_observer.hpp"
 #include "ginitstate_factory.hpp"
 #include "ginitforce_factory.hpp"
