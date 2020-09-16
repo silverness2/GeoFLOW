@@ -411,7 +411,9 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
   // Do filtering, if any:
   FilterList *fl = &this->get_filter_list();
   for ( auto j=0; j<fl->size(); j++ ) {
-    (*fl)[j]->apply(t, *dudt[j], urhstmp_);
+    if ( (*fl)[j] != NULLPTR ) {
+      (*fl)[j]->apply(t, *dudt[j], urhstmp_);
+    }
   }
 
   istage_++;
