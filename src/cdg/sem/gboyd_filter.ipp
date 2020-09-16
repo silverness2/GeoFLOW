@@ -143,11 +143,13 @@ void GBoydFilter<TypePack>::init()
   //            mu [(i-ifilter)/(N - ifilter)]^2, i>= ifilter
   for ( auto e=0; e<gelems->size(); e++ ) {
     for ( auto k=0; k<GDIM; k++ ) {
+      (*gelems)[e]->gbasis(k)->computeLegTransform(ifilter_); 
       F  = (*gelems)[e]->gbasis(k)->getFilterMat(); // storage for filter
       FT = (*gelems)[e]->gbasis(k)->getFilterMat(TRUE); // transpose 
       nnodes = (*gelems)[e]->gbasis(k)->getOrder()+1;
       Lambda.resize(nnodes,nnodes); Lambda = 0.0;
       tmp   .resize(nnodes,nnodes);
+      
       L      = (*gelems)[e]->gbasis(k)->getLegTransform();
       iL     = (*gelems)[e]->gbasis(k)->getiLegTransform();
       for ( auto i=0; i<nnodes; i++ ) { // build weight matix, Lambda

@@ -737,7 +737,7 @@ GBOOL GLLBasis<T,TE>::init()
   bInit_ = TRUE;
 
   // Note: following call must have bInit_ = TRUE
-  if ( !computeLegTransform() ) return FALSE; // Legendre transform matrix
+  if ( !computeLegTransform(2) ) return FALSE; // Legendre transform matrix
 
 
   return TRUE;
@@ -780,23 +780,24 @@ GBOOL GLLBasis<T,TE>::computeLegendreMatrix()
 // METHOD : computeLegTransform
 // DESC   : Computes Legendre transform matrix that
 //          enables conversion to modal space. 
-// ARGS   : none.
+// ARGS   : ifilter: reference mode number 
 // RETURNS: TRUE on success; else FALSE 
 //************************************************************************************
 template<typename T, typename TE>
-GBOOL GLLBasis<T,TE>::computeLegTransform()
+GBOOL GLLBasis<T,TE>::computeLegTransform(GINT ifilter)
 {
 
   GINT  i, j;
-  T     ppn, pder, pm1, pdm1, pm2, pdm2;
+  
+  assert(ifilter >= 0 && ifilter < Np_+1);
 
   for ( i=0; i<Np_+1; i++ ) {
     for ( j=0; j<Np_+1; j++ ) {
-      if ( j < 2 ) {
-        LegTransform_(i,j) =  evalBasis(j,xiNodes_[i]);
+      if ( j < ifilter ) {
+        LegTransform_(i,j) = evalBasis(j,xiNodes_[i]);
       }
       else {
-        LegTransform_(i,j) = evalBasis(j,xiNodes_[i]) - evalBasis(j-2,xiNodes_[i]);
+        LegTransform_(i,j) = evalBasis(j,xiNodes_[i]) - evalBasis(j-ifilter,xiNodes_[i]);
       }
     }
   }

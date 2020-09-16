@@ -69,6 +69,8 @@ virtual  void             getLegMatrix(GTMatrix<TE> &ret)=0;
 virtual  GTMatrix<TE>    *getLegTransform ()=0;
 virtual  GTMatrix<TE>    *getiLegTransform()=0;
 virtual  GTMatrix<TE>    *getFilterMat    (GBOOL btranspose=FALSE)=0;
+virtual  GBOOL            computeLegTransform(GINT ifilter)=0;
+
 
 
 // Evaluation methods:

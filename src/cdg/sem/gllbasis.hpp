@@ -79,6 +79,7 @@ virtual  void             getLegMatrix(GTMatrix<TE> &ret);
 virtual  GTMatrix<TE>    *getLegTransform ();
 virtual  GTMatrix<TE>    *getiLegTransform();
 virtual  GTMatrix<TE>    *getFilterMat    (GBOOL btranspose=FALSE);
+virtual  GBOOL            computeLegTransform(GINT ifilter);
 
 // Evaluation methods:
 virtual  TE               evalBasis(GINT  i, TE eta);
@@ -100,7 +101,6 @@ virtual  GBOOL             computeNodes       ();
 virtual  GBOOL             computeWeights     ();
 virtual  GBOOL             computeDerivMatrix ();
 virtual  GBOOL             computeLegendreMatrix ();
-virtual  GBOOL             computeLegTransform();
          void              computeJacobi(GINT  & , T  alpha, T  beta , T &Pn, 
                                          T &dPn  , T &Pnm1 , T &dPnm1, T &Pnm2,
                                          T &dPnm2, T &xi);
