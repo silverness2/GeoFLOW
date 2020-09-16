@@ -1053,7 +1053,7 @@ void GLLBasis<T,TE>::getLegMatrix(GTMatrix<TE> &ret)
 // RETURNS: GTMatrix *
 //************************************************************************************
 template<typename T, typename TE>
-GTMatrix<T> *GLLBasis<T,TE>::getFilterMat(GBOOL btranspose)
+GTMatrix<TE> *GLLBasis<T,TE>::getFilterMat(GBOOL btranspose)
 {
   if ( btranspose ) return &LegFilterMatT_;
   else              return &LegFilterMat_;
@@ -1069,7 +1069,7 @@ GTMatrix<T> *GLLBasis<T,TE>::getFilterMat(GBOOL btranspose)
 // RETURNS: GTMatrix *
 //************************************************************************************
 template<typename T, typename TE>
-GTMatrix<T> *GLLBasis<T,TE>::getLegTransform()
+GTMatrix<TE> *GLLBasis<T,TE>::getLegTransform()
 {
   return &LegTransform_;
 
@@ -1084,7 +1084,7 @@ GTMatrix<T> *GLLBasis<T,TE>::getLegTransform()
 // RETURNS: GTMatrix *
 //************************************************************************************
 template<typename T, typename TE>
-GTMatrix<T> *GLLBasis<T,TE>::getiLegTransform()
+GTMatrix<TE> *GLLBasis<T,TE>::getiLegTransform()
 {
   return &iLegTransform_;
 
