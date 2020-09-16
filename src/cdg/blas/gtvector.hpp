@@ -62,7 +62,7 @@ template <class T> class GTVector
 
     void range(GLONG ibeg, GLONG end);      // Set range of vector within capacity
     void range_reset();                     // Reset range of vector 
-    GIndex &getIndex() ;        // Return generalized index member
+    GIndex &getIndex() ;                    // Return generalized index member
 
     #pragma acc routine vector
     GBOOL              operator==(const GTVector<T> &b);

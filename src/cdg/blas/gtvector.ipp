@@ -725,7 +725,7 @@ void GTVector<T>::operator=(T a)
 // RETURNS: none.
 //************************************************************************************
 template<class T> 
-void  GTVector<T>::range(GLONG ibeg, GLONG iend) 
+void  GTVector<T>::range(GLONG ibeg, GLONG iend)
 {
 //assert(iend < n_ && ibeg <= iend && "Invalid range specification");
   if (  ibeg <= iend
@@ -750,7 +750,7 @@ void  GTVector<T>::range(GLONG ibeg, GLONG iend)
 // RETURNS: none.
 //************************************************************************************
 template<class T> 
-void  GTVector<T>::range_reset() 
+void  GTVector<T>::range_reset()
 {
 
   gindex_ = gindex_keep_;
