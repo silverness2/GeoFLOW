@@ -156,7 +156,7 @@ EquationFactory<ET>::config_filters(const PropertyTree& ptree, const std::string
         // required filter:
         std::vector<int> icomp; // state comp ids being filtered
         FilterBasePtr pfilter;
-        fblocklist = ptree.getArray<std::string>("filter_list", vsdef);
+        fblocklist = eqn_ptree.getArray<std::string>("filter_list", vsdef);
         for ( auto j=0; j<fblocklist.size(); j++ ) { // cycle over filters
           if ( !eqn_ptree.isPropertyTree(fblocklist[j]) ) {
             cout << "EquationFactory::config_filters: PropertyTree doesn't exist: " << fblocklist[j] << endl;
