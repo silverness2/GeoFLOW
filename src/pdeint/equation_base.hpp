@@ -9,6 +9,7 @@
 #define SRC_PDEINT_EQUATION_BASE_HPP_
 
 #include <functional>
+#include "filter_base.hpp"
 
 
 namespace geoflow {
@@ -27,8 +28,8 @@ public:
 	using Types      = TypePack;
 	using State      = typename Types::State;
 	using StateComp  = typename Types::StateComp;
-    using StateInfo  = typename Types::StateInfo;
-    using Mass       = typename Types::Mass;
+        using StateInfo  = typename Types::StateInfo;
+        using Mass       = typename Types::Mass;
 	using Grid       = typename Types::Grid;
 	using Value      = typename Types::Value;
 	using Derivative = typename Types::Derivative;
@@ -36,6 +37,8 @@ public:
 	using Jacobian   = typename Types::Jacobian;
 	using CompDesc   = typename Types::CompDesc;
 	using Size       = typename Types::Size;
+        using FilterBasePtr = std::shared_ptr<FilterBase<Types>>;
+	using FilterList    = std::vector<FilterBasePtr>;
 
 
 /*
@@ -59,7 +62,8 @@ public:
 */
 
 
-	EquationBase() { update_bdy_callback_ = nullptr; }
+	EquationBase() : update_bdy_callback_ (nullptr) 
+                       {}
 	EquationBase(const EquationBase& eb) = default;
 	virtual ~EquationBase() = default;
 	EquationBase& operator=(const EquationBase& eb) = default;
@@ -203,6 +207,27 @@ public:
 		update_bdy_callback_ = fcn;
 	}
 
+
+	/** Set filter list: 
+         *    one filter for each evolved state comp
+	 *    
+	 *
+	 * \param[in]     pFilter
+	 */
+	virtual void set_filter_list(FilterList &pFilter) {
+		filterList_.resize(pFilter.size());;
+		filterList_ = pFilter;
+	}
+
+	/** Get filter list: 
+	 *    
+	 *
+	 * \param[out]     FilterList &
+	 */
+	virtual FilterList& get_filter_list() {
+		return filterList_;
+	}
+
 protected:
 
 	/**
@@ -263,7 +288,8 @@ protected:
         std::function<void(const Time &t, State &u, State &ub)> 
                  update_bdy_callback_;
 
-        StateInfo stateinfo_;
+        StateInfo  stateinfo_;
+        FilterList filterList_;
 
 };
 

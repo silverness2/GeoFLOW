@@ -33,9 +33,9 @@ ObserverFactory<ET>::build(const tbox::PropertyTree& ptree, const std::string ob
         get_traits(ptree, obsname, obstraits);
 
 
-        mpixx::communicator world;        
 	ObsBasePtr base_ptr;
-	if( "none" == observer_name ){
+	if( "none" == observer_name 
+         || ""     == observer_name ){
 		using ObsImpl = NullObserver<ET>;
 
 		// Allocate observer Implementation

@@ -38,7 +38,7 @@ public:
 	using Size       = typename Types::Size;
 
 
-	FilterBase() {}
+        FilterBase() = default;
 	FilterBase(const FilterBase& eb) = default;
 	virtual ~FilterBase() = default;
 	FilterBase& operator=(const FilterBase& eb) = default;
@@ -48,12 +48,12 @@ public:
 	 *
 	 * Apply the filter to the state u.
 	 *
-	 * @param[in]   t     Current time of state u before taking step
-	 * @param[in]   u     Is the state of the system of equations
-	 * \param[in]   utmp  tmp state vectors
-	 * @param[out]  uo    filtered state 
+	 * @param[in]      t     Current time of state u before taking step
+	 * @param[in]      u     Is the state of the system of equations
+	 * \param[in/out]  utmp  tmp state vectors
+	 * @param[out]     uo    filtered state 
 	 */
-	void apply(const Time &t, StateComp &u, State utmp, StateComp &uo){
+	void apply(const Time &t, const StateComp& u, State& utmp, StateComp& uo){
 		this->apply_impl(t,u,utmp,uo);
 	}
 
@@ -66,7 +66,7 @@ public:
 	 * @param[in,out] u     Is the state of the system of equations
 	 * \param[in]     utmp  tmp state vectors
 	 */
-	void apply(const Time &t, StateComp &u, State utmp){
+	void apply(const Time &t, StateComp& u, State& utmp){
 		this->apply_impl(t,u,utmp);
 	}
 
@@ -76,8 +76,9 @@ protected:
 	/**
 	 * Must be provided by implementation
 	 */
-	virtual void apply_impl(const Time &t, State &u, State& utmp, State &uo) = 0;
-	virtual void apply_impl(const Time &t, State &u, State& utmp) = 0;
+	virtual void apply_impl(const Time& t, const StateComp& u, State& utmp, StateComp& uo) = 0;
+	virtual void apply_impl(const Time& t, StateComp& u, State& utmp) = 0;
+
 };
 
 

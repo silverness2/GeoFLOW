@@ -22,30 +22,33 @@ namespace pdeint {
  *
  * @see FilterBase
  */
-template<typename FilterType>
-class NullFilter : public FilterBase<FilterType> {
+template<typename TypePack>
+class NullFilter : public FilterBase<TypePack> {
 
 public:
-	using Interface     = FilterBase<FilterType>;
-	using State         = typename Interface::State;
-	using StateComp     = typename Interface::StateComp;
-	using Grid          = typename Interface::Grid;
-	using Time          = typename Interface::Time;
-        using Filter        = FilterType;
-        using FilterBase    = FilterBase<Filter>;
-        using FilterBasePtr = std::shared_ptr<FilterBase>;
+        using Interface  = FilterBase<TypePack>;
+        using State      = typename Interface::State;
+        using StateComp  = typename Interface::StateComp;
+        using StateInfo  = typename Interface::StateInfo;
+        using Grid       = typename Interface::Grid;
+        using Time       = typename Interface::Time;
 
+        NullFilter() {}
         
-        NullFilter(Grid& grid){
-        }
+#if 0
+        NullFilter(const NullFilter& eb) = default;
+       ~NullFilter() = default;
+        NullFilter& operator=(const NullFilter& eb) = default;
+#endif
+
 
 protected:
 
-	void apply_impl(const Time&, /* time */const StateComp& /* u */, const State& /* utmp */, StateComp& /* uout */){
+	void apply_impl(const Time& /* t */, const StateComp& /* u */, State& /* utmp */, StateComp& /* uo */){
 		// Do nothing ...
 	}
 
-	void apply_impl(const Time&, /* time */const StateComp& /* u */, const State& /* utmp */){
+	void apply_impl(const Time& /* t */, StateComp& /* u */, State& /* utmp */){
 		// Do nothing ...
 	}
 

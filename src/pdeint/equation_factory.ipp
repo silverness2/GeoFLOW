@@ -116,6 +116,11 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
 		// Allocate equation Implementation
 		std::shared_ptr<EqnImpl> eqn_impl(new EqnImpl(grid, ctraits));
 
+                // Configure filter list:
+                int nsolve = eqn_impl->solve_size();
+                eqn_impl->get_filter_list().resize(nsolve);
+                EquationFactory<ET>::config_filters(ptree, equation_name, grid, eqn_impl->get_filter_list());
+                
 		// Set back to base type
 		base_ptr = eqn_impl;
 	}
@@ -125,6 +130,50 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
 
 	return base_ptr;
 }
+
+
+template<typename ET>
+void
+EquationFactory<ET>::config_filters(const PropertyTree& ptree, const std::string equation_name,  Grid& grid, FilterList& filter_list) {
+
+        // Config blks for each filter are contained as sub-trees
+        // within the equation-configuration block, so...
+        // ...Get equation_ptree:
+        if ( !ptree.isPropertyTree(equation_name) ) {
+          cout << "EquationFactory::config_filters: PropertyTree does not exist: " << equation_name << endl;
+        }
+        PropertyTree eqn_ptree = ptree.getPropertyTree(equation_name);
+        PropertyTree fptree;
+
+        std::vector<std::string> sdef, fblocklist;
+
+
+        // On entry, filter_list should be sized to the number
+        // of solved-for state-components and into NULL:
+        for ( auto j=0; j<filter_list.size(); j++ ) filter_list[j] = nullptr;
+
+        // Cycle over each filter config block, and configure
+        // required filter:
+        std::vector<int> icomp; // state comp ids being filtered
+        FilterBasePtr pfilter;
+        fblocklist = ptree.getArray("filter_list", sdef);
+        for ( auto j=0; j<fblocklist.size(); j++ ) { // cycle over filters
+          fptree  = eqn_ptree.getPropertyTree(fblocklist[j]);
+          icomp   = fptree.getArray<int>("state_index");
+          pfilter = FilterFactory<ET>::build(ptree, fblocklist[j], grid);
+
+          // Cycle over specified state indices, and set 
+          // filter_list for those indices to this filter:
+          for ( auto i=0; i<icomp.size(); i++ ) {
+            assert(icomp[i] >= 0 && icomp[i] < filter_list.size());
+            filter_list[icomp[i]] = pfilter;
+          }
+        }
+
+
+}
+
+
 
 
 } // namespace pdeint

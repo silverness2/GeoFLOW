@@ -12,8 +12,8 @@
 #include <string>
 #include "tbox/error_handler.hpp"
 #include "tbox/property_tree.hpp"
-#include "pdeint/null_filter.hpp"
 #include "pdeint/filter_base.hpp"
+#include "pdeint/null_filter.hpp"
 #include "gboyd_filter.hpp"
 
 
@@ -24,11 +24,11 @@ namespace pdeint {
 template<typename TypePack>
 struct FilterFactory {
 	using Types         = TypePack;
-	using FilterBase    = FilterBase<Types>;
-	using FilterBasePtr = std::shared_ptr<FilterBase>;
+	using FiltBase      = FilterBase<Types>;
+	using FilterBasePtr = std::shared_ptr<FiltBase>;
 	using Grid          = typename TypePack::Grid;
 
-	static FilterBasePtr build(const tbox::PropertyTree& ptree, std::string filtername,  FilterBasePtr& filter, Grid& grid);
+	static FilterBasePtr build(const tbox::PropertyTree& ptree, std::string filtername,  Grid& grid);
 
 };
 
