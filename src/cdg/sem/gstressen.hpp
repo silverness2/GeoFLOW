@@ -4,14 +4,16 @@
 // Description  : Represents the SEM discretization of the full viscous
 //                stress-energy operator. The viscous stress in the 
 //                momentum eqution is
-//                    2 [ mu s_{ij}],j,
+//                    F_i = 2 [ mu s_{ij}],j + (lambda Div u delta_ij),j,
 //                where
-//                    s_{ij} = (Del_i u_j + Del_j u_i)/2
+//                    s_{ij} = (u_j,i + u_i,j)/2
 //                and the viscous stress-energy for the energy equation is
-//                    2 [mu u_i s_{ij} ],j
+//                    2 [mu u_i F_i ],j
 //                where u_i is the velocity, and mu, the viscosity. Repeated
-//                indices are summed here.  For the energy, this is a nonlinear 
-//                operator, so should not derive from GLinOp. Operator requires 
+//                indices are summed here.  mu, lambda  may vary in space or be
+//                constant. lambda defaults to -2/3 mu according to the Stokes
+//                hypothesis For the energy, this operator is nonlinear, 
+//                so it should not derive from GLinOp. Operator requires 
 //                that grid consist of elements of only one type.
 // Copyright    : Copyright 2020. Colorado State University. All rights reserved.
 // Derived From : none
@@ -71,10 +73,12 @@ public:
 private:
         GBOOL                        bown_mu_;    // flag telling instance if it owns mu_
         GBOOL                        bown_kappa_; // flag telling instance if it owns kappa_
+        GBOOL                        bown_lambda_;// flag telling instance if it owns kappa_
         Mass                         *massop_;    // mass matrix, required
         Grid                         *grid_;      // grid set on construction
-        StateComp                    *mu_;        // viscosity
-        StateComp                    *kappa_;     // viscosity
+        StateComp                    *mu_;        // dynamic viscosity
+        StateComp                    *kappa_;     // energy dissipation
+        StateComp                    *lambda_;    // Stokes viscosity
 
 
 };
