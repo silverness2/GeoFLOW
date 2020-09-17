@@ -90,7 +90,7 @@ void GStressEnOp<TypePack>::set_mu(StateComp &mu)
 
   lambda_  = new GTVector<Ftype>(mu_->size());
  *lambda_  = *mu_;
- *lambda_ *= -1.0/3.0;
+ *lambda_ *= -2.0/3.0;
 
 
 } // end of method set_mu
