@@ -54,7 +54,7 @@
     "forcing_comp"    : [0, 1, 2],
     "T_surf"          : 300.0,
     "P0"              : 1000.0,
-    "filter_list"     : ["my_filter"],
+    "filter_list"     : [""],
     "my_filter" : {
       "filter_type" : "boyd_filter",
       "ifilter"     : 2,
@@ -86,6 +86,7 @@
   },
   "dissipation_traits": {
     "nu"      : 75.0,
+    "kappa"   : 75.0,
     "nu_type" : "constant"
   },
   "gio": {
