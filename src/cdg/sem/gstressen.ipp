@@ -197,6 +197,7 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
      so += *utmp[2];
   }
 
+#if 1
   // Compute Stokes hypothesis term:
   // D^{T,j} (lambda (Div u) delta_ij):
   grid_->deriv(*u[0]  , 1, *utmp[0], *utmp[1]); // store Div in utmp[1]]
@@ -212,7 +213,7 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
   }
   grid_->wderiv(*utmp[1], idir, TRUE, *utmp[0], *utmp[2]);
   so += *utmp[2];
-  
+#endif 
  
 
 
@@ -294,6 +295,7 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
     eo += *utmp[2];
   }
 
+#if 1
   // Compute Stokes hypothesis term:
   //   D^{T,j} (lambda (Div u) delta_ij):
   //   ... First, compute Div u:
@@ -319,6 +321,7 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
     grid_->wderiv(*utmp[2], j+1, TRUE, *utmp[0], *utmp[3]); 
     eo += *utmp[3];
   }
+#endif 
 
 } // end of method apply (2)
 
