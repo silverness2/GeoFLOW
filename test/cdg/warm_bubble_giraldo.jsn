@@ -59,7 +59,7 @@
       "filter_type" : "boyd_filter",
       "ifilter"     : 4,
       "mufilter"    : 0.05,
-      "state_index" : [0, 1, 2, 3]
+      "state_index" : [0, 1]
     }
   },
   "grid_box": {
@@ -85,8 +85,8 @@
     "courant"          : 0.5 
   },
   "dissipation_traits": {
-    "nu"      : 100.0,
-    "kappa"   : 100.0, 
+    "nu"      : 200.0,
+    "kappa"   : 200.0, 
     "nu_type" : "constant"
   },
   "gio": {
@@ -104,6 +104,10 @@
   "ptemp": {
     "names"       : ["theta"],
     "mathop"      : "ptemp"
+  },
+  "dptemp": {
+    "names"       : ["dtheta"],
+    "mathop"      : "dptemp"
   },
   "press": {
     "names"       : ["p"],
@@ -129,7 +133,7 @@
     "agg_state_name"     : "u",
     "agg_grid_name "     : "grid",
     "derived_quantities"       : [],
-    "state_derived_quantities" : ["temp","press","vel","ptemp","den"]
+    "state_derived_quantities" : ["temp","press","vel","dptemp","ptemp","den"]
   },
   "burgers_diag": {
     "observer_name"      : "burgers_diag",
@@ -142,7 +146,7 @@
     "integ_type" : "time",
     "time_end"   : 2001.0,
     "cycle_end"  : 10,
-    "dt"         : 0.00125
+    "dt"         : 0.00175
   }
 
 }
