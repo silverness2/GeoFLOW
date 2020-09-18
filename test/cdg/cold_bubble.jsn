@@ -11,7 +11,7 @@
   "restart_index"     : 0,
   "benchmark"         : false,
   "do_comparison"     : false,
-  "observer_list"     : ["gio_observer", "global_diag_basic"],
+  "observer_list"     : ["gio_observer", "burgers_diag"],
   "IO_implementation" : "gio",
   "terrain_type"      : "none",
   "initstate_boxdrybubble": {
@@ -54,7 +54,7 @@
     "forcing_comp"    : [0, 1, 2],
     "T_surf"          : 300.0,
     "P0"              : 1000.0,
-    "filter_list"     : [""],
+    "filter_list"     : [],
     "my_filter" : {
       "filter_type" : "boyd_filter",
       "ifilter"     : 2,
@@ -131,8 +131,8 @@
     "derived_quantities"       : [],
     "state_derived_quantities" : ["temp","press","vel","ptemp","den"]
   },
-  "global_diag_basic": {
-    "observer_name"      : "global_diag_basic",
+  "burgers_diag": {
+    "observer_name"      : "burgers_diag",
     "idir"               : ".",
     "odir"               : ".",
     "interval_freq_fact" : 10.0,
