@@ -57,16 +57,16 @@
     "filter_list"     : ["my_filter"],
     "my_filter" : {
       "filter_type" : "boyd_filter",
-      "ifilter"     : 2,
+      "ifilter"     : 4,
       "mufilter"    : 0.05,
-      "state_index" : [0, 1, 2]
+      "state_index" : [0, 1, 2, 3]
     }
   },
   "grid_box": {
     "grid_name" : "grid_box",
     "xyz0"      : [0.0, 0.0, 0.0],
     "delxyz"    : [1000.0, 1000.0, 1.0],
-    "num_elems" : [25, 25, 1],
+    "num_elems" : [50, 50, 1],
     "bdy_x_0"   : "0-flux",
     "bdy_x_1"   : "0-flux",
     "bdy_y_0"   : "0-flux",
@@ -81,12 +81,12 @@
     "stepping_method"  : "GSTEPPER_EXRK",
     "time_deriv_order" : 4,
     "extrap_order"     : 2,
-    "variable_dt"      : true,
+    "variable_dt"      : false,
     "courant"          : 0.5 
   },
   "dissipation_traits": {
-    "nu"      : 3300.0,
-    "kappa"   : 3300.0, 
+    "nu"      : 100.0,
+    "kappa"   : 100.0, 
     "nu_type" : "constant"
   },
   "gio": {
