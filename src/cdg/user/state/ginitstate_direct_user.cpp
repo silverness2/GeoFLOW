@@ -700,19 +700,19 @@ GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid
     L        += GDIM == 3 ? pow((z-xc[2])/xr[2],2) : 0.0;
     L         = sqrt(L);
     exnerb    = pow((*pb)[j]/P0, RD/CPD);
-//  thetab    = (*pb)[j]/((*db)[j]*RD*exnerb); // potl temp = T/exner
     delT      = L <= 1.0 ? 2.0*T0*pow(cos(0.5*PI*L),2.0) : 0.0;
-//  (*Tb)[j]  = (*pb)[j] / ( RD * (*db)[j] );
-    (*Tb)[j]  = (Ts + delT)*exnerb; // T = (theta + dtheta)*exner
-//  pj        = P0*pow(((*Tb)[j]+delT)/Ts,RD/CPD);
 #if 1
+    // Ts, delT are pot'l temp, 
+    (*Tb)[j]  = (Ts + delT)*exnerb; // T = (theta + dtheta)*exner
     pj        = (*pb)[j]; 
-//  (*Tb)[j]  = (thetab + delT)*exnerb;
     (*d)[j]   = pj / ( RD * (*Tb)[j]  ) - (*db)[j];
-//  (*d)[j]   = pj / ( RD * (*Tb)[j] )  - (*db)[j];
     dj        = (*d)[j] + (*db)[j];
     (*e)[j]   = CVD * dj * ( (*Tb)[j] ); // e = Cv d (T+delT);
+//  (*Tb)[j]  = (Ts + delT)*exnerb; // T = (theta + dtheta)*exner
+//  (*Tb)[j]  = (thetab + delT)*exnerb;
+//  (*d)[j]   = pj / ( RD * (*Tb)[j] )  - (*db)[j];
 //  (*e)[j]   = CVD * dj * (thetab+delT)*(exnerb); // e = Cv d (theta+dtheta) * exner;
+  #endif
 #else
     // Check that hydrostatic state is maintained:
     (*d)[j]   = 0.0;
