@@ -112,8 +112,8 @@ void GBoydFilter<TypePack>::apply_impl(const Time &t, StateComp &u, State &utmp)
   assert( utmp.size() >= 1
        && "Insufficient temp space provided");
 
-  apply_impl(t, u, utmp, *utmp[0]); 
-  u = *utmp[0];
+  apply_impl(t, u, utmp, *utmp[utmp.size()-1]); 
+  u = *utmp[utmp.size()-1];
 
 } // end of method apply_impl
 
@@ -155,8 +155,13 @@ void GBoydFilter<TypePack>::init()
       for ( auto i=0; i<nnodes; i++ ) { // build weight matix, Lambda
         Lambda(i,i) = 1.0;
         if ( i >= ifilter_ ) {
+#if 0
           Lambda(i,i) = mufilter_
-                      * pow( ( (Ftype)(i-ifilter_) / ( (Ftype)(nnodes-ifilter_) ) ), 2);
+                      * pow( ( (Ftype)(i-ifilter_) / ( (Ftype)(nnodes-ifilter_) ) ), 2.0);
+#else
+          Lambda(i,i) = (mufilter_ - 1.0)
+                      * pow( ( (Ftype)(i-ifilter_) / ( (Ftype)(nnodes-ifilter_) ) ), 2.0) + 1.0;
+#endif
         }
       } // end, node/mode loop 
       tmp = Lambda * (*iL);
