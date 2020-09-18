@@ -216,6 +216,14 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   tmp1  = urhstmp_[urhstmp_.size()-4];
   tmp2  = urhstmp_[urhstmp_.size()-5];
 
+  // Do filtering, if any:
+  FilterList *fl = &this->get_filter_list();
+  for ( auto j=0; j<fl->size(); j++ ) {
+    if ( (*fl)[j] != NULLPTR ) {
+      (*fl)[j]->apply(t, *u[j], urhstmp_);
+    }
+  }
+
 
   // Get total density and inverse: *rhoT  = *u[DENSITY]; 
  *rhoT = *u[DENSITY];
@@ -239,7 +247,7 @@ cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax
   // Total density RHS:
   // *************************************************************
 
-#if 0
+#if defined(USE_DIVOP)
   gdiv_->apply(*rhoT, v_, urhstmp_, *dudt[DENSITY]); 
  *dudt[DENSITY] *= -1.0;                                   // bring to LHS
 #else
@@ -262,7 +270,7 @@ cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax
     gadvect_->apply(*qi_[j], v_, urhstmp_, *dudt[VAPOR+j]); // apply advection
     compute_vpref(*tvi_[j], W_);
     *tmp1 = (*qi_[j]) * (*rhoT);                // q_i rhoT
-#if 0
+#if defined(USE_DIVOP)
     gdiv_->apply(*tmp1, W_, urhstmp_, *tmp2); 
     *tmp2 *= *irhoT;                            // Div(q_i rhoT W)/rhoT
     *dudt[VAPOR+j] -= *tmp2;                    // += Div(q_i rhoT W)/rhoT
@@ -305,7 +313,7 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
 
 
   GMTK::saxpy<Ftype>(*tmp1, *e, 1.0, *p, 1.0);     // h = p+e, enthalpy density
-#if 0
+#if defined(USE_DIVOP)
   gdiv_->apply(*tmp1, v_, urhstmp_, *dudt[ENERGY]); 
  *dudt[ENERGY] *= -1.0;                            // bring to LHS
 #else
@@ -354,7 +362,7 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
   }
   Mass = grid_->massop().data();
   for ( auto j=0; j<v_.size(); j++ ) { // for each component
-#if 0
+#if defined(USE_DIVOP)
     gdiv_->apply(*s_[j], v_, urhstmp_, *dudt[j]); 
    *dudt[j] *= -1.0;                                   // bring to LHS
 #else
@@ -406,14 +414,6 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
   // and (2) to account for factor of M on du/dt term:
   for ( auto j=0; j<nevolve_; j++ ) {
     dudt[j]->apointProd(-1.0, *gimass_->data());// dudt -> -M^-1 dudt
-  }
-
-  // Do filtering, if any:
-  FilterList *fl = &this->get_filter_list();
-  for ( auto j=0; j<fl->size(); j++ ) {
-    if ( (*fl)[j] != NULLPTR ) {
-      (*fl)[j]->apply(t, *dudt[j], urhstmp_);
-    }
   }
 
   istage_++;
@@ -1231,7 +1231,7 @@ void GMConv<TypePack>::compute_falloutsrc(StateComp &g, State &qi, State &tvi, G
      compute_vpref(*tvi[j], W_);
 
      // Compute i_th contribution to source term:
-#if 0
+#if defined(USE_DIVOP)
      gdiv_->apply(*qg, W_, utmp, *div); 
      *div *= -1.0; // required for discretization 
 #else
