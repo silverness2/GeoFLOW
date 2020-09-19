@@ -76,7 +76,8 @@ void GMass::init()
   #endif
 
   if ( bdoinverse_ ) {
-    for ( GSIZET j=0; j<mass_.size(); j++ ) {
+    grid_->get_ggfx().doOp(mass_, GGFX_OP_SMOOTH);
+    for ( auto j=0; j<mass_.size(); j++ ) {
       mass_[j] = 1.0 / mass_[j];
     }
   }
@@ -107,12 +108,12 @@ void GMass::init1d()
   gelems = &grid_->elems(); 
   mass_.resize(grid_->ndof());
   mass_ = 0.0;
-  for ( GSIZET i=0, n=0; i<gelems->size(); i++ ) {
-    for ( GSIZET j=0; j<GDIM; j++ ) {
+  for ( auto i=0, n=0; i<gelems->size(); i++ ) {
+    for ( auto j=0; j<GDIM; j++ ) {
       W[i]    = (*gelems)[i]->gbasis(j)->getWeights();
       N[j]    = (*gelems)[i]->size(j);
     }
-    for ( GSIZET j=0; j<N[0]; j++,n++ ) {
+    for ( auto j=0; j<N[0]; j++,n++ ) {
       mass_[n] = (*W[0])[j];
     }
   }
@@ -144,13 +145,13 @@ void GMass::init2d()
   Jac    = &grid_->Jac(); 
   gelems = &grid_->elems();
   mass_.resize(grid_->ndof());
-  for ( GSIZET i=0, n=0; i<gelems->size(); i++ ) {
-    for ( GSIZET j=0; j<GDIM; j++ ) {
+  for ( auto i=0, n=0; i<gelems->size(); i++ ) {
+    for ( auto j=0; j<GDIM; j++ ) {
       W[j]    = (*gelems)[i]->gbasis(j)->getWeights();
       N[j]    = (*gelems)[i]->size(j);
     }
-    for ( GSIZET k=0; k<N[1]; k++ ) {
-      for ( GSIZET j=0; j<N[0]; j++,n++ ) {
+    for ( auto k=0; k<N[1]; k++ ) {
+      for ( auto j=0; j<N[0]; j++,n++ ) {
         mass_[n] = (*W[1])[k]*(*W[0])[j];
                  
       }
@@ -190,14 +191,14 @@ void GMass::init3d()
   gelems = &grid_->elems();
   mass_.resize(grid_->ndof());
   mass_ = 0.0;
-  for ( GSIZET i=0, n=0; i<gelems->size(); i++ ) {
-    for ( GSIZET j=0; j<GDIM; j++ ) {
+  for ( auto i=0, n=0; i<gelems->size(); i++ ) {
+    for ( auto j=0; j<GDIM; j++ ) {
       W[j]    = (*gelems)[i]->gbasis(j)->getWeights();
       N[j]    = (*gelems)[i]->size(j);
     }
-    for ( GSIZET l=0; l<N[2]; l++ ) {
-      for ( GSIZET k=0; k<N[1]; k++) {
-        for ( GSIZET j=0; j<N[0]; j++,n++ ) {
+    for ( auto l=0; l<N[2]; l++ ) {
+      for ( auto k=0; k<N[1]; k++) {
+        for ( auto j=0; j<N[0]; j++,n++ ) {
           mass_[n] = (*W[2])[l]*(*W[1])[k]*(*W[0])[j];
         }
       }
