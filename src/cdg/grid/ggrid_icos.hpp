@@ -61,7 +61,10 @@ public:
         void                do_elems();                                   // compute grid for irank
         void                do_elems(GTMatrix<GINT> &p,
                               GTVector<GTVector<GFTYPE>> &xnodes);        // compute elems from restart data)
-        void                do_face_normals();                            // compute normals to elem faces
+        void                do_face_normals(GTMatrix<GTVector<GFTYPE>> &dXdXi,
+                                      GTVector<GSIZET> &gieface,
+                                      GTVector<GINT> &giefaceid,
+                                      GTVector<GTVector<GFTYPE>> &normals);// compute normals to elem faces
         void                do_bdy_normals(
                               GTMatrix<GTVector<GFTYPE>>    &dXdXi,
                               GTVector<GTVector<GSIZET>>    &igbdy_face,
@@ -155,8 +158,16 @@ friend  std::ostream&       operator<<(std::ostream&, GGridIcos &);       // Out
                             GTVector<GTVector<GBdyType>> &igbdyt); // configure bdy
          void               find_bdy_ind3d(GFTYPE radius, 
                                            GTVector<GSIZET> &ibdy);// find bdy indices for bdy=radius
-         void               do_face_normals2d();                   // compute normals to elem faces in 2d
-         void               do_face_normals3d();                   // compute normals to elem faces in 2d
+         void               do_face_normals2d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
+                                      GTVector<GSIZET> &gieface,
+                                      GTVector<GINT> &giefaceid,
+                                      GTVector<GTVector<GFTYPE>> &normals);
+                                                                   // compute normals to elem faces in 2d
+         void               do_face_normals3d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
+                                      GTVector<GSIZET> &gieface,
+                                      GTVector<GINT> &giefaceid,
+                                      GTVector<GTVector<GFTYPE>> &normals);
+                                                                   // compute normals to elem faces in 2d
          void               do_bdy_normals3d(
                               GTMatrix<GTVector<GFTYPE>>    &dXdXi,
                               GTVector<GSIZET>              &igbdy,

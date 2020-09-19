@@ -40,7 +40,7 @@ GGrid::GGrid(const geoflow::tbox::PropertyTree &ptree, GTVector<GNBasis<GCTYPE,G
 :
 bInitialized_                   (FALSE),
 bapplybc_                       (FALSE),
-do_face_normals_                (FALSE),
+do_face_normals_                 (TRUE),
 nprocs_        (GComm::WorldSize(comm)),
 ngelems_                            (0),
 irank_         (GComm::WorldRank(comm)),
@@ -767,7 +767,7 @@ void GGrid::do_normals()
   // Set element face normals. Note: arrays for 
   // normals are allocated in these calls:
   if ( do_face_normals_ ) {
-    do_face_normals();
+    do_face_normals(dXdXi_, gieface_, giefaceid_, faceNormals_);
   }
   
   // Set domain boundary node normals:
@@ -1220,6 +1220,7 @@ void GGrid::init_local_face_info()
     n += gelems_[e]->nfnodes();
   }
   gieface_.resize(n);
+  giefaceid_.resize(n);
 
   // Find list over all elemes of element face nodes:
   nn = 0; // global reference index
@@ -1232,6 +1233,7 @@ void GGrid::init_local_face_info()
         ig = nn + (*ieface)[j][k];
         if ( !gieface_.containsn(ig, m) ) { // don't include repeated face ind
           gieface_[m] = ig;
+          giefaceid_[m] = k;
           m++;
         }
       }

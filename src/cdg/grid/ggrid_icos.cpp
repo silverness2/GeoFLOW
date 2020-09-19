@@ -1016,16 +1016,29 @@ void GGridIcos::find_bdy_ind3d(GFTYPE radius, GTVector<GSIZET> &ibdy)
 //**********************************************************************************
 // METHOD : do_face_normals
 // DESC   : Compute normals to each element face
-// ARGS   : none 
+// ARGS   : 
+//          dXdXi     : matrix of dX_i/dXi_j matrix elements, s.t.
+//                      dXdX_i(i,j) = dx^j/dxi^i
+//          gieface   : vector of face indices into global volume fields 
+//                      for all facase
+//          giefaceid : face id for eah index in geiface
+//          normals   : vector of normal components
 // RETURNS: none
 //**********************************************************************************
-void GGridIcos::do_face_normals()
+void GGridIcos::do_face_normals(GTMatrix<GTVector<GFTYPE>> &dXdXi,
+                                GTVector<GSIZET> &gieface,
+                                GTVector<GINT> &giefaceid,
+                                GTVector<GTVector<GFTYPE>> &normals)
 {
 
   #if defined(_G_IS2D)
-    do_face_normals2d();
+
+    do_face_normals2d(dXdXi, gieface, giefaceid, normals);
+
   #elif defined(_G_IS3D)
-    do_face_normals3d();
+
+    do_face_normals3d(dXdXi, gieface, giefaceid, normals);
+
   #else
     #error Invalid problem dimensionality
   #endif
@@ -1037,10 +1050,19 @@ void GGridIcos::do_face_normals()
 //**********************************************************************************
 // METHOD : do_face_normals2d
 // DESC   : Compute normals to each element face in 2d
-// ARGS   : none 
+// ARGS   : 
+//          dXdXi     : matrix of dX_i/dXi_j matrix elements, s.t.
+//                      dXdX_i(i,j) = dx^j/dxi^i
+//          gieface   : vector of face indices into global volume fields 
+//                      for all facase
+//          giefaceid : face id for eah index in geiface
+//          normals   : vector of normal components
 // RETURNS: none
 //**********************************************************************************
-void GGridIcos::do_face_normals2d()
+void GGridIcos::do_face_normals2d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
+                                  GTVector<GSIZET> &gieface,
+                                  GTVector<GINT> &giefaceid,
+                                  GTVector<GTVector<GFTYPE>> &normals)
 {
 
   // Cycle through local elem face indices to set
@@ -1054,10 +1076,19 @@ void GGridIcos::do_face_normals2d()
 //**********************************************************************************
 // METHOD : do_face_normals3d
 // DESC   : Compute normals to each element face in 3d
-// ARGS   : none 
+// ARGS   : 
+//          dXdXi     : matrix of dX_i/dXi_j matrix elements, s.t.
+//                      dXdX_i(i,j) = dx^j/dxi^i
+//          gieface   : vector of face indices into global volume fields 
+//                      for all facase
+//          giefaceid : face id for eah index in geiface
+//          normals   : vector of normal components
 // RETURNS: none
 //**********************************************************************************
-void GGridIcos::do_face_normals3d()
+void GGridIcos::do_face_normals3d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
+                                  GTVector<GSIZET> &gieface,
+                                  GTVector<GINT> &giefaceid,
+                                  GTVector<GTVector<GFTYPE>> &normals)
 {
 
 

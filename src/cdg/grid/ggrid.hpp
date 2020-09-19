@@ -171,9 +171,12 @@ virtual void                 print(const GString &filename){}          // print 
         BdyUpdateList       &bdy_update_list() 
                              { return bdy_update_list_; }              // bdy_update_list pointers
         GTVector<GTVector<GFTYPE>>
-                            &faceNormal();                             // global face normals
+                            &faceNormal()
+                             { return faceNormals_; }                  // global face normals
         GTVector<GSIZET>
                             &gieface() { return gieface_;}             // elem face indices into glob u for all elem faces
+        GTVector<GINT>
+                            &giefaceid() { return giefaceid_;}         // elem face id for each gieface_
         BinnedBdyIndex
                             &igbdy_binned() { return igbdy_binned_;}   // global dom bdy indices binned into GBdyType
         GTVector<GSIZET>
@@ -216,7 +219,15 @@ friend  std::ostream&        operator<<(std::ostream&, GGrid &);       // Output
 
 protected:
        
-virtual void                        do_face_normals()=0;              // compute normals to elem faces 
+virtual void                        do_face_normals(GTMatrix<GTVector<GFTYPE>>
+                                                                       &dXdXi,
+                                                   GTVector<GSIZET>
+                                                                       &igface,
+                                                   GTVector<GINT>
+                                                                       &igfaceid,
+                                                   GTVector<GTVector<GFTYPE>>
+                                                                       &normals)=0;
+                                                                      // compute normals to elem faces 
 virtual void                        do_bdy_normals(GTMatrix<GTVector<GFTYPE>>
                                                                        &dXdXi,
                                                    GTVector<GTVector<GSIZET>>  
@@ -258,6 +269,7 @@ virtual void                        do_bdy_normals(GTMatrix<GTVector<GFTYPE>>
         GTVector<GFTYPE>            faceJac_;       // face Jacobians, global
         GTVector<GTVector<GFTYPE>>  faceNormals_;   // normal to eleme faces each face node point (2d & 3d), global
         GTVector<GSIZET>            gieface_;       // index into global field indicating elem face node
+        GTVector<GINT>              giefaceid_;     // elem face id for each gieface_
         GTVector<GTVector<GFTYPE>>  bdyNormals_;    // normal to surface at each bdy node point (2d & 3d), global
         GTVector<GINT>              idepComp_;      // dependent component index at each bdy point
         BinnedBdyIndex              igbdy_binned_;  // index into global field indicating a domain bdy--by type
