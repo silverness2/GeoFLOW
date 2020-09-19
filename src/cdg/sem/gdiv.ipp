@@ -67,6 +67,10 @@ void GDivOp<TypePack>::apply(StateComp &d, State &u, State &utmp, StateComp &div
        && "Insufficient temp space specified");
 
   GINT       nxy = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
+  GSIZET                     k;
+  GTVector<GSIZET>          *gieface = &grid_->gieface() ;
+  GTVector<GTVector<Ftype>> *normals = &grid_->faceNormal(); 
+  StateComp                 *mass    = massop_->data();
 
 
 #if 1
@@ -76,8 +80,18 @@ void GDivOp<TypePack>::apply(StateComp &d, State &u, State &utmp, StateComp &div
   for ( auto j=1; j<nxy; j++ ) { 
      d.pointProd(*u[j], *utmp[1]);
      grid_->wderiv(*utmp[1], j+1, TRUE, *utmp[0], *utmp[2]);
-     div += *utmp[2];
+     div -= *utmp[2];
   }
+
+#if 1
+  // div_face += d u.n Mass |_face 
+  for ( auto i=0; i<gieface->size(); i++ ) {
+    k = (*gieface)[i];
+    for ( auto j=0; j<nxy; j++ ) { 
+      div[k] += d[k]*(*u[j])[k] * (*normals)[j][i] * (*mass)[k];
+    }
+  }
+#endif
 #else
   // div = MJ d/dx_j ( d u_j ):
   d.pointProd(*u[0], *utmp[1]);
@@ -116,6 +130,10 @@ void GDivOp<TypePack>::apply(State &u, State &utmp, StateComp &div)
        && "Insufficient temp space specified");
 
   GINT       nxy = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
+  GSIZET     k;
+  GTVector<GSIZET>          *gieface = &grid_->gieface() ;
+  GTVector<GTVector<Ftype>> *normals = &grid_->faceNormal(); 
+  StateComp                 *mass    = massop_->data();
 
 
   // div = D^{T,j} ( u_j ):
@@ -124,6 +142,16 @@ void GDivOp<TypePack>::apply(State &u, State &utmp, StateComp &div)
      grid_->wderiv(*u[j], j+1, TRUE, *utmp[0], *utmp[1]);
      div += *utmp[1];
   }
+
+#if 1
+  // div_face += d u.n Mass |_face 
+  for ( auto i=0; i<gieface->size(); i++ ) {
+    k = (*gieface)[i];
+    for ( auto j=0; j<nxy; j++ ) { 
+      div[k] += (*u[j])[k] * (*normals)[j][i] * (*mass)[k];
+    }
+  }
+#endif
 
 //div *= *(massop_->data());
 
