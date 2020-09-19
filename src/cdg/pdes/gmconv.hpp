@@ -93,7 +93,7 @@
 #include "gmtk.hpp"
 #include "pdeint/equation_base.hpp"
 
-#undef USE_DIVOP
+#define USE_DIVOP
 
 using namespace geoflow::pdeint;
 using namespace std;
