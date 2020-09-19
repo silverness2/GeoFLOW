@@ -1231,11 +1231,17 @@ void GGrid::init_local_face_info()
     for ( auto j=0; j<ieface->size(); j++ ) { // cycle over all elem faces
       for ( auto k=0; k<(*ieface)[j].size(); k++ ) {
         ig = nn + (*ieface)[j][k];
+#if 0
         if ( !gieface_.containsn(ig, m) ) { // don't include repeated face ind
           gieface_[m] = ig;
           giefaceid_[m] = j;
           m++;
         }
+#else
+        gieface_[m] = ig;
+        giefaceid_[m] = j;
+        m++;
+#endif
       }
     }
     nn += gelems_[e]->nnodes();
