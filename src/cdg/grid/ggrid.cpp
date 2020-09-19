@@ -1233,7 +1233,7 @@ void GGrid::init_local_face_info()
         ig = nn + (*ieface)[j][k];
         if ( !gieface_.containsn(ig, m) ) { // don't include repeated face ind
           gieface_[m] = ig;
-          giefaceid_[m] = k;
+          giefaceid_[m] = j;
           m++;
         }
       }
