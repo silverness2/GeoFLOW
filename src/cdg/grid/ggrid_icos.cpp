@@ -1067,8 +1067,39 @@ void GGridIcos::do_face_normals2d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
                                   GTVector<GTVector<GFTYPE>> &normals)
 {
 
-  // Cycle through local elem face indices to set
-  // normals. Taken in order, these should correspond
+   GINT              ib, ic, id,  ip;
+   GFTYPE            tiny;
+   GFTYPE            xm;
+   GTPoint<GFTYPE>   kp(3), xp(3), p1(3), p2(3);
+
+   tiny  = 100.0*std::numeric_limits<GFTYPE>::epsilon();
+   kp    = 0.0;
+   kp[2] = 1.0; // k-vector
+
+
+   if ( this->gtype_ == GE_DEFORMED
+    ||  this->gtype_ == GE_2DEMBEDDED ) {
+     // Bdy normal is hat{k} X dvec{X} / dxi_iedge,
+     // for face:
+     for ( auto j=0; j<gieface.size(); j++ ) { // all points on iedge
+       ib = gieface  [j];
+       id = giefaceid[j];
+       ip = id == 1 || id == 3 ? 0 : 1;
+       for ( auto i=0; i<dXdXi.size(2); i++ ) { // over _X_
+         p1[i] = dXdXi(ip,i)[ib];
+       }
+       kp.cross(p1, xp);   // xp = k X p1
+       ip = id%2;
+       face_mass  [j] *= xp.mag(); // |k X d_X_/dxi_ip| is face Jac
+       xp.unit();
+       for ( ic=0; ic<GDIM && fabs(xp[ic]) < tiny; ic++ );
+       assert(ic < GDIM); // no normal components > 0
+       for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
+     }
+   }
+   else {
+     assert(FALSE);
+   }
 
 
 } // end, method do_face_normals2d
@@ -1093,7 +1124,31 @@ void GGridIcos::do_face_normals3d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
                                   GTVector<GFTYPE> &face_mass,
                                   GTVector<GTVector<GFTYPE>> &normals)
 {
+   GINT            ib, ic, id;
+   GINT            ixi[6][2] = { {0,2}, {1,2}, {2,0},
+                                 {2,1}, {1,0}, {0,1} };
+   GFTYPE          tiny;
+   GTPoint<GFTYPE> xp(3), p1(3), p2(3);
 
+   tiny  = 100.0*std::numeric_limits<GFTYPE>::epsilon();
+
+   // Bdy normal is dvec{X} / dxi_xi X dvec{X} / dxi_eta
+   for ( auto j=0; j<gieface.size(); j++ ) { // all points on iedge
+     ib = gieface[j];
+     id = giefaceid[j];
+     // Find derivs of _X_ wrt face's reference coords;
+     // the cross prod of these vectors is the normal:
+     for ( auto i=0; i<dXdXi.size(2); i++ ) { // d_X_/dXi
+       p1[i] = dXdXi(ixi[j][0],i)[ib]; // d_X_/dxi
+       p2[i] = dXdXi(ixi[j][1],i)[ib]; // d_X_/deta
+     }
+     p1.cross(p2, xp);   // xp = p1 X p2
+     face_mass  [j] *= xp.mag(); // d_X_/dxi X d_X_/deta| is face Jac
+     xp.unit();
+     for ( ic=0; ic<GDIM && fabs(xp[ic]) < tiny; ic++ );
+     assert(ic < GDIM); // no normal components > 0
+     for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
+   }
 
 } // end, method do_face_normals3d
 

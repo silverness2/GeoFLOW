@@ -1422,6 +1422,9 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
      }
    }
+   else {
+     assert(FALSE);
+   }
 
 
 } // end, method do_face_normals2d
