@@ -64,7 +64,8 @@ public:
         void                do_face_normals(GTMatrix<GTVector<GFTYPE>> &dXdXi,
                                       GTVector<GSIZET> &gieface,
                                       GTVector<GINT> &giefaceid,
-                                      GTVector<GTVector<GFTYPE>> &normals);// compute normals to elem faces
+                                      GTVector<GFTYPE> &face_mass,
+                                      GTVector<GTVector<GFTYPE>> &normals);  // com
         void                do_bdy_normals(
                               GTMatrix<GTVector<GFTYPE>>    &dXdXi,
                               GTVector<GTVector<GSIZET>>    &igbdy_face,
@@ -161,11 +162,13 @@ friend  std::ostream&       operator<<(std::ostream&, GGridIcos &);       // Out
          void               do_face_normals2d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
                                       GTVector<GSIZET> &gieface,
                                       GTVector<GINT> &giefaceid,
+                                      GTVector<GFTYPE> &face_mass,
                                       GTVector<GTVector<GFTYPE>> &normals);
                                                                    // compute normals to elem faces in 2d
          void               do_face_normals3d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
                                       GTVector<GSIZET> &gieface,
                                       GTVector<GINT> &giefaceid,
+                                      GTVector<GFTYPE> &face_mass,
                                       GTVector<GTVector<GFTYPE>> &normals);
                                                                    // compute normals to elem faces in 2d
          void               do_bdy_normals3d(

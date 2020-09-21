@@ -1317,12 +1317,15 @@ GBOOL GGridBox::on_global_edge(GINT iface, GTPoint<GFTYPE> &pt)
 //          gieface   : vector of face indices into global volume fields 
 //                      for all facase
 //          giefaceid : face id for eah index in gieface
+//          face_mass : mass*Jac at face nodes. Prior to entry, these should 
+//                      contain the weights at each face node
 //          normals   : vector of normal components
 // RETURNS: none
 //**********************************************************************************
 void GGridBox::do_face_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
                                GTVector<GSIZET>              &gieface,
                                GTVector<GINT>                &giefaceid,
+                               GTVector<GFTYPE>              &face_mass,
                                GTVector<GTVector<GFTYPE>>    &normals)
 {
 
@@ -1331,6 +1334,7 @@ void GGridBox::do_face_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
   GSIZET nface;
 
   nface = gieface.size();
+  face_mass.resize(nface);
   for ( auto j=0; j<normals.size(); j++ ) normals[j].resize(nface);
 
 
@@ -1338,11 +1342,11 @@ void GGridBox::do_face_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 
   #if defined(_G_IS2D)
 
-    do_face_normals2d(dXdXi, gieface, giefaceid, normals);
+    do_face_normals2d(dXdXi, gieface, giefaceid, face_mass, normals);
 
   #elif defined(_G_IS3D)
 
-    do_face_normals3d(dXdXi, gieface, giefaceid, normals);
+    do_face_normals3d(dXdXi, gieface, giefaceid, face_mass, normals);
 
   }
 
@@ -1363,18 +1367,20 @@ void GGridBox::do_face_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 //          gieface   : vector of face indices into global volume fields 
 //                      for all facase
 //          giefaceid : face id for eah index in gieface
+//          face_mass : mass*Jac at face nodes
 //          normals   : vector of normal components
 // RETURNS: none
 //**********************************************************************************
 void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
                                  GTVector<GSIZET>              &gieface,
                                  GTVector<GINT>                &giefaceid,
+                                 GTVector<GFTYPE>              &face_mass,
                                  GTVector<GTVector<GFTYPE>>    &normals)
 {
-   GINT            ib, ic, id,  ip; 
-   GFTYPE          tiny;
-   GFTYPE          xm;
-   GTPoint<GFTYPE> kp(3), xp(3), p1(3), p2(3);
+   GINT              ib, ic, id,  ip; 
+   GFTYPE            tiny;
+   GFTYPE            xm;
+   GTPoint<GFTYPE>   kp(3), xp(3), p1(3), p2(3);
 
    tiny  = 100.0*std::numeric_limits<GFTYPE>::epsilon(); 
    kp    = 0.0;
@@ -1383,12 +1389,14 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
    // Normals depend on element type:
    if ( this->gtype_ == GE_REGULAR ) {
      for ( auto j=0; j<gieface.size(); j++ ) { // all points on iedge
+       ib = gieface  [j];
        id = giefaceid[j]; 
-cout << "GGridBox::do_face_normals2d: id=" << id << endl;
        xm = id == 1 || id == 2 ? 1.0 : -1.0;
        ip = (giefaceid[j]+1)%2;
        for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = 0.0; 
        normals[ip][j] = xm;
+       ip = (giefaceid[j])%2;
+       face_mass  [j] *= dXdXi(ip,0)[ib]; 
      }
    }
    else if ( this->gtype_ == GE_DEFORMED ) {
@@ -1438,12 +1446,14 @@ cout << "GGridBox::do_face_normals2d: id=" << id << endl;
 //          gieface   : vector of face indices into global volume fields 
 //                      for all facase
 //          giefaceid : face id for eah index in gieface
+//          face_mass : mass*Jac at face nodes
 //          normals   : vector of normal components
 // RETURNS: none
 //**********************************************************************************
 void GGridBox::do_face_normals3d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
                                  GTVector<GSIZET>              &gieface,
                                  GTVector<GINT>                &giefaceid,
+                                 GTVector<GFTYPE>              &face_mass,
                                  GTVector<GTVector<GFTYPE>>    &normals)
 {
 

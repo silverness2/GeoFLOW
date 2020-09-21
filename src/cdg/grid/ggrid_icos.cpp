@@ -1028,16 +1028,17 @@ void GGridIcos::find_bdy_ind3d(GFTYPE radius, GTVector<GSIZET> &ibdy)
 void GGridIcos::do_face_normals(GTMatrix<GTVector<GFTYPE>> &dXdXi,
                                 GTVector<GSIZET> &gieface,
                                 GTVector<GINT> &giefaceid,
+                                GTVector<GFTYPE> &face_mass,
                                 GTVector<GTVector<GFTYPE>> &normals)
 {
 
   #if defined(_G_IS2D)
 
-    do_face_normals2d(dXdXi, gieface, giefaceid, normals);
+    do_face_normals2d(dXdXi, gieface, giefaceid, face_mass, normals);
 
   #elif defined(_G_IS3D)
 
-    do_face_normals3d(dXdXi, gieface, giefaceid, normals);
+    do_face_normals3d(dXdXi, gieface, giefaceid, face_mass, normals);
 
   #else
     #error Invalid problem dimensionality
@@ -1062,6 +1063,7 @@ void GGridIcos::do_face_normals(GTMatrix<GTVector<GFTYPE>> &dXdXi,
 void GGridIcos::do_face_normals2d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
                                   GTVector<GSIZET> &gieface,
                                   GTVector<GINT> &giefaceid,
+                                  GTVector<GFTYPE> &face_mass,
                                   GTVector<GTVector<GFTYPE>> &normals)
 {
 
@@ -1088,6 +1090,7 @@ void GGridIcos::do_face_normals2d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
 void GGridIcos::do_face_normals3d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
                                   GTVector<GSIZET> &gieface,
                                   GTVector<GINT> &giefaceid,
+                                  GTVector<GFTYPE> &face_mass,
                                   GTVector<GTVector<GFTYPE>> &normals)
 {
 

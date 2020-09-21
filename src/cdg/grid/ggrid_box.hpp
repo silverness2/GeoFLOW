@@ -49,6 +49,7 @@ public:
         void                do_face_normals(GTMatrix<GTVector<GFTYPE>> &dXdXi,
                                       GTVector<GSIZET> &gieface,
                                       GTVector<GINT> &giefaceid,
+                                      GTVector<GFTYPE> &face_mass,
                                       GTVector<GTVector<GFTYPE>> &normals);  // compute normals to elem faces
         void                set_partitioner(GDD_base<GFTYPE> *d);            // set and use GDD object
         void                set_basis(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b); // set element basis
@@ -84,10 +85,12 @@ private:
          void               do_face_normals2d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
                                       GTVector<GSIZET> &igbdy_face,
                                       GTVector<GINT> &giefaceid,
+                                      GTVector<GFTYPE> &face_mass,
                                       GTVector<GTVector<GFTYPE>> &normals); // compute normals to elem faces in 2d
          void               do_face_normals3d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
                                       GTVector<GSIZET> &gieface,
                                       GTVector<GINT> &giefaceid,
+                                      GTVector<GFTYPE> &face_mass,
                                       GTVector<GTVector<GFTYPE>> &normals); // compute normals to elem faces in 3d
          void               do_bdy_normals2d(
                               GTMatrix<GTVector<GFTYPE>> &dXdXi,

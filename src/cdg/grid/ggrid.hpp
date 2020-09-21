@@ -172,7 +172,10 @@ virtual void                 print(const GString &filename){}          // print 
                              { return bdy_update_list_; }              // bdy_update_list pointers
         GTVector<GTVector<GFTYPE>>
                             &faceNormal()
-                             { return faceNormals_; }                  // global face normals
+                             { return faceNormals_; }                  // elem face normals
+        GTVector<GFTYPE>
+                            &faceMass()
+                             { return faceMass_; }                     // elem face Mass * Jac
         GTVector<GSIZET>
                             &gieface() { return gieface_;}             // elem face indices into glob u for all elem faces
         GTVector<GINT>
@@ -225,6 +228,7 @@ virtual void                        do_face_normals(GTMatrix<GTVector<GFTYPE>>
                                                                        &igface,
                                                    GTVector<GINT>
                                                                        &igfaceid,
+                                                   GTVector<GFTYPE>    &face_mass,
                                                    GTVector<GTVector<GFTYPE>>
                                                                        &normals)=0;
                                                                       // compute normals to elem faces 
@@ -267,7 +271,8 @@ virtual void                        do_bdy_normals(GTMatrix<GTVector<GFTYPE>>
         GMass                      *imass_;         // inverse of mass operator
         GTVector<GFTYPE>            Jac_;           // interior Jacobian, global
         GTVector<GFTYPE>            faceJac_;       // face Jacobians, global
-        GTVector<GTVector<GFTYPE>>  faceNormals_;   // normal to eleme faces each face node point (2d & 3d), global
+        GTVector<GFTYPE>            faceMass_;      // elem face mass * Jacobians
+        GTVector<GTVector<GFTYPE>>  faceNormals_;   // normal to elem faces each face node point (2d & 3d), global
         GTVector<GSIZET>            gieface_;       // index into global field indicating elem face node
         GTVector<GINT>              giefaceid_;     // elem face id for each gieface_
         GTVector<GTVector<GFTYPE>>  bdyNormals_;    // normal to surface at each bdy node point (2d & 3d), global

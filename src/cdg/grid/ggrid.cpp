@@ -661,7 +661,6 @@ void GGrid::reg_geom_init()
 
    GString serr = "GridIcos::reg_geom_init: ";
    GSIZET nxy = GDIM;
-   GTMatrix<GTVector<GFTYPE>>  dXdXi_;
    GTVector<GTVector<GFTYPE>> *xe;
 
    // Resize geometric quantities to global size:
@@ -767,7 +766,7 @@ void GGrid::do_normals()
   // Set element face normals. Note: arrays for 
   // normals are allocated in these calls:
   if ( do_face_normals_ ) {
-    do_face_normals(dXdXi_, gieface_, giefaceid_, faceNormals_);
+    do_face_normals(dXdXi_, gieface_, giefaceid_, faceMass_, faceNormals_);
   }
   
   // Set domain boundary node normals:
@@ -1203,8 +1202,9 @@ void GGrid::init_local_face_info()
 {
   GBOOL                        bret;
   GSIZET                       ibeg, iend; // beg, end indices for global array
-  GTVector<GINT>              *iebdy;  // domain bdy indices
-  GTVector<GTVector<GINT>>    *ieface; // domain face indices
+  GTVector<GINT>              *iebdy;      // domain bdy indices
+  GTVector<GTVector<GINT>>    *ieface;     // element face indices
+  GTVector<GTVector<GFTYPE>> *efacemass;  // element face weights
 
   GSIZET  m, n, nn; 
   GSIZET        ig; // index into global array
@@ -1221,6 +1221,7 @@ void GGrid::init_local_face_info()
   }
   gieface_.resize(n);
   giefaceid_.resize(n);
+  faceMass_.resize(n);
 
   // Find list over all elemes of element face nodes:
   nn = 0; // global reference index
@@ -1228,6 +1229,7 @@ void GGrid::init_local_face_info()
   for ( auto e=0; e<gelems_.size(); e++ ) { // cycle over all elems
     ibeg   = gelems_[e]->igbeg(); iend  = gelems_[e]->igend();
     ieface = &gelems_[e]->face_indices(); // set in child class
+    efacemass = &gelems_[e]->face_mass();
     for ( auto j=0; j<ieface->size(); j++ ) { // cycle over all elem faces
       for ( auto k=0; k<(*ieface)[j].size(); k++ ) {
         ig = nn + (*ieface)[j][k];
@@ -1240,10 +1242,11 @@ void GGrid::init_local_face_info()
 #else
         gieface_[m] = ig;
         giefaceid_[m] = j;
+        faceMass_[m] = (*efacemass)[j][k];
         m++;
 #endif
-      }
-    }
+      } // end, face node loop
+    } // end, face loop
     nn += gelems_[e]->nnodes();
   } // end, element loop
 
