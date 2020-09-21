@@ -1394,13 +1394,12 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        ib = gieface  [j];
        id = giefaceid[j]; 
        xm = id == 1 || id == 2 ? 1.0 : -1.0;
-       ip = (giefaceid[j]+1)%2;
+       ip = (id+1)%2;
        for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = 0.0; 
        normals[ip][j] = xm;
-       ip = (giefaceid[j])%2;
+       ip = id%2;
        face_mass  [j] *= dXdXi(ip,0)[ib]; 
      }
-cout << "GGridBox::do_face_normals2d: face_mass=" << face_mass << endl;
    }
    else if ( this->gtype_ == GE_DEFORMED ) {
      // Bdy normal is hat{k} X dvec{X} / dxi_iedge,
