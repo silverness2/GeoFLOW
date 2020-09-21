@@ -512,7 +512,6 @@ GTMatrix<T>::operator*(const GTMatrix<T> &a)
 template<class T> 
 GBOOL GTMatrix<T>::resize(GSIZET new1, GSIZET new2)
 {
-  if ( n1_*n2_ == new1*new2 ) return TRUE;
 
   n1_ = new1;
   n2_ = new2;
