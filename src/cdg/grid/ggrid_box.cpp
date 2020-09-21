@@ -1367,7 +1367,9 @@ void GGridBox::do_face_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 //          gieface   : vector of face indices into global volume fields 
 //                      for all facase
 //          giefaceid : face id for eah index in gieface
-//          face_mass : mass*Jac at face nodes
+//          face_mass : mass*Jac at face nodes; should contain
+//                      Gauss weights on element faces on entry, and
+//                      will multiply by face Jacobian on exit
 //          normals   : vector of normal components
 // RETURNS: none
 //**********************************************************************************
@@ -1398,6 +1400,7 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        ip = (giefaceid[j])%2;
        face_mass  [j] *= dXdXi(ip,0)[ib]; 
      }
+cout << "GGridBox::do_face_normals2d: face_mass=" << face_mass << endl;
    }
    else if ( this->gtype_ == GE_DEFORMED ) {
      // Bdy normal is hat{k} X dvec{X} / dxi_iedge,
