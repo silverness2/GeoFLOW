@@ -1235,14 +1235,14 @@ void GGrid::init_local_face_info()
         ig = nn + (*ieface)[j][k];
 #if 0
         if ( !gieface_.containsn(ig, m) ) { // don't include repeated face ind
-          gieface_[m] = ig;
+          gieface_  [m] = ig;
           giefaceid_[m] = j;
           m++;
         }
 #else
-        gieface_[m] = ig;
+        gieface_  [m] = ig;
         giefaceid_[m] = j;
-        faceMass_[m] = (*efacemass)[j][k];
+        faceMass_ [m] = (*efacemass)[j][k];
         m++;
 #endif
       } // end, face node loop
