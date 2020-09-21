@@ -359,10 +359,10 @@ void GElem_base::set_size1d()
 
   // Allocate coordinate array and vertex coordinates:
   xNodes_.resize(GDIM);
-  for ( GSIZET j=0; j<GDIM; j++ ) xNodes_[j].resize(Ntot_);
+  for ( auto j=0; j<GDIM; j++ ) xNodes_[j].resize(Ntot_);
 
   xiNodes_.resize(GDIM);
-  for ( GSIZET i=0; i<GDIM; i++ )  xiNodes_[i] = gbasis_[i]->getXiNodes();;
+  for ( auto i=0; i<GDIM; i++ )  xiNodes_[i] = gbasis_[i]->getXiNodes();;
 
   xVertices_.resize(nVertices_);
   
@@ -375,15 +375,15 @@ void GElem_base::set_size1d()
   // use pointers so that repeated elements
   // aren't duplicated:
   dXidX_ .resize(GDIM,GDIM);
-  for ( GSIZET j=0; j<GDIM; j++ ) {
-    for ( GSIZET i=0; i<GDIM; i++ ) {
+  for ( auto j=0; j<GDIM; j++ ) {
+    for ( auto i=0; i<GDIM; i++ ) {
       dXidX_ (i,j).resize(Ntot_);
     }
   }
   Jac_.resize(Ntot_);
   faceJac_.resize(2);
   bdyNormal_.resize(2);
-  for ( GSIZET j=0; j<2; j++ ) {
+  for ( auto j=0; j<2; j++ ) {
     bdyNormal_[j].resize(1);
     bdyNormal_[j][0].resize(1);
   }
@@ -417,7 +417,7 @@ void GElem_base::set_size2d()
   // Vertex indices comprising edges 
   // (2 indices for each edge):
   ivedge_.resize(nEdges_); 
-  for ( GSIZET j=0; j<nEdges_; j++ ) ivedge_[j].resize(2);
+  for ( auto j=0; j<nEdges_; j++ ) ivedge_[j].resize(2);
   ivedge_[0][0] = 0; ivedge_[0][1] = 0;
   ivedge_[1][0] = 1; ivedge_[1][1] = 2;
   ivedge_[2][0] = 3; ivedge_[2][1] = 2;
@@ -426,7 +426,7 @@ void GElem_base::set_size2d()
   // Face indices defining edges
   // (no real meaning in 2d, but we use the following)
   ifedge_.resize(nEdges_);
-  for ( GSIZET j=0; j<nEdges_; j++ ) ifedge_[j].resize(1);
+  for ( auto j=0; j<nEdges_; j++ ) ifedge_[j].resize(1);
   ifedge_[0][0] = 0; 
   ifedge_[1][0] = 1; 
   ifedge_[2][0] = 2; 
@@ -435,7 +435,7 @@ void GElem_base::set_size2d()
   // Edge indices comprising faces
   // (1 index for each face)
   ieface_.resize(nFaces_);
-  for ( GSIZET j=0; j<nFaces_; j++ ) ieface_[j].resize(1);
+  for ( auto j=0; j<nFaces_; j++ ) ieface_[j].resize(1);
   ieface_[0][0] = 0; 
   ieface_[1][0] = 1; 
   ieface_[2][0] = 2; 
@@ -444,7 +444,7 @@ void GElem_base::set_size2d()
   // Vertex indices comprising faces
   // (2 indices for each face in 2d)
   ivface_.resize(nFaces_);
-  for ( GSIZET j=0; j<nFaces_; j++ ) ivface_[j].resize(2);
+  for ( auto j=0; j<nFaces_; j++ ) ivface_[j].resize(2);
   ivface_[0][0] = 0; ivface_[0][1] = 1; 
   ivface_[1][0] = 1; ivface_[1][1] = 2; 
   ivface_[2][0] = 3; ivface_[2][1] = 2; 
@@ -453,18 +453,18 @@ void GElem_base::set_size2d()
   // Allocate coordinate array and vertex coordinates:
   GSIZET nxy = elemtype_ == GE_2DEMBEDDED ? GDIM+1: GDIM;
   xNodes_.resize(nxy);
-  for ( GSIZET j=0; j<nxy; j++ ) xNodes_[j].resize(Ntot_);
+  for ( auto j=0; j<nxy; j++ ) xNodes_[j].resize(Ntot_);
 
   xiNodes_.resize(GDIM);
-  for ( GSIZET i=0; i<GDIM; i++ )  xiNodes_[i] = gbasis_[i]->getXiNodes();;
+  for ( auto i=0; i<GDIM; i++ )  xiNodes_[i] = gbasis_[i]->getXiNodes();;
 
 #if 0
   xiNodes_.resize(Ntot_);
   GSIZET n;
   GTVector<GFTYPE> *xinodes1d[GDIM];
-  for ( GSIZET i=0; i<GDIM; i++ )  xinodes1d = gbasis_[i];
-  for ( GSIZET j=0, n=0; j<N_[0]; j++ ) {
-    for ( GSIZET i=0; i<N_[0]; i++, n++ ) {
+  for ( auto i=0; i<GDIM; i++ )  xinodes1d = gbasis_[i];
+  for ( auto j=0, n=0; j<N_[0]; j++ ) {
+    for ( auto i=0; i<N_[0]; i++, n++ ) {
       xiNodes_[n] = (*xinodes1d[0])[i] * (*xinodes1d[1])[j];
     }
   }
@@ -482,8 +482,8 @@ void GElem_base::set_size2d()
   // use pointers so that repeated elements
   // aren't duplicated:
   dXidX_ .resize(nxy,nxy);
-  for ( GSIZET j=0; j<nxy; j++ ) {
-    for ( GSIZET i=0; i<nxy; i++ ) {
+  for ( auto j=0; j<nxy; j++ ) {
+    for ( auto i=0; i<nxy; i++ ) {
       dXidX_ (i,j).resize(Ntot_);
     }
   }
@@ -497,15 +497,15 @@ void GElem_base::set_size2d()
 
   bdyNormal_.resize(nFaces_);
   if ( elemtype_ == GE_2DEMBEDDED ) {
-    for ( GSIZET j=0; j<nFaces_; j++ ) {
+    for ( auto j=0; j<nFaces_; j++ ) {
       bdyNormal_[j].resize(3);
-      for ( GSIZET k=0; k<3; k++ ) bdyNormal_[j][k].resize(N_[j%2]);
+      for ( auto k=0; k<3; k++ ) bdyNormal_[j][k].resize(N_[j%2]);
     }
   }
   else {
-    for ( GSIZET j=0; j<nFaces_; j++ ) {
+    for ( auto j=0; j<nFaces_; j++ ) {
       bdyNormal_[j].resize(2);
-      for ( GSIZET k=0; k<2; k++ ) bdyNormal_[j][k].resize(N_[j%2]);
+      for ( auto k=0; k<2; k++ ) bdyNormal_[j][k].resize(N_[j%2]);
     }
   }
 #endif
@@ -513,7 +513,7 @@ void GElem_base::set_size2d()
   // Indirection indices:
   get_indirect(gbasis_, vert_indices_, edge_indices_, face_indices_, face_mass_);
   Nftot_ = 0;
-  for ( GSIZET j=0; j<nEdges_; j++ ) Nftot_ += edge_indices_[j].size();
+  for ( auto j=0; j<nEdges_; j++ ) Nftot_ += edge_indices_[j].size();
 
 
 } // end of method set_size2d
@@ -540,7 +540,7 @@ void GElem_base::set_size3d()
 
   // Vertex indices comprising edges 
   ivedge_.resize(nEdges_); 
-  for ( GSIZET j=0; j<nEdges_; j++ ) ivedge_[j].resize(2);
+  for ( auto j=0; j<nEdges_; j++ ) ivedge_[j].resize(2);
   ivedge_ [0][0] = 0; ivedge_ [0][1] = 1; 
   ivedge_ [1][0] = 1; ivedge_ [1][1] = 2; 
   ivedge_ [2][0] = 3; ivedge_ [2][1] = 2; 
@@ -556,7 +556,7 @@ void GElem_base::set_size3d()
 
   // Face indices defining edges
   ifedge_.resize(nEdges_);
-  for ( GSIZET j=0; j<nEdges_; j++ ) ifedge_[j].resize(2);
+  for ( auto j=0; j<nEdges_; j++ ) ifedge_[j].resize(2);
   ifedge_ [0][0] = 0; ifedge_ [0][1] = 4; 
   ifedge_ [1][0] = 1; ifedge_ [1][1] = 4; 
   ifedge_ [2][0] = 2; ifedge_ [2][1] = 4; 
@@ -572,7 +572,7 @@ void GElem_base::set_size3d()
 
   // Edge indices comprising faces
   ieface_.resize(nFaces_);
-  for ( GSIZET j=0; j<nFaces_; j++ ) ieface_[j].resize(4);
+  for ( auto j=0; j<nFaces_; j++ ) ieface_[j].resize(4);
   ieface_[0][0] =  0; ieface_[0][1] =  9; ieface_[0][2] =  4; ieface_[0][3] =  8;
   ieface_[1][0] =  1; ieface_[1][1] = 10; ieface_[1][2] =  5; ieface_[1][3] =  9;
   ieface_[2][0] =  2; ieface_[2][1] = 10; ieface_[2][2] =  6; ieface_[2][3] = 11;
@@ -582,7 +582,7 @@ void GElem_base::set_size3d()
 
   // Vertex indices comprising faces
   ivface_.resize(nFaces_);
-  for ( GSIZET j=0; j<nFaces_; j++ ) ivface_[j].resize(4);
+  for ( auto j=0; j<nFaces_; j++ ) ivface_[j].resize(4);
   ivface_[0][0] = 0; ivface_[0][1] = 1; ivface_[0][2] = 5; ivface_[0][3] = 4;
   ivface_[1][0] = 1; ivface_[1][1] = 2; ivface_[1][2] = 6; ivface_[1][3] = 5;
   ivface_[2][0] = 3; ivface_[2][1] = 2; ivface_[2][2] = 6; ivface_[2][3] = 7;
@@ -593,19 +593,19 @@ void GElem_base::set_size3d()
 
   // Allocate coordinate array and vertex coordinates:
   xNodes_.resize(GDIM);
-  for ( GSIZET j=0; j<GDIM; j++ ) xNodes_[j].resize(Ntot_);
+  for ( auto j=0; j<GDIM; j++ ) xNodes_[j].resize(Ntot_);
 
   xiNodes_.resize(GDIM);
-  for ( GSIZET i=0; i<GDIM; i++ )  xiNodes_[i] = gbasis_[i]->getXiNodes();;
+  for ( auto i=0; i<GDIM; i++ )  xiNodes_[i] = gbasis_[i]->getXiNodes();;
 
 #if 0
   xiNodes_.resize(Ntot_);
   GSIZET n;
   GTVector<GFTYPE> *xinodes1d[GDIM];
-  for ( GSIZET i=0; i<GDIM; i++ )  xinodes1d = gbasis_[i];
-   for ( GSIZET k=0, n=0; n<N_[2]; k++ ) {
-    for ( GSIZET j=0; j<N_[0]; j++ ) {
-      for ( GSIZET i=0; i<N_[0]; i++, n++ ) {
+  for ( auto i=0; i<GDIM; i++ )  xinodes1d = gbasis_[i];
+   for ( auto k=0, n=0; n<N_[2]; k++ ) {
+    for ( auto j=0; j<N_[0]; j++ ) {
+      for ( auto i=0; i<N_[0]; i++, n++ ) {
         xiNodes_[n] = (*xinodes1d[0])[i] * (*xinodes1d[1])[i] * (*xinodes1d[2])[k];
       }
     }
@@ -622,8 +622,8 @@ void GElem_base::set_size3d()
   // use pointers so that repeated elements
   // aren't duplicated:
   dXidX_ .resize(GDIM,GDIM);
-  for ( GSIZET j=0; j<GDIM; j++ ) {
-    for ( GSIZET i=0; i<GDIM; i++ ) {
+  for ( auto j=0; j<GDIM; j++ ) {
+    for ( auto i=0; i<GDIM; i++ ) {
       dXidX_ (i,j).resize(Ntot_);
     }
   }
@@ -638,13 +638,13 @@ void GElem_base::set_size3d()
   faceJac_[5].resize(N_[0]*N_[1]);
 
   bdyNormal_.resize(nFaces_);
-  for ( GSIZET j=0; j<nFaces_; j++ ) {
+  for ( auto j=0; j<nFaces_; j++ ) {
     bdyNormal_[j].resize(3);
     if ( j < 4 ) {
-      for ( GSIZET k=0; k<3; k++ ) bdyNormal_[j][j].resize(N_[j%2]*N_[2]);
+      for ( auto k=0; k<3; k++ ) bdyNormal_[j][j].resize(N_[j%2]*N_[2]);
     }
     else {
-      for ( GSIZET k=0; k<3; k++ ) bdyNormal_[j][j].resize(N_[0]*N_[1]);
+      for ( auto k=0; k<3; k++ ) bdyNormal_[j][j].resize(N_[0]*N_[1]);
     }
   }
 #endif
@@ -652,7 +652,7 @@ void GElem_base::set_size3d()
   // Indirection indices:
   get_indirect(gbasis_, vert_indices_, edge_indices_, face_indices_, face_mass_);
   Nftot_ = 0;
-  for ( GSIZET j=0; j<nFaces_; j++ ) Nftot_ += face_indices_[j].size();
+  for ( auto j=0; j<nFaces_; j++ ) Nftot_ += face_indices_[j].size();
 
 } // end of method set_size3d
 
@@ -1292,7 +1292,7 @@ void GElem_base::inv(GMVFType &G, GMVFType &iG)
 
   GFTYPE ijac, jac;
   if ( G.size(1) == 2 && G.size(2) == 2 ) {
-    for ( GSIZET n=0; n<G(0,0).size(); n++ ) { // 2x2 matrix
+    for ( auto n=0; n<G(0,0).size(); n++ ) { // 2x2 matrix
       jac  = G(0,0)[n]*G(1,1)[n] - G(1,0)[n]*G(0,1)[n];
       ijac = 1.0/jac;
       iG(0,0)[n] =  G(1,1)[n]*ijac;
@@ -1303,7 +1303,7 @@ void GElem_base::inv(GMVFType &G, GMVFType &iG)
     return;
   }
 
-  for ( GSIZET n=0; n<G(0,0).size(); n++ ) { // 3x3 matrix
+  for ( auto n=0; n<G(0,0).size(); n++ ) { // 3x3 matrix
     jac  = G(0,0)[n]*(G(1,1)[n]*G(2,2)[n] - G(1,2)[n]*G(2,1)[n])
          - G(0,1)[n]*(G(1,0)[n]*G(2,2)[n] - G(1,2)[n]*G(2,0)[n])
          + G(0,2)[n]*(G(1,0)[n]*G(2,1)[n] - G(1,1)[n]*G(2,0)[n]);
@@ -1402,20 +1402,20 @@ void GElem_base::get_indirect1d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
 
   GTVector<GINT> N(GDIM);
   GTVector<GFTYPE> *W[GDIM];
-  for ( GSIZET j=0; j<GDIM; j++ ) {
+  for ( auto j=0; j<GDIM; j++ ) {
      N[j] = b[j]->getOrder() + 1;
      W[j] = b[j]->getWeights();
   }
 
   // Indirection indices for vertices:
   vert_ind.resize(nVertices_);
-  for ( GSIZET j=0; j<nVertices_; j++ ) vert_ind[j].resize(1);
+  for ( auto j=0; j<nVertices_; j++ ) vert_ind[j].resize(1);
   vert_ind[0][0] = 0;
   vert_ind[1][0] = N[0] - 1;
 
   // Indirection indices for edges:
   edge_ind.resize(nEdges_);
-  for ( GSIZET j=0; j<nEdges_; j++ ) edge_ind[j].resize(1);
+  for ( auto j=0; j<nEdges_; j++ ) edge_ind[j].resize(1);
   edge_ind[0][0] = 0;
   edge_ind[1][0] = N[0] - 1;
 
@@ -1423,7 +1423,7 @@ void GElem_base::get_indirect1d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
   // Indirection indices for faces (same as for edges):
   face_ind.resize(nFaces_);
   face_mass.resize(nFaces_);
-  for ( GSIZET j=0; j<nFaces_; j++ ) {
+  for ( auto j=0; j<nFaces_; j++ ) {
      face_ind[j].resize(1);
      face_mass[j].resize(1);
   }
@@ -1454,14 +1454,14 @@ void GElem_base::get_indirect2d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
 
   GTVector<GINT> N(GDIM);
   GTVector<GFTYPE> *W[GDIM];
-  for ( GSIZET j=0; j<GDIM; j++ ) {
+  for ( auto j=0; j<GDIM; j++ ) {
      N[j] = b[j]->getOrder() + 1;
      W[j] = b[j]->getWeights();
   }
 
   // Indirection indices for vertices:
   vert_ind.resize(nVertices_);
-  for ( GSIZET j=0; j<nVertices_; j++ ) vert_ind[j].resize(1);
+  for ( auto j=0; j<nVertices_; j++ ) vert_ind[j].resize(1);
   vert_ind[0][0] = 0;
   vert_ind[1][0] = N[0] - 1;
   vert_ind[2][0] = N[0]*N[1] - 1;
@@ -1469,13 +1469,13 @@ void GElem_base::get_indirect2d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
 
   // Indirection indices for edges:
   edge_ind.resize(nEdges_);
-  for ( GSIZET j=0; j<nEdges_; j++ ) edge_ind[j].resize(j%2==0?N[0]:N[1]);
-  for ( GSIZET j=0; j<N[0]; j++ ) {
+  for ( auto j=0; j<nEdges_; j++ ) edge_ind[j].resize(j%2==0?N[0]:N[1]);
+  for ( auto j=0; j<N[0]; j++ ) {
     edge_ind[0][j] = j;
     edge_ind[2][j] = N[0]*(N[1]-1) + j;
   }
 
-  for ( GSIZET j=0; j<N[1]; j++ ) {
+  for ( auto j=0; j<N[1]; j++ ) {
     edge_ind[1][j] = (j+1)*N[0] - 1;
     edge_ind[3][j] = j*N[0];
   }
@@ -1483,18 +1483,18 @@ void GElem_base::get_indirect2d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
   // Indirection indices for faces (same as for edges):
   face_ind.resize(nFaces_);
   face_mass.resize(nFaces_);
-  for ( GSIZET j=0; j<nFaces_; j++ ) {
+  for ( auto j=0; j<nFaces_; j++ ) {
     face_ind[j].resize(j%2==0?N[0]:N[1]);
     face_mass[j].resize(j%2==0?N[0]:N[1]);
   }
-  for ( GSIZET j=0; j<N[0]; j++ ) {
+  for ( auto j=0; j<N[0]; j++ ) {
     face_ind[0][j] = j;
     face_ind[2][j] = N[0]*(N[1]-1) + j;
     face_mass[0][j] = (*W[0])[j];
     face_mass[2][j] = (*W[0])[j];
   }
 
-  for ( GSIZET j=0; j<N[1]; j++ ) {
+  for ( auto j=0; j<N[1]; j++ ) {
     face_ind[1][j] = (j+1)*N[0] - 1;
     face_ind[3][j] = j*N[0];
     face_mass[1][j] = (*W[1])[j];
@@ -1524,14 +1524,14 @@ void GElem_base::get_indirect3d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
 
   GTVector<GINT> N(GDIM);
   GTVector<GFTYPE> *W[GDIM];
-  for ( GSIZET j=0; j<GDIM; j++ ) {
+  for ( auto j=0; j<GDIM; j++ ) {
      N[j] = b[j]->getOrder() + 1;
      W[j] = b[j]->getWeights();
   }
 
   // Indirection indices for vertices:
   vert_indices_.resize(nVertices_);
-  for ( GSIZET j=0; j<nVertices_; j++ ) vert_ind[j].resize(1);
+  for ( auto j=0; j<nVertices_; j++ ) vert_ind[j].resize(1);
   vert_ind[0][0] = 0;
   vert_ind[1][0] = N[0] - 1;
   vert_ind[2][0] = N[0]*N[1] - 1;
@@ -1543,24 +1543,24 @@ void GElem_base::get_indirect3d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
 
   // Indirection indices for edges:
   edge_ind.resize(nEdges_);
-  for ( GSIZET j=0; j<8; j+=2 ) edge_ind[j].resize(N[0]);
-  for ( GSIZET j=0; j<N[0]; j++ ) { // 'x'-horizontal edges
+  for ( auto j=0; j<8; j+=2 ) edge_ind[j].resize(N[0]);
+  for ( auto j=0; j<N[0]; j++ ) { // 'x'-horizontal edges
     edge_ind[0][j] = j;
     edge_ind[2][j] = N[0]*(N[1]-1) + j;
     edge_ind[4][j] = N[0]*N[1]*(N[2]-1) + j;
     edge_ind[6][j] = N[0]*N[1]*N[2] - N[0] + j;
   }
 
-  for ( GSIZET j=1; j<8; j+=2 ) edge_ind[j].resize(N[1]);
-  for ( GSIZET j=0; j<N[1]; j++ ) { // 'y-'horizontal edges
+  for ( auto j=1; j<8; j+=2 ) edge_ind[j].resize(N[1]);
+  for ( auto j=0; j<N[1]; j++ ) { // 'y-'horizontal edges
     edge_ind[1][j] = (j+1)*N[0] - 1;
     edge_ind[3][j] =     j*N[0];
     edge_ind[5][j] = N[0]*N[1]*(N[2]-1) + (j+1)*N[0] - 1;
     edge_ind[7][j] = N[0]*N[1]*(N[2]-1) + j*N[0];
   }
 
-  for ( GSIZET j=8; j<12; j++ ) edge_ind[j].resize(N[2]);
-  for ( GSIZET j=0; j<N[2]; j++ ) { // 'z' vertical edges
+  for ( auto j=8; j<12; j++ ) edge_ind[j].resize(N[2]);
+  for ( auto j=0; j<N[2]; j++ ) { // 'z' vertical edges
     edge_ind[8][j] = j    *N[0]*N[1];
     edge_ind[9][j] = j    *N[0]*N[1] + N[0] - 1;
     edge_ind[10][j] = (j+1)*N[0]*N[1] - 1;
@@ -1834,9 +1834,9 @@ void GElem_base::set_bdyNormal2d(GTMatrix<GTVector<GFTYPE>> &rij, GTVector<GINT>
                              bdyNormal[0], bdyNormal[1], bdyNormal[2]);
 
     // Normalize:
-    for ( GSIZET j=0; j<bdyNormal.size(); j++ ) { 
+    for ( auto j=0; j<bdyNormal.size(); j++ ) { 
       xn = sqrt( pow(bdyNormal[0][j],2) + pow(bdyNormal[1][j],2) );     
-      for ( GSIZET i=0; i<bdyNormal.size(); i++ ) bdyNormal[i][j] *= 1.0/xn;
+      for ( auto i=0; i<bdyNormal.size(); i++ ) bdyNormal[i][j] *= 1.0/xn;
     }
   }
   else if ( (elemtype_ == GE_DEFORMED 
@@ -1850,9 +1850,9 @@ void GElem_base::set_bdyNormal2d(GTMatrix<GTVector<GFTYPE>> &rij, GTVector<GINT>
 
 
     // Normalize:
-    for ( GSIZET j=0; j<bdyNormal.size(); j++ ) { 
+    for ( auto j=0; j<bdyNormal.size(); j++ ) { 
       xn = sqrt( pow(bdyNormal[0][j],2) + pow(bdyNormal[1][j],2) );     
-      for ( GSIZET i=0; i<bdyNormal.size(); i++ ) bdyNormal[i][j] *= 1.0/xn;
+      for ( auto i=0; i<bdyNormal.size(); i++ ) bdyNormal[i][j] *= 1.0/xn;
     }
     
   }
@@ -1898,10 +1898,10 @@ void GElem_base::set_bdyNormal3d(GTMatrix<GTVector<GFTYPE>> &rij, GTVector<GINT>
     
 
     // Normalize:
-    for ( GSIZET j=0; j<bdyNormal.size(); j++ ) { 
+    for ( auto j=0; j<bdyNormal.size(); j++ ) { 
       xn = sqrt( pow(bdyNormal[0][j],2) + pow(bdyNormal[1][j],2) 
                + pow(bdyNormal[2][j],2) );     
-      for ( GSIZET i=0; i<bdyNormal.size(); i++ ) bdyNormal[i][j] *= 1.0/xn;
+      for ( auto i=0; i<bdyNormal.size(); i++ ) bdyNormal[i][j] *= 1.0/xn;
     }
   }
   
@@ -1927,8 +1927,8 @@ void GElem_base::init(GVVFType &xNodes)
   
   // Set xNodes_ data member. Note that the input array sizes may be
   // larger than for xNodes_:
-  for ( GSIZET j=0; j<xNodes.size(); j++ ) {
-    for ( GSIZET i=0; i<xNodes_[j].size(); i++ ) xNodes_[j][i] = xNodes[j][i];
+  for ( auto j=0; j<xNodes.size(); j++ ) {
+    for ( auto i=0; i<xNodes_[j].size(); i++ ) xNodes_[j][i] = xNodes[j][i];
   }
   
   build_elem();
@@ -1955,8 +1955,8 @@ void GElem_base::set_nodes(GVVFType &xNodes)
 
   // Set xNodes_ data member. Note that the input array sizes may be
   // larger than for xNodes_:
-  for ( GSIZET j=0; j<xNodes.size(); j++ ) {
-    for ( GSIZET i=0; i<xNodes_[j].size(); i++ ) xNodes_[j][i] = xNodes[j][i];
+  for ( auto j=0; j<xNodes.size(); j++ ) {
+    for ( auto i=0; i<xNodes_[j].size(); i++ ) xNodes_[j][i] = xNodes[j][i];
   }
   
 } // end of method set_nodes
