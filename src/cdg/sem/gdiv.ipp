@@ -74,10 +74,11 @@ void GDivOp<TypePack>::apply(StateComp &d, State &u, State &utmp, StateComp &div
   StateComp                 *fmass   = &grid_->faceMass();
 
 
-#if 0
+#if 1
   // div = D^{T,j} ( d u_j MJ ):
   d.pointProd(*u[0], *utmp[1]);
   grid_->wderiv(*utmp[1], 1, TRUE, *utmp[0], div);
+  div *= -1.0;
   for ( auto j=1; j<nxy; j++ ) { 
      d.pointProd(*u[j], *utmp[1]);
      grid_->wderiv(*utmp[1], j+1, TRUE, *utmp[0], *utmp[2]);
