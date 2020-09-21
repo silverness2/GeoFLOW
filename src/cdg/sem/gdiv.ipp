@@ -70,7 +70,8 @@ void GDivOp<TypePack>::apply(StateComp &d, State &u, State &utmp, StateComp &div
   GSIZET                     k;
   GTVector<GSIZET>          *gieface = &grid_->gieface() ;
   GTVector<GTVector<Ftype>> *normals = &grid_->faceNormal(); 
-  StateComp                 *mass    = massop_->data();
+  StateComp                 *mass    =  grid_->massop().data();
+  StateComp                 *fmass   = &grid_->faceMass();
 
 
 #if 1
@@ -88,7 +89,7 @@ void GDivOp<TypePack>::apply(StateComp &d, State &u, State &utmp, StateComp &div
   for ( auto i=0; i<gieface->size(); i++ ) {
     k = (*gieface)[i];
     for ( auto j=0; j<nxy; j++ ) { 
-      div[k] += d[k]*(*u[j])[k] * (*normals)[j][i] * (*mass)[k];
+      div[k] += d[k]*(*u[j])[k] * (*normals)[j][i] * (*fmass)[i];
     }
   }
 #endif
@@ -133,7 +134,7 @@ void GDivOp<TypePack>::apply(State &u, State &utmp, StateComp &div)
   GSIZET     k;
   GTVector<GSIZET>          *gieface = &grid_->gieface() ;
   GTVector<GTVector<Ftype>> *normals = &grid_->faceNormal(); 
-  StateComp                 *mass    = massop_->data();
+  StateComp                 *fmass   = &grid_->faceMass();
 
 
   // div = D^{T,j} ( u_j ):
@@ -148,12 +149,11 @@ void GDivOp<TypePack>::apply(State &u, State &utmp, StateComp &div)
   for ( auto i=0; i<gieface->size(); i++ ) {
     k = (*gieface)[i];
     for ( auto j=0; j<nxy; j++ ) { 
-      div[k] += (*u[j])[k] * (*normals)[j][i] * (*mass)[k];
+      div[k] += (*u[j])[k] * (*normals)[j][i] * (*fmass)[i];
     }
   }
 #endif
 
-//div *= *(massop_->data());
 
 } // end of method apply (1)
 
