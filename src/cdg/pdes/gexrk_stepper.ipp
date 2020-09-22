@@ -398,7 +398,7 @@ void GExRKStepper<T>::step_s(const Time &t, const State &uin, State &uf, State &
 {
 
   GSIZET       i, j, m, n, nstate=uin.size();
-  GFTYPE       tt;
+  GFTYPE       dtt, tt;
   
 //State u(nstate);   // tmp pointers of full state size
 
@@ -413,7 +413,9 @@ void GExRKStepper<T>::step_s(const Time &t, const State &uin, State &uf, State &
 
 
   // Stage 1:
-  step_euler(t, uin, uf, ub, dt, K_[0]);   
+  tt  = t;
+  dtt = dt;
+  step_euler(tt, uin, uf, ub, dtt, K_[0]);   
   for ( i=0; i<nstate; i++ )  {
     GMTK::saxpy(*K_[0][i],  0.5, *uin[i], 0.5);
   }
@@ -426,8 +428,9 @@ void GExRKStepper<T>::step_s(const Time &t, const State &uin, State &uf, State &
   }
  
   // Stage 2:
-  tt = t + 0.5*dt;
-  step_euler(tt, K_[0], uf, ub, dt, K_[1]);   
+  tt  = t + 0.5*dt;
+  dtt = 0.5*dt;
+  step_euler(tt, K_[0], uf, ub, dtt, K_[1]);   
   for ( i=0; i<nstate; i++ )  {
     GMTK::saxpy(*K_[1][i],  0.5, *K_[0][i], 0.5);
   }
@@ -440,8 +443,9 @@ void GExRKStepper<T>::step_s(const Time &t, const State &uin, State &uf, State &
   }
  
   // Stage 3:
-  tt = t + dt;
-  step_euler(tt, K_[1], uf, ub, dt, K_[2]);   
+  tt  = t + dt;
+  dtt = dt;
+  step_euler(tt, K_[1], uf, ub, dtt, K_[2]);   
   for ( i=0; i<nstate; i++ )  {
     GMTK::saxpy(*K_[2][i],  1.0/6.0, *K_[1][i], 1.0/6.0);
     GMTK::saxpy(*K_[2][i],  1.0, *uin[i], 2.0/3.0);
@@ -455,8 +459,9 @@ void GExRKStepper<T>::step_s(const Time &t, const State &uin, State &uf, State &
   }
 
   // Stage 4:
-  tt = t + 0.5*dt;
-  step_euler(tt, K_[2], uf, ub, dt, uout);   
+  tt  = t + 0.5*dt;
+  dtt = 0.5*dt;
+  step_euler(tt, K_[2], uf, ub, dtt, uout);   
   for ( i=0; i<nstate; i++ )  {
     GMTK::saxpy(*uout[i],  0.5, *K_[2][i], 0.5);
   }
