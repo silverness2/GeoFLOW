@@ -429,7 +429,7 @@ void GExRKStepper<T>::step_s(const Time &t, const State &uin, State &uf, State &
  
   // Stage 2:
   tt  = t + 0.5*dt;
-  dtt = 0.5*dt;
+  dtt = dt;
   step_euler(tt, K_[0], uf, ub, dtt, K_[1]);   
   for ( i=0; i<nstate; i++ )  {
     GMTK::saxpy(*K_[1][i],  0.5, *K_[0][i], 0.5);
@@ -460,7 +460,7 @@ void GExRKStepper<T>::step_s(const Time &t, const State &uin, State &uf, State &
 
   // Stage 4:
   tt  = t + 0.5*dt;
-  dtt = 0.5*dt;
+  dtt = dt;
   step_euler(tt, K_[2], uf, ub, dtt, uout);   
   for ( i=0; i<nstate; i++ )  {
     GMTK::saxpy(*uout[i],  0.5, *K_[2][i], 0.5);
