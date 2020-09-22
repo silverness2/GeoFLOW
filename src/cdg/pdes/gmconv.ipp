@@ -679,9 +679,13 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
                      State &ub){apply_bc_impl(t, uin, ub);}; 
 
   // Configure time stepping:
+  GExRKStepper<GFTYPE>::Traits rktraits;
   switch ( traits_.isteptype ) {
     case GSTEPPER_EXRK:
-      gexrk_ = new GExRKStepper<Ftype>(*grid_, traits_.itorder);
+      rktraits.bssp   = TRUE;
+      rktraits.norder = 3;
+      rktraits.nstage = 4;
+      gexrk_ = new GExRKStepper<Ftype>(rktraits, *grid_);
       gexrk_->setRHSfunction(rhs);
       gexrk_->set_apply_bdy_callback(applybc);
       gexrk_->set_ggfx(ggfx_);

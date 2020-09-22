@@ -467,9 +467,13 @@ void GBurgers<TypePack>::init_impl(State &u, State &tmp)
                      State  &uin, 
                      State &ub){apply_bc_impl(t, uin, ub);}; 
 
+  GExRKStepper<GFTYPE>::Traits rktraits;
   switch ( isteptype_ ) {
     case GSTEPPER_EXRK:
-      gexrk_ = new GExRKStepper<GFTYPE>(*grid_, itorder_);
+      rktraits.bssp   = FALSE;
+      rktraits.norder = itorder_;
+      rktraits.nstage = itorder_;
+      gexrk_ = new GExRKStepper<GFTYPE>(rktraits, *grid_);
       gexrk_->setRHSfunction(rhs);
       gexrk_->set_apply_bdy_callback(applybc);
       gexrk_->set_ggfx(ggfx_);
