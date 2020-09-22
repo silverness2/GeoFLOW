@@ -1317,7 +1317,8 @@ GBOOL GGridBox::on_global_edge(GINT iface, GTPoint<GFTYPE> &pt)
 //          gieface   : vector of face indices into global volume fields 
 //                      for all facase
 //          giefaceid : face id for eah index in gieface
-//          face_mass : mass*Jac at face nodes. Prior to entry, these should 
+//          face_mass : mass*Jac at face nodes; should contain
+//                      Gauss weights on element faces on entry, and
 //                      contain the weights at each face node
 //          normals   : vector of normal components
 // RETURNS: none
@@ -1401,7 +1402,8 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        face_mass  [j] *= dXdXi(ip,0)[ib]; 
      }
    }
-   else if ( this->gtype_ == GE_DEFORMED ) {
+   else if ( this->gtype_ == GE_DEFORMED 
+        ||   this->gtype_ == GE_2DEMBEDDED ) {
      // Bdy normal is hat{k} X dvec{X} / dxi_iedge,
      // for face:
      for ( auto j=0; j<gieface.size(); j++ ) { // all points on iedge
@@ -1412,26 +1414,16 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
          p1[i] = dXdXi(ip,i)[ib]; 
        }
        kp.cross(p1, xp);   // xp = k X p1
+       ip = id%2;
+       face_mass  [j] *= xp.mag(); // |k X d_X_/dxi_ip| is face Jac
        xp.unit();
-       for ( ic=0; ic<GDIM; ic++ ) if ( fabs(xp[ic]) > tiny ) break;
-       assert(ic >= GDIM); // no normal components > 0
+       for ( ic=0; ic<GDIM && fabs(xp[ic]) < tiny; ic++ );
+       assert(ic < GDIM); // no normal components > 0
        for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
      }
    }
-   else if ( this->gtype_ == GE_2DEMBEDDED ) {
-     // Bdy normal is dvec{X} / dxi_xi X dvec{X} / dxi_eta
-     for ( auto j=0; j<gieface.size(); j++ ) { // all points on iedge
-       ib = gieface[j];
-       for ( auto i=0; i<dXdXi.size(2); i++ ) { // d_X_/dXi
-         p1[i] = dXdXi(0,i)[ib]; // d_X_/dxi
-         p2[i] = dXdXi(1,i)[ib]; // d_X_/deta
-       }
-       p1.cross(p2, xp);   // xp = p1 X p2
-       xp.unit();
-       for ( ic=0; ic<xp.dim(); ic++ ) if ( fabs(xp[ic]) > tiny ) break;
-       assert(ic >= GDIM); // no normal components > 0
-       for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
-     }
+   else {
+     assert(FALSE);
    }
 
 
@@ -1448,7 +1440,8 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 //          gieface   : vector of face indices into global volume fields 
 //                      for all facase
 //          giefaceid : face id for eah index in gieface
-//          face_mass : mass*Jac at face nodes
+//          face_mass : mass*Jac at face nodes; should contain
+//                      Gauss weights on element faces on entry, and
 //          normals   : vector of normal components
 // RETURNS: none
 //**********************************************************************************
@@ -1458,59 +1451,30 @@ void GGridBox::do_face_normals3d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
                                  GTVector<GFTYPE>              &face_mass,
                                  GTVector<GTVector<GFTYPE>>    &normals)
 {
-
-   assert(FALSE); // not ready yet
-
-   GINT            ib, ic, id,  ip; 
+   GINT            ib, ic, id; 
+   GINT            ixi[6][2] = { {0,2}, {1,2}, {2,0},
+                                 {2,1}, {1,0}, {0,1} };
    GFTYPE          tiny;
-   GFTYPE          xm;
-   GTPoint<GFTYPE> kp(3), xp(3), p1(3), p2(3);
+   GTPoint<GFTYPE> xp(3), p1(3), p2(3);
 
    tiny  = 100.0*std::numeric_limits<GFTYPE>::epsilon(); 
-   kp    = 0.0;
-   kp[2] = 1.0; // k-vector
 
-   // Normals depend on element type:
-   if ( this->gtype_ == GE_REGULAR ) {
-     for ( auto j=0; j<gieface.size(); j++ ) { // all points on iedge
-       id = giefaceid[j]; 
-       xm = id == 1 || id == 2 ? 1.0 : -1.0;
-       for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = 0.0; 
-       normals[ip][j] = xm;
+   // Bdy normal is dvec{X} / dxi_xi X dvec{X} / dxi_eta
+   for ( auto j=0; j<gieface.size(); j++ ) { // all points on iedge
+     ib = gieface[j];
+     id = giefaceid[j];
+     // Find derivs of _X_ wrt face's reference coords;
+     // the cross prod of these vectors is the normal:
+     for ( auto i=0; i<dXdXi.size(2); i++ ) { // d_X_/dXi
+       p1[i] = dXdXi(ixi[j][0],i)[ib]; // d_X_/dxi
+       p2[i] = dXdXi(ixi[j][1],i)[ib]; // d_X_/deta
      }
-   }
-   else if ( this->gtype_ == GE_DEFORMED ) {
-     // Bdy normal is hat{k} X dvec{X} / dxi_iedge,
-     // for face:
-     for ( auto j=0; j<gieface.size(); j++ ) { // all points on iedge
-       ib = gieface  [j];
-       id = giefaceid[j];
-       xm = id == 1 || id == 2 ? -1.0 : 1.0;
-       ip = giefaceid[j]%2;
-       for ( auto i=0; i<dXdXi.size(2); i++ ) { // over _X_
-         p1[i] = dXdXi(ip,i)[ib]; 
-       }
-       kp.cross(p1, xp);   // xp = k X p1
-       xp.unit();
-       for ( ic=0; ic<GDIM; ic++ ) if ( fabs(xp[ic]) > tiny ) break;
-       assert(ic >= GDIM); // no normal components > 0
-       for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
-     }
-   }
-   else if ( this->gtype_ == GE_2DEMBEDDED ) {
-     // Bdy normal is dvec{X} / dxi_xi X dvec{X} / dxi_eta
-     for ( auto j=0; j<gieface.size(); j++ ) { // all points on iedge
-       ib = gieface[j];
-       for ( auto i=0; i<dXdXi.size(2); i++ ) { // d_X_/dXi
-         p1[i] = dXdXi(0,i)[ib]; // d_X_/dxi
-         p2[i] = dXdXi(1,i)[ib]; // d_X_/deta
-       }
-       p1.cross(p2, xp);   // xp = p1 X p2
-       xp.unit();
-       for ( ic=0; ic<xp.dim(); ic++ ) if ( fabs(xp[ic]) > tiny ) break;
-       assert(ic >= GDIM); // no normal components > 0
-       for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
-     }
+     p1.cross(p2, xp);   // xp = p1 X p2
+     face_mass  [j] *= xp.mag(); // d_X_/dxi X d_X_/deta| is face Jac
+     xp.unit();
+     for ( ic=0; ic<GDIM && fabs(xp[ic]) < tiny; ic++ );
+     assert(ic < GDIM); // no normal components > 0
+     for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
    }
 
 } // end, method do_face_normals3d
