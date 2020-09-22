@@ -138,17 +138,17 @@ for itask = 0:ntasks-1
 
   dx = diff(x);
   I  = find(abs(dx) > 1.0e-6 );
-  ngridx = 2*( max(x) - min(x) ) / min(abs(dx(I)));
+  ngridx = ( max(x) - min(x) ) / min(abs(dx(I)));
   ngridx = int32(ngridx);
 
   dx = diff(z);
   I  = find(abs(dx) > 1.0e-6 );
-  ngridy = 2*( max(z) - min(z) ) / min(abs(dx(I)));
+  ngridy = ( max(z) - min(z) ) / min(abs(dx(I)));
   ngridy = int32(ngridy);
  
   [X,Y] = ndgrid(linspace(min(x),max(x),ngridx),linspace(min(z),max(z),ngridy));
 
-  Z = griddata(x,z,U(:),X,Y,'v4');
+  Z = griddata(x,z,U(:),X,Y,'linear');
   clear x, z, U;
 
 
