@@ -398,25 +398,15 @@ void GExRKStepper<T>::step_s(const Time &t, const State &uin, State &uf, State &
 {
 
   GSIZET       i, j, m, n, nstate=uin.size();
-  GFTYPE       h, tt;
-  GTVector<T> *isum  ;
+  GFTYPE       tt;
   
-  State u(nstate);   // tmp pointers of full state size
+//State u(nstate);   // tmp pointers of full state size
 
   resize(nstate);    // check if we need to resize K_
   
-  h = dt ; 
-
-  // Set temp space, initialize iteration:
-  for ( n=0; n<nstate; n++ ) {
-    u   [n] =  tmp[n];
-   *uout[n] = *uin[n]; // deep copy 
-  }
-
-  isum = tmp[nstate];
   for ( j=0,n=0; j<MAX(nstage_-1,1); j++ ) {
     for ( i=0; i<nstate; i++ )  {
-      K_[j][i] = tmp[nstate+1+n]; // set K storage from tmp space
+      K_[j][i] = tmp[n]; // set K storage from tmp space
       n++;
     }
   }
