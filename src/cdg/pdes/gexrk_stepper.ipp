@@ -10,21 +10,30 @@ using namespace std;
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : Constructor method (1)
+// METHOD : Constructor method 
 // DESC   : Instantiate with truncation order/ # stages
-// ARGS   : nstage: number stages not necessarily == truncation order
+// ARGS   : 
+//          traits: this::Traits structure 
+//          grid  : Grid object
 //**********************************************************************************
 template<typename T>
-GExRKStepper<T>::GExRKStepper(GGrid &grid, GSIZET nstage)
+GExRKStepper<T>::GExRKStepper(Traits &traits, GGrid &grid)
 :
 bRHS_                 (FALSE),
 bapplybc_             (FALSE),
-nstage_              (nstage),
+bSSP_           (traits.bssp),
+norder_       (traits.norder),
+nstage_       (traits.nstage),
 grid_                 (&grid),
 ggfx_               (NULLPTR)
 {
-  butcher_ .setOrder(nstage_);
-} // end of constructor (1) method
+  if ( !bSSP_ ) {
+    butcher_ .setOrder(norder_);
+  }
+  else {
+    assert(norder_==3 && nstage_==4);
+  }
+} // end of constructor method
 
 
 //**********************************************************************************
@@ -43,6 +52,70 @@ GExRKStepper<T>::~GExRKStepper()
 //**********************************************************************************
 // METHOD     : step (1)
 // DESCRIPTION: Computes one RK step at specified timestep. Note: callback 
+//              to RHS-computation function must be set prior to entry.
+//
+// ARGUMENTS  : t    : time, t^n, for state, uin=u^n
+//              uin  : initial (entry) state, u^n
+//              uf   : forcing tendency
+//              ub   : bdy tendency
+//              dt   : time step
+//              tmp  : tmp space. Must have at least NState*(M+1)+1 vectors,
+//                     where NState is the number of state vectors.
+//              uout : updated state, at t^n+1
+//               
+// RETURNS    : none.
+//**********************************************************************************
+template<typename T>
+void GExRKStepper<T>::step(const Time &t, const State &uin, State &uf, State &ub,  
+                           const Time &dt, State &tmp, State &uout)
+{
+
+  assert(bRHS_  && "(1) RHS callback not set");
+  if ( bSSP_ ) {
+    step_s(t, uin, uf, ub, dt, tmp, uout);
+  }
+  else {
+    step_b(t, uin, uf, ub, dt, tmp, uout);
+  }
+
+} // end, method step(1)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD     : step (2)
+// DESCRIPTION: Computes one RK step at specified timestep. Note: callback 
+//              to RHS-computation function must be set prior to entry.
+//              The input state is overwritten.
+//
+//
+// ARGUMENTS  : t    : time, t^n, for state, uin=u^n
+//              uin  : initial (entry) state, u^n
+//              dt   : time step
+//              tmp  : tmp space. Must have at least NState*(M+1)+1 vectors,
+//                     where NState is the number of state vectors.
+//               
+// RETURNS    : none.
+//**********************************************************************************
+template<typename T>
+void GExRKStepper<T>::step(const Time &t, State &uin, State &uf, State &ub,  
+                           const Time &dt, State &tmp)
+{
+  assert(bRHS_  && "(2) RHS callback not set");
+  if ( bSSP_ ) {
+    step_b(t, uin, uf, ub, dt, tmp);
+  }
+  else {
+    step_b(t, uin, uf, ub, dt, tmp);
+  }
+
+} // end, method step(2)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD     : step_b (1)
+// DESCRIPTION: Computes one (Butcher) RK step at specified timestep. Note: callback 
 //              to RHS-computation function must be set prior to entry.
 //
 //              Given Butcher tableau, nodes, RK matrix, and weights, 
@@ -66,10 +139,9 @@ GExRKStepper<T>::~GExRKStepper()
 // RETURNS    : none.
 //**********************************************************************************
 template<typename T>
-void GExRKStepper<T>::step(const Time &t, const State &uin, State &uf, State &ub,  
+void GExRKStepper<T>::step_b(const Time &t, const State &uin, State &uf, State &ub,  
                            const Time &dt, State &tmp, State &uout)
 {
-  assert(bRHS_  && "(1): RHS callback not set");
 
   GSIZET       i, j, m, n, nstate=uin.size();
   GFTYPE       h, tt;
@@ -169,13 +241,13 @@ void GExRKStepper<T>::step(const Time &t, const State &uin, State &uf, State &ub
    if ( bapplybc_  ) bdy_apply_callback_ (tt, uout, ub); 
 
   
-} // end of method step (1)
+} // end of method step_b (1)
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD     : step (2)
-// DESCRIPTION: Computes one RK step at specified timestep. Note: callback 
+// METHOD     : step_b (2)
+// DESCRIPTION: Computes one (Butcher) RK step at specified timestep. Note: callback 
 //              to RHS-computation function must be set prior to entry.
 //              The input state is overwritten.
 //
@@ -196,10 +268,9 @@ void GExRKStepper<T>::step(const Time &t, const State &uin, State &uf, State &ub
 // RETURNS    : none.
 //**********************************************************************************
 template<typename T>
-void GExRKStepper<T>::step(const Time &t, State &uin, State &uf, State &ub,  
+void GExRKStepper<T>::step_b(const Time &t, State &uin, State &uf, State &ub,  
                            const Time &dt, State &tmp)
 {
-  assert(bRHS_  && "(2) RHS callback not set");
 
   GSIZET       i, m, j, n, nstate=uin.size();
   GFTYPE       h, tt;
@@ -281,7 +352,7 @@ void GExRKStepper<T>::step(const Time &t, State &uin, State &uf, State &ub,
    *uin[j] = *uout[j]; 
   }
 
-} // end of method step (2)
+} // end of method step_b (2)
 
 
 //**********************************************************************************
@@ -303,3 +374,163 @@ void GExRKStepper<T>::resize(GINT nstate)
 } // end of method resize
 
 
+//**********************************************************************************
+//**********************************************************************************
+// METHOD     : step_s (1)
+// DESCRIPTION: Computes one SSP RK step at specified timestep. Note: callback 
+//              to RHS-computation function must be set prior to entry.
+//
+//
+// ARGUMENTS  : t    : time, t^n, for state, uin=u^n
+//              uin  : initial (entry) state, u^n
+//              uf   : forcing tendency
+//              ub   : bdy tendency
+//              dt   : time step
+//              tmp  : tmp space. Must have at least NState*(M+1)+1 vectors,
+//                     where NState is the number of state vectors.
+//              uout : updated state, at t^n+1
+//               
+// RETURNS    : none.
+//**********************************************************************************
+template<typename T>
+void GExRKStepper<T>::step_s(const Time &t, const State &uin, State &uf, State &ub,  
+                           const Time &dt, State &tmp, State &uout)
+{
+
+  GSIZET       i, j, m, n, nstate=uin.size();
+  GFTYPE       h, tt;
+  GTVector<T> *isum  ;
+  
+  State u(nstate);   // tmp pointers of full state size
+
+  resize(nstate);    // check if we need to resize K_
+  
+  h = dt ; 
+
+  // Set temp space, initialize iteration:
+  for ( n=0; n<nstate; n++ ) {
+    u   [n] =  tmp[n];
+   *uout[n] = *uin[n]; // deep copy 
+  }
+
+  isum = tmp[nstate];
+  for ( j=0,n=0; j<MAX(nstage_-1,1); j++ ) {
+    for ( i=0; i<nstate; i++ )  {
+      K_[j][i] = tmp[nstate+1+n]; // set K storage from tmp space
+      n++;
+    }
+  }
+
+
+  // Stage 1:
+  step_euler(t, uin, uf, ub, dt, K_[0]);   
+  for ( i=0; i<nstate; i++ )  {
+    GMTK::saxpy(*K_[0][i],  0.5, *uin[i], 0.5);
+  }
+  if ( bapplybc_  ) bdy_apply_callback_ (tt, K_[0], ub); 
+  GMTK::constrain2sphere(*grid_, K_[0]);
+  for ( i=0; i<nstate; i++ )  {
+    if ( ggfx_ != NULLPTR ) {
+      ggfx_->doOp(*K_[0][i], GGFX_OP_SMOOTH);
+    }
+  }
+ 
+  // Stage 2:
+  tt = t + 0.5*dt;
+  step_euler(tt, K_[0], uf, ub, dt, K_[1]);   
+  for ( i=0; i<nstate; i++ )  {
+    GMTK::saxpy(*K_[1][i],  0.5, *K_[0][i], 0.5);
+  }
+  if ( bapplybc_  ) bdy_apply_callback_ (tt, K_[1], ub); 
+  GMTK::constrain2sphere(*grid_, K_[1]);
+  for ( i=0; i<nstate; i++ )  {
+    if ( ggfx_ != NULLPTR ) {
+      ggfx_->doOp(*K_[1][i], GGFX_OP_SMOOTH);
+    }
+  }
+ 
+  // Stage 3:
+  tt = t + dt;
+  step_euler(tt, K_[1], uf, ub, dt, K_[2]);   
+  for ( i=0; i<nstate; i++ )  {
+    GMTK::saxpy(*K_[2][i],  1.0/6.0, *K_[1][i], 1.0/6.0);
+    GMTK::saxpy(*K_[2][i],  1.0, *uin[i], 2.0/3.0);
+  }
+  if ( bapplybc_  ) bdy_apply_callback_ (tt, K_[2], ub); 
+  GMTK::constrain2sphere(*grid_, K_[2]);
+  for ( i=0; i<nstate; i++ )  {
+    if ( ggfx_ != NULLPTR ) {
+      ggfx_->doOp(*K_[2][i], GGFX_OP_SMOOTH);
+    }
+  }
+
+  // Stage 4:
+  tt = t + 0.5*dt;
+  step_euler(tt, K_[2], uf, ub, dt, uout);   
+  for ( i=0; i<nstate; i++ )  {
+    GMTK::saxpy(*uout[i],  0.5, *K_[2][i], 0.5);
+  }
+  if ( bapplybc_  ) bdy_apply_callback_ (tt, uout, ub); 
+  GMTK::constrain2sphere(*grid_, uout);
+  for ( i=0; i<nstate; i++ )  {
+    if ( ggfx_ != NULLPTR ) {
+      ggfx_->doOp(*uout[i], GGFX_OP_SMOOTH);
+    }
+  }
+  
+} // end of method step_s (1)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD     : step_s (2)
+// DESCRIPTION: Computes one SSP RK step at specified timestep. Note: callback 
+//              to RHS-computation function must be set prior to entry.
+//              The input state is overwritten.
+//
+// ARGUMENTS  : t    : time, t^n, for state, uin=u^n
+//              uin  : initial (entry) state, u^n
+//              dt   : time step
+//              tmp  : tmp space. Must have at least NState*(M+1)+1 vectors,
+//                     where NState is the number of state vectors.
+//               
+// RETURNS    : none.
+//**********************************************************************************
+template<typename T>
+void GExRKStepper<T>::step_s(const Time &t, State &uin, State &uf, State &ub,  
+                           const Time &dt, State &tmp)
+{
+
+  assert(FALSE && "Not ready yet");
+
+} // end of method step_s (2)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD     : step_euler 
+// DESCRIPTION: Computes one Euler step of state:
+//             
+//               F = u^n + dt RHS(u^n,t^n)
+//
+// ARGUMENTS  : t    : time, t^n, for state, uin=u^n
+//              uin  : initial (entry) state, u^n
+//              uf   : forcing tendency
+//              ub   : bdy tendency
+//              dt   : time step
+//              uout : updated state, at t^n+1
+//               
+// RETURNS    : none.
+//**********************************************************************************
+template<typename T>
+void GExRKStepper<T>::step_euler(const Time &t, const State &uin, State &uf, State &ub,  
+                           const Time &dt, State &uout)
+{
+  assert(bRHS_  && "RHS callback not set");
+
+  rhs_callback_( t, uin, uf, ub, dt, uout ); 
+  for ( auto i=0; i<uout.size(); i++ ) {
+    GMTK::saxpy(*uout[i],  dt, *uin[i], 1.0);
+  }
+
+} // end, step_euler

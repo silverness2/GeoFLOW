@@ -24,12 +24,20 @@ typedef GTVector<T> StateElem;
 typedef T  Time;
 
 public:
+        // MConv solver traits:
+        struct Traits {
+          GBOOL           bssp        = FALSE;   // do strong stability-pres?
+          GINT            norder      = 2;      // order
+          GINT            nstage      = 2;      // no. stages
+        };
                            GExRKStepper() = delete;
-                           GExRKStepper(GGrid &grid, GSIZET nstage);
+                           GExRKStepper(Traits &traits, GGrid &grid);
                           ~GExRKStepper();
                            GExRKStepper(const GExRKStepper &a) = default;
                            GExRKStepper &operator=(const GExRKStepper &bu) = default;
-        void               setOrder(GINT nstage);
+        void               setOrder(GINT order, GINT nstage) {
+                             norder_ = order; nstage_=nstage; 
+                             if ( !bSSP_ ) butcher_ .setOrder(norder_); }
 
         void               step(const Time &t, const State &uin,
                                 State &uf,
@@ -65,10 +73,39 @@ public:
 private:
 // Private methods:
         void               resize(GINT nstate);              // resize member data 
+        void               step_b(const Time &t, const State &uin,
+                                  State &uf,
+                                  State &ub,
+                                  const Time &dt, State &tmp,
+                                  State &uout);
+
+        void               step_b(const Time &t, State &uin, 
+                                  State &uf,
+                                  State &ub,
+                                  const Time &dt, State &tmp);
+
+        void               step_s(const Time &t, const State &uin,
+                                  State &uf,
+                                  State &ub,
+                                  const Time &dt, State &tmp,
+                                  State &uout);
+
+        void               step_s(const Time &t, State &uin, 
+                                  State &uf,
+                                  State &ub,
+                                  const Time &dt, State &tmp);
+
+        void               step_euler(const Time &t, const State &uin, 
+                                      State &uf,
+                                      State &ub,
+                                      const Time &dt, 
+                                      State &uout);
 
 // Private data:
         GBOOL              bRHS_;
         GBOOL              bapplybc_;
+        GBOOL              bSSP_;                            // is strong-stability-preserving?
+        GINT               norder_;                          // order
         GINT               nstage_;                          // no stages (not nec. 'order'!)
         GButcherRK<T>      butcher_;                         // Butcher tableau
         GTVector<State>    K_;                               // RK stage update vectors
