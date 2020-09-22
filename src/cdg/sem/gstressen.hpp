@@ -29,7 +29,7 @@
 #include "gmtk.hpp"
 #include "pdeint/equation_base.hpp"
 
-#undef USE_STOKES
+#define USE_STOKES
 
 template<typename TypePack>
 class GStressEnOp
