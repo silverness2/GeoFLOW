@@ -1,4 +1,4 @@
-function [c h levels] = boxcont2d(svar, tindex, blog, xlev, levtype, nozero, dtype, isz )
+function [c h levels zmin zmax] = boxcont2d(svar, tindex, levtype, xlev, blog, dtype, isz )
 %
 %   function h = boxcont2d(svar, tindex, blog, xlev, levtype, nozero, dtype, isz)
 %
@@ -10,14 +10,16 @@ function [c h levels] = boxcont2d(svar, tindex, blog, xlev, levtype, nozero, dty
 %  Input:
 %    svar    : prefix for field file. Required
 %    tindex  : time index for output. Required
-%    blog    : take log of data? Default is 0
+%    levtype : if 'num', then xlev is the number of levels to use.
+%              If levtype=='delta', then xlev is the interval
+%              between contour levels. If levtype=='lev', then
+%              xlev is the array of contour levels. The default
+%              is levtype=='num', with 5 levels.
 %    xlev    : number of levels, if levtype = 'num'; contour
-%              increment if levtype = 'delta'. Default is 5 if
-%              not specified, and levtype='num' is the default.
-%    levtype : if 'num', then lev is the number of levels to use.
-%              If levtype=='delta', then lev is the difference between
-%    nozero  : if >0, don't include zero-contour; else do. Default is 1.
-%              contour levels. Default is 'num'.
+%              increment if levtype = 'delta', actual contour levels
+%              if levtype=='lev'. Default if levtype=='num'; else
+%              must be specified.
+%    blog    : take log of data? Default is 0
 %    dtype   : data file type: 'POSIX', 'COLL'. Default is 'COLL'
 %    isz    : floating point size (4 or 8). Default is 8.
 %
@@ -30,44 +32,50 @@ if nargin < 2
 end 
 
 if nargin < 3
-  blog = 0;
-  xlev  = 5;
   levtype = 'num';
-  nozero = 0;
-  dtype = 'COLL';;
-  isz = 8;
+  xlev    = 5;
+  blog    = 0;
+  dtype   = 'COLL';;
+  isz     = 8;
 end 
 if nargin < 4
-  xlev  = 5;
-  levtype = 'num';
-  nozero = 0;
-  dtype = 'COLL';
-  isz = 8;
+  if ~strcmpi(levtype, 'num')
+    error(['xlev must be set when levtype=' levtype]);
+  end
+  xlev    = 5;
+  blog    = 0;
+  dtype   = 'COLL';;
+  isz     = 8;
 end 
 if nargin < 5
-  levtype = 'num';
-  nozero = 0;
-  dtype = 'COLL';
-  isz = 8;
+  blog    = 0;
+  dtype   = 'COLL';;
+  isz     = 8;
 end 
 if nargin < 6
-  nozero = 0;
-  dtype = 'COLL';
-  isz = 8;
+  dtype   = 'COLL';;
+  isz     = 8;
 end 
 if nargin < 7
-  dtype = 'COLL';
-  isz = 8;
+  isz     = 8;
 end 
 if nargin < 8
   isz = 8;
 end 
+
+if  ~strcmpi(levtype,'lev') && ~strcmpi(levtype,'delta') ...
+ && ~strcmpi(levtype,'num')
+    error(['levtype value ', levtype, ' invalid']);
+end
 
 dtype
 if ~strcmp(dtype,'POSIX') & ~strcmp(dtype,'COLL')
   error(['Invalid dtype: ' dtype]);
 end
 
+if strcmpi(levtype, 'lev')
+  levels = xlev;
+end
 
 lwidth = 2;
 szfont = 16;
@@ -143,7 +151,6 @@ for itask = 0:ntasks-1
   Z = griddata(x,z,U(:),X,Y,'v4');
   clear x, z, U;
 
-%Z(200:300)
 
   zmin = min(min(Z));
   zmax = max(max(Z));
@@ -155,18 +162,12 @@ for itask = 0:ntasks-1
     nlev = int32((zmax - zmin)/xlev);
     dc = (zmax - zmin)/(double(nlev)+1);
     dcvec = [0:double(nlev)].*dc + zmin;
-  else
-    error(['Invalid levtype: ' levtype]);
   end
 
   % Remove zero-contour:
-  if nozero > 0
-    II = find(dcvec > 0.0 );
-    levels = dcvec(II);
-  else
+  if ~strcmpi(levtype,'lev')
     levels = dcvec;
   end
-
 
   [c h] = contour(X, Y, Z, levels); 
   axis equal;
