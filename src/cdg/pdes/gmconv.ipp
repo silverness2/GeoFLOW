@@ -216,6 +216,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   tmp1  = urhstmp_[urhstmp_.size()-4];
   tmp2  = urhstmp_[urhstmp_.size()-5];
 
+#if 0
   // Do filtering, if any:
   FilterList *fl = &this->get_filter_list();
   for ( auto j=0; j<fl->size(); j++ ) {
@@ -223,6 +224,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
       (*fl)[j]->apply(t, *u[j], urhstmp_);
     }
   }
+#endif
 
 
   // Get total density and inverse: *rhoT  = *u[DENSITY]; 
@@ -464,6 +466,15 @@ void GMConv<TypePack>::step_impl(const Time &t, State &uin, State &uf, State &ub
       step_multistep(t, uevolve_, uf, ub, dt);
       break;
   }
+
+  // Do filtering, if any:
+  FilterList *fl = &this->get_filter_list();
+  for ( auto j=0; j<fl->size(); j++ ) {
+    if ( (*fl)[j] != NULLPTR ) {
+      (*fl)[j]->apply(t, *uevolve_[j], urhstmp_);
+    }
+  }
+
 
   // Check solution for NaN and Inf:
   bret = TRUE;
