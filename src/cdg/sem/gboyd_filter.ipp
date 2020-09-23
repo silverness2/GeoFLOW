@@ -130,6 +130,7 @@ void GBoydFilter<TypePack>::init()
 {
 
   GINT             nnodes;
+  Ftype            a, b, xi, xf0, xN;
   GTMatrix<Ftype> *F, *FT, *iL, *L, Lambda;
   GTMatrix<Ftype> tmp;
   GElemList       *gelems=&grid_->elems();
@@ -141,26 +142,34 @@ void GBoydFilter<TypePack>::init()
   // where
   //   Lambda = 1 if i< ifilter
   //            mu [(i-ifilter)/(N - ifilter)]^2, i>= ifilter
+
+  xf0 = ifilter_;
   for ( auto e=0; e<gelems->size(); e++ ) {
     for ( auto k=0; k<GDIM; k++ ) {
 //    (*gelems)[e]->gbasis(k)->computeLegTransform(ifilter_); 
       F  = (*gelems)[e]->gbasis(k)->getFilterMat(); // storage for filter
       FT = (*gelems)[e]->gbasis(k)->getFilterMat(TRUE); // transpose 
       nnodes = (*gelems)[e]->gbasis(k)->getOrder()+1;
+      xN = nnodes;
       Lambda.resize(nnodes,nnodes); Lambda = 0.0;
       tmp   .resize(nnodes,nnodes);
       
       L      = (*gelems)[e]->gbasis(k)->getLegTransform();
       iL     = (*gelems)[e]->gbasis(k)->getiLegTransform();
+
+      a      = (mufilter_-1.0)/( (xN-xf0)*(xN-xf0) - 1.0 );
+      b      = ( (xN-xf0)*(xN-xf0) - mufilter_ )/ ( (xN-xf0)*(xN-xf0) - 1.0 );
       for ( auto i=0; i<nnodes; i++ ) { // build weight matix, Lambda
+        xi = i;
         Lambda(i,i) = 1.0;
         if ( i >= ifilter_ ) {
 #if 0
           Lambda(i,i) = mufilter_
                       * pow( ( (Ftype)(i-ifilter_) / ( (Ftype)(nnodes-ifilter_) ) ), 2.0);
 #else
-          Lambda(i,i) = (mufilter_ - 1.0)
-                      * pow( ( (Ftype)(i-ifilter_) / ( (Ftype)(nnodes-ifilter_) ) ), 2.0) + 1.0;
+//        Lambda(i,i) = (mufilter_ - 1.0)
+//                    * pow( ( (Ftype)(i-ifilter_) / ( (Ftype)(nnodes-ifilter_) ) ), 2.0) + 1.0;
+          Lambda(i,i) = a*(xi-xf0)*(xi-xf0) + b;
 #endif
         }
       } // end, node/mode loop 
