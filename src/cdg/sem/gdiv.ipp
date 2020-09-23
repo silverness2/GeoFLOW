@@ -74,7 +74,7 @@ void GDivOp<TypePack>::apply(StateComp &d, State &u, State &utmp, StateComp &div
   StateComp                 *fmass   = &grid_->faceMass();
 
 
-#if 0
+#if 1
   // div = D^{T,j} ( d u_j MJ ):
   div  = 0.0;
   for ( auto j=0; j<nxy; j++ ) { 
