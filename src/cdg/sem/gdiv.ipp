@@ -137,7 +137,7 @@ void GDivOp<TypePack>::apply(State &u, State &utmp, StateComp &div)
 
 
   // div = -D^{T,j} ( u_j ):
-  dic = 0.0;
+  div = 0.0;
   for ( auto j=0; j<nxy; j++ ) { 
      grid_->wderiv(*u[j], j+1, TRUE, *utmp[0], *utmp[1]);
      div -= *utmp[1];
