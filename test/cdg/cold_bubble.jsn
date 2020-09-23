@@ -79,14 +79,14 @@
   },
   "stepper_props": {
     "stepping_method"  : "GSTEPPER_EXRK",
-    "time_deriv_order" : 4,
+    "time_deriv_order" : 2,
     "extrap_order"     : 2,
     "variable_dt"      : true,
-    "courant"          : 0.4 
+    "courant"          : 0.2
   },
   "dissipation_traits": {
-    "nu"      : 250.0,
-    "kappa"   : 250.0,
+    "nu"      : 500.0,
+    "kappa"   : 500.0,
     "nu_type" : "constant"
   },
   "gio": {
@@ -104,6 +104,10 @@
   "ptemp": {
     "names"       : ["theta"],
     "mathop"      : "ptemp"
+  },
+  "dptemp": {
+    "names"       : ["dtheta"],
+    "mathop"      : "dptemp"
   },
   "press": {
     "names"       : ["p"],
@@ -129,7 +133,7 @@
     "agg_state_name"     : "u",
     "agg_grid_name "     : "grid",
     "derived_quantities"       : [],
-    "state_derived_quantities" : ["temp","press","vel","ptemp","den"]
+    "state_derived_quantities" : ["temp","press","vel","ptemp","dptemp","den"]
   },
   "burgers_diag": {
     "observer_name"      : "burgers_diag",
