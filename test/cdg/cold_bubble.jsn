@@ -57,9 +57,9 @@
     "filter_list"     : [],
     "my_filter" : {
       "filter_type" : "boyd_filter",
-      "ifilter"     : 2,
+      "ifilter"     : 4,
       "mufilter"    : 0.05,
-      "state_index" : [0, 1, 2]
+      "state_index" : [0, 1]
     }
   },
   "grid_box": {
@@ -82,11 +82,11 @@
     "time_deriv_order" : 4,
     "extrap_order"     : 2,
     "variable_dt"      : true,
-    "courant"          : 0.2 
+    "courant"          : 0.4 
   },
   "dissipation_traits": {
-    "nu"      : 75.0,
-    "kappa"   : 75.0,
+    "nu"      : 250.0,
+    "kappa"   : 250.0,
     "nu_type" : "constant"
   },
   "gio": {
@@ -135,12 +135,12 @@
     "observer_name"      : "burgers_diag",
     "idir"               : ".",
     "odir"               : ".",
-    "interval_freq_fact" : 10.0,
+    "interval_freq_fact" : 100.0,
     "treat_as_1d"        : false
   },
   "time_integration": {
     "integ_type" : "time",
-    "time_end"   : 1000.0,
+    "time_end"   : 1500.0,
     "cycle_end"  : 1000,
     "dt"         : 1.0e-2
   }
