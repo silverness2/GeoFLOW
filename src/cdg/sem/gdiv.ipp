@@ -75,7 +75,7 @@ void GDivOp<TypePack>::apply(StateComp &d, State &u, State &utmp, StateComp &div
 
 
 #if 1
-  // div = D^{T,j} ( d u_j MJ ):
+  // div = -D^{T,j} ( d u_j MJ ):
   div  = 0.0;
   for ( auto j=0; j<nxy; j++ ) { 
      d.pointProd(*u[j], *utmp[1]);
@@ -143,7 +143,7 @@ void GDivOp<TypePack>::apply(State &u, State &utmp, StateComp &div)
      div -= *utmp[1];
   }
 
-  // div+= d u.n Mass |_face 
+  // div += d u.n Mass |_face 
   for ( auto i=0; i<gieface->size(); i++ ) {
     k = (*gieface)[i];
     for ( auto j=0; j<nxy; j++ ) { 
