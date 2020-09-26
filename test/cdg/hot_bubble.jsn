@@ -54,7 +54,7 @@
     "forcing_comp"    : [0, 1, 2],
     "T_surf"          : 300.0,
     "P0"              : 1000.0,
-    "filter_list"     : ["my_filter"],
+    "filter_list"     : [],
     "my_filter" : {
       "filter_type" : "boyd_filter",
       "ifilter"     : 4,
@@ -81,8 +81,8 @@
     "stepping_method"  : "GSTEPPER_EXRK",
     "time_deriv_order" : 4,
     "extrap_order"     : 2,
-    "variable_dt"      : false,
-    "courant"          : 0.025 
+    "variable_dt"      : true,
+    "courant"          : 0.2
   },
   "dissipation_traits": {
     "nu"      : 100.0,
@@ -144,7 +144,7 @@
   },
   "time_integration": {
     "integ_type" : "time",
-    "time_end"   : 2101.0,
+    "time_end"   : 1101.0,
     "cycle_end"  : 10,
     "dt"         : 0.005
   }
