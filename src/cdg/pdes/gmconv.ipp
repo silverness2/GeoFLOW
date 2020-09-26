@@ -323,7 +323,7 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
 #endif
 
   gstressen_->apply(v_, urhstmp_, *tmp1);          // mu u_i s^{ij},j
- *dudt[ENERGY] += *tmp1;                           // -= mu u^i s^{ij},j
+ *dudt[ENERGY] -= *tmp1;                           // -= mu u^i s^{ij},j
 
   if ( traits_.dofallout || !traits_.dodry ) {
     GMTK::paxy(*tmp1, *rhoT, CVL, *T);             // tmp1 = C_liq rhoT T
@@ -388,7 +388,7 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
 //  ghelm_->opVec_prod(*v_[j], urhstmp_, *tmp1);      // rhoT nu Laplacian v_j
 // *tmp1 *= *rhoT;
     gstressen_->apply(v_, j+1, urhstmp_, *tmp1);      // mu s^{ij},j
-   *dudt[j] += *tmp1;                                 // -= mu s^{ij},j
+   *dudt[j] -= *tmp1;                                 // -= mu s^{ij},j
 
     if ( traits_.docoriolis ) {
       GMTK::cross_prod_s(traits_.omega, s_, j+1, *tmp1);
