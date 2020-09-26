@@ -4,15 +4,17 @@
 // Description  : Represents the SEM discretization of the full viscous
 //                stress-energy operator. The viscous stress in the 
 //                momentum eqution is
-//                    F_i = 2 [ mu s_{ij}],j + (lambda Div u delta_ij),j,
+//                    F_i = 2 [ mu s_{ij}],j + (zeta Div u delta_ij),j,
 //                where
 //                    s_{ij} = (u_j,i + u_i,j)/2
 //                and the viscous stress-energy for the energy equation is
-//                    2 [mu u_i F_i ],j
+//                    2 [kappa u_i F_i  + lambda Div u delta_i,j) ],j
 //                where u_i is the velocity, and mu, the viscosity. Repeated
-//                indices are summed here.  mu, lambda  may vary in space or be
-//                constant. lambda defaults to -2/3 mu according to the Stokes
-//                hypothesis For the energy, this operator is nonlinear, 
+//                indices are summed here.  mu, zeta, kappa, lamnda,
+//                may vary in space or be constant. zeta defaults to
+//               -2/3 mu according to the Stokes hypothesis; similarly,
+//                lambda defaults to -2/3 kappa for the energy. 
+//                For the energy, this operator is nonlinear, 
 //                so it should not derive from GLinOp. Operator requires 
 //                that grid consist of elements of only one type.
 // Copyright    : Copyright 2020. Colorado State University. All rights reserved.
@@ -29,7 +31,7 @@
 #include "gmtk.hpp"
 #include "pdeint/equation_base.hpp"
 
-#define USE_STOKES
+#undef  USE_STOKES
 
 template<typename TypePack>
 class GStressEnOp
@@ -73,13 +75,15 @@ public:
 
 private:
         GBOOL                        bown_mu_;    // flag telling instance if it owns mu_
+        GBOOL                        bown_zeta_;  // flag telling instance if it owns zeta_
         GBOOL                        bown_kappa_; // flag telling instance if it owns kappa_
         GBOOL                        bown_lambda_;// flag telling instance if it owns kappa_
         Mass                         *massop_;    // mass matrix, required
         Grid                         *grid_;      // grid set on construction
         StateComp                    *mu_;        // dynamic viscosity
+        StateComp                    *zeta_;      // stress' Stokes viscosity
         StateComp                    *kappa_;     // energy dissipation
-        StateComp                    *lambda_;    // Stokes viscosity
+        StateComp                    *lambda_;    // energy Stokes dissipation
 
 
 };
