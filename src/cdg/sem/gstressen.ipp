@@ -163,6 +163,7 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
 
   // so = -D^{T,j} [mu [D_i u_j + Dj u_i) + Dk zeta u_k delta_ij ]:
   //    + surface terms:
+  // Below, i = idir:
 
   // Do -D^{T,j} [mu (D_i u_j) ] terms:
   for ( auto j=0; j<nxy; j++ ) { 
@@ -171,7 +172,7 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
     utmp[1]->pointProd(*mu_);
     grid_->wderiv(*utmp[1]  , j+1, TRUE , *utmp[0], *utmp[2]);
     so -= *utmp[2];
-#if 0
+#if 1
     // Compute surface terms for this component, j:
     for ( auto f=0; f<gieface->size(); f++ ) {
       k = (*gieface)[f];
@@ -188,7 +189,7 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
     grid_->wderiv(*utmp[1]  , j+1, TRUE , *utmp[0], *utmp[2]);
     so -= *utmp[2];
 
-#if 0
+#if 1
     // Compute surface terms for this component, j:
     for ( auto f=0; f<gieface->size(); f++ ) {
       k = (*gieface)[f];
@@ -209,7 +210,7 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
   grid_->wderiv(*utmp[1], idir, TRUE, *utmp[0], *utmp[2]);
   so -= *utmp[2];
  
-#if 0
+#if 1
   // Compute surface terms for
   //  Integral zeta (Div u) delta_ij.n^j dV:
   // Use kernel above, for i=idir:
@@ -256,6 +257,7 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
   //    + surface terms:
 
   // - D^{T,j} [ kappa u^i (D_i u_j) ] terms:
+  eo = 0.0;
   for ( auto j=0; j<nxy; j++ ) { 
    *utmp[1] = 0.0;
     for ( auto i=0; i<nxy; i++ ) {
@@ -268,7 +270,7 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
     grid_->wderiv(*utmp[1], j+1, TRUE , *utmp[0], *utmp[2]);
     eo -= *utmp[2];
 
-#if 0
+#if 1
     // Do the surface terms for jth component of normal:
     for ( auto f=0; f<nxy; f++ ) {
       k = (*gieface)[f];
@@ -290,7 +292,7 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
     grid_->wderiv(*utmp[1], j+1, TRUE , *utmp[0], *utmp[2]);
     eo -= *utmp[2];
 
-#if 0
+#if 1
     // Do the surface terms for jth component of normal:
     for ( auto f=0; f<nxy; f++ ) {
       k = (*gieface)[f];
@@ -322,7 +324,7 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
     grid_->wderiv(*utmp[2], j+1, TRUE, *utmp[0], *utmp[3]); 
     eo -= *utmp[3];
 
-#if 0
+#if 1
     // Do the surface terms for jth component of normal:
     for ( auto f=0; f<nxy; f++ ) {
       k = (*gieface)[f];
