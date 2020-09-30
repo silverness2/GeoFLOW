@@ -1227,8 +1227,8 @@ void GGrid::init_local_face_info()
   nn = 0; // global reference index
   m  = 0; // current num of global face indices
   for ( auto e=0; e<gelems_.size(); e++ ) { // cycle over all elems
-    ibeg   = gelems_[e]->igbeg(); iend  = gelems_[e]->igend();
-    ieface = &gelems_[e]->face_indices(); // set in child class
+    ibeg      = gelems_[e]->igbeg(); iend  = gelems_[e]->igend();
+    ieface    = &gelems_[e]->face_indices(); // set in child class
     efacemass = &gelems_[e]->face_mass();
     for ( auto j=0; j<ieface->size(); j++ ) { // cycle over all elem faces
       for ( auto k=0; k<(*ieface)[j].size(); k++ ) {
