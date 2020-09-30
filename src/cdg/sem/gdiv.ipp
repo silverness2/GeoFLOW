@@ -75,20 +75,27 @@ void GDivOp<TypePack>::apply(StateComp &d, State &u, State &utmp, StateComp &div
 
 
 #if 1
-  // div = -D^{T,j} ( d u_j MJ ):
+  // div = -D^{T,j} ( d u_j MJ )
+  //     + surf terms:
   div  = 0.0;
   for ( auto j=0; j<nxy; j++ ) { 
      d.pointProd(*u[j], *utmp[1]);
      grid_->wderiv(*utmp[1], j+1, TRUE, *utmp[0], *utmp[2]);
      div -= *utmp[2];
+
+     // Elem surf terms:
+     for ( auto f=0; f<gieface->size(); f++ ) {
+       k = (*gieface)[f];
+       div[k] += (*utmp[1])[k] * (*normals)[j][f] * (*fmass)[f];
+     }
   }
 
-#if 1
+#if 0
   // div_face += d u.n Mass |_face 
-  for ( auto i=0; i<gieface->size(); i++ ) {
-    k = (*gieface)[i];
+  for ( auto f=0; f<gieface->size(); f++ ) {
+    k = (*gieface)[f];
     for ( auto j=0; j<nxy; j++ ) { 
-      div[k] += d[k]*(*u[j])[k] * (*normals)[j][i] * (*fmass)[i];
+      div[k] += d[k]*(*u[j])[k] * (*normals)[j][f] * (*fmass)[f];
     }
   }
 #endif
@@ -136,19 +143,16 @@ void GDivOp<TypePack>::apply(State &u, State &utmp, StateComp &div)
   StateComp                 *fmass   = &grid_->faceMass();
 
 
-  // div = -D^{T,j} ( u_j ):
+  // div = -D^{T,j} ( u_j ) 
+  //     + surf. terms:
   div = 0.0;
   for ( auto j=0; j<nxy; j++ ) { 
      grid_->wderiv(*u[j], j+1, TRUE, *utmp[0], *utmp[1]);
      div -= *utmp[1];
-  }
-
-  // div += d u.n Mass |_face 
-  for ( auto i=0; i<gieface->size(); i++ ) {
-    k = (*gieface)[i];
-    for ( auto j=0; j<nxy; j++ ) { 
-      div[k] += (*u[j])[k] * (*normals)[j][i] * (*fmass)[i];
-    }
+     for ( auto f=0; f<gieface->size(); f++ ) {
+       k = (*gieface)[f];
+       div[k] += (*u[j])[k] * (*normals)[j][f] * (*fmass)[f];
+     }
   }
 
 
