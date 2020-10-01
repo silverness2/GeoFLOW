@@ -1409,7 +1409,7 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
      for ( auto j=0; j<gieface.size(); j++ ) { // check for duplicate nodes
        ib = gieface  [j];
        mult = gieface.multiplicity(ib, ind, nind); // get multipl. of ib
-       for ( auto m=0; m<GDIM && mult; m++ ) {
+       for ( auto m=0; m<GDIM && mult>1; m++ ) {
          normals[m][j] *= 1.0/sqrt((GFTYPE)mult);
        }
      }
