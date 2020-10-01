@@ -1381,6 +1381,7 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
                                  GTVector<GTVector<GFTYPE>>    &normals)
 {
    GINT              ib, ic, id,  ip; 
+   GSIZET           *ind, mult, nind;
    GFTYPE            tiny;
    GFTYPE            xm;
    GTPoint<GFTYPE>   kp(3), xp(3), p1(3), p2(3);
@@ -1389,6 +1390,11 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
    kp    = 0.0;
    kp[2] = 1.0; // k-vector
 
+   ind  = NULLPTR;
+   nind = 0.0;
+
+   for ( auto i=0; i<normals.size(); i++ ) normals[i] = 0.0; 
+
    // Normals depend on element type:
    if ( this->gtype_ == GE_REGULAR ) {
      for ( auto j=0; j<gieface.size(); j++ ) { // all points on iedge
@@ -1396,10 +1402,24 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        id = giefaceid[j]; 
        xm = id == 1 || id == 2 ? 1.0 : -1.0;
        ip = (id+1)%2;
-       for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = 0.0; 
        normals[ip][j] = xm;
+       if ( mult > 1 ) {
+         for ( auto m=0; m<mult; m++ ) {
+           normals[ip][j] = 1.0/sqrt(mult);
+         }
+       }
        ip = id%2;
        face_mass  [j] *= dXdXi(ip,0)[ib]; 
+     }
+     for ( auto j=0; j<gieface.size(); j++ ) { // check for duplicate nodes
+       ib = gieface  [j];
+       mult = gieface.multiplicity(ib, ind, nind); // get multipl. of id
+       ip = (id+1)%2;
+       if ( mult > 1 ) {
+         for ( auto m=0; m<mult; m++ ) {
+           normals[ip][j] *= 1.0/sqrt(mult);
+         }
+       }
      }
    }
    else if ( this->gtype_ == GE_DEFORMED 
