@@ -159,13 +159,13 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
 
   assert( idir > 0 && idir <= nxy );
 
-  so = 0.0;
 
   // so = -D^{T,j} [mu [D_i u_j + Dj u_i) + Dk zeta u_k delta_ij ]:
   //    + surface terms:
   // Below, i = idir:
 
   // Do -D^{T,j} [mu (D_i u_j) ] terms:
+  so = 0.0;
   for ( auto j=0; j<nxy; j++ ) { 
     grid_->deriv(*u[j], idir, *utmp[0], *utmp[1]);
     // Point-multiply by mu before taking 'divergence':
