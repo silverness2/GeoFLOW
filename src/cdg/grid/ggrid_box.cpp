@@ -1446,6 +1446,7 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
      assert(FALSE);
    }
 
+   if ( ind != NULLPTR ) delete [] ind;
 
 } // end, method do_face_normals2d
 
