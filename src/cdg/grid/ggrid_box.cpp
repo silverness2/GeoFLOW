@@ -1403,22 +1403,14 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        xm = id == 1 || id == 2 ? 1.0 : -1.0;
        ip = (id+1)%2;
        normals[ip][j] = xm;
-       if ( mult > 1 ) {
-         for ( auto m=0; m<mult; m++ ) {
-           normals[ip][j] = 1.0/sqrt(mult);
-         }
-       }
        ip = id%2;
        face_mass  [j] *= dXdXi(ip,0)[ib]; 
      }
      for ( auto j=0; j<gieface.size(); j++ ) { // check for duplicate nodes
        ib = gieface  [j];
-       mult = gieface.multiplicity(ib, ind, nind); // get multipl. of id
-       ip = (id+1)%2;
-       if ( mult > 1 ) {
-         for ( auto m=0; m<mult; m++ ) {
-           normals[ip][j] *= 1.0/sqrt(mult);
-         }
+       mult = gieface.multiplicity(ib, ind, nind); // get multipl. of ib
+       for ( auto m=0; m<GDIM && mult; m++ ) {
+         normals[m][j] *= 1.0/sqrt((GFTYPE)mult);
        }
      }
    }
