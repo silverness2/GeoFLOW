@@ -255,6 +255,21 @@ const char * const sGStateCompType [] ={"GSC_KINETIC","GSC_MAGNETIC","GSC_DENSIT
   #define GWORDSIZE_BYTES (GWORDSIZE_BITS / BITSPERBYTE)
 #endif
 
+#if !defined(LOMASK)
+  #define LOMASK(wlo) ( ~( (~(GUINT)0) << wlo ) )
+#endif
+#if !defined(GET_LOWORD)
+  #define GET_LOWORD(a,wlo) ( a & LOMASK(wlo) )
+#endif
+#if !defined(GET_HIWORD)
+  #define GET_HIWORD(a,wlo) ( a >> wlo )
+#endif
+#if !defined(SET_LOWORD)
+  #define SET_LOWORD(a,b,wlo) ( a |= b )
+#endif
+#if !defined(SET_HIWORD)
+  #define SET_HIWORD(a,b,wlo) ( a |= ( b << wlo ) )
+#endif
 
 #if !defined GError
   #define GError() printf("Error: %s; line: %d\n",__FILE__,__LINE__);
