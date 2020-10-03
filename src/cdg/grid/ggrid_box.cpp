@@ -1316,7 +1316,7 @@ GBOOL GGridBox::on_global_edge(GINT iface, GTPoint<GFTYPE> &pt)
 //                      dXdX_i(i,j) = dx^j/dxi^i
 //          gieface   : vector of face indices into global volume fields 
 //                      for all facase
-//          giefaceid : face id for eah index in gieface
+//          gdeface   : description for each face node
 //          face_mass : mass*Jac at face nodes; should contain
 //                      Gauss weights on element faces on entry, and
 //                      contain the weights at each face node
@@ -1325,12 +1325,12 @@ GBOOL GGridBox::on_global_edge(GINT iface, GTPoint<GFTYPE> &pt)
 //**********************************************************************************
 void GGridBox::do_face_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
                                GTVector<GSIZET>              &gieface,
-                               GTVector<GINT>                &giefaceid,
+                               GTVector<GUINT>               &gdeface,
                                GTVector<GFTYPE>              &face_mass,
                                GTVector<GTVector<GFTYPE>>    &normals)
 {
 
-  assert(gieface.size() == giefaceid.size() );
+  assert(gieface.size() == gdeface.size() );
 
   GSIZET nface;
 
@@ -1343,11 +1343,11 @@ void GGridBox::do_face_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 
   #if defined(_G_IS2D)
 
-    do_face_normals2d(dXdXi, gieface, giefaceid, face_mass, normals);
+    do_face_normals2d(dXdXi, gieface, gdeface, face_mass, normals);
 
   #elif defined(_G_IS3D)
 
-    do_face_normals3d(dXdXi, gieface, giefaceid, face_mass, normals);
+    do_face_normals3d(dXdXi, gieface, gdeface, face_mass, normals);
 
   }
 
@@ -1367,7 +1367,7 @@ void GGridBox::do_face_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 //                      dXdX_i(i,j) = dx^j/dxi^i
 //          gieface   : vector of face indices into global volume fields 
 //                      for all facase
-//          giefaceid : face id for eah index in gieface
+//          gdeface   : description for each face node
 //          face_mass : mass*Jac at face nodes; should contain
 //                      Gauss weights on element faces on entry, and
 //                      will multiply by face Jacobian on exit
@@ -1376,11 +1376,12 @@ void GGridBox::do_face_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 //**********************************************************************************
 void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
                                  GTVector<GSIZET>              &gieface,
-                                 GTVector<GINT>                &giefaceid,
+                                 GTVector<GUINT>               &gdeface,
                                  GTVector<GFTYPE>              &face_mass,
                                  GTVector<GTVector<GFTYPE>>    &normals)
 {
-   GINT              ib, ic, id,  ip; 
+   GINT              ib, ic, ip; 
+   GUINT             id, it;
    GSIZET           *ind, mult, nind;
    GFTYPE            tiny;
    GFTYPE            xm;
@@ -1398,19 +1399,34 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
    // Normals depend on element type:
    if ( this->gtype_ == GE_REGULAR ) {
      for ( auto j=0; j<gieface.size(); j++ ) { // all points on iedge
-       ib = gieface  [j];
-       id = giefaceid[j]; 
-       xm = id == 1 || id == 2 ? 1.0 : -1.0;
-       ip = (id+1)%2;
-       normals[ip][j] = xm;
-       ip = id%2;
-       face_mass  [j] *= dXdXi(ip,0)[ib]; 
-     }
-     for ( auto j=0; j<gieface.size(); j++ ) { // check for duplicate nodes
-       ib = gieface  [j];
-       mult = gieface.multiplicity(ib, ind, nind); // get multipl. of ib
-       for ( auto m=0; m<GDIM && mult>1; m++ ) {
-         normals[m][j] *= 1.0/sqrt((GFTYPE)mult);
+       ib = gieface[j];
+       id = GET_HIWORD(gdeface[j],4); 
+       it = GET_LOWORD(gdeface[j],4);
+       if ( it == GElem_base::FACE ) {
+         xm = id == 1 || id == 2 ? 1.0 : -1.0;
+         ip = (id+1)%2;
+         normals[ip][j] = xm;
+       }
+       if ( it == GElem_base::VERTEX ) {
+         switch (it) {
+           case 0:
+             normals[0][j] = -1.0/sqrt(2.0); 
+             normals[1][j] = -1.0/sqrt(2.0); 
+             break;
+           case 1:
+             normals[0][j] =  1.0/sqrt(2.0); 
+             normals[1][j] = -1.0/sqrt(2.0); 
+             break;
+           case 2:
+             normals[0][j] =  1.0/sqrt(2.0); 
+             normals[1][j] =  1.0/sqrt(2.0); 
+             break;
+           case 3:
+             normals[0][j] = -1.0/sqrt(2.0); 
+             normals[1][j] =  1.0/sqrt(2.0); 
+             break;
+        
+         }
        }
      }
    }
@@ -1419,8 +1435,8 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
      // Bdy normal is hat{k} X dvec{X} / dxi_iedge,
      // for face:
      for ( auto j=0; j<gieface.size(); j++ ) { // all points on iedge
-       ib = gieface  [j];
-       id = giefaceid[j];
+       ib = gieface[j];
+       id = gdeface[j];
        ip = id == 1 || id == 3 ? 0 : 1;
        for ( auto i=0; i<dXdXi.size(2); i++ ) { // over _X_
          p1[i] = dXdXi(ip,i)[ib]; 
@@ -1452,7 +1468,7 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 //                      dXdX_i(i,j) = dx^j/dxi^i
 //          gieface   : vector of face indices into global volume fields 
 //                      for all facase
-//          giefaceid : face id for eah index in gieface
+//          gdeface   : description for each face node
 //          face_mass : mass*Jac at face nodes; should contain
 //                      Gauss weights on element faces on entry, and
 //          normals   : vector of normal components
@@ -1460,7 +1476,7 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 //**********************************************************************************
 void GGridBox::do_face_normals3d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
                                  GTVector<GSIZET>              &gieface,
-                                 GTVector<GINT>                &giefaceid,
+                                 GTVector<GUINT>               &gdeface,
                                  GTVector<GFTYPE>              &face_mass,
                                  GTVector<GTVector<GFTYPE>>    &normals)
 {
@@ -1475,7 +1491,7 @@ void GGridBox::do_face_normals3d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
    // Bdy normal is dvec{X} / dxi_xi X dvec{X} / dxi_eta
    for ( auto j=0; j<gieface.size(); j++ ) { // all points on iedge
      ib = gieface[j];
-     id = giefaceid[j];
+     id = gdeface[j];
      // Find derivs of _X_ wrt face's reference coords;
      // the cross prod of these vectors is the normal:
      for ( auto i=0; i<dXdXi.size(2); i++ ) { // d_X_/dXi

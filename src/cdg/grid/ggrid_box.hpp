@@ -48,7 +48,7 @@ public:
                               GTVector<GTVector<GFTYPE>> &xnodes);           // compute elems from restart data
         void                do_face_normals(GTMatrix<GTVector<GFTYPE>> &dXdXi,
                                       GTVector<GSIZET> &gieface,
-                                      GTVector<GINT> &giefaceid,
+                                      GTVector<GUINT>  &face_desc,
                                       GTVector<GFTYPE> &face_mass,
                                       GTVector<GTVector<GFTYPE>> &normals);  // compute normals to elem faces
         void                set_partitioner(GDD_base<GFTYPE> *d);            // set and use GDD object
@@ -84,12 +84,12 @@ private:
                               GTVector<GTVector<GFTYPE>> &xnodes);          // do 3d grid restart
          void               do_face_normals2d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
                                       GTVector<GSIZET> &igbdy_face,
-                                      GTVector<GINT> &giefaceid,
+                                      GTVector<GUINT>  &face_desc,
                                       GTVector<GFTYPE> &face_mass,
                                       GTVector<GTVector<GFTYPE>> &normals); // compute normals to elem faces in 2d
          void               do_face_normals3d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
                                       GTVector<GSIZET> &gieface,
-                                      GTVector<GINT> &giefaceid,
+                                      GTVector<GUINT>  &face_desc,
                                       GTVector<GFTYPE> &face_mass,
                                       GTVector<GTVector<GFTYPE>> &normals); // compute normals to elem faces in 3d
          void               do_bdy_normals2d(

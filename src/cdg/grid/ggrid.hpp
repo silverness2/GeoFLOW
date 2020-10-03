@@ -180,6 +180,8 @@ virtual void                 print(const GString &filename){}          // print 
                             &gieface() { return gieface_;}             // elem face indices into glob u for all elem faces
         GTVector<GINT>
                             &giefaceid() { return giefaceid_;}         // elem face id for each gieface_
+        GTVector<GUINT>
+                            &gdeface() { return gdeface_;}             // elem face node 'descriptions'
         BinnedBdyIndex
                             &igbdy_binned() { return igbdy_binned_;}   // global dom bdy indices binned into GBdyType
         GTVector<GSIZET>
@@ -226,8 +228,8 @@ virtual void                        do_face_normals(GTMatrix<GTVector<GFTYPE>>
                                                                        &dXdXi,
                                                    GTVector<GSIZET>
                                                                        &igface,
-                                                   GTVector<GINT>
-                                                                       &igfaceid,
+                                                   GTVector<GUINT>
+                                                                       &dgface,
                                                    GTVector<GFTYPE>    &face_mass,
                                                    GTVector<GTVector<GFTYPE>>
                                                                        &normals)=0;
@@ -275,6 +277,7 @@ virtual void                        do_bdy_normals(GTMatrix<GTVector<GFTYPE>>
         GTVector<GTVector<GFTYPE>>  faceNormals_;   // normal to elem faces each face node point (2d & 3d), global
         GTVector<GSIZET>            gieface_;       // index into global field indicating elem face node
         GTVector<GINT>              giefaceid_;     // elem face id for each gieface_
+        GTVector<GUINT>             gdeface_;       // 'desc' of each face node
         GTVector<GTVector<GFTYPE>>  bdyNormals_;    // normal to surface at each bdy node point (2d & 3d), global
         GTVector<GINT>              idepComp_;      // dependent component index at each bdy point
         BinnedBdyIndex              igbdy_binned_;  // index into global field indicating a domain bdy--by type

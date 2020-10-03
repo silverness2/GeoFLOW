@@ -63,7 +63,7 @@ public:
                               GTVector<GTVector<GFTYPE>> &xnodes);        // compute elems from restart data)
         void                do_face_normals(GTMatrix<GTVector<GFTYPE>> &dXdXi,
                                       GTVector<GSIZET> &gieface,
-                                      GTVector<GINT> &giefaceid,
+                                      GTVector<GUINT>  &gdeface,
                                       GTVector<GFTYPE> &face_mass,
                                       GTVector<GTVector<GFTYPE>> &normals);  // com
         void                do_bdy_normals(
@@ -161,13 +161,13 @@ friend  std::ostream&       operator<<(std::ostream&, GGridIcos &);       // Out
                                            GTVector<GSIZET> &ibdy);// find bdy indices for bdy=radius
          void               do_face_normals2d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
                                       GTVector<GSIZET> &gieface,
-                                      GTVector<GINT> &giefaceid,
+                                      GTVector<GUINT>  &gdeface,
                                       GTVector<GFTYPE> &face_mass,
                                       GTVector<GTVector<GFTYPE>> &normals);
                                                                    // compute normals to elem faces in 2d
          void               do_face_normals3d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
                                       GTVector<GSIZET> &gieface,
-                                      GTVector<GINT> &giefaceid,
+                                      GTVector<GUINT>  &gdeface,
                                       GTVector<GFTYPE> &face_mass,
                                       GTVector<GTVector<GFTYPE>> &normals);
                                                                    // compute normals to elem faces in 2d
