@@ -1203,9 +1203,12 @@ void GGrid::init_local_face_info()
   GBOOL                        bret;
   GSIZET                       ibeg, iend; // beg, end indices for global array
   GTVector<GINT>              *iebdy;      // domain bdy indices
+  GTVector<GINT>              itmp; 
+  GTVector<GUINT>             utmp; 
   GTVector<GTVector<GINT>>    *ieface;     // element face indices
   GTVector<GTVector<GUINT>>   *deface;     // element face node description
   GTVector<GTVector<GFTYPE>> *efacemass;   // element face weights
+  GTVector<GFTYPE>            ftmp; 
 
   GSIZET  m, n, nn; 
   GSIZET        ig; // index into global array
@@ -1224,6 +1227,10 @@ void GGrid::init_local_face_info()
   gdeface_.resize(n);
   faceMass_.resize(n);
 
+  itmp.resize(n);
+  utmp.resize(n);
+  ftmp.resize(n);
+
   // Find list over all elemes of element face nodes:
   nn = 0; // global reference index
   m  = 0; // current num of global face indices
@@ -1235,22 +1242,34 @@ void GGrid::init_local_face_info()
     for ( auto j=0; j<ieface->size(); j++ ) { // cycle over all elem faces
       for ( auto k=0; k<(*ieface)[j].size(); k++ ) {
         ig = nn + (*ieface)[j][k];
-#if 0
+#if 1
         if ( !gieface_.containsn(ig, m) ) { // don't include repeated face ind
-          gieface_  [m] = ig;
-          gdeface_  [m] = ((deface)[j][k];;
+          itmp  [m] = ig;
+          utmp  [m] = (*deface)[j][k];
+          ftmp  [m] = (*efacemass)[j][k];
           m++;
         }
 #else
-        gieface_  [m] = ig;
-        gdeface_  [m] = (*deface)[j][k];
-        faceMass_ [m] = (*efacemass)[j][k];
+        itmp  [m] = ig;
+        utmp  [m] = (*deface)[j][k];
+        ftmp  [m] = (*efacemass)[j][k];
         m++;
 #endif
       } // end, face node loop
     } // end, face loop
     nn += gelems_[e]->nnodes();
   } // end, element loop
+
+  gieface_ .resize(m); 
+  gdeface_ .resize(m);
+  faceMass_.resize(m);
+  for ( auto j=0; j<m; j++ ) {
+    gieface_ [j] = itmp[j];
+    gdeface_ [j] = utmp[j];
+    faceMass_[j] = ftmp[j];
+  }
+
+  
 
 
 } // end, init_local_face_info
