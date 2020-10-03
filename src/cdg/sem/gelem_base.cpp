@@ -1526,12 +1526,25 @@ void GElem_base::get_indirect2d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
     face_ind[3][j] = j*N[0];
     face_mass[1][j] = (*W[1])[j];
     face_mass[3][j] = (*W[1])[j];
+    // Set face index 'description':
+    SET_LOWORD(face_desc[1][j], FACE, 4);
+    SET_HIWORD(face_desc[1][j], 1   , 4);
+    SET_LOWORD(face_desc[3][j], FACE, 4);
+    SET_HIWORD(face_desc[3][j], 3   , 4);
+    if ( j == 0 ) {
+      SET_LOWORD(face_desc[1][j], VERTEX, 4);
+      SET_HIWORD(face_desc[1][j], 1     , 4);
+      SET_LOWORD(face_desc[3][j], VERTEX, 4);
+      SET_HIWORD(face_desc[3][j], 0     , 4);
+    }
+    if ( j == N[1]-1 ) {
+      SET_LOWORD(face_desc[1][j], VERTEX, 4);
+      SET_HIWORD(face_desc[1][j], 2     , 4);
+      SET_LOWORD(face_desc[3][j], VERTEX, 4);
+      SET_HIWORD(face_desc[3][j], 3     , 4);
+    }
   }
 
-  // Set face index 'description':
-  SET_LOWORD(face_desc[1][0], VERTEX, 4);
-  SET_HIWORD(face_desc[1][0], 1     , 4);
-  
 } // end of method get_indirect2d
 
 
