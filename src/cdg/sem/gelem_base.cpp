@@ -202,18 +202,7 @@ void GElem_base::resize(GTVector<GINT> &newOrder)
 std::ostream &operator<<(std::ostream &str, GElem_base &e)
 {
   GINT  i;
-#if 0
-  str << std::endl << "ElemID: " << e.elemid_ << " {" << std::endl;
-  str << " ROOT ID : " << e.rootid_ ;
-  str <<           " HIWORD=" << HIWORD(&(e.rootid_));
-  str <<           " LOWORD=" << LOWORD(&(e.rootid_)) << std::endl;
-  str << " ParentID: " << e.parentid_ ;
-  str <<           " HIWORD=" << HIWORD(&(e.parentid_));
-  str <<           " LOWORD=" << LOWORD(&(e.parentid_)) << std::endl;
-  str << "       ID: " << e.elemid_ ;
-  str <<           " HIWORD=" << HIWORD(&(e.elemid_));
-  str <<           " LOWORD=" << LOWORD(&(e.elemid_)) << std::endl;
-#endif
+
   str << " elemtype: " << e.elemtype_ ;
   str << " nVertices: " << e.nVertices_;
   str << " nEdges: " << e.nEdges_;
@@ -1434,10 +1423,10 @@ void GElem_base::get_indirect1d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
   face_mass[0][1] = (*W[0])[N[0]-1];
 
   // Set face index 'description':
-  SET_LOWORD(face_desc[0][0], VERTEX, 4);
-  SET_HIWORD(face_desc[0][0], 0     , 4);
-  SET_LOWORD(face_desc[1][0], VERTEX, 4);
-  SET_HIWORD(face_desc[1][0], 1     , 4);
+  SET_LOWORD(face_desc[0][0], VERTEX);
+  SET_HIWORD(face_desc[0][0], 0     );
+  SET_LOWORD(face_desc[1][0], VERTEX);
+  SET_HIWORD(face_desc[1][0], 1     );
   
 } // end of method get_indirect1d
 
@@ -1460,6 +1449,7 @@ void GElem_base::get_indirect2d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
 {
   GString serr = "GElem_base::get_indirect2d: ";
 
+  GINT           j;
   GTVector<GINT> N(GDIM);
   GTVector<GFTYPE> *W[GDIM];
   for ( auto j=0; j<GDIM; j++ ) {
@@ -1493,31 +1483,32 @@ void GElem_base::get_indirect2d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
   face_mass.resize(nFaces_);
   face_desc.resize(nFaces_);
   for ( auto j=0; j<nFaces_; j++ ) { 
-    face_ind[j].resize(j%2==0?N[0]:N[1]);
-    face_mass[j].resize(j%2==0?N[0]:N[1]);
-    face_desc[j].resize(j%2==0?N[0]:N[1]);
+    face_ind[j].resize(j%2==0?N[0]-2:N[1]);
+    face_mass[j].resize(j%2==0?N[0]-2:N[1]);
+    face_desc[j].resize(j%2==0?N[0]-2:N[1]);
   }
-  for ( auto j=0; j<N[0]; j++ ) { // south, north
-    face_ind[0][j] = j;
-    face_ind[2][j] = N[0]*(N[1]-1) + j;
-    face_mass[0][j] = (*W[0])[j];
-    face_mass[2][j] = (*W[0])[j];
+  for ( auto k=1; k<N[0]-1; k++ ) { // south, north
+    j = k-1;
+    face_ind[0][j] = k;
+    face_ind[2][j] = N[0]*(N[1]-1) + k;
+    face_mass[0][j] = (*W[0])[k];
+    face_mass[2][j] = (*W[0])[k];
     // Set face index 'description':
-    SET_LOWORD(face_desc[0][j], FACE, 4);
-    SET_HIWORD(face_desc[0][j], 0   , 4);
-    SET_LOWORD(face_desc[2][j], FACE, 4);
-    SET_HIWORD(face_desc[2][j], 2   , 4);
+    SET_LOWORD(face_desc[0][j], FACE);
+    SET_HIWORD(face_desc[0][j], 0   );
+    SET_LOWORD(face_desc[2][j], FACE);
+    SET_HIWORD(face_desc[2][j], 2   );
     if ( j == 0 ) {
-      SET_LOWORD(face_desc[0][j], VERTEX, 4);
-      SET_HIWORD(face_desc[0][j], 0     , 4);
-      SET_LOWORD(face_desc[2][j], VERTEX, 4);
-      SET_HIWORD(face_desc[2][j], 3     , 4);
+      SET_LOWORD(face_desc[0][j], VERTEX);
+      SET_HIWORD(face_desc[0][j], 0     );
+      SET_LOWORD(face_desc[2][j], VERTEX);
+      SET_HIWORD(face_desc[2][j], 3     );
     }
     if ( j == N[0]-1 ) {
-      SET_LOWORD(face_desc[0][j], VERTEX, 4);
-      SET_HIWORD(face_desc[0][j], 1     , 4);
-      SET_LOWORD(face_desc[2][j], VERTEX, 4);
-      SET_HIWORD(face_desc[2][j], 2     , 4);
+      SET_LOWORD(face_desc[0][j], VERTEX);
+      SET_HIWORD(face_desc[0][j], 1     );
+      SET_LOWORD(face_desc[2][j], VERTEX);
+      SET_HIWORD(face_desc[2][j], 2     );
     }
   }
 
@@ -1527,21 +1518,21 @@ void GElem_base::get_indirect2d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
     face_mass[1][j] = (*W[1])[j];
     face_mass[3][j] = (*W[1])[j];
     // Set face index 'description':
-    SET_LOWORD(face_desc[1][j], FACE, 4);
-    SET_HIWORD(face_desc[1][j], 1   , 4);
-    SET_LOWORD(face_desc[3][j], FACE, 4);
-    SET_HIWORD(face_desc[3][j], 3   , 4);
+    SET_LOWORD(face_desc[1][j], FACE);
+    SET_HIWORD(face_desc[1][j], 1   );
+    SET_LOWORD(face_desc[3][j], FACE);
+    SET_HIWORD(face_desc[3][j], 3   );
     if ( j == 0 ) {
-      SET_LOWORD(face_desc[1][j], VERTEX, 4);
-      SET_HIWORD(face_desc[1][j], 1     , 4);
-      SET_LOWORD(face_desc[3][j], VERTEX, 4);
-      SET_HIWORD(face_desc[3][j], 0     , 4);
+      SET_LOWORD(face_desc[1][j], VERTEX);
+      SET_HIWORD(face_desc[1][j], 1     );
+      SET_LOWORD(face_desc[3][j], VERTEX);
+      SET_HIWORD(face_desc[3][j], 0     );
     }
     if ( j == N[1]-1 ) {
-      SET_LOWORD(face_desc[1][j], VERTEX, 4);
-      SET_HIWORD(face_desc[1][j], 2     , 4);
-      SET_LOWORD(face_desc[3][j], VERTEX, 4);
-      SET_HIWORD(face_desc[3][j], 3     , 4);
+      SET_LOWORD(face_desc[1][j], VERTEX);
+      SET_HIWORD(face_desc[1][j], 2     );
+      SET_LOWORD(face_desc[3][j], VERTEX);
+      SET_HIWORD(face_desc[3][j], 3     );
     }
   }
 
@@ -1624,39 +1615,39 @@ void GElem_base::get_indirect3d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
     for ( i=0; i<N[0]; i++, m++ ) {
       face_ind[0][i+k*N[0]] = k*N[0]*N[1] + i;
       face_mass[0][m] = (*W[0])[j] * (*W[2])[k];
-      SET_LOWORD(face_desc[0][m], FACE, 4);
-      SET_HIWORD(face_desc[0][m], 0   , 4);
+      SET_LOWORD(face_desc[0][m], FACE);
+      SET_HIWORD(face_desc[0][m], 0   );
       if ( k==0 ) {
-        SET_LOWORD(face_desc[0][m], EDGE, 4);
-        SET_HIWORD(face_desc[0][m], 0   , 4);
+        SET_LOWORD(face_desc[0][m], EDGE);
+        SET_HIWORD(face_desc[0][m], 0   );
       }
       if ( k==N[2]-1 ) {
-        SET_LOWORD(face_desc[0][m], EDGE, 4);
-        SET_HIWORD(face_desc[0][m], 4   , 4);
+        SET_LOWORD(face_desc[0][m], EDGE);
+        SET_HIWORD(face_desc[0][m], 4   );
       }
       if ( i==0 ) {
-        SET_LOWORD(face_desc[0][m], EDGE, 4);
-        SET_HIWORD(face_desc[0][m], 8   , 4);
+        SET_LOWORD(face_desc[0][m], EDGE);
+        SET_HIWORD(face_desc[0][m], 8   );
       }
       if ( i==N[1]-1 ) {
-        SET_LOWORD(face_desc[0][m], EDGE, 4);
-        SET_HIWORD(face_desc[0][m], 9   , 4);
+        SET_LOWORD(face_desc[0][m], EDGE);
+        SET_HIWORD(face_desc[0][m], 9   );
       }
       if ( i==0 && k==0 ) {
-        SET_LOWORD(face_desc[0][m], VERTEX, 4);
-        SET_HIWORD(face_desc[0][m], 0     , 4);
+        SET_LOWORD(face_desc[0][m], VERTEX);
+        SET_HIWORD(face_desc[0][m], 0     );
       }
       if ( i==N[0]-1 && k==0 ) {
-        SET_LOWORD(face_desc[0][m], VERTEX, 4);
-        SET_HIWORD(face_desc[0][m], 1     , 4);
+        SET_LOWORD(face_desc[0][m], VERTEX);
+        SET_HIWORD(face_desc[0][m], 1     );
       }
       if ( i==N[0]-1 && k==N[2]-1 ) {
-        SET_LOWORD(face_desc[0][m], VERTEX, 4);
-        SET_HIWORD(face_desc[0][m], 5     , 4);
+        SET_LOWORD(face_desc[0][m], VERTEX);
+        SET_HIWORD(face_desc[0][m], 5     );
       }
       if ( i==0 && k==N[2]-1 ) {
-        SET_LOWORD(face_desc[0][m], VERTEX, 4);
-        SET_HIWORD(face_desc[0][m], 4     , 4);
+        SET_LOWORD(face_desc[0][m], VERTEX);
+        SET_HIWORD(face_desc[0][m], 4     );
       }
     }
   }
@@ -1668,39 +1659,39 @@ void GElem_base::get_indirect3d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
     for ( j=0; j<N[1]; j++, m++ ) {
       face_ind[1][j+k*N[1]] = k*N[0]*N[1] + (j+1)*N[0] - 1;
       face_mass[1][m] = (*W[1])[j] * (*W[2])[k];
-      SET_LOWORD(face_desc[1][m], FACE, 4);
-      SET_HIWORD(face_desc[1][m], 1   , 4);
+      SET_LOWORD(face_desc[1][m], FACE);
+      SET_HIWORD(face_desc[1][m], 1   );
       if ( k==0 ) {
-        SET_LOWORD(face_desc[1][m], EDGE, 4);
-        SET_HIWORD(face_desc[1][m], 0   , 4);
+        SET_LOWORD(face_desc[1][m], EDGE);
+        SET_HIWORD(face_desc[1][m], 0   );
       }
       if ( k==N[2]-1 ) {
-        SET_LOWORD(face_desc[1][m], EDGE, 4);
-        SET_HIWORD(face_desc[1][m], 4   , 4);
+        SET_LOWORD(face_desc[1][m], EDGE);
+        SET_HIWORD(face_desc[1][m], 4   );
       }
       if ( j==0 ) {
-        SET_LOWORD(face_desc[1][m], EDGE, 4);
-        SET_HIWORD(face_desc[1][m], 8   , 4);
+        SET_LOWORD(face_desc[1][m], EDGE);
+        SET_HIWORD(face_desc[1][m], 8   );
       }
       if ( j==N[1]-1 ) {
-        SET_LOWORD(face_desc[1][m], EDGE, 4);
-        SET_HIWORD(face_desc[1][m], 9   , 4);
+        SET_LOWORD(face_desc[1][m], EDGE);
+        SET_HIWORD(face_desc[1][m], 9   );
       }
       if ( j==0 && k==0 ) {
-        SET_LOWORD(face_desc[1][m], VERTEX, 4);
-        SET_HIWORD(face_desc[1][m], 1     , 4);
+        SET_LOWORD(face_desc[1][m], VERTEX);
+        SET_HIWORD(face_desc[1][m], 1     );
       }
       if ( j==N[1]-1 && k==0 ) {
-        SET_LOWORD(face_desc[1][m], VERTEX, 4);
-        SET_HIWORD(face_desc[1][m], 2     , 4);
+        SET_LOWORD(face_desc[1][m], VERTEX);
+        SET_HIWORD(face_desc[1][m], 2     );
       }
       if ( j==N[1]-1 && k==N[2]-1 ) {
-        SET_LOWORD(face_desc[1][m], VERTEX, 4);
-        SET_HIWORD(face_desc[1][m], 6     , 4);
+        SET_LOWORD(face_desc[1][m], VERTEX);
+        SET_HIWORD(face_desc[1][m], 6     );
       }
       if ( j==0 && k==N[2]-1 ) {
-        SET_LOWORD(face_desc[1][m], VERTEX, 4);
-        SET_HIWORD(face_desc[1][m], 5     , 4);
+        SET_LOWORD(face_desc[1][m], VERTEX);
+        SET_HIWORD(face_desc[1][m], 5     );
       }
     }
   }
@@ -1712,39 +1703,39 @@ void GElem_base::get_indirect3d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
     for ( i=0; i<N[0]; i++, m++ ) {
       face_ind[2][i+k*N[0]] = (k+1)*N[0]*N[1] + i - N[0];
       face_mass[2][m] = (*W[0])[j] * (*W[2])[k];
-      SET_LOWORD(face_desc[2][m], FACE, 4);
-      SET_HIWORD(face_desc[2][m], 2   , 4);
+      SET_LOWORD(face_desc[2][m], FACE);
+      SET_HIWORD(face_desc[2][m], 2   );
       if ( k==0 ) {
-        SET_LOWORD(face_desc[2][m], EDGE, 4);
-        SET_HIWORD(face_desc[2][m], 2   , 4);
+        SET_LOWORD(face_desc[2][m], EDGE);
+        SET_HIWORD(face_desc[2][m], 2   );
       }
       if ( k==N[2]-1 ) {
-        SET_LOWORD(face_desc[2][m], EDGE, 4);
-        SET_HIWORD(face_desc[2][m], 6   , 4);
+        SET_LOWORD(face_desc[2][m], EDGE);
+        SET_HIWORD(face_desc[2][m], 6   );
       }
       if ( i==0 ) {
-        SET_LOWORD(face_desc[2][m], EDGE, 4);
-        SET_HIWORD(face_desc[2][m], 11  , 4);
+        SET_LOWORD(face_desc[2][m], EDGE);
+        SET_HIWORD(face_desc[2][m], 11  );
       }
       if ( i==N[1]-1 ) {
-        SET_LOWORD(face_desc[2][m], EDGE, 4);
-        SET_HIWORD(face_desc[2][m], 10  , 4);
+        SET_LOWORD(face_desc[2][m], EDGE);
+        SET_HIWORD(face_desc[2][m], 10  );
       }
       if ( i==0 && k==0 ) {
-        SET_LOWORD(face_desc[2][m], VERTEX, 4);
-        SET_HIWORD(face_desc[2][m], 3     , 4);
+        SET_LOWORD(face_desc[2][m], VERTEX);
+        SET_HIWORD(face_desc[2][m], 3     );
       }
       if ( i==N[1]-1 && k==0 ) {
-        SET_LOWORD(face_desc[2][m], VERTEX, 4);
-        SET_HIWORD(face_desc[2][m], 2     , 4);
+        SET_LOWORD(face_desc[2][m], VERTEX);
+        SET_HIWORD(face_desc[2][m], 2     );
       }
       if ( i==N[1]-1 && k==N[2]-1 ) {
-        SET_LOWORD(face_desc[2][m], VERTEX, 4);
-        SET_HIWORD(face_desc[2][m], 6     , 4);
+        SET_LOWORD(face_desc[2][m], VERTEX);
+        SET_HIWORD(face_desc[2][m], 6     );
       }
       if ( i==0 && k==N[2]-1 ) {
-        SET_LOWORD(face_desc[2][m], VERTEX, 4);
-        SET_HIWORD(face_desc[2][m], 7     , 4);
+        SET_LOWORD(face_desc[2][m], VERTEX);
+        SET_HIWORD(face_desc[2][m], 7     );
       }
     }
   }
@@ -1756,39 +1747,39 @@ void GElem_base::get_indirect3d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
     for ( j=0; j<N[1]; j++, m++ ) {
       face_ind[3][j+k*N[1]] = k*N[0]*N[1] + j*N[0];
       face_mass[3][m] = (*W[1])[j] * (*W[2])[k];
-      SET_LOWORD(face_desc[3][m], FACE, 4);
-      SET_HIWORD(face_desc[3][m], 3   , 4);
+      SET_LOWORD(face_desc[3][m], FACE);
+      SET_HIWORD(face_desc[3][m], 3   );
       if ( k==0 ) {
-        SET_LOWORD(face_desc[3][m], EDGE, 4);
-        SET_HIWORD(face_desc[3][m], 0   , 4);
+        SET_LOWORD(face_desc[3][m], EDGE);
+        SET_HIWORD(face_desc[3][m], 0   );
       }
       if ( k==N[2]-1 ) {
-        SET_LOWORD(face_desc[3][m], EDGE, 4);
-        SET_HIWORD(face_desc[3][m], 4   , 4);
+        SET_LOWORD(face_desc[3][m], EDGE);
+        SET_HIWORD(face_desc[3][m], 4   );
       }
       if ( j==0 ) {
-        SET_LOWORD(face_desc[3][m], EDGE, 4);
-        SET_HIWORD(face_desc[3][m], 8   , 4);
+        SET_LOWORD(face_desc[3][m], EDGE);
+        SET_HIWORD(face_desc[3][m], 8   );
       }
       if ( j==N[1]-1 ) {
-        SET_LOWORD(face_desc[3][m], EDGE, 4);
-        SET_HIWORD(face_desc[3][m], 9   , 4);
+        SET_LOWORD(face_desc[3][m], EDGE);
+        SET_HIWORD(face_desc[3][m], 9   );
       }
       if ( j==0 && k==0 ) {
-        SET_LOWORD(face_desc[3][m], VERTEX, 4);
-        SET_HIWORD(face_desc[3][m], 1     , 4);
+        SET_LOWORD(face_desc[3][m], VERTEX);
+        SET_HIWORD(face_desc[3][m], 1     );
       }
       if ( j==N[1]-1 && k==0 ) {
-        SET_LOWORD(face_desc[3][m], VERTEX, 4);
-        SET_HIWORD(face_desc[3][m], 2     , 4);
+        SET_LOWORD(face_desc[3][m], VERTEX);
+        SET_HIWORD(face_desc[3][m], 2     );
       }
       if ( j==N[1]-1 && k==N[2]-1 ) {
-        SET_LOWORD(face_desc[3][m], VERTEX, 4);
-        SET_HIWORD(face_desc[3][m], 6     , 4);
+        SET_LOWORD(face_desc[3][m], VERTEX);
+        SET_HIWORD(face_desc[3][m], 6     );
       }
       if ( j==0 && k==N[2]-1 ) {
-        SET_LOWORD(face_desc[3][m], VERTEX, 4);
-        SET_HIWORD(face_desc[3][m], 5     , 4);
+        SET_LOWORD(face_desc[3][m], VERTEX);
+        SET_HIWORD(face_desc[3][m], 5     );
       }
     }
   }
@@ -1800,39 +1791,39 @@ void GElem_base::get_indirect3d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
     for ( i=0; i<N[0]; i++, m++ ) {
       face_ind[4][i+j*N[0]] = i + j*N[0];
       face_mass[4][m] = (*W[0])[j] * (*W[1])[k];
-      SET_LOWORD(face_desc[4][m], FACE, 4);
-      SET_HIWORD(face_desc[4][m], 4   , 4);
+      SET_LOWORD(face_desc[4][m], FACE);
+      SET_HIWORD(face_desc[4][m], 4   );
       if ( j==0 ) {
-        SET_LOWORD(face_desc[4][m], EDGE, 4);
-        SET_HIWORD(face_desc[4][m], 0   , 4);
+        SET_LOWORD(face_desc[4][m], EDGE);
+        SET_HIWORD(face_desc[4][m], 0   );
       }
       if ( j==N[1]-1 ) {
-        SET_LOWORD(face_desc[4][m], EDGE, 4);
-        SET_HIWORD(face_desc[4][m], 2   , 4);
+        SET_LOWORD(face_desc[4][m], EDGE);
+        SET_HIWORD(face_desc[4][m], 2   );
       }
       if ( i==0 ) {
-        SET_LOWORD(face_desc[4][m], EDGE, 4);
-        SET_HIWORD(face_desc[4][m], 3   , 4);
+        SET_LOWORD(face_desc[4][m], EDGE);
+        SET_HIWORD(face_desc[4][m], 3   );
       }
       if ( i==N[0]-1 ) {
-        SET_LOWORD(face_desc[4][m], EDGE, 4);
-        SET_HIWORD(face_desc[4][m], 1   , 4);
+        SET_LOWORD(face_desc[4][m], EDGE);
+        SET_HIWORD(face_desc[4][m], 1   );
       }
       if ( i==0 && j==0 ) {
-        SET_LOWORD(face_desc[4][m], VERTEX, 4);
-        SET_HIWORD(face_desc[4][m], 0     , 4);
+        SET_LOWORD(face_desc[4][m], VERTEX);
+        SET_HIWORD(face_desc[4][m], 0     );
       }
       if ( i==N[0]-1 && j==0 ) {
-        SET_LOWORD(face_desc[4][m], VERTEX, 4);
-        SET_HIWORD(face_desc[4][m], 1     , 4);
+        SET_LOWORD(face_desc[4][m], VERTEX);
+        SET_HIWORD(face_desc[4][m], 1     );
       }
       if ( i==N[0]-1 && j==N[1]-1 ) {
-        SET_LOWORD(face_desc[4][m], VERTEX, 4);
-        SET_HIWORD(face_desc[4][m], 2     , 4);
+        SET_LOWORD(face_desc[4][m], VERTEX);
+        SET_HIWORD(face_desc[4][m], 2     );
       }
       if ( i==0 && j==N[1]-1 ) {
-        SET_LOWORD(face_desc[4][m], VERTEX, 4);
-        SET_HIWORD(face_desc[4][m], 3     , 4);
+        SET_LOWORD(face_desc[4][m], VERTEX);
+        SET_HIWORD(face_desc[4][m], 3     );
       }
     }
   }
@@ -1844,39 +1835,39 @@ void GElem_base::get_indirect3d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
     for ( i=0; i<N[0]; i++, m++ ) {
       face_ind[5][i+j*N[0]] = N[0]*N[1]*(N[2]-1) + i + j*N[1];
       face_mass[4][m] = (*W[0])[j] * (*W[1])[k];
-      SET_LOWORD(face_desc[5][m], FACE, 4);
-      SET_HIWORD(face_desc[5][m], 5   , 4);
+      SET_LOWORD(face_desc[5][m], FACE);
+      SET_HIWORD(face_desc[5][m], 5   );
       if ( j==0 ) {
-        SET_LOWORD(face_desc[5][m], EDGE, 4);
-        SET_HIWORD(face_desc[5][m], 4   , 4);
+        SET_LOWORD(face_desc[5][m], EDGE);
+        SET_HIWORD(face_desc[5][m], 4   );
       }
       if ( j==N[1]-1 ) {
-        SET_LOWORD(face_desc[5][m], EDGE, 4);
-        SET_HIWORD(face_desc[5][m], 6   , 4);
+        SET_LOWORD(face_desc[5][m], EDGE);
+        SET_HIWORD(face_desc[5][m], 6   );
       }
       if ( i==0 ) {
-        SET_LOWORD(face_desc[5][m], EDGE, 4);
-        SET_HIWORD(face_desc[5][m], 7   , 4);
+        SET_LOWORD(face_desc[5][m], EDGE);
+        SET_HIWORD(face_desc[5][m], 7   );
       }
       if ( i==N[0]-1 ) {
-        SET_LOWORD(face_desc[5][m], EDGE, 4);
-        SET_HIWORD(face_desc[5][m], 5   , 4);
+        SET_LOWORD(face_desc[5][m], EDGE);
+        SET_HIWORD(face_desc[5][m], 5   );
       }
       if ( i==0 && j==0 ) {
-        SET_LOWORD(face_desc[5][m], VERTEX, 4);
-        SET_HIWORD(face_desc[5][m], 4     , 4);
+        SET_LOWORD(face_desc[5][m], VERTEX);
+        SET_HIWORD(face_desc[5][m], 4     );
       }
       if ( i==N[0]-1 && j==0 ) {
-        SET_LOWORD(face_desc[5][m], VERTEX, 4);
-        SET_HIWORD(face_desc[5][m], 5     , 4);
+        SET_LOWORD(face_desc[5][m], VERTEX);
+        SET_HIWORD(face_desc[5][m], 5     );
       }
       if ( i==N[0]-1 && j==N[1]-1 ) {
-        SET_LOWORD(face_desc[5][m], VERTEX, 4);
-        SET_HIWORD(face_desc[5][m], 6     , 4);
+        SET_LOWORD(face_desc[5][m], VERTEX);
+        SET_HIWORD(face_desc[5][m], 6     );
       }
       if ( i==0 && j==N[1]-1 ) {
-        SET_LOWORD(face_desc[5][m], VERTEX, 4);
-        SET_HIWORD(face_desc[5][m], 7     , 4);
+        SET_LOWORD(face_desc[5][m], VERTEX);
+        SET_HIWORD(face_desc[5][m], 7     );
       }
     }
   }
