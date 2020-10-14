@@ -255,20 +255,21 @@ const char * const sGStateCompType [] ={"GSC_KINETIC","GSC_MAGNETIC","GSC_DENSIT
   #define GWORDSIZE_BYTES (GWORDSIZE_BITS / BITSPERBYTE)
 #endif
 
+#define WLO 4
 #if !defined(LOMASK)
   #define LOMASK(wlo) ( ~( (~(GUINT)0) << wlo ) )
 #endif
 #if !defined(GET_LOWORD)
-  #define GET_LOWORD(a,wlo) ( a & LOMASK(wlo) )
+  #define GET_LOWORD(a) ( a & LOMASK(WLO) )
 #endif
 #if !defined(GET_HIWORD)
-  #define GET_HIWORD(a,wlo) ( a >> wlo )
+  #define GET_HIWORD(a) ( a >> WLO )
 #endif
 #if !defined(SET_LOWORD)
-  #define SET_LOWORD(a,b,wlo) ( a |= b )
+  #define SET_LOWORD(a,b) ( a |= b )
 #endif
 #if !defined(SET_HIWORD)
-  #define SET_HIWORD(a,b,wlo) ( a |= ( b << wlo ) )
+  #define SET_HIWORD(a,b) ( a |= ( b << WLO ) )
 #endif
 
 #if !defined GError
