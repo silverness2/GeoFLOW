@@ -1382,7 +1382,7 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 {
    GINT              ib, ic, ip; 
    GUINT             id, it;
-   GSIZET           *ind, mult, nind;
+   GSIZET            mult;
    GFTYPE            tiny;
    GFTYPE            xm;
    GTPoint<GFTYPE>   kp(3), xp(3), p1(3), p2(3);
@@ -1391,27 +1391,28 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
    kp    = 0.0;
    kp[2] = 1.0; // k-vector
 
-   ind  = NULLPTR;
-   nind = 0.0;
 
    for ( auto i=0; i<normals.size(); i++ ) normals[i] = 0.0; 
 
    // Normals depend on element type:
    if ( this->gtype_ == GE_REGULAR ) {
-     for ( auto j=0; j<gieface.size(); j++ ) { // all points on iedge
+     for ( auto j=0; j<gieface.size(); j++ ) { // all points on edges
        ib = gieface[j];
-       id = GET_HIWORD(gdeface[j],4); 
-       it = GET_LOWORD(gdeface[j],4);
+       id = GET_HIWORD(gdeface[j]); 
+       it = GET_LOWORD(gdeface[j]);
+cout<< "do_face_normals2d: ib=" << ib << " it=" << it << " id=" << id << endl;
        if ( it == GElem_base::FACE ) {
+cout<< "do_face_normals2d: FACE: ib=" << ib << " it=" << it << " id=" << id << endl;
          xm = id == 1 || id == 2 ? 1.0 : -1.0;
          ip = (id+1)%2;
          normals[ip][j] = xm;
        }
        if ( it == GElem_base::VERTEX ) {
+cout<< "do_face_normals2d: VERTEX: ib=" << ib << " it=" << it << " id=" << id << endl;
          switch (it) {
            case 0:
              normals[0][j] = -1.0/sqrt(2.0); 
-             normals[1][j] = -1.0/sqrt(2.0); 
+             normals[1][j] = -1.0/sqrt(2.0);
              break;
            case 1:
              normals[0][j] =  1.0/sqrt(2.0); 
@@ -1425,7 +1426,6 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
              normals[0][j] = -1.0/sqrt(2.0); 
              normals[1][j] =  1.0/sqrt(2.0); 
              break;
-        
          }
        }
      }
@@ -1454,7 +1454,6 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
      assert(FALSE);
    }
 
-   if ( ind != NULLPTR ) delete [] ind;
 
 } // end, method do_face_normals2d
 
