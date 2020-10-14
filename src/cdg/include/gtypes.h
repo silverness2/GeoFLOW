@@ -255,22 +255,28 @@ const char * const sGStateCompType [] ={"GSC_KINETIC","GSC_MAGNETIC","GSC_DENSIT
   #define GWORDSIZE_BYTES (GWORDSIZE_BITS / BITSPERBYTE)
 #endif
 
-#define WLO 4
+
+// Macros for 'packing' unsigned ints:
+#define _WLO 4
 #if !defined(LOMASK)
-  #define LOMASK(wlo) ( ~( (~(GUINT)0) << wlo ) )
+  #define LOMASK      ( ~( (~(GUINT)0) << _WLO ) )
+#endif
+#if !defined(HIMASK)
+  #define HIMASK      ( ~LOMASK ) 
 #endif
 #if !defined(GET_LOWORD)
-  #define GET_LOWORD(a) ( a & LOMASK(WLO) )
+  #define GET_LOWORD(a) ( a & LOMASK )
 #endif
 #if !defined(GET_HIWORD)
-  #define GET_HIWORD(a) ( a >> WLO )
+  #define GET_HIWORD(a) ( a >> _WLO )
 #endif
 #if !defined(SET_LOWORD)
-  #define SET_LOWORD(a,b) ( a |= b )
+  #define SET_LOWORD(a,b)   (a &= HIMASK);( a |= (b & LOMASK) )
 #endif
 #if !defined(SET_HIWORD)
-  #define SET_HIWORD(a,b) ( a |= ( b << WLO ) )
+  #define SET_HIWORD(a,b) (a &= LOMASK);( a |= ( b << _WLO ) )
 #endif
+
 
 #if !defined GError
   #define GError() printf("Error: %s; line: %d\n",__FILE__,__LINE__);
