@@ -51,7 +51,7 @@ typedef GTMatrix<GTVector<GFTYPE>>           GMVFType;
 class GElem_base 
 {
 public:
-                            enum ElemNodeType { VERTEX=0, EDGE, FACE };
+                            enum ElemNodeType {VERTEX=0, EDGE, FACE};
                             GElem_base();
                             GElem_base(GElemType etype, GNBasis<GCTYPE,GFTYPE> *b1, GNBasis<GCTYPE,GFTYPE> *b2, GNBasis<GCTYPE,GFTYPE> *b3=NULLPTR);
                             GElem_base(GElemType etypa, GNBasis<GCTYPE,GFTYPE> *b[], GINT nb);

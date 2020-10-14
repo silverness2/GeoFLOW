@@ -1512,6 +1512,7 @@ void GElem_base::get_indirect2d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
     }
   }
 
+
   for ( auto j=0; j<N[1]; j++ ) { // east, west
     face_ind[1][j] = (j+1)*N[0] - 1;
     face_ind[3][j] = j*N[0];
