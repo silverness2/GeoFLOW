@@ -1246,7 +1246,7 @@ void GGrid::init_local_face_info()
     for ( auto j=0; j<ieface->size(); j++ ) { // cycle over all elem faces
       for ( auto k=0; k<(*ieface)[j].size(); k++ ) {
         ig = nn + (*ieface)[j][k];
-#if 1
+#if 0
         if ( !gieface_.containsn(ig, m) ) { // don't include repeated face ind
           itmp  [m] = ig;
           utmp  [m] = (*deface)[j][k];

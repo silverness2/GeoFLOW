@@ -1400,15 +1400,12 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        ib = gieface[j];
        id = GET_HIWORD(gdeface[j]); 
        it = GET_LOWORD(gdeface[j]);
-cout<< "do_face_normals2d: ib=" << ib << " it=" << it << " id=" << id << endl;
        if ( it == GElem_base::FACE ) {
-cout<< "do_face_normals2d: FACE: ib=" << ib << " it=" << it << " id=" << id << endl;
          xm = id == 1 || id == 2 ? 1.0 : -1.0;
          ip = (id+1)%2;
          normals[ip][j] = xm;
        }
        if ( it == GElem_base::VERTEX ) {
-cout<< "do_face_normals2d: VERTEX: ib=" << ib << " it=" << it << " id=" << id << endl;
          switch (it) {
            case 0:
              normals[0][j] = -1.0/sqrt(2.0); 
