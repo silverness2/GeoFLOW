@@ -614,7 +614,7 @@ void GGrid::def_geom_init()
        }
      }
      Jac_.range(ibeg, iend);
-     faceJac_.range(ifbeg, ifend);
+//   faceJac_.range(ifbeg, ifend);
 
      // Set the geom/metric quantities using element data:
      if ( GDIM == 2 ) {
@@ -636,7 +636,7 @@ void GGrid::def_geom_init()
      }
    }
    Jac_.range_reset();
-   faceJac_.range_reset();
+// faceJac_.range_reset();
 
    do_normals();
 
@@ -694,18 +694,20 @@ void GGrid::reg_geom_init()
   
      xe    = &gelems_[e]->xNodes();
 
+#if 0
      // Restrict global data to local scope:
      for ( auto j=0; j<nxy; j++ ) {
        faceNormals_[j].range(ifbeg, ifend); 
 //     bdyNormals_ [j].range(ibbeg, ibend); 
      }
+#endif
      for ( auto j=0; j<dXidX_.size(2); j++ ) {
        for ( auto i=0; i<dXidX_.size(1); i++ )  {
          dXidX_(i,j).range(ibeg, iend);
        }
      }
      Jac_.range(ibeg, iend);
-     faceJac_.range(ifbeg, ifend);
+//   faceJac_.range(ifbeg, ifend);
 
      // Set the geom/metric quantities using element data:
      if ( GDIM == 2 ) {
@@ -720,18 +722,20 @@ void GGrid::reg_geom_init()
 
    } // end, element loop
 
+#if 0
    // Reset global scope:
    for ( auto j=0; j<nxy; j++ ) {
      faceNormals_[j].range_reset();
      bdyNormals_ [j].range_reset();
    }
+#endif
    for ( auto j=0; j<dXidX_.size(2); j++ )  {
      for ( auto i=0; i<dXidX_.size(1); i++ )  {
        dXidX_(i,j).range_reset();
      }
    }
    Jac_.range_reset();
-   faceJac_.range_reset();
+// faceJac_.range_reset();
 
    do_normals();
 
