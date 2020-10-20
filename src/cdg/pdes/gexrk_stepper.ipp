@@ -374,6 +374,7 @@ void GExRKStepper<T>::resize(GINT nstate)
 } // end of method resize
 
 
+#if 0
 //**********************************************************************************
 //**********************************************************************************
 // METHOD     : step_s (1)
@@ -474,7 +475,90 @@ void GExRKStepper<T>::step_s(const Time &t, const State &uin, State &uf, State &
   }
   
 } // end of method step_s (1)
+#endif
 
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD     : step_s (1)
+// DESCRIPTION: Computes one SSP RK step at specified timestep. Note: callback 
+//              to RHS-computation function must be set prior to entry.
+//
+//
+// ARGUMENTS  : t    : time, t^n, for state, uin=u^n
+//              uin  : initial (entry) state, u^n
+//              uf   : forcing tendency
+//              ub   : bdy tendency
+//              dt   : time step
+//              tmp  : tmp space. Must have at least NState*(M+1)+1 vectors,
+//                     where NState is the number of state vectors.
+//              uout : updated state, at t^n+1
+//               
+// RETURNS    : none.
+//**********************************************************************************
+template<typename T>
+void GExRKStepper<T>::step_s(const Time &t, const State &uin, State &uf, State &ub,  
+                           const Time &dt, State &tmp, State &uout)
+{
+
+  GSIZET       i, j, m, n, nstate=uin.size();
+  GFTYPE       dtt, tt;
+  
+
+  resize(nstate);    // check if we need to resize K_
+  
+  for ( j=0,n=0; j<MAX(nstage_-1,1); j++ ) {
+    for ( i=0; i<nstate; i++ )  {
+      K_[j][i] = tmp[n]; // set K storage from tmp space
+      n++;
+    }
+  }
+
+
+  // Stage 1:
+  //   u(1)  = u^n + dt L(u^n);
+  tt  = t;
+  dtt = dt;
+  step_euler(tt, uin, uf, ub, dtt, K_[0]);   
+  if ( bapplybc_  ) bdy_apply_callback_ (tt, K_[0], ub); 
+  GMTK::constrain2sphere(*grid_, K_[0]);
+  for ( i=0; i<nstate; i++ )  {
+    if ( ggfx_ != NULLPTR ) {
+      ggfx_->doOp(*K_[0][i], GGFX_OP_SMOOTH);
+    }
+  }
+ 
+  // Stage 2:
+  tt  = t + dt;
+  dtt = dt;
+  step_euler(tt, K_[0], uf, ub, dtt, K_[1]);   
+  for ( i=0; i<nstate; i++ )  {
+    GMTK::saxpy(*K_[1][i],  0.25, *uin[i], 0.75);
+  }
+  if ( bapplybc_  ) bdy_apply_callback_ (tt, K_[1], ub); 
+  GMTK::constrain2sphere(*grid_, K_[1]);
+  for ( i=0; i<nstate; i++ )  {
+    if ( ggfx_ != NULLPTR ) {
+      ggfx_->doOp(*K_[1][i], GGFX_OP_SMOOTH);
+    }
+  }
+ 
+  // Stage 3:
+  tt  = t + dt;
+  dtt = dt;
+  step_euler(tt, K_[1], uf, ub, dtt, uout);   
+  for ( i=0; i<nstate; i++ )  {
+    GMTK::saxpy(*uout[i],  2.0/3.0, *uin[i], 1.0/3.0);
+  }
+  if ( bapplybc_  ) bdy_apply_callback_ (tt, uout, ub); 
+  GMTK::constrain2sphere(*grid_, uout);
+  for ( i=0; i<nstate; i++ )  {
+    if ( ggfx_ != NULLPTR ) {
+      ggfx_->doOp(*uout[i], GGFX_OP_SMOOTH);
+    }
+  }
+
+} // end of method step_s (1)
 
 //**********************************************************************************
 //**********************************************************************************
