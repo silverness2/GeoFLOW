@@ -4,11 +4,11 @@
 // Description  : Represents the SEM discretization of the full viscous
 //                stress-energy operator. The viscous stress in the 
 //                momentum eqution is
-//                    F_i = 2 [ mu s_{ij}],j + (zeta Div u delta_ij),j,
+//                    F_i = [2  mu s_{ij}],j + (zeta Div u delta_ij),j,
 //                where
 //                    s_{ij} = (u_j,i + u_i,j)/2
 //                and the viscous stress-energy for the energy equation is
-//                    2 [kappa u_i F_i  + lambda Div u delta_i,j) ],j
+//                    [2 kappa u_i F_i  + lambda Div u delta_i,j) ],j
 //                where u_i is the velocity, and mu, the viscosity. Repeated
 //                indices are summed here.  mu, zeta, kappa, lamnda,
 //                may vary in space or be constant. zeta defaults to
@@ -126,7 +126,7 @@ void GStressEnOp<TypePack>::set_kappa(StateComp &kappa)
 
   lambda_  = new GTVector<Ftype>(kappa_->size());
  *lambda_  = *kappa_;
- *lambda_ *= -2.0/3.0;
+ *lambda_ *= -2.0/3.0; // Stokes hyp.
 
 } // end of method set_kappa
 
