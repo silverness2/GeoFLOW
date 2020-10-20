@@ -693,14 +693,16 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
   GExRKStepper<GFTYPE>::Traits rktraits;
   switch ( traits_.isteptype ) {
     case GSTEPPER_EXRK:
+#if 0
       rktraits.bssp   = TRUE;
       rktraits.norder = 3;
       rktraits.nstage = 4;
+#endif
       gexrk_ = new GExRKStepper<Ftype>(rktraits, *grid_);
       gexrk_->setRHSfunction(rhs);
       gexrk_->set_apply_bdy_callback(applybc);
       gexrk_->set_ggfx(ggfx_);
-      // Set 'helper' tmp arrays from main one, utmp_, so that
+      // Set 'helper' tmp arrays from main pool, utmp_, so that
       // we're sure there's no overlap:
       uold_   .resize(traits_.nsolve); // RK-solution at time level n
       uevolve_.resize(traits_.nsolve); // current RK solution
@@ -767,10 +769,12 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
     assert(FALSE && "Implicit time stepping not yet supported");
   }
 
+  typename GDivOp<TypePack>::Traits trgdiv;
+  trgdiv.docollocation = TRUE;
   if ( traits_.bconserved ) {
     assert(FALSE && "Conservation not yet supported");
     gpdv_  = new GpdV<TypePack>(*grid_);
-    gdiv_  = new GDivOp<TypePack>(*grid_);
+    gdiv_  = new GDivOp<TypePack>(*grid_,trgdiv);
 //  gflux_ = new GFlux(*grid_);
     assert( (gmass_     != NULLPTR
 //        && ghelm_     != NULLPTR
@@ -781,7 +785,7 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
   else {
     gadvect_ = new GAdvect<TypePack>(*grid_);
     gpdv_    = new GpdV<TypePack>(*grid_);
-    gdiv_    = new GDivOp<TypePack>(*grid_);
+    gdiv_    = new GDivOp<TypePack>(*grid_,trgdiv);
     assert( (gmass_     != NULLPTR
 //        && ghelm_     != NULLPTR
           && gstressen_ != NULLPTR

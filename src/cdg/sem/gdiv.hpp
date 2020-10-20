@@ -48,10 +48,13 @@ public:
         static_assert(std::is_same<Grid,GGrid>::value,
                "Grid is of incorrect type");
 
-public:
+        // MConv solver traits:
+        struct Traits {
+          GBOOL           docollocation = FALSE;   // colocation or weak forms?
+        };
 
                           GDivOp() = delete;
-                          GDivOp(Grid &grid);
+                          GDivOp(Grid &grid, Traits &traits);
                           GDivOp(const GDivOp &);
                          ~GDivOp();
 
@@ -62,6 +65,7 @@ public:
 
 
 private:
+        Traits                        traits_;    // traits structure
         Mass                         *massop_;    // mass matrix, required
         Grid                         *grid_;      // grid set on construction
 

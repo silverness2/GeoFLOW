@@ -21,8 +21,9 @@
 // RETURNS: none
 //**********************************************************************************
 template<typename TypePack>
-GDivOp<TypePack>::GDivOp(Grid &grid)
+GDivOp<TypePack>::GDivOp(Grid &grid, Traits &traits)
 :
+traits_       (traits),
 grid_         (&grid),
 massop_       (&grid.massop())
 {
@@ -74,44 +75,49 @@ void GDivOp<TypePack>::apply(StateComp &d, State &u, State &utmp, StateComp &div
   StateComp                 *fmass   = &grid_->faceMass();
 
 
-#if 1
-  // div = -D^{T,j} ( d u_j MJ )
-  //     + surf terms:
-  div  = 0.0;
-  for ( auto j=0; j<nxy; j++ ) { 
-     d.pointProd(*u[j], *utmp[1]);
-     grid_->wderiv(*utmp[1], j+1, TRUE, *utmp[0], *utmp[2]);
-     div -= *utmp[2];
-
-#if 0
-     // Elem surf terms:
-     for ( auto f=0; f<gieface->size(); f++ ) {
-       k = (*gieface)[f];
-       div[k] += (*utmp[1])[k] * (*normals)[j][f] * (*fmass)[f];
-     }
-#endif
-  }
-
-#if 0
-  // div_face += d u.n Mass |_face 
-  for ( auto f=0; f<gieface->size(); f++ ) {
-    k = (*gieface)[f];
+  if ( !traits_.docollocation ) {
+    // div = -D^{T,j} ( d u_j MJ )
+    //     + surf terms:
+    div  = 0.0;
     for ( auto j=0; j<nxy; j++ ) { 
-      div[k] += d[k]*(*u[j])[k] * (*normals)[j][f] * (*fmass)[f];
+       d.pointProd(*u[j], *utmp[1]);
+       grid_->wderiv(*utmp[1], j+1, TRUE, *utmp[0], *utmp[2]);
+       div -= *utmp[2];
+
+#if 1
+         // Elem surf terms:
+         for ( auto f=0; f<gieface->size(); f++ ) {
+         k = (*gieface)[f];
+         div[k] += (*utmp[1])[k] * (*normals)[j][f] * (*fmass)[f];
+       }
+#endif
     }
-  }
+
+#if 0
+    // div_face += d u.n Mass |_face 
+    for ( auto f=0; f<gieface->size(); f++ ) {
+      k = (*gieface)[f];
+      for ( auto j=0; j<nxy; j++ ) { 
+        div[k] += d[k]*(*u[j])[k] * (*normals)[j][f] * (*fmass)[f];
+      }
+    }
 #endif
-#else
-  // div = MJ d/dx_j ( d u_j ):
-  d.pointProd(*u[0], *utmp[1]);
-  grid_->deriv(*utmp[1], 1, *utmp[0], div);
-  for ( auto j=1; j<nxy; j++ ) { 
-     d.pointProd(*u[j], *utmp[1]);
-     grid_->deriv(*utmp[1], j+1, *utmp[0], *utmp[2]);
-     div += *utmp[2];
+
   }
-  div *= *(massop_->data());
-#endif
+  else {
+
+    // Do collocation form:
+    // div = MJ d/dx_j ( d u_j ):
+    d.pointProd(*u[0], *utmp[1]);
+    grid_->deriv(*utmp[1], 1, *utmp[0], div);
+    for ( auto j=1; j<nxy; j++ ) { 
+       d.pointProd(*u[j], *utmp[1]);
+       grid_->deriv(*utmp[1], j+1, *utmp[0], *utmp[2]);
+       div += *utmp[2];
+    }
+    div *= *(massop_->data());
+
+  }
 
 
 } // end of method apply (1)
@@ -142,24 +148,40 @@ void GDivOp<TypePack>::apply(State &u, State &utmp, StateComp &div)
   GSIZET     k;
   GTVector<GSIZET>          *gieface = &grid_->gieface() ;
   GTVector<GTVector<Ftype>> *normals = &grid_->faceNormal(); 
+  StateComp                 *mass    =  grid_->massop().data();
   StateComp                 *fmass   = &grid_->faceMass();
 
 
-  // div = -D^{T,j} ( u_j ) 
-  //     + surf. terms:
-  div = 0.0;
-  for ( auto j=0; j<nxy; j++ ) { 
-     grid_->wderiv(*u[j], j+1, TRUE, *utmp[0], *utmp[1]);
-     div -= *utmp[1];
-#if 0
-     for ( auto f=0; f<gieface->size(); f++ ) {
-       k = (*gieface)[f];
-       div[k] += (*u[j])[k] * (*normals)[j][f] * (*fmass)[f];
-     }
+
+  if ( !traits_.docollocation ) {
+
+    // div = -D^{T,j} ( u_j ) 
+    //     + surf. terms:
+    div = 0.0;
+    for ( auto j=0; j<nxy; j++ ) { 
+       grid_->wderiv(*u[j], j+1, TRUE, *utmp[0], *utmp[1]);
+       div -= *utmp[1];
+#if 1
+       for ( auto f=0; f<gieface->size(); f++ ) {
+         k = (*gieface)[f];
+         div[k] += (*u[j])[k] * (*normals)[j][f] * (*fmass)[f];
+       }
 #endif
+    }
+
+  }
+  else {
+
+    // Do collocation form:
+    grid_->deriv(*u[0], 1, *utmp[0], div);
+    for ( auto j=1; j<nxy; j++ ) { 
+      grid_->deriv(*u[j], j+1, *utmp[0], *utmp[1]);
+      div += *utmp[1];
+    }
+    div.pointProd(*mass);
+
   }
 
-
-} // end of method apply (1)
+} // end of method apply (2)
 
 
