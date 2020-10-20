@@ -83,11 +83,13 @@ void GDivOp<TypePack>::apply(StateComp &d, State &u, State &utmp, StateComp &div
      grid_->wderiv(*utmp[1], j+1, TRUE, *utmp[0], *utmp[2]);
      div -= *utmp[2];
 
+#if 0
      // Elem surf terms:
      for ( auto f=0; f<gieface->size(); f++ ) {
        k = (*gieface)[f];
        div[k] += (*utmp[1])[k] * (*normals)[j][f] * (*fmass)[f];
      }
+#endif
   }
 
 #if 0
@@ -149,10 +151,12 @@ void GDivOp<TypePack>::apply(State &u, State &utmp, StateComp &div)
   for ( auto j=0; j<nxy; j++ ) { 
      grid_->wderiv(*u[j], j+1, TRUE, *utmp[0], *utmp[1]);
      div -= *utmp[1];
+#if 0
      for ( auto f=0; f<gieface->size(); f++ ) {
        k = (*gieface)[f];
        div[k] += (*u[j])[k] * (*normals)[j][f] * (*fmass)[f];
      }
+#endif
   }
 
 

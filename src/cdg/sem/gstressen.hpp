@@ -31,8 +31,8 @@
 #include "gmtk.hpp"
 #include "pdeint/equation_base.hpp"
 
-#undef  USE_STOKES
-#undef  DO_FACE
+#define  USE_STOKES
+#undef   DO_FACE
 
 template<typename TypePack>
 class GStressEnOp
