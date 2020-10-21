@@ -1423,6 +1423,8 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
              normals[0][j] = -1.0/sqrt(2.0); 
              normals[1][j] =  1.0/sqrt(2.0); 
              break;
+           default:
+             assert(FALSE);
          }
        }
      }
