@@ -529,7 +529,7 @@ void GExRKStepper<T>::step_s(const Time &t, const State &uin, State &uf, State &
   }
  
   // Stage 2:
-  tt  = t + dt;
+  tt  = t;
   dtt = dt;
   step_euler(tt, K_[0], uf, ub, dtt, K_[1]);   
   for ( i=0; i<nstate; i++ )  {
@@ -544,7 +544,7 @@ void GExRKStepper<T>::step_s(const Time &t, const State &uin, State &uf, State &
   }
  
   // Stage 3:
-  tt  = t + dt;
+  tt  = t;
   dtt = dt;
   step_euler(tt, K_[1], uf, ub, dtt, uout);   
   for ( i=0; i<nstate; i++ )  {
