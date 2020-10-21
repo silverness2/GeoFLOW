@@ -85,8 +85,8 @@ void GDivOp<TypePack>::apply(StateComp &d, State &u, State &utmp, StateComp &div
        div -= *utmp[2];
 
 #if 1
-         // Elem surf terms:
-         for ( auto f=0; f<gieface->size(); f++ ) {
+       // Elem surf terms:
+       for ( auto f=0; f<gieface->size(); f++ ) {
          k = (*gieface)[f];
          div[k] += (*utmp[1])[k] * (*normals)[j][f] * (*fmass)[f];
        }
