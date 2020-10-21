@@ -1,5 +1,5 @@
 //==================================================================================
-// Module       : ginitbdy_user.hpp
+// Module       : gns_inflow_user.hpp
 // Date         : 7/11/19 (DLR)
 // Description  : Boundary initialization function implementations provided
 //                by user

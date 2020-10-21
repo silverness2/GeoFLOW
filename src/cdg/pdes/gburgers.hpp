@@ -17,7 +17,9 @@
 //                the State consists of [*u, *c1, *c2, *c3], where u is the solution
 //                desired (there is only one, and it's a scalar), and ci 
 //                are the unevolved Eulerian velocity components. If solving the 
-//                heat equation, the state consists of [*u] alone.
+//                heat equation, the state consists of [*u] alone. PRESCRIBED quantities
+//                in state vector, such as adv. velocities, must be placed at the end
+//                of the state vector.
 // 
 // 
 //                The dissipation coefficient may also be provided as a spatial field.
@@ -93,17 +95,17 @@ public:
         };
 
         GBurgers() = delete; 
-        GBurgers(Grid &grid, GBurgers<TypePack>::Traits &traits, GTVector<GTVector<GFTYPE>*> &tmp);
+        GBurgers(Grid &grid, GBurgers<TypePack>::Traits &traits);
        ~GBurgers();
         GBurgers(const GBurgers &bu) = default;
         GBurgers &operator=(const GBurgers &bu) = default;
 
-        GTVector<GFTYPE>    &get_nu() { return nu_; };                       // Set nu/viscosity
 
         void                set_steptop_callback(
                             std::function<void(const Time &t, State &u, 
                                                const Time &dt)> callback) 
                              { steptop_callback_ = callback; bsteptop_ = TRUE;}
+        GBurgers<TypePack>::Traits &get_traits() { return traits_; }      // Get traits
                                             
 
 protected:
@@ -111,14 +113,26 @@ protected:
                                       const Time &dt);                    // Take a step
         void                step_impl(const Time &t, const State &uin, State &uf, State &ub,
                                       const Time &dt, State &uout);       // Take a step
+        void                compute_derived_impl(const State &uin, GString sop, 
+                                      State &utmp, State &uout, 
+                                      std::vector<GINT> &iuout);          // Compute derived quantity
+        GINT                tmp_size_impl();                              // required tmp size
+        GINT                solve_size_impl()                             // required solve size
+                            {return traits_.nsolve;}
+        GINT                state_size_impl()                             // required state size
+                            {return traits_.nstate;}
+        std::vector<GINT>  &iforced_impl()                                // required force comps
+                            {return stdiforced_;}
+
+        void                init_impl(State &u, State &tmppool);          // initialize 
+        GTVector<GFTYPE>    &get_nu() { return nu_; };                    // Set nu/viscosity
         GBOOL               has_dt_impl() const {return bvariabledt_;}    // Has dynamic dt?
         void                dt_impl(const Time &t, State &u, Time &dt);   // Get dt
         void                apply_bc_impl(const Time &t, State &u, 
                                           State &ub);                     // Apply bdy conditions
+
 private:
 
-        void                init(GBurgers::Traits &);                     // initialize 
-        GINT                req_tmp_size();                               // required tmp size
         void                dudt_impl  (const Time &t, const State &u, const State &uf, const State &ub,
                                         const Time &dt, Derivative &dudt);
         void                step_exrk  (const Time &t, State &uin, State &uf, State &ub,
@@ -128,6 +142,7 @@ private:
         void                cycle_keep(State &u);
        
 
+        GBOOL               bInit_;         // solver initialized?
         GBOOL               doheat_;        // flag to do heat equation alone
         GBOOL               bpureadv_;      // do pure (linear) advection?
         GBOOL               bconserved_;    // use conservation form?
@@ -154,17 +169,20 @@ private:
         GTVector<GString>
                             valid_types_;   // valid stepping methods supported
         GTVector<GFTYPE>    nu_   ;         // dissipoation
+        std::vector<GINT>   stdiforced_;    // std::verctor for traits_.iforced
         GGrid              *grid_;          // GGrid object
         GExRKStepper<GFTYPE>
                            *gexrk_;         // ExRK stepper, if needed
         GMass              *gmass_;         // mass op
         GMass              *gimass_;        // inverse mass op
-        GAdvect            *gadvect_;       // advection op
+        GAdvect<TypePack>  *gadvect_;       // advection op
         GHelmholtz         *ghelm_;         // Helmholz and Laplacian op
-        GpdV               *gpdv_;          // pdV op
+        GpdV<TypePack>     *gpdv_;          // pdV op
 //      GFlux              *gflux_;         // flux op
         GC_COMM             comm_;          // communicator
         GGFX<GFTYPE>       *ggfx_;          // gather-scatter operator
+        GBurgers<TypePack>::Traits         
+                            traits_;        // solver traits
 
         std::function<void(const Time &t, State &u, const Time &dt)>
                            steptop_callback_;

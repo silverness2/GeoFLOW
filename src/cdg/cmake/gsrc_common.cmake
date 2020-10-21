@@ -29,12 +29,11 @@
  set(CDG_SEM_SRC    ${GHOME}/sem/gelem_base.cpp
                     ${GHOME}/sem/gmass.cpp
                     ${GHOME}/sem/ghelmholtz.cpp
-                    ${GHOME}/sem/gpdv.cpp
-                    ${GHOME}/sem/gadvect.cpp
     )
 
  set(CDG_USER_SRC  
-                    ${GHOME}/user/bdy/gspecbdy_user.cpp 
+                    ${GHOME}/user/bdy/gspecbdy_user.cpp
+                    ${GHOME}/user/bdy/gns_inflow_user.cpp
                     ${GHOME}/user/force/ginitfb.cpp 
                     ${GHOME}/user/force/ginitforce_direct_user.cpp 
                     ${GHOME}/user/force/ginitfps.cpp 

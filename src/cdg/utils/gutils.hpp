@@ -40,6 +40,10 @@ void           unique(GSIZET ibeg, GSIZET iend, GTVector<GSIZET> &iunique);
 template<typename T>
 void           coord_dims(const geoflow::tbox::PropertyTree& ptree, GTVector<T> &xmin, GTVector<T> &xmax);
 
+template<typename T>
+void compute_temp(const GTVector<T> &e, const GTVector<T> &d, const GTVector<T> &cv,  GTVector<T> &temp);
+template<typename T>
+void compute_p(const GTVector<T> &Temp, const GTVector<T> &d, const GTVector<T> &q, GFTYPE R, GTVector<T> &p);
 
 } // end, namespace geoflow
 

@@ -1,4 +1,4 @@
-function [xg  ug h] = boxplot1d(svar, tindex, plottype, symb, jindex)
+function [xg  ug h] = boxplot1d(svar, tindex, blog, symb, jindex)
 %
 % Does a line plot 2D GeoFLOW Posix data in x-direction, 
 % at fixed specified y-index
@@ -9,10 +9,11 @@ function [xg  ug h] = boxplot1d(svar, tindex, plottype, symb, jindex)
 %  Input:
 %    s1var   : prefix for field file. Required
 %    tindex  : time index for output. Required
-%    plottype: array with 2 elems; a 1 in one element
+%    blog    : array with 2 elems; a 1 in one element
 %              implies log on correspoing axis. 
 %              I.e., [1 0] means log-lin, [0 1] lin-log, 
 %              [1 1], log-log. If empty, no plot is done.
+%    dtype   : data file type: 'POSIX', 'COLL'. Default is 'COLL'
 %    symb    : plot symbol. Default is 'k-' (blaxk solid)
 %    jindex  : j-index. Default is 0.
 %
@@ -25,21 +26,34 @@ if nargin < 2
   error('must specify svar and tindex');
 end 
 if nargin < 3
-  plottype = [0 0];
+ blog = [0 0];
+ dtype = 'COLL';
+ symb  = 'k-';
+ jindex   = 1;
 end 
 if nargin < 4
-  symb     = 'k-';
+ dtype = 'COLL';
+ symb     = 'k-';
+ jindex   = 1;
 end 
 if nargin < 5
-  jindex   = 1;
+ symb     = 'k-';
+ jindex   = 1;
 end 
-sz = size(plottype)
-if ~isempty(plottype) && sz(1)*sz(2) ~= 2 
-  error('incorrect plottype specification');
+if nargin < 6
+ jindex   = 1;
+end 
+sz = size(blog)
+if ~isempty(blog) && sz(1)*sz(2) ~= 2 
+  error('incorrect glob specification');
+end
+
+if ~strcmp(dtype,'POSIX') & ~strcmp(dtype,'COLL')
+  error(['Invalid dtype: ' dtype]);
 end
 
 doplot = 1
-if isempty(plottype)
+if isempty(blog)
   doplot = 0
 end
 
@@ -49,17 +63,25 @@ szfont = 16;
 ntasks = 2;
 scoord = {'xgrid','ygrid' 'zgrid'};
 
-d = dir('xgrid.*');
-ntasks = length(d);
-if ntasks<= 0 
-  error('Grid data missing or incomplete');
+ntasks = 1;
+if strcmp(dtype,'POSIX')
+  d = dir('xgrid.*');
+  ntasks = length(d);
+  if ntasks<= 0
+    error('Grid data missing or incomplete');
+  end
 end
 
 % Find global size:
 tsize = zeros(ntasks,1); % total size per task
 for itask = 0:ntasks-1
-  fname = sprintf('%s.%06d.%05d.out', svar, tindex, itask);
-  [u dim nelems porder gtype icycle time] = rgeoflow(fname, 8, 'ieee-le', 1);
+  if strcmp(dtype,'POSIX')
+    fname = sprintf('%s.%06d.%05d.out', svar, tindex, itask);
+  elseif dtype == 'COLL'
+    fname = sprintf('%s.%06d.out', svar, tindex);
+  end
+
+  [u dim nelems porder gtype icycle time mvar] = rgeoflow(fname, 8, 'ieee-le', 1);
   NN = double(porder + 1); 
 % lelem = prod(NN(1:dim));  % data length per element
   tsize (itask+1) = NN(1)*nelems;
@@ -84,15 +106,24 @@ for itask = 0:ntasks-1
 
   % Read node coords:
   for j=1:2
-    fname = sprintf('%s.%05d.out', scoord{j}, itask);
-    [x{j} dim nelems porder gtype icycle time] = rgeoflow(fname, 8, 'ieee-le');
+    if strcmp(dtype,'POSIX')
+      fname = sprintf('%s.%06d.%05d.out', scoord{j}, 0, itask);
+    elseif dtype == 'COLL'
+      fname = sprintf('%s.%06d.out', scoord{j}, 0);
+    end
+    [x{j} dim nelems porder gtype icycle time mvar] = rgeoflow(fname, 8, 'ieee-le');
   end
   if ( dim ~= 2 )
     error('Grid must be 2D');
   end 
 
-  fname = sprintf('%s.%06d.%05d.out', svar, tindex, itask);
-  [u dim nelems porder gtype icycle time] = rgeoflow(fname, 8, 'ieee-le');
+  if strcmp(dtype,'POSIX')
+    fname = sprintf('%s.%06d.%05d.out', svar, tindex, itask);
+  elseif dtype == 'COLL'
+    fname = sprintf('%s.%06d.out', svar, tindex);
+  end
+
+  [u dim nelems porder gtype icycle time mvar] = rgeoflow(fname, 8, 'ieee-le');
 
  
   NN = double(porder + 1); 
@@ -143,16 +174,16 @@ ug    = ug(I);
 h = -1;
 if doplot > 0
   figure
-  if ( plottype(1) == 0 && plottype(2) == 0 )
+  if ( blog(1) == 0 && blog(2) == 0 )
     h = plot(xg, ug, symb);
-  elseif ( plottype(1) == 1 && plottype(2) == 0 )
+  elseif ( blog(1) == 1 && blog(2) == 0 )
     h = semilogx(abs(xg), ug, symb);
-  elseif ( plottype(1) == 0 && plottype(2) == 1 )
+  elseif ( blog(1) == 0 && blog(2) == 1 )
     h = semilogy(xg, abs(ug), symb);
-  elseif ( plottype(1) == 1 && plottype(2) == 1 )
+  elseif ( blog(1) == 1 && blog(2) == 1 )
     h = loglog(abs(xg), abs(ug), symb);
   else
-    error('invalid plottype');
+    error('invalid blog');
   end
 end
 

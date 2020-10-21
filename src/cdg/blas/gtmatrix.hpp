@@ -58,11 +58,10 @@ public:
          void               operator+=(const T);
          void               operator-=(const T);
          void               operator*=(const T);            // multiplication by const Mat *= const
-
          void               operator+=(const GTMatrix &);
          void               operator-=(const GTMatrix &);
 
-         GTMatrix        operator*(const T);             // right multiplication: Matrix * const
+         GTMatrix           operator*(const T);             // right multiplication: Matrix * const
 
          GTVector<T>        operator*(const GTVector<T> &); // right multiplication: Matrix * Vector
 

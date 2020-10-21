@@ -12,7 +12,7 @@
 //                really just a weak Laplacian operator. 
 //                Note: this operator will fail if the grid contains more 
 //                      than a single element type.
-// Copyright    : Copyright 2018. Colorado State University. All rights reserved
+// Copyright    : Copyright 2018. Colorado State University. All rights reserved.
 // Derived From : GLinOp
 //==================================================================================
 
@@ -141,7 +141,7 @@ void GHelmholtz::def_prod(GTVector<GFTYPE> &u,
   for ( GSIZET i=0; i<GDIM; i++ ) gdu[i] = utmp[i+GDIM];
 
   // Compute derivatives of u:
-  GMTK::compute_grefderivs(*grid_, u, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj u
+  grid_->compute_grefderivs(u, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj u
 
   if ( buse_metric_ ) {
     // Compute Gij (D^j u). Recall, Gij contain mass: 
@@ -170,7 +170,7 @@ void GHelmholtz::def_prod(GTVector<GFTYPE> &u,
   }
 
   // Now compute DT^j ( T^j ):
-  GMTK::compute_grefdiv(*grid_, gdu, etmp1_, TRUE, uo); // Compute 'divergence' with DT_j
+  grid_->compute_grefdiv(gdu, etmp1_, TRUE, uo); // Compute 'divergence' with DT_j
 
   // If p_ is constant, multiply at the end:
   if ( p_ != NULLPTR ) {
@@ -199,7 +199,7 @@ void GHelmholtz::def_prod(GTVector<GFTYPE> &u,
 // METHOD : embed_prod
 // DESC   : Compute application of this operator to input vector for
 //          GE_2DEMBEDDED elements
-//          NOTE: must have 2*GDIM+3 utmp vectors set via set_tmp method
+//          NOTE: must have 2*GDIM utmp vectors set via set_tmp method
 // ARGS   : u  : input vector
 //          uo : output (result) vector
 //          utmp: tmp space
@@ -210,7 +210,7 @@ void GHelmholtz::embed_prod(GTVector<GFTYPE> &u,
                             GTVector<GTVector<GFTYPE>*> &utmp,
                             GTVector<GFTYPE> &uo)
 {
-  assert( GDIM == 2 && utmp.size() >= 2*GDIM+3
+  assert( GDIM == 2 && utmp.size() >= 2*GDIM+1
        && "Insufficient temp space specified");
 
   GString serr = "GHelmholtz::embed_prod: ";
@@ -240,10 +240,10 @@ void GHelmholtz::embed_prod(GTVector<GFTYPE> &u,
 // p is 'viscosity', M is mass matrix, and q a factor for M
 
   // Re-arrange local temp space for divergence:
-  for ( GSIZET i=0; i<GDIM; i++ ) gdu[i] = utmp[i+GDIM+1];
+  for ( GSIZET i=0; i<GDIM; i++ ) gdu[i] = utmp[i+GDIM];
 
   // Compute reference-space gradient of u:
-  GMTK::compute_grefderivs(*grid_, u, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj u
+  grid_->compute_grefderivs(u, etmp1_, FALSE, utmp); // utmp stores tensor-prod derivatives, Dj u
 
   if ( buse_metric_ ) {
     // Compute Gij (D^j u). Recall, Gij contain mass, Jac: 
@@ -272,7 +272,7 @@ void GHelmholtz::embed_prod(GTVector<GFTYPE> &u,
 
   // gdu now hold Ti = p Gij D^j u, i = 0, GDIM-1
   // Now compute DT^j ( t^j ):
-  GMTK::compute_grefdiv(*grid_, gdu, etmp1_, TRUE, uo); // Compute 'divergence' with DT_j
+  grid_->compute_grefdiv(gdu, etmp1_, TRUE, uo); // Compute 'divergence' with DT_j
 
   // If p_ is constant, multiply at the end:
   if ( p_ != NULLPTR ) {
@@ -335,7 +335,7 @@ void GHelmholtz::reg_prod(GTVector<GFTYPE> &u,
 
 
   // Compute deriviatives of u:
-  GMTK::compute_grefderivs (*grid_, u, etmp1_, FALSE, gdu); // utmp stores tensor-prod derivatives
+  grid_->compute_grefderivs (u, etmp1_, FALSE, gdu); // gdu stores tensor-prod derivatives
 
   // Multiply by (element-size const) metric factors, possibly x-dependent 
   // 'viscosity', and mass:
@@ -356,7 +356,7 @@ void GHelmholtz::reg_prod(GTVector<GFTYPE> &u,
 
 
   // Take 'divergence' with D^T:
-  GMTK::compute_grefdiv  (*grid_, gdu, etmp1_, TRUE, uo); // Compute 'divergence' with W^-1 D_j
+  grid_->compute_grefdiv  (gdu, etmp1_, TRUE, uo); // Compute 'divergence' with W^-1 D_j
 
 
   // If p_ is constant, multiply at the end:

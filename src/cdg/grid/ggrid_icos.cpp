@@ -17,11 +17,10 @@
 #include <cmath>
 //#include "omp.h"  // Are we calling API functions ?
 #include "gspecbdy_factory.hpp"
-#include "gupdatebdy_factory.hpp"
 #include "ginitstate_factory.hpp"
+#include "gupdatebdy_factory.hpp"
 #include "ggrid_icos.hpp"
 #include "gtpoint.hpp"
-#include "gmtk.hpp"
 #include "gutils.hpp"
 
 using namespace geoflow::tbox;
@@ -874,18 +873,19 @@ void GGridIcos::print(const GString &filename, GCOORDSYST icoord)
 // DESC   : Configure 3d spherical boundaries from ptree
 // ARGS   : 
 //          ptree : main prop tree 
-//          igbdy : For each natural/canonical global boundary face,
+//          igbdyf : For each natural/canonical global boundary face,
 //                  gives vector of global bdy ids. Allocated here.
-//          igbdyt: bdy type ids for each index in igbdy. Allocated here.
+//          igbdyft: bdy type ids for each index in igbdyf. Allocated here.
 // RETURNS: none.
 //**********************************************************************************
 void GGridIcos::config_bdy(const geoflow::tbox::PropertyTree &ptree, 
-                           GTVector<GTVector<GSIZET>> &igbdy, 
-                           GTVector<GTVector<GBdyType>> &igbdyt)
+                           GTVector<GTVector<GSIZET>> &igbdyf, 
+                           GTVector<GTVector<GBdyType>> &igbdyft)
 {
   // Cycle over all geometric boundaries, and configure:
 
   GBOOL              bret;
+  GSIZET             nind;
   GTVector<GSIZET>   itmp;
   GTVector<GFTYPE>   rbdy(2);
   GTVector<GString>  bdynames(2);
@@ -896,8 +896,8 @@ void GGridIcos::config_bdy(const geoflow::tbox::PropertyTree &ptree,
   stBdyBlock         stblock;
 
   // Clear input arrays:
-  igbdy .clear();
-  igbdyt.clear();
+  igbdyf .clear();
+  igbdyft.clear();
 
   if ( ndim_ == 2 ) return; // no boundaries to configure
  
@@ -919,8 +919,8 @@ void GGridIcos::config_bdy(const geoflow::tbox::PropertyTree &ptree,
   rbdy[0] = radiusi_;
   rbdy[1] = radiuso_;
 
-  igbdy.resize(2); // 2 canonical bdys
-  igbdyt.resize(2); // 2 canonical bdys
+  igbdyf.resize(2); // 2 canonical bdys
+  igbdyft.resize(2); // 2 canonical bdys
 
   bdy_update_list_.resize(2*GDIM);
  
@@ -935,8 +935,16 @@ void GGridIcos::config_bdy(const geoflow::tbox::PropertyTree &ptree,
     bdytree      = ptree.getPropertyTree(sbdy);
     bdyclass     = bdytree.getValue<GString>("bdy_class", "uniform");
     find_bdy_ind3d(rbdy[j], itmp); 
-    igbdy[j].resize(itmp.size()); igbdy[j] = itmp;
-    igbdyt[j].resize(itmp.size()); igbdyt[j] = GBDY_NONE;
+    igbdyf [j].resize(itmp.size()); igbdyf [j] = itmp;
+    igbdyft[j].resize(itmp.size()); igbdyft[j] = GBDY_NONE;
+    nind = 0;
+    for ( auto k=0; k<igbdyf.size(); k++ ) nind += igbdyf[k].size();
+    this->igbdy_  .resize(nind); // vol indices of bdy nodes in base; bdy update needs this
+    nind = 0;
+    for ( auto k=0; k<igbdyf.size(); k++ ) { // over can. bdy faces
+      for ( auto i=0; i<igbdyf[k].size(); i++ ) this->igbdy_[nind++] = igbdyf[k][i];
+    }
+
     geoflow::get_bdy_block(bdytree, stblock);
     if ( "uniform" == bdyclass ) { // uniform bdy conditions
       assert(!stblock.tbdy.contains(GBDY_PERIODIC) && "Invalid boundary condition");
@@ -944,7 +952,7 @@ void GGridIcos::config_bdy(const geoflow::tbox::PropertyTree &ptree,
       for ( auto k=0; k<stblock.tbdy.size(); k++ ) { 
         base_ptr = GUpdateBdyFactory<BdyTypePack>::build(ptree, sbdy, *this,  j, 
                                             stblock.tbdy[k], stblock.istate[k], itmp);
-        if ( stblock.tbdy[k] != GBDY_NONE ) igbdyt[j] = stblock.tbdy[k];
+        if ( stblock.tbdy[k] != GBDY_NONE ) igbdyft[j] = stblock.tbdy[k];
         bdy_update_list_[j].push_back(base_ptr);
       }
     }
@@ -961,9 +969,9 @@ void GGridIcos::config_bdy(const geoflow::tbox::PropertyTree &ptree,
                                               stblock.tbdy[k], stblock.istate[k], itmp);
           
           for ( auto m=0; m<itmp.size(); m++ ) {
-            if ( igbdy[j].contains(itmp[m]) ) igbdyt[j][m] = stblock.tbdy[k];
+            if ( igbdyf[j].contains(itmp[m]) ) igbdyft[j][m] = stblock.tbdy[k];
           }
-          if ( stblock.tbdy[k] != GBDY_NONE ) igbdyt[j] = stblock.tbdy[k];
+          if ( stblock.tbdy[k] != GBDY_NONE ) igbdyft[j] = stblock.tbdy[k];
           bdy_update_list_[j].push_back(base_ptr);
         }
       } 
@@ -992,9 +1000,9 @@ void GGridIcos::find_bdy_ind3d(GFTYPE radius, GTVector<GSIZET> &ibdy)
   GTPoint<GFTYPE> pt(ndim_);
 
   ibdy.clear();
-  eps = 100*std::numeric_limits<GFTYPE>::epsilon();
+  eps = 1.0e4*std::numeric_limits<GFTYPE>::epsilon();
 
-  for ( auto i=0; i<xNodes_[0].size(); i++ ) { // face 0
+  for ( auto i=0; i<xNodes_[0].size(); i++ ) { 
       r = sqrt(pow(xNodes_[0][i],2)+pow(xNodes_[1][i],2)+pow(xNodes_[2][i],2));
       if ( FUZZYEQ(r, radius, eps) ) {
         ibdy.push_back(i);
@@ -1008,16 +1016,30 @@ void GGridIcos::find_bdy_ind3d(GFTYPE radius, GTVector<GSIZET> &ibdy)
 //**********************************************************************************
 // METHOD : do_face_normals
 // DESC   : Compute normals to each element face
-// ARGS   : none 
+// ARGS   : 
+//          dXdXi     : matrix of dX_i/dXi_j matrix elements, s.t.
+//                      dXdX_i(i,j) = dx^j/dxi^i
+//          gieface   : vector of face indices into global volume fields 
+//                      for all facase
+//          gdeface   : description for each face node
+//          normals   : vector of normal components
 // RETURNS: none
 //**********************************************************************************
-void GGridIcos::do_face_normals()
+void GGridIcos::do_face_normals(GTMatrix<GTVector<GFTYPE>> &dXdXi,
+                                GTVector<GSIZET> &gieface,
+                                GTVector<GUINT>  &gdeface,
+                                GTVector<GFTYPE> &face_mass,
+                                GTVector<GTVector<GFTYPE>> &normals)
 {
 
   #if defined(_G_IS2D)
-    do_face_normals2d();
+
+    do_face_normals2d(dXdXi, gieface, gdeface, face_mass, normals);
+
   #elif defined(_G_IS3D)
-    do_face_normals3d();
+
+    do_face_normals3d(dXdXi, gieface, gdeface, face_mass, normals);
+
   #else
     #error Invalid problem dimensionality
   #endif
@@ -1029,14 +1051,55 @@ void GGridIcos::do_face_normals()
 //**********************************************************************************
 // METHOD : do_face_normals2d
 // DESC   : Compute normals to each element face in 2d
-// ARGS   : none 
+// ARGS   : 
+//          dXdXi     : matrix of dX_i/dXi_j matrix elements, s.t.
+//                      dXdX_i(i,j) = dx^j/dxi^i
+//          gieface   : vector of face indices into global volume fields 
+//                      for all facase
+//          gdeface   : description for each face node
+//          normals   : vector of normal components
 // RETURNS: none
 //**********************************************************************************
-void GGridIcos::do_face_normals2d()
+void GGridIcos::do_face_normals2d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
+                                  GTVector<GSIZET> &gieface,
+                                  GTVector<GUINT>  &gdeface,
+                                  GTVector<GFTYPE> &face_mass,
+                                  GTVector<GTVector<GFTYPE>> &normals)
 {
 
-  // Cycle through local elem face indices to set
-  // normals. Taken in order, these should correspond
+   GINT              ib, ic, id,  ip;
+   GFTYPE            tiny;
+   GFTYPE            xm;
+   GTPoint<GFTYPE>   kp(3), xp(3), p1(3), p2(3);
+
+   tiny  = 100.0*std::numeric_limits<GFTYPE>::epsilon();
+   kp    = 0.0;
+   kp[2] = 1.0; // k-vector
+
+
+   if ( this->gtype_ == GE_DEFORMED
+    ||  this->gtype_ == GE_2DEMBEDDED ) {
+     // Bdy normal is hat{k} X dvec{X} / dxi_iedge,
+     // for face:
+     for ( auto j=0; j<gieface.size(); j++ ) { // all points on iedge
+       ib = gieface  [j];
+       id = gdeface  [j];
+       ip = id == 1 || id == 3 ? 0 : 1;
+       for ( auto i=0; i<dXdXi.size(2); i++ ) { // over _X_
+         p1[i] = dXdXi(ip,i)[ib];
+       }
+       kp.cross(p1, xp);   // xp = k X p1
+       ip = id%2;
+       face_mass  [j] *= xp.mag(); // |k X d_X_/dxi_ip| is face Jac
+       xp.unit();
+       for ( ic=0; ic<GDIM && fabs(xp[ic]) < tiny; ic++ );
+       assert(ic < GDIM); // no normal components > 0
+       for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
+     }
+   }
+   else {
+     assert(FALSE);
+   }
 
 
 } // end, method do_face_normals2d
@@ -1046,12 +1109,46 @@ void GGridIcos::do_face_normals2d()
 //**********************************************************************************
 // METHOD : do_face_normals3d
 // DESC   : Compute normals to each element face in 3d
-// ARGS   : none 
+// ARGS   : 
+//          dXdXi     : matrix of dX_i/dXi_j matrix elements, s.t.
+//                      dXdX_i(i,j) = dx^j/dxi^i
+//          gieface   : vector of face indices into global volume fields 
+//                      for all facase
+//          gdeface   : description for each face node
+//          normals   : vector of normal components
 // RETURNS: none
 //**********************************************************************************
-void GGridIcos::do_face_normals3d()
+void GGridIcos::do_face_normals3d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
+                                  GTVector<GSIZET> &gieface,
+                                  GTVector<GUINT>  &gdeface,
+                                  GTVector<GFTYPE> &face_mass,
+                                  GTVector<GTVector<GFTYPE>> &normals)
 {
+   GINT            ib, ic, id;
+   GINT            ixi[6][2] = { {0,2}, {1,2}, {2,0},
+                                 {2,1}, {1,0}, {0,1} };
+   GFTYPE          tiny;
+   GTPoint<GFTYPE> xp(3), p1(3), p2(3);
 
+   tiny  = 100.0*std::numeric_limits<GFTYPE>::epsilon();
+
+   // Bdy normal is dvec{X} / dxi_xi X dvec{X} / dxi_eta
+   for ( auto j=0; j<gieface.size(); j++ ) { // all points on iedge
+     ib = gieface[j];
+     id = gdeface[j];
+     // Find derivs of _X_ wrt face's reference coords;
+     // the cross prod of these vectors is the normal:
+     for ( auto i=0; i<dXdXi.size(2); i++ ) { // d_X_/dXi
+       p1[i] = dXdXi(ixi[j][0],i)[ib]; // d_X_/dxi
+       p2[i] = dXdXi(ixi[j][1],i)[ib]; // d_X_/deta
+     }
+     p1.cross(p2, xp);   // xp = p1 X p2
+     face_mass  [j] *= xp.mag(); // d_X_/dxi X d_X_/deta| is face Jac
+     xp.unit();
+     for ( ic=0; ic<GDIM && fabs(xp[ic]) < tiny; ic++ );
+     assert(ic < GDIM); // no normal components > 0
+     for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
+   }
 
 } // end, method do_face_normals3d
 

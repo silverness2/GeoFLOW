@@ -9,6 +9,7 @@
 #define SRC_PDEINT_EQUATION_BASE_HPP_
 
 #include <functional>
+#include "filter_base.hpp"
 
 
 namespace geoflow {
@@ -26,7 +27,9 @@ class EquationBase {
 public:
 	using Types      = TypePack;
 	using State      = typename Types::State;
+	using StateComp  = typename Types::StateComp;
         using StateInfo  = typename Types::StateInfo;
+        using Mass       = typename Types::Mass;
 	using Grid       = typename Types::Grid;
 	using Value      = typename Types::Value;
 	using Derivative = typename Types::Derivative;
@@ -34,6 +37,8 @@ public:
 	using Jacobian   = typename Types::Jacobian;
 	using CompDesc   = typename Types::CompDesc;
 	using Size       = typename Types::Size;
+        using FilterBasePtr = std::shared_ptr<FilterBase<Types>>;
+	using FilterList    = std::vector<FilterBasePtr>;
 
 
 /*
@@ -57,7 +62,8 @@ public:
 */
 
 
-	EquationBase() { update_bdy_callback_ = nullptr; }
+	EquationBase() : update_bdy_callback_ (nullptr) 
+                       {}
 	EquationBase(const EquationBase& eb) = default;
 	virtual ~EquationBase() = default;
 	EquationBase& operator=(const EquationBase& eb) = default;
@@ -134,6 +140,56 @@ public:
 		this->step_impl(t,uin,uf,ub,dt,uout);
 	}
 
+	/** Initialize solver
+	 *
+	 * \param[in]     u     state vectors
+	 * \param[in]     utmp  tmp state vectors
+	 */
+	void init(State &u, State& utmp){
+		this->init_impl(u, utmp);
+	}
+
+	/** Compute derived quantity 
+	 *
+	 * \param[in]     u     state vector
+	 * \param[in]     sop   operation/quantity to compute
+	 * \param[in]     utmp  tmp state vectors
+	 * \param[out]    uout  resultant quantity
+	 * \param[out]    iuout indices pointing to quantity(-ies) in uout
+	 */
+	void compute_derived(const State& u, const std::string sop, State& utmp, State& uout, std::vector<int>& iuout){
+                 this->compute_derived_impl(u, sop, utmp, uout, iuout);
+        }
+
+  	/** Return state size 
+         * 
+         */
+        int state_size(){
+		return this->state_size_impl();
+        }
+
+  	/** Return solve size 
+         * 
+         */
+        int solve_size(){
+		return this->solve_size_impl();
+        }
+
+  	/** Return tmp size 
+         * 
+         */
+        int tmp_size(){;
+		return this->tmp_size_impl();
+        }
+
+  	/** Return state component ids that are forced
+         * 
+         */
+        std::vector<int>& iforced(){
+		return this->iforced_impl();
+        }
+
+
 	/** Return StateInfo data
          * 
          */
@@ -149,6 +205,27 @@ public:
 	 */
 	virtual void set_bdy_update_callback(std::function<void(const Time& t, State& u, State& ub)> fcn){
 		update_bdy_callback_ = fcn;
+	}
+
+
+	/** Set filter list: 
+         *    one filter for each evolved state comp
+	 *    
+	 *
+	 * \param[in]     pFilter
+	 */
+	virtual void set_filter_list(FilterList &pFilter) {
+		filterList_.resize(pFilter.size());;
+		filterList_ = pFilter;
+	}
+
+	/** Get filter list: 
+	 *    
+	 *
+	 * \param[out]     FilterList &
+	 */
+	virtual FilterList& get_filter_list() {
+		return filterList_;
 	}
 
 protected:
@@ -178,10 +255,41 @@ protected:
 	 */
 	virtual void step_impl(const Time& t, const State& uin, State& uf, State& ub, const Time& dt, State& uout) = 0;
   
+	/**
+	 * Must be provided by implementation
+	 */
+	virtual void init_impl(State& u, State& utmp) = 0;
+  
+	/**
+	 * Must be provided by implementation
+	 */
+	virtual void compute_derived_impl(const State& u, const std::string sop, State& utmp, State& uout, std::vector<int>& iuout) = 0;
+  
+	/**
+	 * Must be provided by implementation
+	 */
+	virtual int state_size_impl() = 0;
+  
+	/**
+	 * Must be provided by implementation
+	 */
+	virtual int solve_size_impl() = 0;
+  
+	/**
+	 * Must be provided by implementation
+	 */
+	virtual int tmp_size_impl() = 0;
+  
+	/**
+	 * Must be provided by implementation
+	 */
+	virtual std::vector<int> &iforced_impl() = 0;
+  
         std::function<void(const Time &t, State &u, State &ub)> 
                  update_bdy_callback_;
 
-        StateInfo stateinfo_;
+        StateInfo  stateinfo_;
+        FilterList filterList_;
 
 };
 

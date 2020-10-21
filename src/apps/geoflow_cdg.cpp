@@ -69,12 +69,6 @@ int main(int argc, char **argv)
     GTimerStop("gen_grid");
 
     //***************************************************
-    // Create state and tmp space:
-    //***************************************************
-    EH_MESSAGE("geoflow: allocate tmp space...");
-    allocate(ptree_);
-
-    //***************************************************
     // Initialize gather/scatter operator:
     //***************************************************
     EH_MESSAGE("geoflow: initialize gather/scatter...");
@@ -102,6 +96,18 @@ int main(int argc, char **argv)
     //***************************************************
     EH_MESSAGE("geoflow: create equation...");
     create_equation(ptree_, pEqn_);
+
+    //***************************************************
+    // Create state and tmp space:
+    //***************************************************
+    EH_MESSAGE("geoflow: allocate tmp space...");
+    allocate(ptree_);
+
+    //***************************************************
+    // Initialize PDE:
+    //***************************************************
+    EH_MESSAGE("geoflow: initialize PDE...");
+    pEqn_->init(u_, utmp_);
 
     //***************************************************
     // Create the mixer (to update forcing)
@@ -212,8 +218,7 @@ void steptop_callback(const Time &t, State &u, const Time &dt)
 //**********************************************************************************
 void create_equation(const PropertyTree &ptree, EqnBasePtr &pEqn)
 {
-  pEqn = EquationFactory<MyTypes>::build(ptree, *grid_, utmp_);
-
+  pEqn = EquationFactory<MyTypes>::build(ptree, *grid_);
 
 #if 0
   std::function<void(const Time &t, State &u, const Time &dt)> 
@@ -277,6 +282,8 @@ std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>> &pObservers
     State   dummy(1);
 
     if ( bench_ ) return; // don't need IO
+
+    stateinfo = pEqn->stateinfo();
 
     std::vector<GString> default_obslist; default_obslist.push_back(dstr);
     std::vector<GString> obslist = ptree.getArray<GString>("observer_list",default_obslist);
@@ -473,47 +480,13 @@ void do_bench(GString fname, GSIZET ncyc)
 void allocate(const PropertyTree &ptree)
 {
 
-  GBOOL        doheat, bpureadv, bforced;
-  GINT         nladv, nforced;
-  std::vector<GINT>
-               ibounded, iforced, diforced;
-  std::string  sgrid;
-  std::string  eqn_name  = ptree.getValue<GString>("pde_name");
-  PropertyTree eqn_ptree = ptree.getPropertyTree  (eqn_name);
-  PropertyTree stp_ptree = ptree.getPropertyTree  ("stepper_props");
-  bforced                = ptree.getValue<GBOOL>  ("use_forcing",false);
+  std::vector<GINT> *iforced;
 
-  assert("3##$%!62ahTze32934Plq1C4" != eqn_name
-      && "pde_name required");
-
-  if ( "pde_burgers" == eqn_name ) {
-    sgrid     = ptree.getValue<GString>  ("grid_type");
-    doheat    = eqn_ptree.getValue<bool> ("doheat",false);
-    bpureadv  = eqn_ptree.getValue<bool> ("bpureadv",false);
-    for ( auto i=0; i<GDIM; i++ ) diforced.push_back(i);
-    iforced   = eqn_ptree.getArray<GINT> ("forcing_comp", diforced);
-    nladv     = 0;
-    nsolve_   = sgrid == "grid_icos" ? 3 : GDIM;
-    nstate_   = nsolve_;
-    if ( doheat || bpureadv ) {
-      if ( bpureadv  ) {
-        nladv     = sgrid == "grid_icos" ? 3 : GDIM;
-      }
-      nsolve_   = 1;
-    }
-    nstate_   = nladv + nsolve_;
-    
-    if ( "grid_icos" != sgrid ) {
-      ibounded.resize(nsolve_);
-      for ( auto i=0; i<nsolve_; i++ ) ibounded.push_back(i);
-    }
-    c_.resize(nladv);
-    ntmp_     = 27;
-
-  } // end, pde_burgers test
+  nsolve_ =  pEqn_->solve_size();
+  nstate_ =  pEqn_->state_size();
+  ntmp_   =  pEqn_->tmp_size();
+  iforced = &pEqn_->iforced();
   
-  nforced = MIN(nsolve_,iforced.size());
-
   u_   .resize(nstate_);                // state
   ub_  .resize(nstate_); ub_ = NULLPTR; // bdy state array
   uf_  .resize(nstate_); uf_ = NULLPTR; // forcing array
@@ -521,17 +494,14 @@ void allocate(const PropertyTree &ptree)
 
   for ( auto j=0; j<u_. size(); j++ ) u_                [j] = new GTVector<GFTYPE>(grid_->size());
 
-  for ( auto j=0; j<ibounded.size(); j++ ) ub_[ibounded[j]] = new GTVector<GFTYPE>(grid_->nbdydof());
-
-  if ( bforced ) {
-    for ( auto j=0; j<nforced      ; j++ ) uf_ [iforced[j]] = new GTVector<GFTYPE>(grid_->ndof());
-  }
+  for ( auto j=0; j<iforced->size(); j++ ) uf_ [(*iforced)[j]] = new GTVector<GFTYPE>(grid_->ndof());
 
   for ( auto j=0; j<utmp_   .size(); j++ ) utmp_        [j] = new GTVector<GFTYPE>(grid_->size());
 
   // If linear adv. prescribed var is set, 
   // point to correct area of u_:
   for ( GINT j=0; j<c_.size(); j++ ) c_[j] = u_[j+1];
+
 
 } // end method allocate
 
@@ -627,6 +597,7 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
   GString                        sgrid;
   std::vector<GFTYPE>            pstd;
   PropertyTree                   gtree;
+  State                          tmp;
 
 
   sgrid = ptree.getValue<GString>("grid_type");
@@ -635,13 +606,17 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
   pmax = 0;
   for ( auto j=0; j<gbasis_.size(); j++ ) pmax = MAX(pmax, gbasis_[j]->getOrder());
 
-
   P0.resize(GDIM);
   dX.resize(GDIM);
   delta.resize(GDIM);
   xnodes = &grid.xNodes();
   glob_indices.resize(grid_->ndof());
 
+  // Cannot use utmp_ here because it
+  // may not have been allocated yet, so
+  // use local variable:
+  tmp.resize(GDIM);
+  for ( auto j=0; j<GDIM; j++ ) tmp[j] = new GTVector<GFTYPE>(grid_->ndof());
 
   // If (x, y, z) < epsilon, set to 0:
   GMTK::zero(*xnodes);
@@ -665,7 +640,7 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
     P0.x1 = 0.0 ; // lat starting point
     P0.x2 = 0.0 ; // lon starting point
     for ( auto j=0; j<xnodes->size(); j++ ) cart[j] = &(*xnodes)[j];
-    for ( auto j=0; j<GDIM; j++ ) xkey[j] = utmp_[j];
+    for ( auto j=0; j<GDIM; j++ ) xkey[j] = tmp[j];
     GMTK::cart2latlon(cart, xkey);
     for ( auto j=0; j<xkey[0]->size(); j++ ) (*xkey[0])[j] = 0.5*PI - (*xkey[0])[j]; 
     for ( auto j=0; j<xkey[1]->size(); j++ ) (*xkey[1])[j] += (*xkey[1])[j] < 0.0 ? 2.0*PI : 0.0;
@@ -681,7 +656,7 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
     xkey.resize(GDIM+1);   
     rad   = gtree.getValue<GFTYPE>("radius");
     P0.x1 = -rad-tiny; P0.x2 = -rad-tiny; P0.x3 = -rad-tiny;
-    for ( auto j=0; j<xkey.size(); j++ ) xkey[j] = utmp_[j];
+    for ( auto j=0; j<xkey.size(); j++ ) xkey[j] = tmp[j];
     delta[0] = grid.minlength()/(pmax*pmax);
     delta[1] = grid.minlength()/(pmax*pmax);
     delta[2] = grid.minlength()/(pmax*pmax);
@@ -700,8 +675,8 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
     cart.resize(xnodes->size());   
     xkey.resize(GDIM);   
     for ( auto j=0; j<xnodes->size(); j++ ) cart[j] = &(*xnodes)[j];
-    for ( auto j=0; j<GDIM; j++ ) xkey[j] = utmp_[j];
-    GMTK::cart2spherical(cart, xkey);
+    for ( auto j=0; j<GDIM; j++ ) xkey[j] = tmp[j];
+    GMTK::rcart2sphere(cart, xkey);
     for ( auto j=0; j<GDIM; j++ ) ldelta[j] = xkey[j]->amindiff(tiny);
     GComm::Allreduce(ldelta.data(), delta.data(), GDIM, T2GCDatatype<GFTYPE>(), GC_OP_MIN, comm_);
     for ( auto j=0; j<GDIM; j++ ) dX[j] = 0.025*delta[j];
@@ -737,6 +712,8 @@ void init_ggfx(PropertyTree &ptree, GGrid &grid, GGFX<GFTYPE> *&ggfx)
   if ( typeid(grid) == typeid(GGridBox) ) { // periodize coords
     static_cast<GGridBox*>(&grid)->unperiodize();
   }
+
+  for ( auto j=0; j<GDIM; j++ ) delete tmp[j];
 
 } // end method init_ggfx
 
@@ -940,20 +917,28 @@ void do_terrain(const PropertyTree &ptree, GGrid &grid)
 {
   GBOOL bret, bterr;
   GINT  iret, nc;
-  State xb, tmp;
+  State xb, tmp, utmp;
   
   nc = grid.xNodes().size();
   xb.resize(nc);
-  tmp.resize(utmp_.size()-nc);
+
+  // Cannot use utmp_ here because it
+  // may not have been allocated yet, so
+  // use local variable:
+  utmp.resize(2*nc);
+  tmp.resize(nc);
+  for ( auto j=0; j<utmp.size(); j++ ) utmp[j] = new GTVector<GFTYPE>(grid_->ndof());
 
   // Set terrain & tmp arrays from tmp array pool:
-  for ( auto j=0; j<nc        ; j++ ) xb [j] = utmp_[j];
-  for ( auto j=0; j<tmp.size(); j++ ) tmp[j] = utmp_[j+nc];
+  for ( auto j=0; j<nc        ; j++ ) xb [j] = utmp[j];
+  for ( auto j=0; j<tmp.size(); j++ ) tmp[j] = utmp[j+nc];
 
   bret = GSpecTerrainFactory<MyTypes>::spec(ptree, grid, tmp, xb, bterr);
   assert(bret);
 
   if ( bterr ) grid.add_terrain(xb, tmp);
+
+  for ( auto j=0; j<utmp.size(); j++ ) delete utmp[j];
 
 } // end of method do_terrain
 
@@ -983,8 +968,9 @@ void do_restart(const PropertyTree &ptree, GGrid &, State &u,
   StateInfo          stateinfo;
   ObsTraitsType      binobstraits = (*pObservers_)[irestobs_]->get_traits();
 
-
   itindex            = ptree.getValue<GSIZET>("restart_index", 0);
+  stateinfo.icomptype.resize(pEqn_->stateinfo().icomptype.size());
+  stateinfo.icomptype= pEqn_->stateinfo().icomptype;
   stateinfo.sttype   = 0; // state variable type
   stateinfo.svars.resize(binobstraits.state_names.size());
   stateinfo.svars    = binobstraits.state_names;

@@ -36,8 +36,7 @@ public:
         using EqnBasePtr = std::shared_ptr<EqnBase>;
 
         
-        NullObserver(EqnBasePtr& equation, Grid& grid){
-        }
+        NullObserver(EqnBasePtr& equation, Grid& grid){}
 
 protected:
 

@@ -8,9 +8,7 @@
 // Copyright    : Copyright 2018. Colorado State University. All rights reserved
 // Derived from : none.
 //==================================================================================
-#include <limits>
-#include "cff_blas.h"
-#include "gmtk.hpp"
+#include "gtvector.hpp"
 
 #define GTMATRIX_ROTATE(a,i,j,k,l) g=a(i,j);h=a(k,l);a(i,j)=g-s*(h+g*tau);\
 	a(k,l)=h+s*(g-h*tau);
@@ -344,14 +342,16 @@ void GTMatrix<T>::operator-=(const T a)
     "Invalid template type: GTMatrix<T>::operator+=(T)");
 
   data_ -= a;
-}
+
+} // end of -= operator
+
 
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : operator *=
 // DESC   : multiplies this by constant, and returns
 //          result, modifying *this data
-// ARGS   :
+// ARGS   : a : constant factor
 // RETURNS: product matrix
 //**********************************************************************************
 template<class T>
@@ -363,6 +363,7 @@ void GTMatrix<T>::operator*=(const T a)
   data_ *= a;
 
 } // end of *= operator
+
 
 //**********************************************************************************
 //**********************************************************************************
@@ -511,7 +512,6 @@ GTMatrix<T>::operator*(const GTMatrix<T> &a)
 template<class T> 
 GBOOL GTMatrix<T>::resize(GSIZET new1, GSIZET new2)
 {
-  if ( n1_*n2_ == new1*new2 ) return TRUE;
 
   n1_ = new1;
   n2_ = new2;
@@ -2640,7 +2640,28 @@ GTVector<T> GTMatrix<T>::matvec_impl_(const GTVector<T> &obj, std::true_type)
 {
   GTVector<T> vret(this->size(1));
 
-  GMTK::matvec_prod(vret, *this, obj);
+  GSIZET n1 = this->size(1);
+  GSIZET n2 = this->size(2);
+
+  if      ( std::is_same<T,GFLOAT>::value ) {
+    fmxv((GFLOAT*)vret.data(), (GFLOAT*)(this->data().data()),
+                      (GFLOAT*)(obj.data())       ,
+                      &n1, &n2, &icsz_);
+  }
+  else if ( std::is_same<T,GDOUBLE>::value ) {
+    dmxv((GDOUBLE*)vret.data(), (GDOUBLE*)(this->data().data()),
+                      (GDOUBLE*)(obj.data())       ,
+                      &n1, &n2, &icsz_);
+  }
+  else if ( std::is_same<T,GQUAD>::value ) {
+    qmxv((GQUAD*)vret.data(), (GQUAD*)(this->data().data()),
+                      (GQUAD*)(obj.data())       ,
+                      &n1, &n2, &icsz_);
+  }
+  else {
+    assert(FALSE);
+  }
+
 
   #if defined(_G_AUTO_UPDATE_DEV)
       vret.updatedev();
@@ -2695,7 +2716,35 @@ GTMatrix<T>::matmat_impl_(const GTMatrix &obj, std::true_type)
 {
   GTMatrix mret(this->size(1),obj.size(2));
 
-  GMTK::matmat_prod(mret, *this, obj);
+
+  GSIZET a1=this->size(1), a2 = this->size(2);
+  GSIZET b1=obj.size(1), b2 = obj.size(2);
+
+  if      ( std::is_same<T,GFLOAT>::value ) { 
+    fmxm((GFLOAT*)mret.data().data(),
+         (GFLOAT*)(this->data().data()),
+         &a1, &a2,
+         (GFLOAT*)(obj.data().data()),
+         &b1, &b2, &icsz_);
+  }
+  else if ( std::is_same<T,GDOUBLE>::value ) {
+    dmxm((GDOUBLE*)mret.data().data(),
+         (GDOUBLE*)(this->data().data()),
+         &a1, &a2,
+         (GDOUBLE*)(obj.data().data()),
+         &b1, &b2, &icsz_);
+  }
+  else if ( std::is_same<T,GQUAD>::value ) {
+    qmxm((GQUAD*)mret.data().data(),
+         (GQUAD*)(this->data().data()),
+         &a1, &a2,
+         (GQUAD*)(obj.data().data()),
+         &b1, &b2, &icsz_);
+  }
+  else {
+    assert(FALSE);
+  }
+
 
   #if defined(_G_AUTO_UPDATE_DEV)
       vret->updatedev();

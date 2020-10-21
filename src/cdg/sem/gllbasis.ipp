@@ -139,15 +139,19 @@ GLLBasis<T,TE>::GLLBasis(const GLLBasis &b)
 
 
     //  matrices, and node data:
-    xiNodes_     = b.xiNodes_;
-    weights_     = b.weights_;
-    Pn_          = b.Pn_;
-    dPn_         = b.dPn_;
-    Phi_         = b.Phi_;
-    dPhi_        = b.dPhi_;
-    dPhiT_       = b.dPhiT_;
-    stiffMatrix_ = b.stiffMatrix_;
-    LegMatrix_   = b.LegMatrix_;
+    xiNodes_       = b.xiNodes_;
+    weights_       = b.weights_;
+    Pn_            = b.Pn_;
+    dPn_           = b.dPn_;
+    Phi_           = b.Phi_;
+    dPhi_          = b.dPhi_;
+    dPhiT_         = b.dPhiT_;
+    stiffMatrix_   = b.stiffMatrix_;
+    LegMatrix_     = b.LegMatrix_;
+    LegTransform_  = b.LegTransform_;
+    iLegTransform_ = b.iLegTransform_;
+    LegFilterMat_  = b.LegFilterMat_;
+    LegFilterMatT_ = b.LegFilterMatT_;
 
 }
 
@@ -187,15 +191,18 @@ void GLLBasis<T,TE>::operator=(const GLLBasis &b)
 
 
     //  matrices, and node data:
-    xiNodes_     = b.xiNodes_;
-    weights_     = b.weights_;
-    Pn_          = b.Pn_;
-    dPn_         = b.dPn_;
-    Phi_         = b.Phi_;
-    dPhi_        = b.dPhi_;
-    dPhiT_       = b.dPhiT_;
-    stiffMatrix_ = b.stiffMatrix_;
-    LegMatrix_   = b.LegMatrix_;
+    xiNodes_      = b.xiNodes_;
+    weights_      = b.weights_;
+    Pn_           = b.Pn_;
+    dPn_          = b.dPn_;
+    dPhi_         = b.dPhi_;
+    dPhiT_        = b.dPhiT_;
+    stiffMatrix_  = b.stiffMatrix_;
+    LegMatrix_    = b.LegMatrix_;
+    LegTransform_ = b.LegTransform_;
+    iLegTransform_= b.iLegTransform_;
+    LegFilterMat_ = b.LegFilterMat_;
+    LegFilterMatT_= b.LegFilterMatT_;
   }
 
 }
@@ -371,7 +378,11 @@ GBOOL GLLBasis<T,TE>::resize(GINT  newOrder)
   stiffMatrixEv_.resize(Np_+1,Np_+1);
 
   //  resize LegMatrix_:
-  LegMatrix_.resize(Np_+1,Np_+1);
+  LegMatrix_    .resize(Np_+1,Np_+1);
+  LegTransform_ .resize(Np_+1,Np_+1);
+  iLegTransform_.resize(Np_+1,Np_+1);
+  LegFilterMat_ .resize(Np_+1,Np_+1);
+  LegFilterMatT_.resize(Np_+1,Np_+1);
 
   if ( !init() ) return FALSE; 
 
@@ -725,6 +736,10 @@ GBOOL GLLBasis<T,TE>::init()
 
   bInit_ = TRUE;
 
+  // Note: following call must have bInit_ = TRUE
+  if ( !computeLegTransform(2) ) return FALSE; // Legendre transform matrix
+
+
   return TRUE;
 
 } // end of method init
@@ -758,6 +773,40 @@ GBOOL GLLBasis<T,TE>::computeLegendreMatrix()
   return TRUE;
 
 } // end of method computeLegendreMatrix
+
+
+//************************************************************************************
+//************************************************************************************
+// METHOD : computeLegTransform
+// DESC   : Computes Legendre transform matrix that
+//          enables conversion to modal space. 
+// ARGS   : ifilter: reference mode number 
+// RETURNS: TRUE on success; else FALSE 
+//************************************************************************************
+template<typename T, typename TE>
+GBOOL GLLBasis<T,TE>::computeLegTransform(GINT ifilter)
+{
+
+  GINT  i, j;
+  
+  assert(ifilter >= 0 && ifilter < Np_+1);
+
+  for ( i=0; i<Np_+1; i++ ) {
+    for ( j=0; j<Np_+1; j++ ) {
+      if ( j < ifilter ) {
+        LegTransform_(i,j) = evalBasis(j,xiNodes_[i]);
+      }
+      else {
+        LegTransform_(i,j) = evalBasis(j,xiNodes_[i]) - evalBasis(j-ifilter,xiNodes_[i]);
+      }
+    }
+  }
+  LegTransform_.inverse(iLegTransform_);  
+
+
+  return TRUE;
+
+} // end of method computeLegTransform
 
 
 //************************************************************************************
@@ -995,6 +1044,54 @@ void GLLBasis<T,TE>::getLegMatrix(GTMatrix<TE> &ret)
       ret(i,j) = static_cast<TE>(LegMatrix_(i,j));
 
 } // end of method getLegMatrix
+
+
+//************************************************************************************
+//************************************************************************************
+// METHOD : getFilterMat
+// DESC   : Get pointer to Legendre transformation filter matrix. This
+//          isn't filled here, but may be set from caller, and stored
+//          here
+// ARGS   : btranspose: return transpose?
+// RETURNS: GTMatrix *
+//************************************************************************************
+template<typename T, typename TE>
+GTMatrix<TE> *GLLBasis<T,TE>::getFilterMat(GBOOL btranspose)
+{
+  if ( btranspose ) return &LegFilterMatT_;
+  else              return &LegFilterMat_;
+
+} // end of method getFilterMat
+
+
+//************************************************************************************
+//************************************************************************************
+// METHOD : getLegTransform
+// DESC   : Get pointer to Legendre transformation matrix
+// ARGS   : none
+// RETURNS: GTMatrix *
+//************************************************************************************
+template<typename T, typename TE>
+GTMatrix<TE> *GLLBasis<T,TE>::getLegTransform()
+{
+  return &LegTransform_;
+
+} // end of method getLegTransform
+
+
+//************************************************************************************
+//************************************************************************************
+// METHOD : getiLegTransform
+// DESC   : Get pointer to inverse of Legendre transformation matrix
+// ARGS   : none
+// RETURNS: GTMatrix *
+//************************************************************************************
+template<typename T, typename TE>
+GTMatrix<TE> *GLLBasis<T,TE>::getiLegTransform()
+{
+  return &iLegTransform_;
+
+} // end of method getiLegTransform
 
 
 //************************************************************************************

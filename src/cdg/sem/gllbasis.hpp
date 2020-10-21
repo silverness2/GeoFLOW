@@ -76,6 +76,10 @@ virtual  void             getDerivMatrixW(GTMatrix<TE> &ret, GBOOL btranspose=FA
 virtual  void             getDerivMatrixiW(GTMatrix<TE> &ret, GBOOL btranspose=FALSE);
 
 virtual  void             getLegMatrix(GTMatrix<TE> &ret);
+virtual  GTMatrix<TE>    *getLegTransform ();
+virtual  GTMatrix<TE>    *getiLegTransform();
+virtual  GTMatrix<TE>    *getFilterMat    (GBOOL btranspose=FALSE);
+virtual  GBOOL            computeLegTransform(GINT ifilter);
 
 // Evaluation methods:
 virtual  TE               evalBasis(GINT  i, TE eta);
@@ -141,6 +145,10 @@ GTMatrix<TE>     dPhiWTEv_;
 GTMatrix<TE>     dPhiiWEv_;
 GTMatrix<TE>     dPhiiWTEv_;
 GTMatrix<TE>     stiffMatrixEv_;
+GTMatrix<TE>     LegTransform_;
+GTMatrix<TE>     iLegTransform_;
+GTMatrix<TE>     LegFilterMat_;
+GTMatrix<TE>     LegFilterMatT_;
 
 };
 

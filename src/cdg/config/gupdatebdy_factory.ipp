@@ -76,16 +76,16 @@ GUpdateBdyFactory<Types>::get_inflow_callback(const GString& sname, const GINT i
     assert(FALSE); // Must have a named method
   }
   if      ( "myinflow"     == sname ) {
-    callback = NULLPTR;
-/*
-      [=](Grid      &grid,
+    callback = 
+
+         [](Grid      &grid,
           StateInfo &stinfo,
           Time      &time,
           const GINT id,
           State     &utmp,
           State     &u,
-          State     &ub){GInflowBdyMethods::myinflow(grid, stinfo, time, id, utmp, u, ub);}; 
-*/
+          State     &ub)->GBOOL{return GInflowBdyMethods::myinflow(grid, stinfo, time, id, utmp, u, ub);}; 
+
   }
   else {
     assert(FALSE && "Specified inflow bdy update method unknown");
@@ -116,9 +116,11 @@ typename GUpdateBdyFactory<Types>::UpdateBdyBasePtr
 GUpdateBdyFactory<Types>::get_bdy_class(const PropertyTree& ptree, GString &supdate, Grid &grid, const GINT id, const GBdyType bdytype, GTVector<GINT> &istate, GTVector<GSIZET> &ibdy)
 {
   GINT               nstate;
+  GLONG              iloc;
   GString            sblock ;
   std::vector<Ftype> fvec;
   UpdateBdyBasePtr   base_ptr;
+  GTVector<GSIZET>  *igbdy = &grid.igbdy();
   PropertyTree       sptree; // update block tree
   
 
@@ -197,6 +199,13 @@ GUpdateBdyFactory<Types>::get_bdy_class(const PropertyTree& ptree, GString &supd
     traits.istate.resize(nstate); traits.istate = istate;
     traits.bdyid  = id;
     traits.ibdyvol = ibdy;
+    traits.ibdyloc.resize(traits.ibdyvol.size());
+    // Find index of ibdyvol in global bdy vector:
+    for ( auto j=0; j<traits.ibdyloc.size(); j++ ) {
+      iloc = igbdy->findlast(traits.ibdyvol[j]);
+      assert(iloc >= 0);
+      traits.ibdyloc[j] = iloc;
+    }
     if ( sptree.isValue<GBOOL>("compute_once") ) {
       traits.compute_once = sptree.getValue<GBOOL>("compute_once");
     }

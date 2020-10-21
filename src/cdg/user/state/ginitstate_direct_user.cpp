@@ -120,7 +120,7 @@ GBOOL impl_boxnwaveburgers(const PropertyTree &ptree, GString &sconfig, GGrid &g
   }
 
   tdenom  = 1.0/(4.0*nu*time);
-  for ( GINT ilump=0; ilump<nlump; ilump++ ) {
+  for ( auto ilump=0; ilump<nlump; ilump++ ) {
     r0[0]  = xinit[ilump]; r0[1]  = yinit[ilump]; 
     if ( GDIM > 2 ) r0[2]  = zinit[ilump]; 
     kprop[0] = kxprop[ilump]; kprop[1] = kyprop[ilump];
@@ -332,16 +332,14 @@ cout << "impl_boxdirgauss: sconfig=" << sconfig << endl;
 
   for ( GSIZET j=0; j<GDIM; j++ ) c[j] = u[j+1];
 
-  // Check bdy conditioins:
-  GTVector<GString> bc(6);
-  bc[0] = boxptree.getValue<GString>("bdy_x_0");
-  bc[1] = boxptree.getValue<GString>("bdy_x_1");
-  bc[2] = boxptree.getValue<GString>("bdy_y_0");
-  bc[3] = boxptree.getValue<GString>("bdy_y_1");
-  bc[4] = boxptree.getValue<GString>("bdy_z_0");
-  bc[5] = boxptree.getValue<GString>("bdy_z_1");
-  assert(bc.multiplicity("GBDY_INFLOW") >= 2*GDIM
-      && "GBDY_INFLOW boundaries must be set on all boundaries");
+  // Check bdy conditions:
+  GTVector<GTVector<GBdyType>>
+                           *igbdyt_face= &grid.igbdyt_bdyface();
+  for ( auto j=0; j<igbdyt_face->size(); j++ ) { // for each face
+cout << "boxpergauss: num=" << (*igbdyt_face)[j].size() << " igbdyt_face[" << j << "]=" << (*igbdyt_face)[j] << endl;
+    assert( (*igbdyt_face)[j].onlycontains(GBDY_INFLOW) 
+        &&  "Inflow conditions must be set on all boundaries");
+  }
 
   nxy = (*xnodes)[0].size(); // same size for x, y, z
 
@@ -482,8 +480,8 @@ cout << "boxpergauss: num=" << (*igbdyt_face)[j].size() << " igbdyt_face[" << j 
     for ( k=0; k<GDIM; k++ ) {
       // Note: following c t is actually Integral_0^t c(t') dt', 
       //       so if c(t) changes, change this term accordingly:
-      f [k]  = modf((*c[k])[j]*time/gL[k],&pint);
-//    f [k]  = (*c[k])[n]*t/gL[k];
+//    f [k]  = modf((*c[k])[j]*time/gL[k],&pint);
+      f [k]  = (*c[k])[n]*time/gL[k];
       xx[k]  = (*xnodes)[k][n] - r0[k] - f[k]*gL[k];
 
       isum    = 0.0;
@@ -553,9 +551,6 @@ GBOOL impl_icosgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid, S
   GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
   assert(grid.gtype() == GE_2DEMBEDDED && "Invalid element types");
 
-
-  // Need 3 arrays for utmp below, and 4 for other variables;
-  // use utmp[0-2] as tmp in calls to Ylm methods:
   assert(utmp.size() >= 7 );
   for (auto j=0; j<c.size(); j++ ) c[j] = u[j+1]; // adv vel. comp.
 
@@ -635,6 +630,169 @@ GBOOL impl_icosgauss(const PropertyTree &ptree, GString &sconfig, GGrid &grid, S
   return TRUE;
 
 } // end of method impl_icosgauss
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : impl_boxdrybubble
+// DESC   : Initialize state for GMConv solver with cold/dry bubble
+//          on box grids. Taken from Straka et al. 1993, Int. J. Num. 
+//          Meth. Fluids 17:1, and from Bryan & Fritsch 2002 MWR
+//          130:2817.
+// ARGS   : ptree  : main prop tree
+//          sconfig: ptree block name containing variable config
+//          grid   : grid
+//          stinfo : StateInfo
+//          t      : time
+//          utmp   : tmp arrays
+//          ub     : bdy vectors (one for each state element)
+//          u      : current state
+// RETURNS: TRUE on success; else FALSE 
+//**********************************************************************************
+GBOOL impl_boxdrybubble(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
+{
+
+  GString             serr = "impl_boxdrybubble: ";
+  GSIZET              nxy;
+  GFTYPE              x, y, z, r;
+  GFTYPE              delT, dj, exnerb, exner, L, P0, pj, thetab, T0, Ts;
+  GTVector<GFTYPE>   *db, *d, *e, *pb, *Tb;
+  std::vector<GFTYPE> xc, xr;  
+  GString             sblock;
+
+  PropertyTree bubbptree   = ptree.getPropertyTree(sconfig);
+  sblock                   = ptree.getValue<GString>("pde_name");
+  PropertyTree convptree   = ptree.getPropertyTree(sblock);
+
+  GGridBox  *box   = dynamic_cast <GGridBox*>(&grid);
+  assert(box && "Must use a box grid");
+
+  GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
+
+  assert(u.size() == GDIM+4);
+
+  Tb    = utmp[0];  // background temp
+  e     = u  [GDIM];// int. energy density
+  d     = u[GDIM+1];// total density fluctuation
+  db    = u[GDIM+2];// background density fluct, from solver
+  pb    = u[GDIM+3];// background pressure  , from solver
+  nxy   = (*xnodes)[0].size(); // same size for x, y, z
+
+  T0    = bubbptree.getValue<GFTYPE>("T_pert", 15.0);    // temp. perturb. magnitude (K)
+  xc    = bubbptree.getArray<GFTYPE>("x_center");        // center location
+  xr    = bubbptree.getArray<GFTYPE>("x_width");         // bubble width
+  P0    = convptree.getValue<GFTYPE>("P0");              // ref pressure (mb or hPa)
+  P0   *= 100.0;                                         // convert to Pa
+  Ts    = convptree.getValue<GFTYPE>("T_surf");          // surf temp
+
+  assert(xc.size() >= GDIM && xr.size() >= GDIM);
+
+ *u[0]  = 0.0; // sx
+ *u[1]  = 0.0; // sy
+ if ( GDIM == 3 ) *u[2]  = 0.0; // sz
+ *d     = 0.0;
+
+  for ( auto j=0; j<nxy; j++ ) { 
+    x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
+    if ( GDIM == 3 ) z = (*xnodes)[2][j];
+    r = GDIM == 3 ? z : y;
+    L         = pow((x-xc[0])/xr[0],2) + pow((y-xc[1])/xr[1],2);
+    L        += GDIM == 3 ? pow((z-xc[2])/xr[2],2) : 0.0;
+    L         = sqrt(L);
+    exnerb    = pow((*pb)[j]/P0, RD/CPD);
+    delT      = L <= 1.0 ? 2.0*T0*pow(cos(0.5*PI*L),2.0) : 0.0;
+#if 1
+    // Ts, delT are pot'l temp, 
+    (*Tb)[j]  = (Ts + delT)*exnerb; // T = (theta + dtheta)*exner
+    pj        = (*pb)[j]; 
+    (*d)[j]   = pj / ( RD * (*Tb)[j]  ) - (*db)[j];
+    dj        = (*d)[j] + (*db)[j];
+    (*e)[j]   = CVD * dj * ( (*Tb)[j] ); // e = Cv d (T+delT);
+//  (*Tb)[j]  = (Ts + delT)*exnerb; // T = (theta + dtheta)*exner
+//  (*Tb)[j]  = (thetab + delT)*exnerb;
+//  (*d)[j]   = pj / ( RD * (*Tb)[j] )  - (*db)[j];
+//  (*e)[j]   = CVD * dj * (thetab+delT)*(exnerb); // e = Cv d (theta+dtheta) * exner;
+
+#else
+    // Check that hydrostatic state is maintained:
+    (*d)[j]   = 0.0;
+    (*Tb)[j]  = Ts*exnerb; // T = (theta + dtheta)*exner
+    (*e)[j]   = CVD * (*db)[j] * ( (*Tb)[j] ); // e = Cv d (T);
+#endif
+
+  }
+//cout << "boxdrybubble: db=" << *db << endl;
+
+  return TRUE;
+
+} // end of method impl_boxdrybubble
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : impl_boxdrybubble
+// DESC   : Initialize state for GMConv solver with Sod shock tube.
+// ARGS   : ptree  : main prop tree
+//          sconfig: ptree block name containing variable config
+//          grid   : grid
+//          stinfo : StateInfo
+//          t      : time
+//          utmp   : tmp arrays
+//          ub     : bdy vectors (one for each state element)
+//          u      : current state
+// RETURNS: TRUE on success; else FALSE 
+//**********************************************************************************
+GBOOL impl_boxsod(const PropertyTree &ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u)
+{
+
+  GString             serr = "impl_boxsod: ";
+  GSIZET              nxy;
+  GFTYPE              a, b;
+  GFTYPE              x, y, z;
+  GFTYPE              Pfact, P0, pj, T0, width, xc;
+  GTVector<GFTYPE>   *d, *e;
+
+  PropertyTree sodptree   = ptree.getPropertyTree(sconfig);
+
+  GGridBox  *box   = dynamic_cast <GGridBox*>(&grid);
+  assert(box && "Must use a box grid");
+
+  GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
+
+  assert(u.size() == 4);
+
+  e     = u  [GDIM];// int. energy density
+  d     = u[GDIM+1];// total density 
+  nxy   = (*xnodes)[0].size(); // same size for x, y, z
+
+  T0    = sodptree.getValue<GFTYPE>("T0",300.0);   // ref. temp
+  P0    = sodptree.getValue<GFTYPE>("P0",1000.0);  // ref. pressure 
+  Pfact = sodptree.getValue<GFTYPE>("Pfact",10.0); // Pleft/Pright
+  xc    = sodptree.getValue<GFTYPE>("x_center");   // center location
+  width = sodptree.getValue<GFTYPE>("width");      // shock width
+  P0   *= 1.0e2;  // convert P0 from mb to Pa
+
+ *u[0]  = 0.0; // sx
+ *u[1]  = 0.0; // sy
+ if ( GDIM == 3 ) *u[2]  = 0.0; // sz
+ *d     = 0.0;
+
+  a = P0*(1.0-Pfact)/PI;
+  b = P0*(1.0+Pfact)/2.0;
+  for ( auto j=0; j<nxy; j++ ) { 
+    x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; 
+    if ( GDIM == 3 ) z = (*xnodes)[2][j];
+    pj = a*atan((x-xc)/width) + b;
+       
+//  (*d)[j]   = (*pb)[j] / ( RD * ( (*Tb)[j] + delT ) ) - (*db)[j];
+    (*d)[j]   = pj / ( RD * T0 );
+    (*e) [j]  = CVD * (*d)[j]  * T0;
+cout << "boxsod: p=" << pj << " d=" << (*d)[j] <<  endl;
+
+  }
+
+  return TRUE;
+
+} // end of method impl_boxsod
 
 
 

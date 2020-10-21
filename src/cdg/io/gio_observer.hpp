@@ -10,6 +10,7 @@
 
 #include "gtvector.hpp"
 #include "ggrid.hpp"
+#include "gmtk.hpp"
 #include "pdeint/equation_base.hpp"
 #include "pdeint/observer_base.hpp"
 #include "pdeint/io_base.hpp"
@@ -80,6 +81,7 @@ private:
         State              gp_         ;// current grid 'state' array
         StateInfo          stateinfo_  ;// info struct for state
         StateInfo          gridinfo_   ;// info struct for grid
+        EqnBasePtr         pEqn_       ;// equation object pointer
 
 };
 

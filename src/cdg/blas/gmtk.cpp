@@ -7,12 +7,11 @@
 // Derived From : none.
 //==================================================================================
 
-#include "gmtk.hpp"
-#include "gtvector.hpp"
-#include "gtmatrix.hpp"
 #include "ggrid.hpp"
 #include "ggrid_box.hpp"
 #include "ggrid_icos.hpp"
+#include "gmtk.hpp"
+
 
 using namespace std;
 
@@ -312,6 +311,7 @@ void D2_X_D1<GQUAD>(GTMatrix<GQUAD> &D1, GTMatrix<GQUAD>  &D2T,
 } // end of method D2_X_D1
 
 
+#if 0
 //**********************************************************************************
 //**********************************************************************************
 // METHOD : I2_X_D1 (float)
@@ -1811,7 +1811,7 @@ while(1){};
   #else
   GSIZET nn = vret.getIndex().end() - vret.getIndex().beg() + 1;
   fzaxpby(vret.data(), const_cast<GFLOAT*>(va.data()), &a, 
-                       const_cast<GFLOAT*>(vb.data()), &b, &nn, &szVecCache_);
+          const_cast<GFLOAT*>(vb.data()), &b, &nn, &szVecCache_);
   #endif
 
 } // end, add 
@@ -1847,7 +1847,7 @@ while(1){};
   #else
   GSIZET nn = vret.getIndex().end() - vret.getIndex().beg() + 1;
   dzaxpby(vret.data(), const_cast<GDOUBLE*>(va.data()), &a, 
-                       const_cast<GDOUBLE*>(vb.data()), &b, &nn, &szVecCache_);
+          const_cast<GDOUBLE*>(vb.data()), &b, &nn, &szVecCache_);
   #endif
 
 } // end, add 
@@ -1883,7 +1883,7 @@ while(1){};
   #else
   GSIZET nn = vret.getIndex().end() - vret.getIndex().beg() + 1;
   qzaxpby(vret.data(), const_cast<GQUAD*>(va.data()), &a, 
-                       const_cast<GQUAD*>(vb.data()), &b, &nn, &szVecCache_);
+          const_cast<GQUAD*>(vb.data()), &b, &nn, &szVecCache_);
   #endif
 
 } // end, add 
@@ -2126,6 +2126,7 @@ void matmat_prod<GQUAD>(GTMatrix<GQUAD> &C, const GTMatrix<GQUAD> &A, const GTMa
   
 
 } // end of operator * mat-mat, GQUAD
+#endif
 
 
 
@@ -2213,525 +2214,6 @@ void constrain2sphere(GGrid &grid, GTVector<GTVector<GFTYPE>*> &v)
 } // end of method constrain2sphere (2)
 
 
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : compute_grefderiv
-// DESC   : Compute tensor product derivative in specified direction
-//          of specified field, u, in ref space, using grid object.
-//          Compute
-//            du = [ I_X_I_X_Dx, or
-//                   I_X_Dy_X_I, or
-//                   Dz_X_I_X_I].
-//     
-//          depending on whether idir = 1, 2, or 3, respectively,
-//          where Dx, Dy, Dz are 1d derivative objects from basis functions     
-// ARGS   : 
-//          grid   : GGrid object 
-//          u      : input field whose derivative we want, allocated globally 
-//                   (e.g., for all elements).
-//          etmp   : tmp array (possibly resized here) for element-based ops.
-//                   Is not global.
-//          idir   : coordinate direction (1, 2, or 3)
-//          dotrans: flag telling us to tak transpose of deriv operators (TRUE) or
-//                   not (FALSE).
-//          du     : vector of length of u containing the derivative.
-//             
-// RETURNS:  none
-//**********************************************************************************
-template<>
-void compute_grefderiv(GGrid &grid, GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
-                       GINT idir, GBOOL dotrans, GTVector<GFTYPE> &du)
-{
-  GSIZET               ibeg, iend; // beg, end indices for global array
-  GBOOL                bembedded;
-  GTVector<GSIZET>     N(GDIM);
-  GTMatrix<GFTYPE>    *Di;         // element-based 1d derivative operators
-  GElemList           *gelems = &grid.elems();
-
-  bembedded = grid.gtype() == GE_2DEMBEDDED;
-
-#if defined(_G_IS2D)
-  switch (idir) {
-  case 1:
-    for ( GSIZET e=0; e<grid.elems().size(); e++ ) {
-      ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
-      u.range(ibeg, iend); // restrict global vecs to local range
-      du.range(ibeg, iend);
-      for ( GSIZET k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
-      Di = (*gelems)[e]->gbasis(0)->getDerivMatrix (dotrans);
-      GMTK::I2_X_D1(*Di, u, N[0], N[1], du); 
-    }
-    break;
-  case 2:
-    for ( GSIZET e=0; e<grid.elems().size(); e++ ) {
-      ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
-      u.range(ibeg, iend); // restrict global vecs to local range
-      du.range(ibeg, iend);
-      for ( GSIZET k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
-      Di = (*gelems)[e]->gbasis(1)->getDerivMatrix(!dotrans);
-      GMTK::D2_X_I1(*Di, u, N[0], N[1], du); 
-    }
-    break;
-  case 3:
-    assert( GDIM == 3
-         && "Only GDIM reference derivatives");
-    du = 0.0; //u;
-    break;
-  default:
-    assert(FALSE && "Invalid coordinate direction");
-  }
-  u.range_reset(); // reset to global range
-  du.range_reset();
-
-#elif defined(_G_IS3D)
-
-  switch (idir) {
-  case 1:
-    for ( GSIZET e=0; e<grid.elems().size(); e++ ) {
-      ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
-      u.range(ibeg, iend); // restrict global vecs to local range
-      du.range(ibeg, iend);
-      for ( GSIZET k=0; k<GDIM  ; k++ ) N[k]= (*gelems)[e]->size(k);
-      Di = (*gelems)[e]->gbasis(0)->getDerivMatrix (dotrans); 
-      GMTK::I3_X_I2_X_D1(*Di, u, N[0], N[1], N[2], du); 
-    }
-    break;
-
-  case 2:
-    for ( GSIZET e=0; e<grid.elems().size(); e++ ) {
-      ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
-      u.range(ibeg, iend); // restrict global vecs to local range
-      du.range(ibeg, iend);
-      for ( GSIZET k=0; k<GDIM  ; k++ ) N[k]= (*gelems)[e]->size(k);
-      Di = (*gelems)[e]->gbasis(1)->getDerivMatrix(!dotrans); 
-      GMTK::I3_X_D2_X_I1(*Di, u, N[0], N[1], N[2], du); 
-    }
-    break;
-
-  case 3:
-    for ( GSIZET e=0; e<grid.elems().size(); e++ ) {
-      ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
-      u.range(ibeg, iend); // restrict global vecs to local range
-      du.range(ibeg, iend);
-      for ( GSIZET k=0; k<GDIM  ; k++ ) N[k]= (*gelems)[e]->size(k);
-      Di = (*gelems)[e]->gbasis(2)->getDerivMatrix(!dotrans); 
-      GMTK::D3_X_I2_X_I1(*Di, u, N[0], N[1], N[2], du); 
-    }
-    break;
-
-  default:
-    assert(FALSE && "Invalid coordinate direction");
-  }
-  u.range_reset(); // reset global vec to globalrange
-  du.range_reset();
-
-#endif
-
-} // end of method compute_grefderiv
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : compute_grefderivs
-// DESC   : Compute tensor product derivs of specified field, u, in ref space
-//          for grid, using grid object to determine which to compute. Compute:
-//            du = [ I_X_I_X_Dx
-//                   I_X_Dy_X_I
-//                   Dz_X_I_X_I].
-//     
-//          where Dx, Dy, Dz are 1d derivative objects from basis functions     
-// ARGS   : 
-//          grid   : GGrid object 
-//          u      : input field whose derivative we want, allocated globally 
-//                   (e.g., for all elements).
-//          etmp   : tmp array (possibly resized here) for element-based ops.
-//                   Is not global.
-//          du     : vector of length 2 or 3 containing the derivatives.
-//                   If using GE_REGULAR in 2D, we only need to vector
-//                   elements; else we need 3. These should be allocated globally.
-//          dotrans: flag telling us to tak transpose of deriv operators (TRUE) or
-//                   not (FALSE).
-//             
-// RETURNS:  none
-//**********************************************************************************
-template<>
-void compute_grefderivs(GGrid &grid, GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
-                        GBOOL dotrans, GTVector<GTVector<GFTYPE>*> &du)
-{
-  assert(du.size() >= GDIM
-       && "Insufficient number of derivatives specified");
-  
-
-
-  GBOOL                        bembedded;
-  GINT                         nxy;
-  GSIZET                       ibeg, iend; // beg, end indices for global array
-  GTVector<GSIZET>             N(GDIM);
-  GTVector<GTMatrix<GFTYPE>*>  Di(GDIM);   // element-based 1d derivative operators
-  GElemList                   *gelems = &grid.elems();
-
-  bembedded = grid.gtype() == GE_2DEMBEDDED;
-  assert(( (bembedded && du.size()>=3) 
-        || (!bembedded&& du.size()>=GDIM) )
-       && "Insufficient number of derviatves provided");
-
-  nxy = bembedded ? GDIM+1 : GDIM;
-
-#if defined(_G_IS2D)
-
-  for ( GSIZET e=0; e<grid.elems().size(); e++ ) {
-    ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
-    u.range(ibeg, iend); // restrict global vecs to local range
-    for ( GSIZET k=0; k<nxy ; k++ ) du[k]->range(ibeg, iend);
-    for ( GSIZET k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
-    Di[0] = (*gelems)[e]->gbasis(0)->getDerivMatrix (dotrans);
-    Di[1] = (*gelems)[e]->gbasis(1)->getDerivMatrix(!dotrans);
-    GMTK::I2_X_D1(*Di[0], u, N[0], N[1], *du[0]); 
-    GMTK::D2_X_I1(*Di[1], u, N[0], N[1], *du[1]); 
-#if 0
-    if ( bembedded ) { // ref 3-deriv is just W u:
-      *du[2] = u;  
-    }
-#endif
-  }
-  u.range_reset(); // reset to global range
-  for ( GSIZET k=0; k<GDIM; k++ ) du[k]->range_reset();
-
-#elif defined(_G_IS3D)
-
-  for ( GSIZET e=0; e<grid.elems().size(); e++ ) {
-    ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
-    u.range(ibeg, iend); // restrict global vecs to local range
-    for ( GSIZET k=0; k<GDIM; k++ ) du[k]->range(ibeg, iend);
-    for ( GSIZET k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
-    Di[0] = (*gelems)[e]->gbasis(0)->getDerivMatrix (dotrans); 
-    Di[1] = (*gelems)[e]->gbasis(1)->getDerivMatrix(!dotrans); 
-    Di[2] = (*gelems)[e]->gbasis(2)->getDerivMatrix(!dotrans); 
-    GMTK::I3_X_I2_X_D1(*Di[0], u, N[0], N[1], N[2], *du[0]); 
-    GMTK::I3_X_D2_X_I1(*Di[1], u, N[0], N[1], N[2], *du[1]); 
-    GMTK::D3_X_I2_X_I1(*Di[2], u, N[0], N[1], N[2], *du[2]); 
-  }
-  u.range_reset(); // reset global vec to globalrange
-  for ( GSIZET k=0; k<nxy; k++ ) du[k]->range_reset();
-
-#endif
-
-} // end of method compute_grefderivs
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : compute_grefderivsW
-// DESC   : Compute tensor product derivs of specified field, u, in ref space 
-//          for grid using grid object to determine which to compute, and 
-//          include weights.
-//          Compute:
-//            du = (Mz_X_My_Mx) [ I_X_I_X_Dx
-//                                I_X_Dy_X_I
-//                                Dz_X_I_X_I].
-//     
-//          where Dx, Dy, Dz are 1d derivative objects from basis functions, and
-//          Mi are the (diagonal) 1d-weights (or 'mass functions'). This can be 
-//          re-written as
-//            du = [ Mz_X_My_X_(Mx Dx)
-//                   Mz_X_(My Dy)_X_Mx
-//                  (Mz Dz)_X_My_X_Mx],
-//           with comparable expressions for 2d.
-// ARGS   : 
-//          grid   : GGrid object 
-//          u      : input field whose derivative we want, allocated globally 
-//                   (e.g., for all elements).
-//          etmp   : tmp array (possibly resized here) for element-based ops.
-//                   Is not global.
-//          du     : vector of length 2 or 3 containing the derivatives.
-//                   If using GE_REGULAR in 2D, we only need two vector
-//                   elements; else we need 3. These should be allocated globally.
-//          dotrans: flag telling us to tak transpose of deriv operators (TRUE) or
-//                   not (FALSE).
-//             
-// RETURNS:  none
-//**********************************************************************************
-template<>
-void compute_grefderivsW(GGrid &grid, GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
-                         GBOOL dotrans, GTVector<GTVector<GFTYPE>*> &du)
-{
-  assert(du.size() >= GDIM
-       && "Insufficient number of derivatives specified");
-  
-
-  GBOOL                         bembedded;
-  GINT                          nxy;
-  GSIZET                        k;
-  GSIZET                        ibeg, iend; // beg, end indices for global array
-  GTVector<GSIZET>              N(GDIM);
-  GTVector<GTVector<GFTYPE>*>   W(GDIM);    // element weights
-  GTVector<GTMatrix<GFTYPE>*>   Di(GDIM);   // element-based 1d derivative operators
-  GElemList                    *gelems = &grid.elems();
-
-  bembedded = grid.gtype() == GE_2DEMBEDDED;
-  assert(( (bembedded && du.size()>=3)
-        || (!bembedded&& du.size()>=GDIM) )
-       && "Insufficient number of derviatves provided");
-
-  nxy = bembedded ? GDIM+1 : GDIM;
-
-#if defined(_G_IS2D)
-  for ( GSIZET e=0; e<grid.elems().size(); e++ ) {
-    ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
-    u.range(ibeg, iend); // restrict global vecs to local range
-    for ( k=0; k<nxy ; k++ ) du[k]->range(ibeg, iend);
-    for ( k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
-    for ( k=0; k<GDIM; k++ ) W[k]= (*gelems)[e]->gbasis(k)->getWeights();
-    Di[0] = (*gelems)[e]->gbasis(0)->getDerivMatrixW (dotrans);
-    Di[1] = (*gelems)[e]->gbasis(1)->getDerivMatrixW(!dotrans);
-    GMTK::Dg2_X_D1(*Di[0], *W [1], u, etmp, *du[0]); 
-    GMTK::D2_X_Dg1(*W [0], *Di[1], u, etmp, *du[1]); 
-#if 0
-    if ( bembedded ) { // ref 3-deriv is just W u:
-      k = 0;
-      for ( GSIZET j=0; j<N[1]; j++ ) {
-        for ( GSIZET i=0; i<N[0]; i++ ) {
-          (*du[2])[k] = u[k]*(*W[0])[i]*(*W[1])[j];  
-          k++;
-        }
-      }
-    }
-#endif
-  }
-  u.range_reset(); // reset global vec to global range
-  for ( k=0; k<nxy; k++ ) du[k]->range_reset();
-
-#elif defined(_G_IS3D)
-
-  for ( GSIZET e=0; e<grid.elems().size(); e++ ) {
-    ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
-    u.range(ibeg, iend); // restrict global vecs to local range
-    for ( k=0; k<GDIM; k++ ) du[k]->range(ibeg, iend);
-    for ( k=0; k<GDIM; k++ ) {
-      N[k]= (*gelems)[e]->size(k);
-      W[k]= (*gelems)[e]->gbasis(k)->getWeights();
-    }
-    Di[0] = (*gelems)[e]->gbasis(0)->getDerivMatrixW (dotrans); 
-    Di[1] = (*gelems)[e]->gbasis(1)->getDerivMatrixW(!dotrans); 
-    Di[2] = (*gelems)[e]->gbasis(2)->getDerivMatrixW(!dotrans); 
-    GMTK::Dg3_X_Dg2_X_D1(*Di[0], *W [1], *W [2], u, etmp, *du[0]); 
-    GMTK::Dg3_X_D2_X_Dg1(*W [0], *Di[1], *W [2], u, etmp, *du[1]); 
-    GMTK::D3_X_Dg2_X_Dg1(*W [0], *W [1], *Di[2], u, etmp, *du[2]); 
-  }
-  u.range_reset(); // reset global vec to globalrange
-  for ( k=0; k<GDIM; k++ ) du[k]->range_reset();
-
-#endif
-
-} // end of method compute_grefderivsW
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : compute_grefdiv
-// DESC   : Compute tensor product 'divergence' of input fields in ref space
-//          for grid:
-//             Div u = [I_X_I_X_Dx     |u1|
-//                      I_X_Dy_X_I   . |u2|
-//                      Dz_X_I_X_I]    |u3|
-//          or
-//     
-//             Div u = [I_X_I_X_DxT)   |u1|
-//                      I_X_DyT_X_I .  |u2|
-//                      DzT_X_I_X_I]   |u3|
-//          where Dx(T), Dy(T), Dz(T) are 1d derivative objects from basis functions
-// ARGS   : 
-//          grid   : GGrid object 
-//          u      : input vector field whose divergence we want, allocated globally 
-//                   (e.g., for all elements). Must have GDIM components, unless
-//                   we're using an embedded grid, when GDIM=2, when it should have
-//                   3 components. Will not be altered on exit.
-//          etmp   : tmp array (possibly resized here) for element-based ops.
-//                   Is not global.
-//          dotrans: flag telling us to tak transpose of deriv operators (TRUE) or
-//                   not (FALSE).
-//          divu   : scalar result
-//             
-// RETURNS:  none
-//**********************************************************************************
-template<>
-void compute_grefdiv(GGrid &grid, GTVector<GTVector<GFTYPE>*> &u, GTVector<GFTYPE> &etmp,
-                     GBOOL dotrans, GTVector<GFTYPE> &divu)
-{
-
-  GBOOL                        bembedded;
-  GSIZET                       ibeg, iend; // beg, end indices for global array
-  GTVector<GTVector<GFTYPE>*>  W(GDIM);    // element 1/weights
-  GTVector<GSIZET>             N(GDIM);
-  GTVector<GTMatrix<GFTYPE>*>  Di(GDIM);   // element-based 1d derivative operators
-  GElemList                   *gelems = &grid.elems();
-
-  bembedded = grid.gtype() == GE_2DEMBEDDED;
-#if 0
-  assert(( (bembedded && u.size()==GDIM) 
-        || (!bembedded&& u.size()==GDIM) )
-       && "Insufficient number of vector field components provided");
-#else
-  assert(  u.size()==GDIM  
-       && "Insufficient number of vector field components provided");
-#endif
-
-  divu = 0.0;
-
-#if defined(_G_IS2D)
-
-  for ( GSIZET e=0; e<grid.elems().size(); e++ ) {
-    // restrict global vecs to local range
-    ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
-    divu.range(ibeg,iend); 
-    for ( GSIZET k=0; k<u.size(); k++ ) u[k]->range(ibeg, iend); 
-    for ( GSIZET k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
-    Di[0] = (*gelems)[e]->gbasis(0)->getDerivMatrix (dotrans);
-    Di[1] = (*gelems)[e]->gbasis(1)->getDerivMatrix(!dotrans);
-    etmp.resizem((*gelems)[e]->nnodes());
-    GMTK::I2_X_D1(*Di[0], *u[0], N[0], N[1], etmp); // D1 u1
-    divu += etmp;
-    GMTK::D2_X_I1(*Di[1], *u[1], N[0], N[1], etmp); // D2 u2
-    divu += etmp;
-#if 0
-    if ( bembedded ) divu += *u[2]; // D3 acts as I
-#endif
-  }
-  divu.range_reset();  // reset range to global scope
-  for ( GSIZET k=0; k<u.size(); k++ ) u[k]->range_reset(); 
-
-#elif defined(_G_IS3D)
-
-  for ( GSIZET e=0; e<grid.elems().size(); e++ ) {
-    ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
-    divu.range(ibeg,iend); 
-    for ( GSIZET k=0; k<u.size(); k++ ) u[k]->range(ibeg, iend); 
-    for ( GSIZET k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
-    etmp.resizem((*gelems)[e]->nnodes());
-    Di[0] = (*gelems)[e]->gbasis(0)->getDerivMatrix (dotrans); 
-    Di[1] = (*gelems)[e]->gbasis(1)->getDerivMatrix(!dotrans); 
-    Di[2] = (*gelems)[e]->gbasis(1)->getDerivMatrix(!dotrans); 
-
-    GMTK::I3_X_I2_X_D1(*Di[0], *u[0], N[0], N[1], N[2], etmp); // D1 u1
-    divu += etmp;
-    GMTK::I3_X_D2_X_I1(*Di[1], *u[1], N[0], N[1], N[2], etmp); // D2 u2
-    divu += etmp;
-    GMTK::D3_X_I2_X_I1(*Di[2], *u[2], N[0], N[1], N[2], etmp); // D3 u3
-    divu += etmp;
-  }
-  divu.range_reset();  // reset range to global scope
-  for ( GSIZET k=0; k<u.size(); k++ ) u[k]->range_reset(); 
-
-#endif
-
-
-} // end, method compute_grefdiv
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : compute_grefdiviW
-// DESC   : Compute tensor product 'weighted divergence' of input fields in ref space
-//          for grid:
-//             Div u = [iM_X_iM_X_ iWDx    |u1|
-//                      iM_X_iMDy_X_iM   . |u2|
-//                      iMDz_X_iM_X_iM]    |u3|
-//          or
-//     
-//             Div u = [iM_X_iM_X_iM DxT)    |u1|
-//                      iM_X_iM DyT)_X_iM .  |u2|
-//                      iM DzT)_X_iM_X_iM]   |u3|
-//          where Dx(T), Dy(T), Dz(T) are 1d derivative objects from basis functions,
-//          and iM are the 1d inverse weights     
-// ARGS   : 
-//          grid   : GGrid object 
-//          u      : input vector field whose divergence we want, allocated globally 
-//                   (e.g., for all elements). Must have GDIM components, unless
-//                   we're using an embedded grid, when GDIM=2, when it should have
-//                   3 components. Will be altered on exit.
-//          etmp   : tmp array (possibly resized here) for element-based ops.
-//                   Is not global.
-//          dotrans: flag telling us to tak transpose of deriv operators (TRUE) or
-//                   not (FALSE).
-//          divu   : scalar result
-//             
-// RETURNS:  none
-//**********************************************************************************
-template<>
-void compute_grefdiviW(GGrid &grid, GTVector<GTVector<GFTYPE>*> &u, GTVector<GFTYPE> &etmp,
-                       GBOOL dotrans, GTVector<GFTYPE> &divu)
-{
-
-  GBOOL                        bembedded;
-  GSIZET                       ibeg, iend; // beg, end indices for global array
-  GTVector<GTVector<GFTYPE>*>  iW(GDIM);   // element 1/weights
-  GTVector<GSIZET>             N(GDIM);
-  GTVector<GTMatrix<GFTYPE>*>  Di(GDIM);   // element-based 1d derivative operators
-  GElemList                   *gelems = &grid.elems();
-
-  bembedded = grid.gtype() == GE_2DEMBEDDED;
-  assert(( (bembedded && u.size()==3) 
-        || (!bembedded&& u.size()==GDIM) )
-       && "Insufficient number of vector field components provided");
-
-  divu = 0.0;
-
-#if defined(_G_IS2D)
-
-  for ( GSIZET e=0; e<grid.elems().size(); e++ ) {
-    // restrict global vecs to local range
-    ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
-    divu.range(ibeg,iend); 
-    for ( GSIZET k=0; k<u.size(); k++ ) u[k]->range(ibeg, iend); 
-    for ( GSIZET k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
-    for ( GSIZET k=0; k<GDIM; k++ ) iW[k]= (*gelems)[e]->gbasis(k)->getiWeights();
-    Di[0] = (*gelems)[e]->gbasis(0)->getDerivMatrixiW (dotrans);
-    Di[1] = (*gelems)[e]->gbasis(1)->getDerivMatrixiW(!dotrans);
-    etmp.resizem((*gelems)[e]->nnodes());
-    GMTK::Dg2_X_D1(*Di[0], *iW[1], *u[0], etmp, divu); // W X W^-1 D1 u1
-    GMTK::D2_X_Dg1(*iW[0], *Di[1], *u[1], etmp, *u[0]); // W^^-1 D2 X W u2
-    divu += *u[0];
-#if 0
-    if ( bembedded ) divu += *u[2]; // D3 acts as I
-#endif
-#if 0
-    Di[0] = (*gelems)[e]->gbasis(0)->getDerivMatrix (dotrans);
-    Di[1] = (*gelems)[e]->gbasis(1)->getDerivMatrix(!dotrans);
-    GMTK::I2_X_D1(*Di[0], u, N[0], N[1], *du[0]); 
-    GMTK::D2_X_I1(*Di[1], u, N[0], N[1], *du[1]); 
-#endif
-  }
-  divu.range_reset();  // reset range to global scope
-  for ( GSIZET k=0; k<u.size(); k++ ) u[k]->range_reset(); 
-
-#elif defined(_G_IS3D)
-
-  for ( GSIZET e=0; e<grid.elems().size(); e++ ) {
-    ibeg = (*gelems)[e]->igbeg(); iend = (*gelems)[e]->igend();
-    divu.range(ibeg,iend); 
-    for ( GSIZET k=0; k<u.size(); k++ ) u[k]->range(ibeg, iend); 
-    for ( GSIZET k=0; k<GDIM; k++ ) N[k]= (*gelems)[e]->size(k);
-    for ( GSIZET k=0; k<GDIM; k++ ) iW[k]= (*gelems)[e]->gbasis(k)->getiWeights();
-    etmp.resizem((*gelems)[e]->nnodes());
-    Di[0] = (*gelems)[e]->gbasis(0)->getDerivMatrixiW (dotrans); 
-    Di[1] = (*gelems)[e]->gbasis(1)->getDerivMatrixiW(!dotrans); 
-    Di[2] = (*gelems)[e]->gbasis(1)->getDerivMatrixiW(!dotrans); 
-
-    GMTK::Dg3_X_Dg2_X_D1(*Di[0], *iW [1], *iW [2], *u[0], etmp, divu); 
-    GMTK::Dg3_X_D2_X_Dg1(*iW [0], *Di[1], *iW [2], *u[1], etmp, *u[0]); 
-    divu += *u[0];
-    GMTK::D3_X_Dg2_X_Dg1(*iW [0], *iW [1], *Di[2], *u[2], etmp, *u[0]); 
-    divu += *u[0];
-  }
-  divu.range_reset();  // reset range to global scope
-  for ( GSIZET k=0; k<u.size(); k++ ) u[k]->range_reset(); 
-
-#endif
-
-
-} // end, method compute_grefdiviW
-
-
 
 //**********************************************************************************
 //**********************************************************************************
@@ -2754,138 +2236,138 @@ template<>
 void vsphere2cart(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &vsph, GVectorType vtype, GTVector<GTVector<GFTYPE>*> &vcart)
 {
 
-  if      ( GDIM == 2 && grid.gtype() == GE_2DEMBEDDED ) {
-    assert( vsph.size() >= 2 && "GE_2DEMBEDDED grid requires 2 spherical components");
-  }
-  else if ( grid.gtype() == GE_DEFORMED ) {
-    assert( vsph.size() >= 3 && "GE_DEFORMED grid requires 3 spherical components");
-  }
-  else if ( grid.gtype() != GE_REGULAR ) {
-    assert( FALSE && "GE_REGULAR grid will not allow this transformation");
-  }
+if      ( GDIM == 2 && grid.gtype() == GE_2DEMBEDDED ) {
+assert( vsph.size() >= 2 && "GE_2DEMBEDDED grid requires 2 spherical components");
+}
+else if ( grid.gtype() == GE_DEFORMED ) {
+assert( vsph.size() >= 3 && "GE_DEFORMED grid requires 3 spherical components");
+}
+else if ( grid.gtype() != GE_REGULAR ) {
+assert( FALSE && "GE_REGULAR grid will not allow this transformation");
+}
 
 
-  GSIZET           nxy = grid.ndof();
-  GFTYPE           x, y, z, tiny;
-  GFTYPE           phi, r, theta;
-  GFTYPE           gpp, gtt;
-  GFTYPE           vthcontra, vphicontra;
-  GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
+GSIZET           nxy = grid.ndof();
+GFTYPE           x, y, z, tiny;
+GFTYPE           phi, r, theta;
+GFTYPE           gpp, gtt;
+GFTYPE           vthcontra, vphicontra;
+GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
 
-  tiny = numeric_limits<GFTYPE>::epsilon();
+tiny = numeric_limits<GFTYPE>::epsilon();
 
-  //   v_i_cart = vtheta dx_i/dtheta + vphi dx_i/dphi
-  // where
-  //   vtheta, vhi are _contravariant_ (upper-index) components
-  // Note: Metric is orthogonal:
-  //   g_ij = (1, h_theta^2, h_phi^2) = (1, r^2, (r cos(theta))^2 )
-  if ( grid.gtype() == GE_2DEMBEDDED ) {
-    if ( vtype == GVECTYPE_PHYS ) { // vsph are physical components
-      for ( GSIZET j=0; j<nxy; j++ ) {
-        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-        r     = sqrt(x*x + y*y + z*z);
-        theta = asin(z/r);
-        phi   = atan2(y,x);
-        (*vcart[0])[j] = -(*vsph[0])[j]*  sin(theta)*cos(phi) 
-                       -  (*vsph[1])[j]*             sin(phi);
-        (*vcart[1])[j] = -(*vsph[0])[j]*  sin(theta)*sin(phi) 
-                       +  (*vsph[1])[j]*             cos(phi);
-        (*vcart[2])[j] =  (*vsph[0])[j]*  cos(theta);
-      }
-    }
-    else if ( vtype == GVECTYPE_COVAR ) { // vsph are covar. components
-      for ( GSIZET j=0; j<nxy; j++ ) {
-        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-        r     = sqrt(x*x + y*y + z*z);
-        theta = asin(z/r);
-        phi   = atan2(y,x);
-        vthcontra  = (*vsph[0])[j];
-        vphicontra = (*vsph[1])[j];
-        gtt        = r*r; gpp = pow(r*cos(theta),2);
-        vthcontra  = (*vsph[0])[j]/(gtt+tiny);
-        vphicontra = (*vsph[1])[j]/(gpp+tiny);
-        (*vcart[0])[j] = -vthcontra *r*sin(theta)*cos(phi) 
-                       -  vphicontra*r*cos(theta)*sin(phi);
-        (*vcart[1])[j] = -vthcontra *r*sin(theta)*sin(phi) 
-                       +  vphicontra*r*cos(theta)*cos(phi);
-        (*vcart[2])[j] =  vthcontra *r*cos(theta);
-      }
-    }
-    else if ( vtype == GVECTYPE_CONTRAVAR ) { // vsph are contravar. components
-      for ( GSIZET j=0; j<nxy; j++ ) {
-        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-        r     = sqrt(x*x + y*y + z*z);
-        theta = asin(z/r);
-        phi   = atan2(y,x);
-        vthcontra  = (*vsph[0])[j];
-        vphicontra = (*vsph[1])[j];
-        (*vcart[0])[j] = -vthcontra *r*sin(theta)*cos(phi) 
-                       -  vphicontra*r*cos(theta)*sin(phi);
-        (*vcart[1])[j] = -vthcontra *r*sin(theta)*sin(phi) 
-                       +  vphicontra*r*cos(theta)*cos(phi);
-        (*vcart[2])[j] =  vthcontra *r*cos(theta);
-      }
-    }
-  }
+//   v_i_cart = vtheta dx_i/dtheta + vphi dx_i/dphi
+// where
+//   vtheta, vhi are _contravariant_ (upper-index) components
+// Note: Metric is orthogonal:
+//   g_ij = (1, h_theta^2, h_phi^2) = (1, r^2, (r cos(theta))^2 )
+if ( grid.gtype() == GE_2DEMBEDDED ) {
+if ( vtype == GVECTYPE_PHYS ) { // vsph are physical components
+for ( GSIZET j=0; j<nxy; j++ ) {
+x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
+r     = sqrt(x*x + y*y + z*z);
+theta = asin(z/r);
+phi   = atan2(y,x);
+(*vcart[0])[j] = -(*vsph[0])[j]*  sin(theta)*cos(phi) 
+	       -  (*vsph[1])[j]*             sin(phi);
+(*vcart[1])[j] = -(*vsph[0])[j]*  sin(theta)*sin(phi) 
+	       +  (*vsph[1])[j]*             cos(phi);
+(*vcart[2])[j] =  (*vsph[0])[j]*  cos(theta);
+}
+}
+else if ( vtype == GVECTYPE_COVAR ) { // vsph are covar. components
+for ( GSIZET j=0; j<nxy; j++ ) {
+x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
+r     = sqrt(x*x + y*y + z*z);
+theta = asin(z/r);
+phi   = atan2(y,x);
+vthcontra  = (*vsph[0])[j];
+vphicontra = (*vsph[1])[j];
+gtt        = r*r; gpp = pow(r*cos(theta),2);
+vthcontra  = (*vsph[0])[j]/(gtt+tiny);
+vphicontra = (*vsph[1])[j]/(gpp+tiny);
+(*vcart[0])[j] = -vthcontra *r*sin(theta)*cos(phi) 
+	       -  vphicontra*r*cos(theta)*sin(phi);
+(*vcart[1])[j] = -vthcontra *r*sin(theta)*sin(phi) 
+	       +  vphicontra*r*cos(theta)*cos(phi);
+(*vcart[2])[j] =  vthcontra *r*cos(theta);
+}
+}
+else if ( vtype == GVECTYPE_CONTRAVAR ) { // vsph are contravar. components
+for ( GSIZET j=0; j<nxy; j++ ) {
+x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
+r     = sqrt(x*x + y*y + z*z);
+theta = asin(z/r);
+phi   = atan2(y,x);
+vthcontra  = (*vsph[0])[j];
+vphicontra = (*vsph[1])[j];
+(*vcart[0])[j] = -vthcontra *r*sin(theta)*cos(phi) 
+	       -  vphicontra*r*cos(theta)*sin(phi);
+(*vcart[1])[j] = -vthcontra *r*sin(theta)*sin(phi) 
+	       +  vphicontra*r*cos(theta)*cos(phi);
+(*vcart[2])[j] =  vthcontra *r*cos(theta);
+}
+}
+}
 
-  if ( grid.gtype() == GE_DEFORMED ) {
-    if      ( vtype == GVECTYPE_PHYS ) {
-      for ( GSIZET j=0; j<nxy; j++ ) {
-        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-        r     = sqrt(x*x + y*y + z*z);
-        theta = asin(z/r);
-        phi   = atan2(y,x);
-        gtt        = r; gpp = r*cos(theta);
-        vthcontra  = (*vsph[1])[j]/(gtt+tiny);
-        vphicontra = (*vsph[2])[j]/(gpp+tiny);
-        (*vcart[0])[j] =  (*vsph[0])[j]*  cos(theta)*cos(phi)
-                       -  (*vsph[1])[j]*r*sin(theta)*cos(phi) 
-                       +  (*vsph[2])[j]*r*cos(theta)*sin(phi);
-        (*vcart[1])[j] =  (*vsph[0])[j]*  cos(theta)*sin(phi)
-                       -  (*vsph[1])[j]*r*sin(theta)*sin(phi) 
-                       +  (*vsph[2])[j]*r*cos(theta)*cos(phi);
-        (*vcart[2])[j] =  (*vsph[0])[j]*  sin(theta)
-                       +  (*vsph[1])[j]*r*cos(theta);
-      }
-    }
-    else if ( vtype == GVECTYPE_COVAR ) {
-      for ( GSIZET j=0; j<nxy; j++ ) {
-        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-        r     = sqrt(x*x + y*y + z*z);
-        theta = asin(z/r);
-        phi   = atan2(y,x);
-        gtt        = r*r; gpp = pow(r*cos(theta),2);
-        vthcontra  = (*vsph[1])[j]/(gtt+tiny);
-        vphicontra = (*vsph[2])[j]/(gpp+tiny);
-        (*vcart[0])[j] =  (*vsph[0])[j]*  cos(theta)*cos(phi)
-                       -  (*vsph[1])[j]*r*sin(theta)*cos(phi) 
-                       +  (*vsph[2])[j]*r*cos(theta)*sin(phi);
-        (*vcart[1])[j] =  (*vsph[0])[j]*  cos(theta)*sin(phi)
-                       -  (*vsph[1])[j]*r*sin(theta)*sin(phi) 
-                       +  (*vsph[2])[j]*r*cos(theta)*cos(phi);
-        (*vcart[2])[j] =  (*vsph[0])[j]*  sin(theta)
-                       +  (*vsph[1])[j]*r*cos(theta);
-      }
-    }
-    else if ( vtype == GVECTYPE_CONTRAVAR ) {
-      for ( GSIZET j=0; j<nxy; j++ ) {
-        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-        r     = sqrt(x*x + y*y + z*z);
-        theta = asin(z/r);
-        phi   = atan2(y,x);
-        vthcontra  = (*vsph[0])[j];
-        vphicontra = (*vsph[1])[j];
-        (*vcart[0])[j] =  (*vsph[0])[j]*  cos(theta)*cos(phi)
-                       -  (*vsph[1])[j]*r*sin(theta)*cos(phi) 
-                       +  (*vsph[2])[j]*r*cos(theta)*sin(phi);
-        (*vcart[1])[j] =  (*vsph[0])[j]*  cos(theta)*sin(phi)
-                       -  (*vsph[1])[j]*r*sin(theta)*sin(phi) 
-                       +  (*vsph[2])[j]*r*cos(theta)*cos(phi);
-        (*vcart[2])[j] =  (*vsph[0])[j]*  sin(theta)
-                       +  (*vsph[1])[j]*r*cos(theta);
-      }
-    }
-  }
+if ( grid.gtype() == GE_DEFORMED ) {
+if      ( vtype == GVECTYPE_PHYS ) {
+for ( GSIZET j=0; j<nxy; j++ ) {
+x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
+r     = sqrt(x*x + y*y + z*z);
+theta = asin(z/r);
+phi   = atan2(y,x);
+gtt        = r; gpp = r*cos(theta);
+vthcontra  = (*vsph[1])[j]/(gtt+tiny);
+vphicontra = (*vsph[2])[j]/(gpp+tiny);
+(*vcart[0])[j] =  (*vsph[0])[j]*  cos(theta)*cos(phi)
+	       -  (*vsph[1])[j]*r*sin(theta)*cos(phi) 
+	       +  (*vsph[2])[j]*r*cos(theta)*sin(phi);
+(*vcart[1])[j] =  (*vsph[0])[j]*  cos(theta)*sin(phi)
+	       -  (*vsph[1])[j]*r*sin(theta)*sin(phi) 
+	       +  (*vsph[2])[j]*r*cos(theta)*cos(phi);
+(*vcart[2])[j] =  (*vsph[0])[j]*  sin(theta)
+	       +  (*vsph[1])[j]*r*cos(theta);
+}
+}
+else if ( vtype == GVECTYPE_COVAR ) {
+for ( GSIZET j=0; j<nxy; j++ ) {
+x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
+r     = sqrt(x*x + y*y + z*z);
+theta = asin(z/r);
+phi   = atan2(y,x);
+gtt        = r*r; gpp = pow(r*cos(theta),2);
+vthcontra  = (*vsph[1])[j]/(gtt+tiny);
+vphicontra = (*vsph[2])[j]/(gpp+tiny);
+(*vcart[0])[j] =  (*vsph[0])[j]*  cos(theta)*cos(phi)
+	       -  (*vsph[1])[j]*r*sin(theta)*cos(phi) 
+	       +  (*vsph[2])[j]*r*cos(theta)*sin(phi);
+(*vcart[1])[j] =  (*vsph[0])[j]*  cos(theta)*sin(phi)
+	       -  (*vsph[1])[j]*r*sin(theta)*sin(phi) 
+	       +  (*vsph[2])[j]*r*cos(theta)*cos(phi);
+(*vcart[2])[j] =  (*vsph[0])[j]*  sin(theta)
+	       +  (*vsph[1])[j]*r*cos(theta);
+}
+}
+else if ( vtype == GVECTYPE_CONTRAVAR ) {
+for ( GSIZET j=0; j<nxy; j++ ) {
+x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
+r     = sqrt(x*x + y*y + z*z);
+theta = asin(z/r);
+phi   = atan2(y,x);
+vthcontra  = (*vsph[0])[j];
+vphicontra = (*vsph[1])[j];
+(*vcart[0])[j] =  (*vsph[0])[j]*  cos(theta)*cos(phi)
+	       -  (*vsph[1])[j]*r*sin(theta)*cos(phi) 
+	       +  (*vsph[2])[j]*r*cos(theta)*sin(phi);
+(*vcart[1])[j] =  (*vsph[0])[j]*  cos(theta)*sin(phi)
+	       -  (*vsph[1])[j]*r*sin(theta)*sin(phi) 
+	       +  (*vsph[2])[j]*r*cos(theta)*cos(phi);
+(*vcart[2])[j] =  (*vsph[0])[j]*  sin(theta)
+	       +  (*vsph[1])[j]*r*cos(theta);
+}
+}
+}
 
 } // end of method vsphere2cart
 
@@ -2911,140 +2393,140 @@ template<>
 void vcart2sphere(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &vcart, GVectorType vtype, GTVector<GTVector<GFTYPE>*> &vsph)
 {
 
-  assert( vcart.size() >= 3 && "Transformation requires 3 Cartesian components");
-  if      ( GDIM == 2 && grid.gtype() == GE_2DEMBEDDED ) {
-    assert( vsph.size() >= 2 && "GE_2DEMBEDDED grid requires 2 spherical components");
-  }
-  else if ( grid.gtype() == GE_DEFORMED ) {
-    assert( vsph.size() >= 3 && "GE_DEFORMED grid requires 3 spherical components");
-  }
-  else if ( grid.gtype() != GE_REGULAR ) {
-    assert( FALSE && "GE_REGULAR grid will not allow this transformation");
-  }
+assert( vcart.size() >= 3 && "Transformation requires 3 Cartesian components");
+if      ( GDIM == 2 && grid.gtype() == GE_2DEMBEDDED ) {
+assert( vsph.size() >= 2 && "GE_2DEMBEDDED grid requires 2 spherical components");
+}
+else if ( grid.gtype() == GE_DEFORMED ) {
+assert( vsph.size() >= 3 && "GE_DEFORMED grid requires 3 spherical components");
+}
+else if ( grid.gtype() != GE_REGULAR ) {
+assert( FALSE && "GE_REGULAR grid will not allow this transformation");
+}
 
 /*
 
-  GSIZET           nxy = grid.ndof();
-  GFTYPE           x, y, z, tiny;
-  GFTYPE           phi, r, theta;
-  GFTYPE           gpp, gtt;
-  GFTYPE           vthcontra, vphicontra;
-  GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
+GSIZET           nxy = grid.ndof();
+GFTYPE           x, y, z, tiny;
+GFTYPE           phi, r, theta;
+GFTYPE           gpp, gtt;
+GFTYPE           vthcontra, vphicontra;
+GTVector<GTVector<GFTYPE>> *xnodes = &grid.xNodes();
 
-  tiny = numeric_limits<GFTYPE>::epsilon();
+tiny = numeric_limits<GFTYPE>::epsilon();
 
-  //   v_i_cart = vtheta dx_i/dtheta + vphi dx_i/dphi
-  // where
-  //   vtheta, vhi are _contravariant_ (upper-index) components
-  // Note: Metric is orthogonal:
-  //   g_ij = (1, h_theta^2, h_phi^2) = (1, r^2, (r cos(theta))^2 )
-  if ( grid.gtype() == GE_2DEMBEDDED ) {
-    if ( vtype == GVECTYPE_PHYS ) { // vsph are physical components
-      for ( GSIZET j=0; j<nxy; j++ ) {
-        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-        r     = sqrt(x*x + y*y + z*z);
-        theta = asin(z/r);
-        phi   = atan2(y,x);
-        (*vcart[0])[j] = -(*vsph[0])[j]*  sin(theta)*cos(phi) 
-                       -  (*vsph[1])[j]*             sin(phi);
-        (*vcart[1])[j] = -(*vsph[0])[j]*  sin(theta)*sin(phi) 
-                       +  (*vsph[1])[j]*             cos(phi);
-        (*vcart[2])[j] =  (*vsph[0])[j]*  sin(theta);
-      }
-    }
-    else if ( vtype == GVECTYPE_COVAR ) { // vsph are covar. components
-      for ( GSIZET j=0; j<nxy; j++ ) {
-        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-        r     = sqrt(x*x + y*y + z*z);
-        theta = asin(z/r);
-        phi   = atan2(y,x);
-        vthcontra  = (*vsph[0])[j];
-        vphicontra = (*vsph[1])[j];
-        gtt        = r*r; gpp = pow(r*cos(theta),2);
-        vthcontra  = (*vsph[0])[j]/(gtt+tiny);
-        vphicontra = (*vsph[1])[j]/(gpp+tiny);
-        (*vcart[0])[j] = -vthcontra *r*sin(theta)*cos(phi) 
-                       -  vphicontra*r*cos(theta)*sin(phi);
-        (*vcart[1])[j] = -vthcontra *r*sin(theta)*sin(phi) 
-                       +  vphicontra*r*cos(theta)*cos(phi);
-        (*vcart[2])[j] =  vthcontra *r*cos(theta);
-      }
-    }
-    else if ( vtype == GVECTYPE_CONTRAVAR ) { // vsph are contravar. components
-      for ( GSIZET j=0; j<nxy; j++ ) {
-        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-        r     = sqrt(x*x + y*y + z*z);
-        theta = asin(z/r);
-        phi   = atan2(y,x);
-        vthcontra  = (*vsph[0])[j];
-        vphicontra = (*vsph[1])[j];
-        (*vcart[0])[j] = -vthcontra *r*sin(theta)*cos(phi) 
-                       -  vphicontra*r*cos(theta)*sin(phi);
-        (*vcart[1])[j] = -vthcontra *r*sin(theta)*sin(phi) 
-                       +  vphicontra*r*cos(theta)*cos(phi);
-        (*vcart[2])[j] =  vthcontra *r*cos(theta);
-      }
-    }
-  }
+//   v_i_cart = vtheta dx_i/dtheta + vphi dx_i/dphi
+// where
+//   vtheta, vhi are _contravariant_ (upper-index) components
+// Note: Metric is orthogonal:
+//   g_ij = (1, h_theta^2, h_phi^2) = (1, r^2, (r cos(theta))^2 )
+if ( grid.gtype() == GE_2DEMBEDDED ) {
+if ( vtype == GVECTYPE_PHYS ) { // vsph are physical components
+for ( GSIZET j=0; j<nxy; j++ ) {
+x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
+r     = sqrt(x*x + y*y + z*z);
+theta = asin(z/r);
+phi   = atan2(y,x);
+(*vcart[0])[j] = -(*vsph[0])[j]*  sin(theta)*cos(phi) 
+	       -  (*vsph[1])[j]*             sin(phi);
+(*vcart[1])[j] = -(*vsph[0])[j]*  sin(theta)*sin(phi) 
+	       +  (*vsph[1])[j]*             cos(phi);
+(*vcart[2])[j] =  (*vsph[0])[j]*  sin(theta);
+}
+}
+else if ( vtype == GVECTYPE_COVAR ) { // vsph are covar. components
+for ( GSIZET j=0; j<nxy; j++ ) {
+x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
+r     = sqrt(x*x + y*y + z*z);
+theta = asin(z/r);
+phi   = atan2(y,x);
+vthcontra  = (*vsph[0])[j];
+vphicontra = (*vsph[1])[j];
+gtt        = r*r; gpp = pow(r*cos(theta),2);
+vthcontra  = (*vsph[0])[j]/(gtt+tiny);
+vphicontra = (*vsph[1])[j]/(gpp+tiny);
+(*vcart[0])[j] = -vthcontra *r*sin(theta)*cos(phi) 
+	       -  vphicontra*r*cos(theta)*sin(phi);
+(*vcart[1])[j] = -vthcontra *r*sin(theta)*sin(phi) 
+	       +  vphicontra*r*cos(theta)*cos(phi);
+(*vcart[2])[j] =  vthcontra *r*cos(theta);
+}
+}
+else if ( vtype == GVECTYPE_CONTRAVAR ) { // vsph are contravar. components
+for ( GSIZET j=0; j<nxy; j++ ) {
+x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
+r     = sqrt(x*x + y*y + z*z);
+theta = asin(z/r);
+phi   = atan2(y,x);
+vthcontra  = (*vsph[0])[j];
+vphicontra = (*vsph[1])[j];
+(*vcart[0])[j] = -vthcontra *r*sin(theta)*cos(phi) 
+	       -  vphicontra*r*cos(theta)*sin(phi);
+(*vcart[1])[j] = -vthcontra *r*sin(theta)*sin(phi) 
+	       +  vphicontra*r*cos(theta)*cos(phi);
+(*vcart[2])[j] =  vthcontra *r*cos(theta);
+}
+}
+}
 
-  if ( grid.gtype() == GE_DEFORMED ) {
-    if      ( vtype == GVECTYPE_PHYS ) {
-      for ( GSIZET j=0; j<nxy; j++ ) {
-        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-        r     = sqrt(x*x + y*y + z*z);
-        theta = asin(z/r);
-        phi   = atan2(y,x);
-        gtt        = r; gpp = r*cos(theta);
-        vthcontra  = (*vsph[1])[j]/(gtt+tiny);
-        vphicontra = (*vsph[2])[j]/(gpp+tiny);
-        (*vcart[0])[j] =  (*vsph[0])[j]*  cos(theta)*cos(phi)
-                       -  (*vsph[1])[j]*r*sin(theta)*cos(phi) 
-                       +  (*vsph[2])[j]*r*cos(theta)*sin(phi);
-        (*vcart[1])[j] =  (*vsph[0])[j]*  cos(theta)*sin(phi)
-                       -  (*vsph[1])[j]*r*sin(theta)*sin(phi) 
-                       +  (*vsph[2])[j]*r*cos(theta)*cos(phi);
-        (*vcart[2])[j] =  (*vsph[0])[j]*  sin(theta)
-                       +  (*vsph[1])[j]*r*cos(theta);
-      }
-    }
-    else if ( vtype == GVECTYPE_COVAR ) {
-      for ( GSIZET j=0; j<nxy; j++ ) {
-        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-        r     = sqrt(x*x + y*y + z*z);
-        theta = asin(z/r);
-        phi   = atan2(y,x);
-        gtt        = r*r; gpp = pow(r*cos(theta),2);
-        vthcontra  = (*vsph[1])[j]/(gtt+tiny);
-        vphicontra = (*vsph[2])[j]/(gpp+tiny);
-        (*vcart[0])[j] =  (*vsph[0])[j]*  cos(theta)*cos(phi)
-                       -  (*vsph[1])[j]*r*sin(theta)*cos(phi) 
-                       +  (*vsph[2])[j]*r*cos(theta)*sin(phi);
-        (*vcart[1])[j] =  (*vsph[0])[j]*  cos(theta)*sin(phi)
-                       -  (*vsph[1])[j]*r*sin(theta)*sin(phi) 
-                       +  (*vsph[2])[j]*r*cos(theta)*cos(phi);
-        (*vcart[2])[j] =  (*vsph[0])[j]*  sin(theta)
-                       +  (*vsph[1])[j]*r*cos(theta);
-      }
-    }
-    else if ( vtype == GVECTYPE_CONTRAVAR ) {
-      for ( GSIZET j=0; j<nxy; j++ ) {
-        x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
-        r     = sqrt(x*x + y*y + z*z);
-        theta = asin(z/r);
-        phi   = atan2(y,x);
-        vthcontra  = (*vsph[0])[j];
-        vphicontra = (*vsph[1])[j];
-        (*vcart[0])[j] =  (*vsph[0])[j]*  cos(theta)*cos(phi)
-                       -  (*vsph[1])[j]*r*sin(theta)*cos(phi) 
-                       +  (*vsph[2])[j]*r*cos(theta)*sin(phi);
-        (*vcart[1])[j] =  (*vsph[0])[j]*  cos(theta)*sin(phi)
-                       -  (*vsph[1])[j]*r*sin(theta)*sin(phi) 
-                       +  (*vsph[2])[j]*r*cos(theta)*cos(phi);
-        (*vcart[2])[j] =  (*vsph[0])[j]*  sin(theta)
-                       +  (*vsph[1])[j]*r*cos(theta);
-      }
-    }
-  }
+if ( grid.gtype() == GE_DEFORMED ) {
+if      ( vtype == GVECTYPE_PHYS ) {
+for ( GSIZET j=0; j<nxy; j++ ) {
+x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
+r     = sqrt(x*x + y*y + z*z);
+theta = asin(z/r);
+phi   = atan2(y,x);
+gtt        = r; gpp = r*cos(theta);
+vthcontra  = (*vsph[1])[j]/(gtt+tiny);
+vphicontra = (*vsph[2])[j]/(gpp+tiny);
+(*vcart[0])[j] =  (*vsph[0])[j]*  cos(theta)*cos(phi)
+	       -  (*vsph[1])[j]*r*sin(theta)*cos(phi) 
+	       +  (*vsph[2])[j]*r*cos(theta)*sin(phi);
+(*vcart[1])[j] =  (*vsph[0])[j]*  cos(theta)*sin(phi)
+	       -  (*vsph[1])[j]*r*sin(theta)*sin(phi) 
+	       +  (*vsph[2])[j]*r*cos(theta)*cos(phi);
+(*vcart[2])[j] =  (*vsph[0])[j]*  sin(theta)
+	       +  (*vsph[1])[j]*r*cos(theta);
+}
+}
+else if ( vtype == GVECTYPE_COVAR ) {
+for ( GSIZET j=0; j<nxy; j++ ) {
+x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
+r     = sqrt(x*x + y*y + z*z);
+theta = asin(z/r);
+phi   = atan2(y,x);
+gtt        = r*r; gpp = pow(r*cos(theta),2);
+vthcontra  = (*vsph[1])[j]/(gtt+tiny);
+vphicontra = (*vsph[2])[j]/(gpp+tiny);
+(*vcart[0])[j] =  (*vsph[0])[j]*  cos(theta)*cos(phi)
+	       -  (*vsph[1])[j]*r*sin(theta)*cos(phi) 
+	       +  (*vsph[2])[j]*r*cos(theta)*sin(phi);
+(*vcart[1])[j] =  (*vsph[0])[j]*  cos(theta)*sin(phi)
+	       -  (*vsph[1])[j]*r*sin(theta)*sin(phi) 
+	       +  (*vsph[2])[j]*r*cos(theta)*cos(phi);
+(*vcart[2])[j] =  (*vsph[0])[j]*  sin(theta)
+	       +  (*vsph[1])[j]*r*cos(theta);
+}
+}
+else if ( vtype == GVECTYPE_CONTRAVAR ) {
+for ( GSIZET j=0; j<nxy; j++ ) {
+x = (*xnodes)[0][j]; y = (*xnodes)[1][j]; z = (*xnodes)[2][j];
+r     = sqrt(x*x + y*y + z*z);
+theta = asin(z/r);
+phi   = atan2(y,x);
+vthcontra  = (*vsph[0])[j];
+vphicontra = (*vsph[1])[j];
+(*vcart[0])[j] =  (*vsph[0])[j]*  cos(theta)*cos(phi)
+	       -  (*vsph[1])[j]*r*sin(theta)*cos(phi) 
+	       +  (*vsph[2])[j]*r*cos(theta)*sin(phi);
+(*vcart[1])[j] =  (*vsph[0])[j]*  cos(theta)*sin(phi)
+	       -  (*vsph[1])[j]*r*sin(theta)*sin(phi) 
+	       +  (*vsph[2])[j]*r*cos(theta)*cos(phi);
+(*vcart[2])[j] =  (*vsph[0])[j]*  sin(theta)
+	       +  (*vsph[1])[j]*r*cos(theta);
+}
+}
+}
 */
 
 } // end of method vcart2sphere
@@ -3065,28 +2547,28 @@ template<>
 void cart2latlon(const GTVector<GTVector<GFTYPE>*> &cart, GTVector<GTVector<GFTYPE>*> &latlon)
 {
 
-  assert( cart.size() >= 3 && latlon.size() >= 2 && "Must have correct array sizes");
+assert( cart.size() >= 3 && latlon.size() >= 2 && "Must have correct array sizes");
 
 
-  GSIZET           nxy = cart[0]->size();
-  GFTYPE           x, y, z;
-  GFTYPE           phi, r, theta;
+GSIZET           nxy = cart[0]->size();
+GFTYPE           x, y, z;
+GFTYPE           phi, r, theta;
 
-  for ( GSIZET j=0; j<nxy; j++ ) {
-    x = (*cart[0])[j]; y = (*cart[1])[j]; z = (*cart[2])[j];
-    r     = sqrt(x*x + y*y + z*z);
-    theta = asin(z/r);
-    phi   = atan2(y,x);
-    (*latlon[0])[j] = theta; // lat
-    (*latlon[1])[j] = phi;   // lon
-  }
+for ( GSIZET j=0; j<nxy; j++ ) {
+x = (*cart[0])[j]; y = (*cart[1])[j]; z = (*cart[2])[j];
+r     = sqrt(x*x + y*y + z*z);
+theta = asin(z/r);
+phi   = atan2(y,x);
+(*latlon[0])[j] = theta; // lat
+(*latlon[1])[j] = phi;   // lon
+}
 
 } // end of method cart2latlon
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : cart2spherical
+// METHOD : rcart2sphere
 // DESC   : Convert Cartesian position vectors to radius-lat-longcoords
 //
 // ARGS     cart    : x, y, z coords; only first 3 vectors are read
@@ -3095,27 +2577,27 @@ void cart2latlon(const GTVector<GTVector<GFTYPE>*> &cart, GTVector<GTVector<GFTY
 // RETURNS: none
 //**********************************************************************************
 template<>
-void cart2spherical(const GTVector<GTVector<GFTYPE>*> &cart, GTVector<GTVector<GFTYPE>*> &rlatlon)
+void rcart2sphere(const GTVector<GTVector<GFTYPE>*> &cart, GTVector<GTVector<GFTYPE>*> &rlatlon)
 {
 
-  assert( cart.size() >= 3 && rlatlon.size() >= 3 && "Must have correct array sizes");
+assert( cart.size() >= 3 && rlatlon.size() >= 3 && "Must have correct array sizes");
 
 
-  GSIZET           nxy = cart[0]->size();
-  GFTYPE           x, y, z;
-  GFTYPE           phi, r, theta;
+GSIZET           nxy = cart[0]->size();
+GFTYPE           x, y, z;
+GFTYPE           phi, r, theta;
 
-  for ( GSIZET j=0; j<nxy; j++ ) {
-    x = (*cart[0])[j]; y = (*cart[1])[j]; z = (*cart[2])[j];
-    r     = sqrt(x*x + y*y + z*z);
-    theta = asin(z/r);
-    phi   = atan2(y,x);
-    (*rlatlon[0])[j] = r;
-    (*rlatlon[1])[j] = theta;
-    (*rlatlon[2])[j] = phi;
-  }
+for ( GSIZET j=0; j<nxy; j++ ) {
+x = (*cart[0])[j]; y = (*cart[1])[j]; z = (*cart[2])[j];
+r     = sqrt(x*x + y*y + z*z);
+theta = asin(z/r);
+phi   = atan2(y,x);
+(*rlatlon[0])[j] = r;
+(*rlatlon[1])[j] = theta;
+(*rlatlon[2])[j] = phi;
+}
 
-} // end of method cart2spherical
+} // end of method rcart2sphere
 
 
 //**********************************************************************************
@@ -3138,29 +2620,29 @@ void cart2spherical(const GTVector<GTVector<GFTYPE>*> &cart, GTVector<GTVector<G
 template<>
 GFTYPE energy(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<GTVector<GFTYPE>*> &tmp, GBOOL isglobal, GBOOL ismax)
 {
-  GDOUBLE                     ener, local;
-  GC_COMM                     comm = grid.get_comm();
+GDOUBLE                     ener, local;
+GC_COMM                     comm = grid.get_comm();
 
-  // Find _u_^2 = Sum_l u_l ^2
- *tmp[1] = *u[0]; tmp[1]->rpow(2);
-  for ( GINT l=1; l<u.size(); l++ ) {
-    *tmp[0] = *u[l]; tmp[0]->rpow(2);
-    *tmp[1] += *tmp[0];
-  }
+// Find _u_^2 = Sum_l u_l ^2
+*tmp[1] = *u[0]; tmp[1]->rpow(2);
+for ( GINT l=1; l<u.size(); l++ ) {
+*tmp[0] = *u[l]; tmp[0]->rpow(2);
+*tmp[1] += *tmp[0];
+}
 
-  if ( ismax ) {
-    ener =  0.5*tmp[1]->amax();
-    if ( isglobal ) {
-      local = ener;
-      GComm::Allreduce(&local, &ener, 1, T2GCDatatype<GDOUBLE>() , GC_OP_MAX, comm);
-    }
-  }
-  else {
-    ener  = static_cast<GDOUBLE>(grid.integrate(*tmp[1], *tmp[0], isglobal));
-    ener *=  0.5*static_cast<GDOUBLE>(grid.ivolume());
-  }
+if ( ismax ) {
+ener =  0.5*tmp[1]->amax();
+if ( isglobal ) {
+local = ener;
+GComm::Allreduce(&local, &ener, 1, T2GCDatatype<GDOUBLE>() , GC_OP_MAX, comm);
+}
+}
+else {
+ener  = static_cast<GDOUBLE>(grid.integrate(*tmp[1], *tmp[0], isglobal));
+ener *=  0.5*static_cast<GDOUBLE>(grid.ivolume());
+}
 
-  return static_cast<GFTYPE>(ener);
+return static_cast<GFTYPE>(ener);
 
 } // end of method energy
 
@@ -3185,46 +2667,46 @@ GFTYPE energy(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<GTVec
 template<>
 GFTYPE enstrophy(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<GTVector<GFTYPE>*> &tmp, GBOOL isglobal, GBOOL ismax)
 {
-  assert(tmp.size() >= 4 && "Insufficient temp space");
+assert(tmp.size() >= 4 && "Insufficient temp space");
 
-  
-  GINT                        ibeg, iend;
-  GDOUBLE                     enst, local;
-  GC_COMM                     comm = grid.get_comm();
-  GTVector<GFTYPE>           *cc;
-  GTVector<GTVector<GFTYPE>*> utmp(3);
 
-  utmp[0] = tmp[0];
-  utmp[1] = tmp[1];
-  cc      = tmp[2];
+GINT                        ibeg, iend;
+GDOUBLE                     enst, local;
+GC_COMM                     comm = grid.get_comm();
+GTVector<GFTYPE>           *cc;
+GTVector<GTVector<GFTYPE>*> utmp(3);
 
- *tmp[3] = 0.0;
-  if ( u.size() == 3 ) {
-    for ( GINT l=0; l<u.size(); l++ ) {
-      GMTK::curl(grid, u, l+1, utmp, *cc);
-      cc->rpow(2);
-     *tmp[3] += *cc;
-    }
-  }
-  else if ( u.size() == 2 ) {
-    GMTK::curl(grid, u, 3, utmp, *cc);
-    cc->rpow(2);
-   *tmp[3] += *cc;
-  }
+utmp[0] = tmp[0];
+utmp[1] = tmp[1];
+cc      = tmp[2];
 
-  if ( ismax ) {
-    enst =  0.5*static_cast<GDOUBLE>(tmp[3]->amax());
-    if ( isglobal ) {
-      local = enst;
-      GComm::Allreduce(&local, &enst, 1, T2GCDatatype<GDOUBLE>() , GC_OP_MAX, comm);
-    }
-  }
-  else {
-    enst  = static_cast<GDOUBLE>(grid.integrate(*tmp[3], *tmp[0], isglobal));
-    enst *=  0.5*grid.ivolume();
-  }
+*tmp[3] = 0.0;
+if ( u.size() == 3 ) {
+for ( GINT l=0; l<u.size(); l++ ) {
+GMTK::curl(grid, u, l+1, utmp, *cc);
+cc->rpow(2);
+*tmp[3] += *cc;
+}
+}
+else if ( u.size() == 2 ) {
+GMTK::curl(grid, u, 3, utmp, *cc);
+cc->rpow(2);
+*tmp[3] += *cc;
+}
 
-  return static_cast<GFTYPE>(enst);
+if ( ismax ) {
+enst =  0.5*static_cast<GDOUBLE>(tmp[3]->amax());
+if ( isglobal ) {
+local = enst;
+GComm::Allreduce(&local, &enst, 1, T2GCDatatype<GDOUBLE>() , GC_OP_MAX, comm);
+}
+}
+else {
+enst  = static_cast<GDOUBLE>(grid.integrate(*tmp[3], *tmp[0], isglobal));
+enst *=  0.5*grid.ivolume();
+}
+
+return static_cast<GFTYPE>(enst);
 
 } // end of method enstrophy
 
@@ -3250,40 +2732,40 @@ GFTYPE enstrophy(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<GT
 template<>
 GFTYPE helicity(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<GTVector<GFTYPE>*> &tmp, GBOOL isglobal, GBOOL ismax)
 {
-  assert(tmp.size() >= 4 && "Insufficient temp space");
+assert(tmp.size() >= 4 && "Insufficient temp space");
 
-  
-  GDOUBLE                     hel, local;
-  GC_COMM                     comm = grid.get_comm();
-  GTVector<GFTYPE>           *cc;
-  GTVector<GTVector<GFTYPE>*> utmp(3);
 
-  utmp[0] = tmp[0];
-  utmp[1] = tmp[1];
-  cc      = tmp[2];
+GDOUBLE                     hel, local;
+GC_COMM                     comm = grid.get_comm();
+GTVector<GFTYPE>           *cc;
+GTVector<GTVector<GFTYPE>*> utmp(3);
 
- *tmp[3] = 0.0;
-  if ( u.size() == 3 ) {
-    for ( GINT l=0; l<3; l++ ) {
-      GMTK::curl(grid, u, l+1, utmp, *cc);
-      if ( u.size() > l ) cc->pointProd(*u[l]);
-     *tmp[3] += *cc;
-    }
-  }
+utmp[0] = tmp[0];
+utmp[1] = tmp[1];
+cc      = tmp[2];
 
-  if ( ismax ) {
-    hel =  static_cast<GDOUBLE>(tmp[3]->amax());
-    if ( isglobal ) {
-      local = hel;
-      GComm::Allreduce(&local, &hel, 1, T2GCDatatype<GDOUBLE>() , GC_OP_MAX, comm);
-    }
-  }
-  else {
-    hel  = static_cast<GDOUBLE>(grid.integrate(*tmp[3], *tmp[0], isglobal));
-    hel *=  static_cast<GDOUBLE>(grid.ivolume());
-  }
+*tmp[3] = 0.0;
+if ( u.size() == 3 ) {
+for ( GINT l=0; l<3; l++ ) {
+GMTK::curl(grid, u, l+1, utmp, *cc);
+if ( u.size() > l ) cc->pointProd(*u[l]);
+*tmp[3] += *cc;
+}
+}
 
-  return static_cast<GFTYPE>(hel);
+if ( ismax ) {
+hel =  static_cast<GDOUBLE>(tmp[3]->amax());
+if ( isglobal ) {
+local = hel;
+GComm::Allreduce(&local, &hel, 1, T2GCDatatype<GDOUBLE>() , GC_OP_MAX, comm);
+}
+}
+else {
+hel  = static_cast<GDOUBLE>(grid.integrate(*tmp[3], *tmp[0], isglobal));
+hel *=  static_cast<GDOUBLE>(grid.ivolume());
+}
+
+return static_cast<GFTYPE>(hel);
 
 } // end of method helicity 
 
@@ -3309,84 +2791,84 @@ GFTYPE helicity(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<GTV
 template<>
 GFTYPE relhelicity(GGrid &grid, const GTVector<GTVector<GFTYPE>*> & u, GTVector<GTVector<GFTYPE>*> &tmp, GBOOL isglobal, GBOOL ismax)
 {
-  assert(tmp.size() >= 5 && "Insufficient temp space");
-
-  
-  GDOUBLE                     local, rhel;
-  GC_COMM                     comm = grid.get_comm();
-  GTVector<GFTYPE>           *cc;
-  GTVector<GTVector<GFTYPE>*> utmp(3);
-
-  utmp[0] = tmp[0];
-  utmp[1] = tmp[1];
-  cc      = tmp[2];
-
- *tmp[3] = 0.0;
- *tmp[4] = 0.0;
-
-  // Compute u. curl u:
-  if ( u.size() == 3 ) {
-    for ( GINT l=0; l<3; l++ ) {
-      GMTK::curl(grid, u, l+1, utmp, *cc);
-      cc->pointProd(*u[l]);
-     *tmp[3] += *cc;
-    }
-  }
-  
-  // Compute |curl u|:
-  if ( u.size() == 3 ) {
-    for ( GINT l=0; l<3; l++ ) {
-      GMTK::curl(grid, u, l+1, utmp, *cc);
-      cc->rpow(2);
-     *tmp[4] += *cc;
-    }
-  }
-  else if ( u.size() == 2 ) {
-    GMTK::curl(grid, u, 3, utmp, *cc);
-    cc->rpow(2);
-   *tmp[4] += *cc;
-  } 
-  tmp[4]->rpow(0.5);
+assert(tmp.size() >= 5 && "Insufficient temp space");
 
 
-  // Compute |u|:
-  *tmp[0] = 0.0;
-  for ( GINT l=0; l<u.size(); l++ ) {
-   *tmp[1] = *u[l];
-    tmp[1]->rpow(2);
-    *tmp[0] += *tmp[1];
-  }
-  tmp[0]->rpow(0.5);
+GDOUBLE                     local, rhel;
+GC_COMM                     comm = grid.get_comm();
+GTVector<GFTYPE>           *cc;
+GTVector<GTVector<GFTYPE>*> utmp(3);
+
+utmp[0] = tmp[0];
+utmp[1] = tmp[1];
+cc      = tmp[2];
+
+*tmp[3] = 0.0;
+*tmp[4] = 0.0;
+
+// Compute u. curl u:
+if ( u.size() == 3 ) {
+for ( GINT l=0; l<3; l++ ) {
+GMTK::curl(grid, u, l+1, utmp, *cc);
+cc->pointProd(*u[l]);
+*tmp[3] += *cc;
+}
+}
+
+// Compute |curl u|:
+if ( u.size() == 3 ) {
+for ( GINT l=0; l<3; l++ ) {
+GMTK::curl(grid, u, l+1, utmp, *cc);
+cc->rpow(2);
+*tmp[4] += *cc;
+}
+}
+else if ( u.size() == 2 ) {
+GMTK::curl(grid, u, 3, utmp, *cc);
+cc->rpow(2);
+*tmp[4] += *cc;
+} 
+tmp[4]->rpow(0.5);
 
 
-  // Compute u. (curl u) /|u| |curl u| integrand:
-  GFTYPE tiny = 100.0*numeric_limits<GFTYPE>::epsilon();
-
-  tmp[0]->pointProd(*tmp[4]); // compute |u| |curl u|
-  for ( GSIZET k=0; k<utmp[0]->size(); k++ ) {
-    // (*tmp[1])[k] = fabs((*tmp[0])[k]) <= tiny ? 0.0 : (*tmp[3])[k]/(*tmp[0])[k];  
-    if ( fabs((*tmp[0])[k]) <= tiny ) {
-      (*tmp[1])[k] = 0.0;
-    }
-    else {
-      (*tmp[1])[k] = (*tmp[3])[k]/(*tmp[0])[k];
-    }
-  }
+// Compute |u|:
+*tmp[0] = 0.0;
+for ( GINT l=0; l<u.size(); l++ ) {
+*tmp[1] = *u[l];
+tmp[1]->rpow(2);
+*tmp[0] += *tmp[1];
+}
+tmp[0]->rpow(0.5);
 
 
-  if ( ismax ) {
-    rhel =  static_cast<GDOUBLE>(tmp[1]->amax());
-    if ( isglobal ) {
-      local = rhel;
-      GComm::Allreduce(&local, &rhel, 1, T2GCDatatype<GDOUBLE>() , GC_OP_MAX, comm);
-    }
-  }
-  else {
-    rhel  = static_cast<GDOUBLE>(grid.integrate(*tmp[1], *tmp[0], isglobal));
-    rhel *= static_cast<GDOUBLE>(grid.ivolume());
-  }
+// Compute u. (curl u) /|u| |curl u| integrand:
+GFTYPE tiny = 100.0*numeric_limits<GFTYPE>::epsilon();
 
-  return static_cast<GFTYPE>(rhel);
+tmp[0]->pointProd(*tmp[4]); // compute |u| |curl u|
+for ( GSIZET k=0; k<utmp[0]->size(); k++ ) {
+// (*tmp[1])[k] = fabs((*tmp[0])[k]) <= tiny ? 0.0 : (*tmp[3])[k]/(*tmp[0])[k];  
+if ( fabs((*tmp[0])[k]) <= tiny ) {
+(*tmp[1])[k] = 0.0;
+}
+else {
+(*tmp[1])[k] = (*tmp[3])[k]/(*tmp[0])[k];
+}
+}
+
+
+if ( ismax ) {
+rhel =  static_cast<GDOUBLE>(tmp[1]->amax());
+if ( isglobal ) {
+local = rhel;
+GComm::Allreduce(&local, &rhel, 1, T2GCDatatype<GDOUBLE>() , GC_OP_MAX, comm);
+}
+}
+else {
+rhel  = static_cast<GDOUBLE>(grid.integrate(*tmp[1], *tmp[0], isglobal));
+rhel *= static_cast<GDOUBLE>(grid.ivolume());
+}
+
+return static_cast<GFTYPE>(rhel);
 
 } // end of method relhelicity 
 
@@ -3415,42 +2897,42 @@ template<>
 GFTYPE energyinj(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &u,  const GTVector<GTVector<GFTYPE>*> &uf, GTVector<GTVector<GFTYPE>*> &tmp, GBOOL isglobal, GBOOL ismax)
 {
 
-  if ( uf.size() == 0 ) return 0.0;
+if ( uf.size() == 0 ) return 0.0;
 
-  GBOOL bnull = FALSE;
-  for ( GINT l=0; l<u.size(); l++ ) bnull = bnull || uf[l] == NULLPTR;
+GBOOL bnull = FALSE;
+for ( GINT l=0; l<u.size(); l++ ) bnull = bnull || uf[l] == NULLPTR;
 
-  if ( bnull ) return 0.0;
+if ( bnull ) return 0.0;
 
-  assert(tmp.size() >= 2 && "Insufficient temp space");
-
-  
-  GDOUBLE                     einj, local;
-  GC_COMM                     comm = grid.get_comm();
+assert(tmp.size() >= 2 && "Insufficient temp space");
 
 
-  u[0]->pointProd(*uf[0], *tmp[0]);
-  for ( GINT l=1; l<u.size(); l++ ) {
-	  assert(uf[l]!= NULLPTR && "NULL force not allowed");
-    u[l]->pointProd(*uf[l], *tmp[1]);
-   *tmp[0] += *tmp[1];
-  }
+GDOUBLE                     einj, local;
+GC_COMM                     comm = grid.get_comm();
 
-  if ( ismax ) {
-    einj =  static_cast<GDOUBLE>(tmp[0]->amax());
 
-    if ( isglobal ) {
-      local = einj;
-      GComm::Allreduce(&local, &einj, 1, T2GCDatatype<GDOUBLE>() , GC_OP_MAX, comm);
-    }
+u[0]->pointProd(*uf[0], *tmp[0]);
+for ( GINT l=1; l<u.size(); l++ ) {
+  assert(uf[l]!= NULLPTR && "NULL force not allowed");
+u[l]->pointProd(*uf[l], *tmp[1]);
+*tmp[0] += *tmp[1];
+}
 
-  }
-  else {
-    einj  = static_cast<GDOUBLE>(grid.integrate(*tmp[0], *tmp[1], isglobal));
-    einj *=  static_cast<GDOUBLE>(grid.ivolume());
-  }
+if ( ismax ) {
+einj =  static_cast<GDOUBLE>(tmp[0]->amax());
 
-  return static_cast<GFTYPE>(einj);
+if ( isglobal ) {
+local = einj;
+GComm::Allreduce(&local, &einj, 1, T2GCDatatype<GDOUBLE>() , GC_OP_MAX, comm);
+}
+
+}
+else {
+einj  = static_cast<GDOUBLE>(grid.integrate(*tmp[0], *tmp[1], isglobal));
+einj *=  static_cast<GDOUBLE>(grid.ivolume());
+}
+
+return static_cast<GFTYPE>(einj);
 
 } // end of method energyinj
 
@@ -3499,12 +2981,12 @@ void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GStrin
   }
   else if ( "grad" == sop ) {  // operates on a scalar field...
     // produces a vector field:
-    nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
+  nxy = grid.gtype() == GE_2DEMBEDDED ? 3 : GDIM;
     assert(utmp .size() >= 1   && "Insufficient temp space");
     assert(uin  .size() >= 1   && "Incorrect no. input components");
     assert(uout .size() >= nxy && "Insufficient no. output components");
     iuout.resize(nxy); 
-    for ( auto j=0; j<nxy; j++ ) {
+      for ( auto j=0; j<nxy; j++ ) {
       GMTK::grad(grid, *uin[0], j+1, utmp, *uout[j]);
       iuout[j] = j; 
     }
@@ -3589,7 +3071,7 @@ void domathop(GGrid &grid, const GTVector<GTVector<GFTYPE>*> &uin,  const GStrin
     }
   }
   else {
-    assert(FALSE && "Invalid math operation");
+  assert(FALSE && "Invalid math operation");
   }
 
 } // end of method domathop 

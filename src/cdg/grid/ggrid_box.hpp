@@ -21,7 +21,6 @@
 #include "gshapefcn_linear.hpp"
 #include "polygon.h"
 #include "gtpoint.hpp"
-#include "ggrid.hpp"
 
 typedef GTMatrix<GFTYPE> GFTMatrix;
 
@@ -32,8 +31,6 @@ class GGridBox : public GGrid
 {
 
 public:
-//      using              GGrid::faceNormals_;
-//      using              GGrid::bdyNormals_;
 
         // Box grid traits:
         struct Traits {
@@ -49,7 +46,11 @@ public:
         void                do_elems();                                      // compute elems
         void                do_elems(GTMatrix<GINT> &p,
                               GTVector<GTVector<GFTYPE>> &xnodes);           // compute elems from restart data
-        void                do_face_normals();                               // compute normals to elem faces
+        void                do_face_normals(GTMatrix<GTVector<GFTYPE>> &dXdXi,
+                                      GTVector<GSIZET> &gieface,
+                                      GTVector<GUINT>  &face_desc,
+                                      GTVector<GFTYPE> &face_mass,
+                                      GTVector<GTVector<GFTYPE>> &normals);  // compute normals to elem faces
         void                set_partitioner(GDD_base<GFTYPE> *d);            // set and use GDD object
         void                set_basis(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b); // set element basis
         void                periodize();                                     // periodize coords, if allowed
@@ -81,8 +82,16 @@ private:
                               GTVector<GTVector<GFTYPE>> &xnodes);          // do 2d grid restart
          void               do_elems3d(GTMatrix<GINT> &p, 
                               GTVector<GTVector<GFTYPE>> &xnodes);          // do 3d grid restart
-         void               do_face_normals2d();                            // compute normals to elem faces in 2d
-         void               do_face_normals3d();                            // compute normals to elem faces in 3d
+         void               do_face_normals2d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
+                                      GTVector<GSIZET> &igbdy_face,
+                                      GTVector<GUINT>  &face_desc,
+                                      GTVector<GFTYPE> &face_mass,
+                                      GTVector<GTVector<GFTYPE>> &normals); // compute normals to elem faces in 2d
+         void               do_face_normals3d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
+                                      GTVector<GSIZET> &gieface,
+                                      GTVector<GUINT>  &face_desc,
+                                      GTVector<GFTYPE> &face_mass,
+                                      GTVector<GTVector<GFTYPE>> &normals); // compute normals to elem faces in 3d
          void               do_bdy_normals2d(
                               GTMatrix<GTVector<GFTYPE>> &dXdXi,
                               GTVector<GSIZET>           &igbdy,

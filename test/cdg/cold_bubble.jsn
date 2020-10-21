@@ -1,0 +1,152 @@
+{ 
+  "exp_order"         : [4, 4, 8],
+  "exp_order_type"    : "constant",
+  "grid_type"         : "grid_box",
+  "pde_name"          : "pde_mconv",
+  "initstate_block"   : "initstate_boxdrybubble",
+  "initforce_block"   : "",
+  "use_forcing"       : false,
+  "initstate_type"    : "direct",
+  "initforce_type"    : "",
+  "restart_index"     : 0,
+  "benchmark"         : false,
+  "do_comparison"     : false,
+  "observer_list"     : ["gio_observer", "burgers_diag"],
+  "IO_implementation" : "gio",
+  "terrain_type"      : "none",
+  "initstate_boxdrybubble": {
+    "T_pert"     : -15.0,
+    "x_center"   : [0, 3000.0, 1000.0],
+    "x_width"    : [4000.0, 2000.0, 2000.0]
+  },
+  "grid_icos": {
+    "grid_name"   : "grid_icos",
+    "ilevel"      : 1,
+    "refine_type" : "GICOS_BISECTION",
+    "radius"      : 1.0,
+    "maxit"       : 128,
+    "tol"         : 1.0e-8,
+    "norm_type"   : "GCG_NORM_INF"
+  },
+  "grid_sphere" : {
+    "grid_name" : "grid_sphere",
+    "radiusi"   : 1.0,
+    "radiuso"   : 2.0,
+    "num_elems" : [10, 10, 10],
+    "bdy_inner": "GBDY_DIRICHLET",
+    "bdy_outer": "GBDY_SPONGE"
+  },
+  "0-flux": {
+    "bdy_class"        : "uniform",
+    "base_type"        : ["GBDY_0FLUX"],
+    "istate"           : [[0, 1]]
+  },
+  "pde_mconv": {
+    "docoriolis"      : false,
+    "dodry"           : true,
+    "usebase_state"   : true,
+    "dofallout"       : false,
+    "dogravity"       : true,
+    "bconserved"      : false,
+    "nliq"            : 0,
+    "nice"            : 0,
+    "use_forcing"     : false,
+    "forcing_comp"    : [0, 1, 2],
+    "T_surf"          : 300.0,
+    "P0"              : 1000.0,
+    "filter_list"     : [],
+    "my_filter" : {
+      "filter_type" : "boyd_filter",
+      "ifilter"     : 4,
+      "mufilter"    : 0.05,
+      "state_index" : [0, 1]
+    }
+  },
+  "grid_box": {
+    "grid_name" : "grid_box",
+    "xyz0"      : [-25600, 0, 0],
+    "delxyz"    : [51200.0, 10000.0, 1.0],
+    "num_elems" : [512, 100, 1],
+    "bdy_x_0"   : "0-flux",
+    "bdy_x_1"   : "0-flux",
+    "bdy_y_0"   : "0-flux",
+    "bdy_y_1"   : "0-flux",
+    "bdy_z_0"   : "0-flux",
+    "bdy_z_1"   : "0-flux",
+    "maxit"     : 128,
+    "tol"       : 1.0e-8,
+    "norm_type" : "GCG_NORM_INF"
+  },
+  "stepper_props": {
+    "stepping_method"  : "GSTEPPER_EXRK",
+    "time_deriv_order" : 2,
+    "extrap_order"     : 2,
+    "variable_dt"      : true,
+    "courant"          : 0.2
+  },
+  "dissipation_traits": {
+    "nu"      : 500.0,
+    "kappa"   : 500.0,
+    "nu_type" : "constant"
+  },
+  "gio": {
+    "ivers"   : 0,
+    "multivar" : false,
+    "io_type"  : "collective",
+    "wtime"    : 6,
+    "wtask"    : 5,
+    "wfile"    : 2048
+  },
+  "temp": {
+    "names"       : ["T"],
+    "mathop"      : "temp"
+  },
+  "ptemp": {
+    "names"       : ["theta"],
+    "mathop"      : "ptemp"
+  },
+  "dptemp": {
+    "names"       : ["dtheta"],
+    "mathop"      : "dptemp"
+  },
+  "press": {
+    "names"       : ["p"],
+    "mathop"      : "press"
+  },
+  "den": {
+    "names"       : ["dtotal"],
+    "mathop"      : "den"
+  },
+  "vel": {
+    "names"       : ["v1","v2"],
+    "mathop"      : "vel"
+  },
+  "gio_observer": {
+    "observer_name"      : "gio_observer",
+    "idir"               : "outs",
+    "odir"               : "outs",
+    "cadence_type"       : "time",
+    "cycle_interval"     : 100,
+    "time_interval"      : 10.0,
+    "state_names"        : ["s1", "s2", "e", "d"],
+    "grid_names"         : ["xgrid", "ygrid", "zgrid"],
+    "agg_state_name"     : "u",
+    "agg_grid_name "     : "grid",
+    "derived_quantities"       : [],
+    "state_derived_quantities" : ["temp","press","vel","ptemp","dptemp","den"]
+  },
+  "burgers_diag": {
+    "observer_name"      : "burgers_diag",
+    "idir"               : ".",
+    "odir"               : ".",
+    "interval_freq_fact" : 100.0,
+    "treat_as_1d"        : false
+  },
+  "time_integration": {
+    "integ_type" : "time",
+    "time_end"   : 1500.0,
+    "cycle_end"  : 1000,
+    "dt"         : 1.0e-2
+  }
+
+}

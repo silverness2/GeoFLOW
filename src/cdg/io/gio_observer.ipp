@@ -24,7 +24,8 @@ cycle_              (0),
 ocycle_             (0),
 cycle_last_         (0),
 time_last_        (0.0),
-pIO_           (io_ptr)
+pIO_           (io_ptr),
+pEqn_        (equation)
 { 
   this->grid_  = &grid;
   stateinfo_   = equation->stateinfo(); 
@@ -124,7 +125,7 @@ void GIOObserver<EquationType>::init_impl(StateInfo &info)
 {
 
    time_last_  = info.time ;
-   ocycle_     = info.cycle;
+   ocycle_     = info.index;
  
    bInit_      = TRUE;
 
@@ -145,40 +146,33 @@ template<typename EquationType>
 void GIOObserver<EquationType>::print_derived(const Time &t, const State &u)
 {
 
-  GINT               ntmp, nstate;
   GString            sop;   // math operation
 //GTVector<GString>  sdqnames;
   GTVector<GINT>     iuin(3), iuout(3);
-  State              tmp(3), uu(3), uout(3);
+  State              tmp(5),  uout(3);
   GString            agg_derived;
+  std::vector<GINT>  isout;
   char               stmp[1024];
 
-    // Cycle through derived quantities, and write:
+    // Cycle through 'math-derived' quantities, and write:
     for ( auto j=0; j<this->traits_.derived_quantities.size(); j++ ) {
-      iuin    .resize(this->traits_.derived_quantities[j].icomponents.size());
 //    sdqnames.resize(this->traits_.derived_quantities[j].snames     .size());
-      iuin       = this->traits_.derived_quantities[j].icomponents;
 //    sdqnames   = this->traits_.derived_quantities[j].snames;
       agg_derived= this->traits_.derived_quantities[j].agg_sname;
       sop        = this->traits_.derived_quantities[j].smath_op;
 
-      assert( iuin.size() > 0 && "Derived quantities require state component(s)");
-      assert( iuin.min() >= 0 && iuin.max()< u.size()  && "Invalid component indices");
       if ( "" == sop ) continue; // nothing to do
 
-      uu.resize(iuin.size());
-      ntmp     = this->utmp_->size() - uout.size();
-      for ( auto i=0; i<uu  .size(); i++ ) uu  [i] = u[iuin[i]];
-      for ( auto i=0; i<uout.size(); i++ ) uout[i] = (*(this->utmp_))[i];
       for ( auto i=0; i<uout.size(); i++ ) uout[i] = (*(this->utmp_))[i];
       for ( auto i=0; i<3          ; i++ ) tmp [i] = (*(this->utmp_))[i+3];
    
-      GMTK::domathop(*(this->grid_), uu, sop, tmp, uout, iuout);
+      // First, do math-derived quantities:
+      GMTK::domathop(*(this->grid_), u, sop, tmp, uout, iuout);
       assert(this->traits_.derived_quantities[j].snames.size() >= iuout.size());
       for ( auto i=0; i<iuout.size(); i++ ) {
         this->grid_->get_ggfx().doOp(*uout[i], GGFX_OP_SMOOTH);
       }
-      // Rest of stateinfo_ shoule have been set before call:
+      // Rest of stateinfo_ should have been set before call:
       stateinfo_.svars.resize(this->traits_.derived_quantities[j].snames.size());
       stateinfo_.svars  = this->traits_.derived_quantities[j].snames;
       up_.resize(iuout.size());
@@ -186,7 +180,31 @@ void GIOObserver<EquationType>::print_derived(const Time &t, const State &u)
         up_[j] = uout[iuout[j]];
       }
       pIO_->write_state(agg_derived, stateinfo_, up_);
-    }
+
+    } // end, math-derived quantities
+
+    // Cycle through 'state-derived' quantities, and write:
+    for ( auto j=0; j<this->traits_.state_derived_quantities.size(); j++ ) {
+      agg_derived= this->traits_.state_derived_quantities[j].agg_sname;
+      sop        = this->traits_.state_derived_quantities[j].smath_op;
+
+      if ( "" == sop ) continue; // nothing to do
+
+      for ( auto i=0; i<uout.size(); i++ ) uout[i] = (*(this->utmp_))[i];
+      for ( auto i=0; i<5          ; i++ ) tmp [i] = (*(this->utmp_))[i+3];
+
+      pEqn_->compute_derived(u, sop, tmp, uout, isout);
+
+      // Rest of stateinfo_ should have been set before call:
+      stateinfo_.svars.resize(this->traits_.state_derived_quantities[j].snames.size());
+      stateinfo_.svars  = this->traits_.state_derived_quantities[j].snames;
+      up_.resize(isout.size());
+      for ( auto j=0; j<up_.size(); j++ ) {
+        up_[j] = uout[isout[j]];
+      }
+      pIO_->write_state(agg_derived, stateinfo_, up_);
+
+    } // end, state-derived quantities
 
 
 } // end of method print_derived

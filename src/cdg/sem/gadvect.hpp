@@ -5,43 +5,66 @@
 //                u.Grad p  This is a nonlinear operator, so should not derive 
 //                from GLinOp. This operator requires that grid consist of
 //                elements of only one type.
-// Copyright    : Copyright 2018. Colorado State University. All rights reserved
+// Copyright    : Copyright 2018. Colorado State University. All rights reserved.
 // Derived From : none
 //==================================================================================
 
 #if !defined(_GADVECTOP_HPP)
 #define _GADVECTOP_HPP
+#include <cstdlib>
+#include <memory>
+#include <cmath>
 #include "gtvector.hpp"
 #include "gnbasis.hpp"
 #include "ggrid.hpp"
 #include "gmass.hpp"
 
+
+using namespace std;
+
+
+template<typename TypePack>
 class GAdvect
 {
 
 public:
+        using Interface  = EquationBase<TypePack>;
+        using State      = typename Interface::State;
+        using StateComp  = typename Interface::StateComp;
+        using Grid       = typename Interface::Grid;
+        using Mass       = typename Interface::Mass;
+        using Value      = typename Interface::Value;
+        using Derivative = typename Interface::Derivative;
+        using Time       = typename Interface::Time;
+        using CompDesc   = typename Interface::CompDesc;
+        using Jacobian   = typename Interface::Jacobian;
+        using Size       = typename Interface::Size;
 
-                          GAdvect(GGrid &grid);
+        static_assert(std::is_same<State,GTVector<GTVector<Value>*>>::value,
+               "State is of incorrect type");
+        static_assert(std::is_same<StateComp,GTVector<Value>>::value,
+               "StateComp is of incorrect type");
+        static_assert(std::is_same<Derivative,GTVector<GTVector<Value>*>>::value,
+               "Derivative is of incorrect type");
+        static_assert(std::is_same<Grid,GGrid>::value,
+               "Grid is of incorrect type");
+
+
+                          GAdvect(Grid &grid);
                           GAdvect(const GAdvect &);
                          ~GAdvect();
 
-        void              apply(GTVector<GFTYPE> &p, const GTVector<GTVector<GFTYPE>*> &u, 
-                                GTVector<GTVector<GFTYPE>*> &utmp, GTVector<GFTYPE> &po);                       // Operator-field evaluation
+        void              apply(StateComp  &p, const State &u, 
+                                State &utmp, StateComp &po);                       // Operator-field evaluation
         void              init();                                            // must call after all 'sets'
 
 private:
-        void              def_init();
-        void              reg_init();
-        void              def_prod(GTVector<GFTYPE> &p, const GTVector<GTVector<GFTYPE>*> &u, 
-                                   GTVector<GTVector<GFTYPE>*> &utmp, GTVector<GFTYPE> &po);
-        void              reg_prod(GTVector<GFTYPE> &p, const GTVector<GTVector<GFTYPE>*> &u, 
-                                   GTVector<GTVector<GFTYPE>*> &utmp, GTVector<GFTYPE> &po);
-
-        GBOOL                         bInitialized_;
-        GTVector<GFTYPE>              etmp1_;  // elem-based (non-global) tmp vector
-        GTVector<GTVector<GFTYPE>*>   G_;      // metric components
-        GGrid                        *grid_;   // grid set on construction
+        Grid                         *grid_;   // grid set on construction
 
 
 };
+
+#include "gadvect.ipp"
+
+
 #endif

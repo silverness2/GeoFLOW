@@ -256,6 +256,28 @@ const char * const sGStateCompType [] ={"GSC_KINETIC","GSC_MAGNETIC","GSC_DENSIT
 #endif
 
 
+// Macros for 'packing' unsigned ints:
+#define _WLO 4
+#if !defined(LOMASK)
+  #define LOMASK      ( ~( (~(GUINT)0) << _WLO ) )
+#endif
+#if !defined(HIMASK)
+  #define HIMASK      ( ~LOMASK ) 
+#endif
+#if !defined(GET_LOWORD)
+  #define GET_LOWORD(a) ( a & LOMASK )
+#endif
+#if !defined(GET_HIWORD)
+  #define GET_HIWORD(a) ( a >> _WLO )
+#endif
+#if !defined(SET_LOWORD)
+  #define SET_LOWORD(a,b)   (a &= HIMASK);( a |= (b & LOMASK) )
+#endif
+#if !defined(SET_HIWORD)
+  #define SET_HIWORD(a,b) (a &= LOMASK);( a |= ( b << _WLO ) )
+#endif
+
+
 #if !defined GError
   #define GError() printf("Error: %s; line: %d\n",__FILE__,__LINE__);
 #endif

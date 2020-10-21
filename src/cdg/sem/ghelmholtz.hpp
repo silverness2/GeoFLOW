@@ -12,7 +12,7 @@
 //                really just a weak Laplacian operator. 
 //                Note: this operator will fail if the grid contains more 
 //                      than a single element type.
-// Copyright    : Copyright 2018. Colorado State University. All rights reserved
+// Copyright    : Copyright 2018. Colorado State University. All rights reserved.
 // Derived From : GLinOp
 //==================================================================================
 

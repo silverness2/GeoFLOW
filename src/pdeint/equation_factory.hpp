@@ -10,8 +10,11 @@
 
 #include <memory>
 #include <string>
+#include "gburgers.hpp"
+#include "gmconv.hpp"
 #include "tbox/error_handler.hpp"
 #include "pdeint/equation_base.hpp"
+#include "pdeint/filter_factory.hpp"
 #include "tbox/property_tree.hpp"
 
 
@@ -26,8 +29,12 @@ struct EquationFactory {
 	using EqnBasePtr  = std::shared_ptr<EqnBase>;
         using State       = typename EquationType::State;
 	using Grid        = typename EquationType::Grid;
+        using FilterBasePtr = std::shared_ptr<FilterBase<EquationType>>;
+        using FilterList    = std::vector<FilterBasePtr>;
 
-	static EqnBasePtr build(const tbox::PropertyTree& ptree, Grid& grid, State& utmp);
+
+	static EqnBasePtr build(const tbox::PropertyTree& ptree, Grid& grid);
+        static void       config_filters(const PropertyTree& ptree, const std::string eq_name,  Grid& grid, FilterList& filter_list);
 
 };
 

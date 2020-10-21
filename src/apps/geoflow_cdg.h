@@ -6,8 +6,8 @@
 // Copyright    : Copyright 2019. Colorado State University. All rights reserved.
 // Derived From : 
 //==================================================================================
-#if !defined(GEOFLOW_CDG_MAIN_H)
-#define GEOFLOW_CDG_MAIN_H
+#if !defined(_GEOFLOW_CDG_MAIN_H)
+#define _GEOFLOW_CDG_MAIN_H
 
 #if defined(_OPENMP)
    #include <omp.h>
@@ -31,6 +31,7 @@
 #include "gburgers.hpp"
 #include "ggrid_box.hpp"
 #include "ggrid_factory.hpp"
+#include "gmass.hpp"
 #include "pdeint/observer_base.hpp"
 #include "pdeint/io_base.hpp"
 #include "gio_observer.hpp"
@@ -42,6 +43,7 @@
 #include "pdeint/integrator_factory.hpp"
 #include "pdeint/mixer_factory.hpp"
 #include "pdeint/observer_factory.hpp"
+#include "pdeint/filter_factory.hpp"
 #include "pdeint/null_observer.hpp"
 #include "ginitstate_factory.hpp"
 #include "ginitforce_factory.hpp"
@@ -66,6 +68,7 @@ typename StateType     = GTVector<GTVector<GFTYPE>*>,
 typename StateCompType = GTVector<GFTYPE>,
 typename StateInfoType = GStateInfo,
 typename GridType      = GGrid,
+typename MassOpType    = GMass,
 typename ValueType     = GFTYPE,
 typename DerivType     = StateType,
 typename TimeType      = ValueType,
@@ -75,9 +78,10 @@ typename SizeType      = GSIZET
 >
 struct TypePack {
         using State      = StateType;
-        using Statecomp  = StateCompType;
+        using StateComp  = StateCompType;
         using StateInfo  = StateInfoType;
         using Grid       = GridType;
+        using Mass       = MassOpType;
         using Value      = ValueType;
         using Derivative = DerivType;
         using Time       = TimeType;
@@ -122,7 +126,7 @@ MixBasePtr       pMixer_;      // mixer object
 PropertyTree     ptree_;       // main prop tree
 
 GGFX<GFTYPE>    *ggfx_=NULLPTR;// DSS operator
-IOBasePtr        pIO_;         // ptr to IOBase operator
+IOBasePtr        pIO_=NULLPTR; // ptr to IOBase operator
 std::shared_ptr<std::vector<std::shared_ptr<ObserverBase<MyTypes>>>>
                  pObservers_(new std::vector<std::shared_ptr<ObserverBase<MyTypes>>>()); // observer array
 GC_COMM          comm_ ;       // communicator

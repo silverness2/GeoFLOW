@@ -1,13 +1,13 @@
 //==================================================================================
-// Module       : gglobaldiag_basic.hpp
+// Module       : gburgersdiag.hpp
 // Date         : 3/28/19 (DLR)
 // Description  : Observer object for carrying out L2 & extrema diagnostics for
 //                Burgers equation.
 // Copyright    : Copyright 2019. Colorado State University. All rights reserved
 // Derived From : ObserverBase.
 //==================================================================================
-#if !defined(_GGLOBALDIAG_BURGERS_OBS_HPP)
-#define _GGLOBALDIAG_BURGERS_OBS_HPP
+#if !defined(_GBURGERSDIAG_OBS_HPP)
+#define _GBURGERSDIAG_OBS_HPP
 
 #include "gtvector.hpp"
 #include "ggrid.hpp"
@@ -25,7 +25,7 @@ typedef GTVector<GFTYPE> StateElem;
 
 
 template<typename EquationType>
-class GGlobalDiag_basic : public ObserverBase<EquationType>
+class GBurgersDiag : public ObserverBase<EquationType>
 {
 
 public:
@@ -56,11 +56,11 @@ public:
         static_assert(std::is_same<Grid,GGrid>::value,
                "Grid is of incorrect type");
 
-                           GGlobalDiag_basic() = delete;
-                           GGlobalDiag_basic(const EqnBasePtr &equation, Grid &grid, typename ObserverBase<EquationType>::Traits &traits);
-                          ~GGlobalDiag_basic() = default;
-                           GGlobalDiag_basic(const GGlobalDiag_basic &a) = default;
-                           GGlobalDiag_basic &operator=(const GGlobalDiag_basic &bu) = default;
+                           GBurgersDiag() = delete;
+                           GBurgersDiag(const EqnBasePtr &equation, Grid &grid, typename ObserverBase<EquationType>::Traits &traits);
+                          ~GBurgersDiag() = default;
+                           GBurgersDiag(const GBurgersDiag &a) = default;
+                           GBurgersDiag &operator=(const GBurgersDiag &bu) = default;
 
         void               observe_impl(const Time &t, const State &u, const State &uf);
 
@@ -86,7 +86,7 @@ private:
 
 };
 
-#include "gglobaldiag_basic.ipp"
+#include "gburgersdiag.ipp"
 
 #endif
 

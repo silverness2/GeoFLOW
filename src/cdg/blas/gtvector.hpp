@@ -8,6 +8,10 @@
 //                      yields, start, stop, stride, pad indices.
 //                The implementation file, gtvector.ipp, is not included
 //                in this file, just the declarations.
+//                NOTE: Math operations that accept a GTVector object
+//                      argument may be treated as constant, by having
+//                      size of input argument = 1, and taking as the
+//                      operand only the first element.
 // Copyright    : Copyright 2018. Colorado State University. All rights reserved
 // Derived From : none.
 //==================================================================================
@@ -15,21 +19,19 @@
 #if !defined(_GTVECTOR_DECL_HPP)
 #define _GTVECTOR_DECL_HPP
 
-#include "gtypes.h"
-#include "gindex.hpp"
-#include "cff_blas.h"
-#include "gcomm.hpp"
-#include "gmtk.hpp"
-
 #include <cstdlib>
 #include <limits>
 #include <iostream>
 #include <vector>
 
+#include "gtypes.h"
+#include "gindex.hpp"
+#include "cff_blas.h"
+#include "gcomm.hpp"
+
 #if !defined(_G_VEC_CACHE_SIZE)
   # define _G_VEC_CACHE_SIZE 16
 #endif
-
 
 
 template <class T> class GTVector
@@ -60,7 +62,7 @@ template <class T> class GTVector
 
     void range(GLONG ibeg, GLONG end);      // Set range of vector within capacity
     void range_reset();                     // Reset range of vector 
-    GIndex &getIndex() ;        // Return generalized index member
+    GIndex &getIndex() ;                    // Return generalized index member
 
     #pragma acc routine vector
     GBOOL              operator==(const GTVector<T> &b);
@@ -73,9 +75,13 @@ template <class T> class GTVector
     #pragma acc routine vector
     void               pointProd(const GTVector<T> &fact, GTVector<T> &ret);
     #pragma acc routine vector
+    void               pointProd(const T a, const GTVector<T> &fact, GTVector<T> &ret);
+    #pragma acc routine vector
+    void               apointProd(const T a, const GTVector<T> &fact);
+    #pragma acc routine vector
     void               pointProd(const GTVector<T> &);
     #pragma acc routine vector
-    void               constProd(const T, GTVector<T> &ret);
+    void               constProd(const T a, GTVector<T> &ret);
     #pragma acc routine vector
     void transpose(GSIZET n);
 
@@ -137,6 +143,8 @@ template <class T> class GTVector
     void               operator-=(const T b);
     #pragma acc routine vector
     void               operator*=(const T b);
+    #pragma acc routine vector
+    void               operator/=(const T b);
 
     #pragma acc routine vector 
     void               operator+=(const GTVector &b);
@@ -144,6 +152,8 @@ template <class T> class GTVector
     void               operator-=(const GTVector &b);
     #pragma acc routine vector
     void               operator*=(const GTVector &b);
+    #pragma acc routine vector
+    void               operator/=(const GTVector &b);
 
 
     #pragma acc routine vector
@@ -183,6 +193,10 @@ template <class T> class GTVector
         void rpow(GDOUBLE p);
     #pragma acc routine vector
         void abs();
+    #pragma acc routine vector
+inline GLONG findfirst(T val);    // Find first occurrence of val, else -1
+    #pragma acc routine vector
+inline GLONG findlast(T val);     // Find last occurrence of val, else -1
     #pragma acc routine vector
 inline GBOOL onlycontains(T val); // Buffer contains only val?
     #pragma acc routine vector
@@ -244,6 +258,8 @@ inline GSIZET multiplicity_floor(T val, GSIZET *&index, GSIZET &n, T floor);
     GIndex gindex_keep_; // gen. index object, stored
     T     *data_;
     GSIZET n_;
+    GINT   icsz_;  // GTVector cache-blocking factor
+
     GBOOL  bdatalocal_; // tells us that data_ is owned by caller
 
 

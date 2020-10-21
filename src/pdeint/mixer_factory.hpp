@@ -11,8 +11,8 @@
 #include <memory>
 #include <string>
 #include "tbox/error_handler.hpp"
-#include "pdeint/null_mixer.hpp"
 #include "pdeint/mixer_base.hpp"
+#include "pdeint/null_mixer.hpp"
 #include "tbox/property_tree.hpp"
 
 

@@ -12,12 +12,13 @@
 #if !defined(_GINITSTATE_USER_HPP)
 #define _GINITSTATE_USER_HPP
 
-#include "tbox/property_tree.hpp"
 #include "gtypes.h"
+#include "gphysics.h"
 #include "gstateinfo.hpp"
 #include "gtvector.hpp"
 #include "gcomm.hpp"
 #include "gutils.hpp"
+#include "tbox/property_tree.hpp"
 
 using namespace geoflow;
 using namespace geoflow::tbox;
@@ -37,6 +38,8 @@ GBOOL impl_icosnwaveburgers     (const PropertyTree& ptree, GString &sconfig, GG
 GBOOL impl_boxdirgauss          (const PropertyTree& ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u);
 GBOOL impl_boxpergauss          (const PropertyTree& ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u);
 GBOOL impl_icosgauss            (const PropertyTree& ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u);
+GBOOL impl_boxdrybubble         (const PropertyTree& ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u);
+GBOOL impl_boxsod               (const PropertyTree& ptree, GString &sconfig, GGrid &grid, StateInfo &stinfo, Time &time, State &utmp, State &ub, State &u);
 };
 
 
