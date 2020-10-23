@@ -171,14 +171,13 @@ int main(int argc, char **argv)
 
         // Accumulate to find global inf-norm:
         GComm::Allreduce(lnorm.data()  , gnorm.data()  , 1, T2GCDatatype<GFTYPE>() , GC_OP_MAX, comm);
-cout << "main: gnorm[" << j << "]=" << gnorm << endl;
         // Now find max errors of each type for each field:
         for ( auto i=0; i<maxerr[n].size(); i++ ) maxerr[n][i] = MAX(maxerr[n][i],gnorm[i]);
         if ( maxerr[n][1] > eps ) {
-          std::cout << "main: -------------------------------------derivative FAILED : direction=" << j << " method: " << smethod[n]  << std::endl;
+          std::cout << "main: ---------------------------derivative FAILED : direction=" << j << " method: " << smethod[n]  << std::endl;
           errcode += 1;
         } else {
-          std::cout << "main: -------------------------------------derivative OK : direction=" << j << " method: " << smethod[n] << std::endl;
+          std::cout << "main: ---------------------------derivative OK : direction=" << j << " method: " << smethod[n] << std::endl;
           errcode += 0;
         }
 
