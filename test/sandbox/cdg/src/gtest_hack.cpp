@@ -162,7 +162,7 @@ int main(int argc, char **argv)
       maxerr[n].resize(2); maxerr[n] = 0.0;
       for ( auto i=0; i<du.size(); i++ ) du[i] = n==0? duold[i] : dunew[i];
       for ( auto j=0; j<du.size(); j++ ) { // errors in each direction
-        diff     = (*da[j]) - (*du[n])[j];
+        diff     = (*da[j]) - (*du[j]);
        *utmp [0] = diff;                   // for inf-norm
        *utmp [1] = diff; utmp[1]->rpow(2); // for L2 norm
 
