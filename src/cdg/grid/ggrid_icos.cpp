@@ -58,9 +58,9 @@ lshapefcn_                    (NULLPTR)
   lshapefcn_ = new GShapeFcn_linear<GTICOS>();
   ilevel_  = gridptree.getValue<GINT>("ilevel");
   sreftype_= gridptree.getValue<GString>("refine_type","GICOS_LAGRANGIAN");
-  this->cgtraits_.maxit = gridptree.getValue<GDOUBLE>("maxit");
-  this->cgtraits_.tol   = gridptree.getValue<GDOUBLE>("tol");
-  snorm                 = gridptree.getValue<GString>("norm_type");
+  this->cgtraits_.maxit = gridptree.getValue<GDOUBLE>("maxit", 128);
+  this->cgtraits_.tol   = gridptree.getValue<GDOUBLE>("tol", 1.0e-8);
+  snorm                 = gridptree.getValue<GString>("norm_type", "GCG_NORM_INF");
   this->cgtraits_.normtype = LinSolverBase<CGTypePack>::str2normtype(snorm);
 
   
