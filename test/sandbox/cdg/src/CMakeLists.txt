@@ -17,7 +17,6 @@ set(test_cdg_files
 		# gtest_rk.cpp
 		# gtest_vec_access.cpp
 		# gtest_vec.cpp
-		  gtools.cpp
 )
 
 #
