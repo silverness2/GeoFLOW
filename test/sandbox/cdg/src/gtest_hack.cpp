@@ -8,6 +8,7 @@
 //==================================================================================
 
 #include "gtest_hack.h"
+#define NMETH 2
 
 int main(int argc, char **argv)
 {
@@ -145,10 +146,10 @@ int main(int argc, char **argv)
     } 
     GTimerStop("new_deriv");
 
-    GTVector<StateComp>
-                maxerr(2);
-    StateComp   lnorm(2), gnorm(2);
-    std::string smethod[2] = {"old", "new"};
+    // Find inf-norm and L2-norm errors for each method::
+    GTMatrix<GFTYPE> maxerr(NMETH,2); // max errs over directions
+    StateComp        lnorm(2), gnorm(2);
+    std::string      smethod[NMETH] = {"old", "new"};
 
 #if defined(_G_USE_GPTL)
     GPTLget_wallclock("old_deriv"     , 0,  &told); told /= ncyc;
@@ -158,8 +159,8 @@ int main(int argc, char **argv)
     /////////////////////////////////////////////////////////////////
     //////////////////////// Compute Errors /////////////////////////
     /////////////////////////////////////////////////////////////////
+    maxerr = 0.0;
     for ( auto n=0; n<2; n++ ) { // over old and new methods
-      maxerr[n].resize(2); maxerr[n] = 0.0;
       for ( auto i=0; i<du.size(); i++ ) du[i] = n==0? duold[i] : dunew[i];
       for ( auto j=0; j<du.size(); j++ ) { // errors in each direction
         diff     = (*da[j]) - (*du[j]);
@@ -170,10 +171,10 @@ int main(int argc, char **argv)
         gnorm[1] = sqrt(grid_->integrate(*utmp[1],*utmp[2]))/dnorm;
 
         // Accumulate to find global inf-norm:
-        GComm::Allreduce(lnorm.data()  , gnorm.data()  , 1, T2GCDatatype<GFTYPE>() , GC_OP_MAX, comm);
-        // Now find max errors of each type for each field:
-        for ( auto i=0; i<maxerr[n].size(); i++ ) maxerr[n][i] = MAX(maxerr[n][i],gnorm[i]);
-        if ( maxerr[n][1] > eps ) {
+        GComm::Allreduce(lnorm.data(), gnorm.data(), 1, T2GCDatatype<GFTYPE>(), GC_OP_MAX, comm);
+        // Now find max errors over directions, j:
+        for ( auto i=0; i<maxerr.size(2); i++ ) maxerr(n,i) = MAX(maxerr(n,i),gnorm[i]);
+        if ( maxerr(n,1) > eps ) {
           std::cout << "main: ---------------------------derivative FAILED : direction=" << j << " method: " << smethod[n]  << std::endl;
           errcode += 1;
         } else {
@@ -202,8 +203,8 @@ int main(int argc, char **argv)
         for ( auto j=1; j<GDIM; j++ ) ios << " " <<  pvec[j]; 
     ios << "  " << grid_->ngelems() 
         << "  " << ncyc
-        << "  " << maxerr[0][0] << "  " << maxerr[0][1] << "  " << told
-        << "  " << maxerr[1][0] << "  " << maxerr[1][1] << "  " << tnew
+        << "  " << maxerr(0,0) << "  " << maxerr(0,1) << "  " << told
+        << "  " << maxerr(1,0) << "  " << maxerr(1,1) << "  " << tnew
         << std::endl;
     ios.close();
  
