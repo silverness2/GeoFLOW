@@ -80,6 +80,7 @@ typedef GStateInfo            StateInfo;
 class GGrid 
 {
 public:
+                             enum GDerivType {GDV_ELXEL=0, GDV_LONGM};; 
                              using CGTypes        = CGTypePack;
                              using Operator       = typename CGTypes::Operator;
                              using Preconditioner = typename CGTypes::Preconditioner;
@@ -194,6 +195,9 @@ virtual void                 print(const GString &filename){}          // print 
                             &bdyNormals() { return bdyNormals_; }      // bdy normals
         GTVector<GINT>      &idepComp  () { return idepComp_; }        // dependent vector components on bdy 
         GC_COMM              get_comm() { return comm_; }              // get communicator
+        void                 set_derivtype(GDerivType gt)
+                             { gderivtype_ = gt; }                     // set deriv. method
+        GDerivType           get_derivtype() { return gderivtype_; }   // return deriv. method
 
 virtual void                 config_bdy(const PropertyTree &ptree, 
                              GTVector<GTVector<GSIZET>>   &igbdy, 
@@ -209,13 +213,15 @@ virtual void                 config_bdy(const PropertyTree &ptree,
         void                 compute_grefderiv(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
                                                GINT idir, GBOOL dotrans, GTVector<GFTYPE> &du);
 
-        void                 compute_grefderivW(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
+        void                 compute_grfderivW(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
                                                 GINT idir, GBOOL dotrans, GTVector<GFTYPE> &du);
 
         void                 compute_grefderivs(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
                                                 GBOOL btrans, GTVector<GTVector<GFTYPE>*> &du);
+#if 0
         void                 compute_grefderivsW(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
                                                  GBOOL btrans, GTVector<GTVector<GFTYPE>*> &du);
+#endif
         void                 compute_grefdiv(GTVector<GTVector<GFTYPE>*> &u, GTVector<GFTYPE> &etmp,
                                               GBOOL btrans, GTVector<GFTYPE> &divu);
 
@@ -223,37 +229,35 @@ friend  std::ostream&        operator<<(std::ostream&, GGrid &);       // Output
  
 
 protected:
+        void                 grefderiv_byelem(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
+                                              GINT idir, GBOOL dotrans, GTVector<GFTYPE> &du);
+        void                 grefderiv_longm (GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
+                                              GINT idir, GBOOL dotrans, GTVector<GFTYPE> &du);
        
-virtual void                        do_face_normals(GTMatrix<GTVector<GFTYPE>>
-                                                                       &dXdXi,
-                                                   GTVector<GSIZET>
-                                                                       &igface,
-                                                   GTVector<GUINT>
-                                                                       &dgface,
-                                                   GTVector<GFTYPE>    &face_mass,
-                                                   GTVector<GTVector<GFTYPE>>
-                                                                       &normals)=0;
+virtual void                 do_face_normals(GTMatrix<GTVector<GFTYPE>> &dXdXi,
+                                             GTVector<GSIZET> &igface,
+                                             GTVector<GUINT> &dgface,
+                                             GTVector<GFTYPE>    &face_mass,
+                                             GTVector<GTVector<GFTYPE>> &normals)=0;
                                                                       // compute normals to elem faces 
-virtual void                        do_bdy_normals(GTMatrix<GTVector<GFTYPE>>
-                                                                       &dXdXi,
-                                                   GTVector<GTVector<GSIZET>>  
-                                                                       &igbdy,
-                                                   GTVector<GTVector<GFTYPE>> 
-                                                                       &normals,
-                                                   GTVector<GINT>      &idepComp)=0;
+virtual void                 do_bdy_normals(GTMatrix<GTVector<GFTYPE>> &dXdXi,
+                                            GTVector<GTVector<GSIZET>>  &igbdy,
+                                            GTVector<GTVector<GFTYPE>> &normals,
+                                            GTVector<GINT>      &idepComp)=0;
                                                                       // compute bdy normals entry point
 
-        void                        init_local_face_info();           // get local face info
-        void                        globalize_coords();               // create global coord vecs from elems
-        void                        init_bc_info();                   // configure bdys
-        void                        def_geom_init();                  // iniitialze deformed elems
-        void                        reg_geom_init();                  // initialize regular elems
-        void                        do_normals();                     // compute normals to elem faces and domain bdy
-        GFTYPE                      find_min_dist(); 
+        void                  init_local_face_info();           // get local face info
+        void                  globalize_coords();               // create global coord vecs from elems
+        void                  init_bc_info();                   // configure bdys
+        void                  def_geom_init();                  // iniitialze deformed elems
+        void                  reg_geom_init();                  // initialize regular elems
+        void                  do_normals();                     // compute normals to elem faces and domain bdy
+        GFTYPE                find_min_dist(); 
 
         GBOOL                       bInitialized_;  // object initialized?
         GBOOL                       bapplybc_;      // bc apply callback set
         GBOOL                       do_face_normals_; // compute elem face normals for fluxes?
+        GDerivType                  gderivtype_;    // ref. deriv method type
         GElemType                   gtype_;         // element types comprising grid
         GINT                        irank_;         // MPI task id
         GINT                        nprocs_;        // number of MPI tasks
