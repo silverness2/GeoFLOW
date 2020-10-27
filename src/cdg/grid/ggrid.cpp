@@ -41,7 +41,7 @@ GGrid::GGrid(const geoflow::tbox::PropertyTree &ptree, GTVector<GNBasis<GCTYPE,G
 bInitialized_                   (FALSE),
 bapplybc_                       (FALSE),
 do_face_normals_                 (TRUE),
-gderivtype_                 (GDV_ELXEL),
+gderivtype_                 (GDV_VARP),
 nprocs_        (GComm::WorldSize(comm)),
 ngelems_                            (0),
 irank_         (GComm::WorldRank(comm)),
@@ -1919,11 +1919,11 @@ void GGrid::compute_grefderiv(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 {
 
   switch ( gderivtype_ ) {
-    case GDV_ELXEL:
-      grefderiv_byelem(u, etmp, idir, dotrans, du);
+    case GDV_VARP:
+      grefderiv_varp(u, etmp, idir, dotrans, du);
       break;
-    case GDV_LONGM:
-      grefderiv_longm (u, etmp, idir, dotrans, du);
+    case GDV_CONSTP:
+      grefderiv_constp (u, etmp, idir, dotrans, du);
       break;
     default:
       assert(false);
@@ -1935,7 +1935,7 @@ void GGrid::compute_grefderiv(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : grefderiv_byelem
+// METHOD : grefderiv_varp
 // DESC   : Compute tensor product derivative in specified direction
 //          of specified field, u, in ref space, using grid object.
 //          Compute
@@ -1961,7 +1961,7 @@ void GGrid::compute_grefderiv(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GGrid::grefderiv_byelem(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
+void GGrid::grefderiv_varp(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
                              GINT idir, GBOOL dotrans, GTVector<GFTYPE> &du)
 {
   GSIZET               ibeg, iend; // beg, end indices for global array
@@ -2047,12 +2047,12 @@ void GGrid::grefderiv_byelem(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 
 #endif
 
-} // end of method grefderiv_byelem
+} // end of method grefderiv_varp
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : grefderiv_longm
+// METHOD : grefderiv_constp
 // DESC   : Compute tensor product derivative in specified direction
 //          of specified field, u, in ref space, using grid object.
 //          Compute
@@ -2078,7 +2078,7 @@ void GGrid::grefderiv_byelem(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 //             
 // RETURNS:  none
 //**********************************************************************************
-void GGrid::grefderiv_longm(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
+void GGrid::grefderiv_constp(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
                             GINT idir, GBOOL dotrans, GTVector<GFTYPE> &du)
 {
   GSIZET               ibeg, iend, Ne,  NN; // beg, end indices for global array
@@ -2091,10 +2091,7 @@ void GGrid::grefderiv_longm(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
   Ne = gelems->size();
 
 GINT   szcache=16;
-GSIZET Nu1, Nu2;
-GTMatrix<GFTYPE> um(u.data(), N[1]*N[0], Ne);
-GTMatrix<GFTYPE> ut(Ne, N[1]*N[0]);
-um.transpose(ut);
+GSIZET Nu;
 
 
 #if defined(_G_IS2D)
@@ -2106,28 +2103,23 @@ um.transpose(ut);
     GMTK::I2_X_D1(*Di, u, N[0], NN  , du); 
     break;
   case 2:
-    Di = (*gelems)[0]->gbasis(0)->getDerivMatrix(!dotrans);
+    Di = (*gelems)[0]->gbasis(1)->getDerivMatrix(!dotrans);
 //  GMTK::D2_X_I1(*Di, u, N[0], N[1], du); 
-//  NN = N[1] * Ne;
-//  GMTK::D2_X_I1(*Di, u, NN, N[0], du); 
-    
-    Nu1 = Ne*N[0];
-    Nu2 =    N[1];
-    dmxm(du.data(), u.data(), &Nu1, &Nu2, Di->data().data(), &N[0], &N[1], &szcache); 
-    break;
-  case 3:
-    assert( GDIM == 3
-         && "Only GDIM reference derivatives");
+    Nu = N[0]*N[1];
+    for ( auto i=0; i<Ne; i++ ) {
+      dmxm(du.data()+i*Nu, u.data()+i*Nu, &N[0], &N[1], Di->data().data(), &N[0], &N[0], &szcache); 
+    }
     break;
   default:
     assert(FALSE && "Invalid coordinate direction");
   }
 
 #elif defined(_G_IS3D)
-
+  #error "3D not ready yet"
   switch (idir) {
   case 1:
     Di = (*gelems)[0]->gbasis(0)->getDerivMatrix (dotrans); 
+    NN = N[2]*N[1] * Ne;
     GMTK::I3_X_I2_X_D1(*Di, u, N[0], N[1], N[2], du); 
     break;
 
@@ -2147,6 +2139,6 @@ um.transpose(ut);
 
 #endif
 
-} // end of method grefderiv_longm
+} // end of method grefderiv_constp
 
 

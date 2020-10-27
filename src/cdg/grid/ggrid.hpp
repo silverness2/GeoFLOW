@@ -80,7 +80,7 @@ typedef GStateInfo            StateInfo;
 class GGrid 
 {
 public:
-                             enum GDerivType {GDV_ELXEL=0, GDV_LONGM};; 
+                             enum GDerivType {GDV_VARP=0, GDV_CONSTP}; 
                              using CGTypes        = CGTypePack;
                              using Operator       = typename CGTypes::Operator;
                              using Preconditioner = typename CGTypes::Preconditioner;
@@ -229,9 +229,9 @@ friend  std::ostream&        operator<<(std::ostream&, GGrid &);       // Output
  
 
 protected:
-        void                 grefderiv_byelem(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
+        void                 grefderiv_varp  (GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
                                               GINT idir, GBOOL dotrans, GTVector<GFTYPE> &du);
-        void                 grefderiv_longm (GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
+        void                 grefderiv_constp(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
                                               GINT idir, GBOOL dotrans, GTVector<GFTYPE> &du);
        
 virtual void                 do_face_normals(GTMatrix<GTVector<GFTYPE>> &dXdXi,
