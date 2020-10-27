@@ -15,7 +15,7 @@ int main(int argc, char **argv)
 
     GINT    errcode=0 ;
     GINT    nc=GDIM; // no. coords
-    GFTYPE  eps=10.0*std::numeric_limits<GFTYPE>::epsilon();
+    GFTYPE  eps=100.0*std::numeric_limits<GFTYPE>::epsilon();
     GFTYPE  dnorm, told=0.0, tnew=0.0;
     GString sgrid;// name of JSON grid object to use
     GTVector<GINT>
@@ -173,10 +173,10 @@ cout << "dnew_y=" <<  dunew << endl;
       GComm::Allreduce(lnorm.data(), gnorm.data(), 1, T2GCDatatype<GFTYPE>(), GC_OP_MAX, comm);
       errs(n,0) = gnorm[0]; errs(n,1) = gnorm[1];
       if ( errs(n,1) > eps ) {
-        std::cout << "main: ---------------------------derivative FAILED : direction=" << idir << " method: " << smethod[n]  << std::endl;
+        std::cout << "main: ---------------------------derivative FAILED: " << errs(n,1) << " : direction=" << idir << " method: " << smethod[n]  << std::endl;
         errcode += 1;
       } else {
-        std::cout << "main: ---------------------------derivative OK : direction=" << idir << " method: " << smethod[n] << std::endl;
+        std::cout << "main: ---------------------------derivative OK: " << errs(n,1) << " : direction=" << idir << " method: " << smethod[n] << std::endl;
         errcode += 0;
       }
 
