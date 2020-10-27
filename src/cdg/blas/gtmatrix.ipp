@@ -117,7 +117,7 @@ singzero_             (1e-12)
 
   // build matrix data_ structure:
   data_.resize(n1_*n2_);
-  for ( GSIZET j=0; j< n1_*n2_; j++ ) data_[j] = array[j];
+  for ( auto j=0; j< n1_*n2_; j++ ) data_[j] = array[j];
 
   zero();
 
@@ -155,8 +155,8 @@ singzero_             (1e-12)
   n1_ = m.dim(1);
   n2_ = nn;
   data_.resize(n1_*n2_);
-  for ( GSIZET j=0; j<n2_; j++ ) {
-    for ( GSIZET i=0; i<n1_; i++ ) {
+  for ( auto j=0; j<n2_; j++ ) {
+    for ( auto i=0; i<n1_; i++ ) {
       data_[i+j*n1_] = m(i,ind[j]);
     }
   }
@@ -1984,7 +1984,7 @@ template<class T> void GTMatrix<T>::set(T *array, GSIZET n1, GSIZET n2)
   n1_ = n1;
   n2_ = n2;
   data_.resize(n1_*n2_);
-  for ( GSIZET j=0; j< n1_*n2_; j++ ) data_[j] = array[j];
+  for ( auto j=0; j< n1_*n2_; j++ ) data_[j] = array[j];
 
 } // end, method set
 
@@ -2149,7 +2149,7 @@ void GTMatrix<T>::createIdentity()
   }
 
   (*this) = 0;
-  for ( GSIZET i=0; i<n1_; i++ ) (*this)(i,i) = 1;
+  for ( auto i=0; i<n1_; i++ ) (*this)(i,i) = 1;
 } // end, method createIdentity
 
 
@@ -2484,7 +2484,7 @@ GSIZET GTMatrix<T>::distinctcol( GSIZET icol, GTVector<T> &val, GSZBuffer &irow,
     irow.resize(nd); 
   }
  
-  for ( GSIZET j=0; j<nd; j++ ) {
+  for ( auto j=0; j<nd; j++ ) {
     val [j] = vvals[j];
     irow[j] = index[j] - icol*n1_; // make a row index out of linearized index
   }
@@ -2570,7 +2570,7 @@ GSIZET GTMatrix<T>::distinctcol_floor( GSIZET icol, GTVector<T> &vals, GSZBuffer
     irow.resize(nd); 
   }
   vals .set(vvals ,nd);
-  for ( GSIZET i=0; i<nd; i++ ) irow[i] = vind[i] - icol*n1_; // make a row index out of linearized index
+  for ( auto i=0; i<nd; i++ ) irow[i] = vind[i] - icol*n1_; // make a row index out of linearized index
   if ( vvals != NULLPTR ) delete [] vvals;
   if ( vind  != NULLPTR ) delete [] vind;
 
@@ -2685,9 +2685,9 @@ GTVector<T> GTMatrix<T>::matvec_impl_(const GTVector<T> &obj, std::false_type)
 {
   GTVector<T> vret(this->size(1));
 
-  for ( GSIZET i=0; i<this->size(1); i++ ) {
+  for ( auto i=0; i<this->size(1); i++ ) {
     vret[i] = static_cast<T>(0);
-    for ( GSIZET j=0; j<this->size(2); j++ ) {
+    for ( auto j=0; j<this->size(2); j++ ) {
       vret[i] += (*this)(i,j)*obj[j];
     }
   }
@@ -2770,11 +2770,11 @@ GTMatrix<T>::matmat_impl_(const GTMatrix &obj, std::false_type)
 {
   GTMatrix mret(this->size(1),obj.size(2));
 
-  for ( GSIZET j=0; j<obj.size(2); j++ ) {
-    for ( GSIZET i=0; i<this->size(1); i++ ) {
+  for ( auto j=0; j<obj.size(2); j++ ) {
+    for ( auto i=0; i<this->size(1); i++ ) {
 
       mret(i,j) = 0.0;
-      for ( GSIZET k=0; k<this->size(2); k++ ) {
+      for ( auto k=0; k<this->size(2); k++ ) {
         mret(i,j) += (*this)(i,k) * obj(k,j);
       }
 
