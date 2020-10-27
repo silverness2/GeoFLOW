@@ -83,18 +83,16 @@ int main(int argc, char **argv)
 
     // Create state and tmp space:
     State     utmp (3);
-    State     dunew(nc);
-    State     duold(nc);
     State     da   (nc);
     State     du   (nc);
-    StateComp diff, u;
+    StateComp diff, dunew, duold, u;
     
     for ( auto j=0; j<utmp .size(); j++ ) utmp [j] = new StateComp(grid_->size());
-    for ( auto j=0; j<duold.size(); j++ ) duold[j] = new StateComp(grid_->size());
-    for ( auto j=0; j<dunew.size(); j++ ) dunew[j] = new StateComp(grid_->size());
     for ( auto j=0; j<da   .size(); j++ ) da   [j] = new StateComp(grid_->size());
-    u   .resize(grid_->size());
-    diff.resize(grid_->size());
+    u    .resize(grid_->size());
+    diff .resize(grid_->size());
+    dunew.resize(grid_->size());
+    duold.resize(grid_->size());
     du = NULLPTR;
 
     /////////////////////////////////////////////////////////////////
@@ -107,13 +105,16 @@ int main(int argc, char **argv)
             vpoly = polyptree.getArray<GFTYPE>("poly");
     
     GINT    ncyc  = polyptree.getValue<GINT>("ncycles",100);
+    GINT    idir  = polyptree.getValue<GINT>("idir",2);
     GFTYPE  p, q, r, x, y, z;
     GTVector<GTVector<GFTYPE>> 
            *xnodes = &grid_->xNodes();   
 
-    p = vpoly[0]; q = vpoly[1]; r = GDIM > 2 ? vpoly[2] : 0.0;
+    assert(vpoly.size() >= GDIM); 
+    assert(idir >= 1 && idir <= GDIM);
+    p = vpoly[0]; q = vpoly[1]; r = GDIM == 3 ? vpoly[2] : 0.0;
 
-    // Set function, and analytic derivative:
+    // Set scalar field, and analytic derivative:
     dnorm = 0.0;
     for ( auto j=0; j<(*xnodes)[0].size(); j++ ) {
       x = (*xnodes)[0][j];
@@ -130,24 +131,24 @@ int main(int argc, char **argv)
 
     // Compute numerical derivs of u in each direction, using
     // different methods:
+    grid_->set_derivtype(GGrid::GDV_VARP); // variable order
     GTimerStart("old_deriv");
-    for ( auto j=0; j<duold.size(); j++ ) {  
-        for ( auto n=0; n<ncyc; n++ ) {
-          grid_->deriv(u, j+1, *utmp[0], *duold[j]);
-        }
-    } 
+    for ( auto n=0; n<ncyc; n++ ) {
+       grid_->deriv(u, idir, *utmp[0], duold);
+    }
     GTimerStop("new_deriv");
 
+    grid_->set_derivtype(GGrid::GDV_CONSTP); // const order
     GTimerStart("new_deriv");
-    for ( auto j=0; j<dunew.size(); j++ ) {  
-        for ( auto n=0; n<ncyc; n++ ) {
-          grid_->deriv(u, j+1, *utmp[0], *dunew[j]);
-        }
-    } 
+    for ( auto n=0; n<ncyc; n++ ) {
+       grid_->deriv(u, idir, *utmp[0], dunew);
+    }
     GTimerStop("new_deriv");
+cout << "da_y  =" << *da   [idir-1] << endl;
+cout << "dnew_y=" <<  dunew << endl;
 
     // Find inf-norm and L2-norm errors for each method::
-    GTMatrix<GFTYPE> maxerr(NMETH,2); // max errs over directions
+    GTMatrix<GFTYPE> errs(NMETH,2); // for each method, Linf and L2 errs
     StateComp        lnorm(2), gnorm(2);
     std::string      smethod[NMETH] = {"old", "new"};
 
@@ -159,30 +160,25 @@ int main(int argc, char **argv)
     /////////////////////////////////////////////////////////////////
     //////////////////////// Compute Errors /////////////////////////
     /////////////////////////////////////////////////////////////////
-    maxerr = 0.0;
-    for ( auto n=0; n<2; n++ ) { // over old and new methods
-      for ( auto i=0; i<du.size(); i++ ) du[i] = n==0? duold[i] : dunew[i];
-      for ( auto j=0; j<du.size(); j++ ) { // errors in each direction
-        diff     = (*da[j]) - (*du[j]);
-       *utmp [0] = diff;                   // for inf-norm
-       *utmp [1] = diff; utmp[1]->rpow(2); // for L2 norm
+    du[0] = &duold; du[1] = &dunew;
+    for ( auto n=0; n<NMETH; n++ ) { // over old and new methods
+      diff     = (*da[idir-1]) - (*du[n]);
+     *utmp [0] = diff;                   // for inf-norm
+     *utmp [1] = diff; utmp[1]->rpow(2); // for L2 norm
 
-        lnorm[0] = utmp[0]->infnorm (); 
-        gnorm[1] = sqrt(grid_->integrate(*utmp[1],*utmp[2]))/dnorm;
+      lnorm[0] = utmp[0]->infnorm (); 
+      gnorm[1] = sqrt(grid_->integrate(*utmp[1],*utmp[2]))/dnorm;
 
-        // Accumulate to find global inf-norm:
-        GComm::Allreduce(lnorm.data(), gnorm.data(), 1, T2GCDatatype<GFTYPE>(), GC_OP_MAX, comm);
-        // Now find max errors over directions, j:
-        for ( auto i=0; i<maxerr.size(2); i++ ) maxerr(n,i) = MAX(maxerr(n,i),gnorm[i]);
-        if ( maxerr(n,1) > eps ) {
-          std::cout << "main: ---------------------------derivative FAILED : direction=" << j << " method: " << smethod[n]  << std::endl;
-          errcode += 1;
-        } else {
-          std::cout << "main: ---------------------------derivative OK : direction=" << j << " method: " << smethod[n] << std::endl;
-          errcode += 0;
-        }
-
-      } // end, direction loop
+      // Accumulate to find global inf-norm:
+      GComm::Allreduce(lnorm.data(), gnorm.data(), 1, T2GCDatatype<GFTYPE>(), GC_OP_MAX, comm);
+      errs(n,0) = gnorm[0]; errs(n,1) = gnorm[1];
+      if ( errs(n,1) > eps ) {
+        std::cout << "main: ---------------------------derivative FAILED : direction=" << idir << " method: " << smethod[n]  << std::endl;
+        errcode += 1;
+      } else {
+        std::cout << "main: ---------------------------derivative OK : direction=" << idir << " method: " << smethod[n] << std::endl;
+        errcode += 0;
+      }
 
     } // end, new-old method loop
 
@@ -195,16 +191,16 @@ int main(int argc, char **argv)
 
     // Write header, if required:
     if ( itst.peek() == std::ofstream::traits_type::eof() ) {
-    ios << "# p      num_elems  ncyc  inf_err_old  L2_err_old  t_old   inf_err_new  L2_err_new   t_new" << std::endl;
+    ios << "#  idir   p      num_elems  ncyc  inf_err_old  L2_err_old  t_old   inf_err_new  L2_err_new   t_new" << std::endl;
     }
     itst.close();
 
-    ios << pvec[0] ;
+    ios << idir << "  " << pvec[0] ;
         for ( auto j=1; j<GDIM; j++ ) ios << " " <<  pvec[j]; 
     ios << "  " << grid_->ngelems() 
         << "  " << ncyc
-        << "  " << maxerr(0,0) << "  " << maxerr(0,1) << "  " << told
-        << "  " << maxerr(1,0) << "  " << maxerr(1,1) << "  " << tnew
+        << "  " << errs(0,0) << "  " << errs(0,1) << "  " << told
+        << "  " << errs(1,0) << "  " << errs(1,1) << "  " << tnew
         << std::endl;
     ios.close();
  
