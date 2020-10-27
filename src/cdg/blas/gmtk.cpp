@@ -596,7 +596,7 @@ void D2_X_I1<GFLOAT>(GTMatrix<GFLOAT> &D2T,
   }
   #endif
 
-  // Compute y = I2_X_D1 u = u * D2T:
+  // Compute y = D2_X_I1 u = u * D2T:
   fmxm(y.data(), u.data(), &N1, &N2, D2T.data().data(), &N21, &N22, &szMatCache_);
 
 
@@ -631,7 +631,7 @@ void D2_X_I1<GDOUBLE>(GTMatrix<GDOUBLE> &D2T,
   }
   #endif
 
-  // Compute y = I2_X_D1 u = u * D2T:
+  // Compute y = D2_X_I1 u = u * D2T:
   dmxm(y.data(), u.data(), &N1, &N2, D2T.data().data(), &N21, &N22, &szMatCache_);
 
 
@@ -667,7 +667,7 @@ void D2_X_I1<GQUAD>(GTMatrix<GQUAD> &D2T,
   }
   #endif
 
-  // Compute y = I2_X_D1 u = u * D2T:
+  // Compute y = D2_X_I1 u = u * D2T:
   qmxm(y.data(), u.data(), &N1, &N2, D2T.data().data(), &N21, &N22, &szMatCache_);
 
 
