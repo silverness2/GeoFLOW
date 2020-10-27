@@ -171,7 +171,7 @@ int main(int argc, char **argv)
     GPTLpr_file("timings.txt");
 //  GPTLpr(GComm::WorldRank(comm_));
 //  GPTLpr(0);
-    GPTLpr_summary();
+//  GPTLpr_summary();
 #endif
     GTimerFinal();
 
