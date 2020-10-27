@@ -1,10 +1,10 @@
 { 
-  "exp_order"            : [2, 2, 4],
+  "exp_order"            : [4, 4, 4],
   "grid_type"            : "grid_box",
   "IO_implementation"    : "gio",
   "poly_test": {
-    "poly"     : [1, 1, 1],
-    "ncycles"  : 1,
+    "poly"     : [2, 2, 1],
+    "ncycles"  : 1000,
     "idir"     : 1
   },
   "fully_periodic": {
@@ -16,7 +16,7 @@
     "grid_name" : "grid_box",
     "xyz0"      : [0.0, 0.0, 0.0],
     "delxyz"    : [1.0, 1.0, 1.0],
-    "num_elems" : [8, 3, 1],
+    "num_elems" : [50, 50, 1],
     "bdy_x_0"   : "fully_periodic",
     "bdy_x_1"   : "fully_periodic",
     "bdy_y_0"   : "fully_periodic",
