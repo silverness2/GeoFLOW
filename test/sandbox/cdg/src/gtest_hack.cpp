@@ -136,7 +136,7 @@ int main(int argc, char **argv)
     for ( auto n=0; n<ncyc; n++ ) {
        grid_->deriv(u, idir, *utmp[0], duold);
     }
-    GTimerStop("new_deriv");
+    GTimerStop("old_deriv");
 
     grid_->set_derivtype(GGrid::GDV_CONSTP); // const order
     GTimerStart("new_deriv");
@@ -208,7 +208,7 @@ cout << "dnew_y=" <<  dunew << endl;
     GPTLpr_file("timings.txt");
 //  GPTLpr(GComm::WorldRank(comm_));
 //  GPTLpr(0);
-    GPTLpr_summary();
+//  GPTLpr_summary();
 #endif
     GTimerFinal();
 
