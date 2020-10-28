@@ -1343,13 +1343,11 @@ void GGridBox::do_face_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 
   #if defined(_G_IS2D)
 
-    do_face_normals2d(dXdXi, gieface, gdeface, face_mass, normals);
+  do_face_normals2d(dXdXi, gieface, gdeface, face_mass, normals);
 
   #elif defined(_G_IS3D)
 
-    do_face_normals3d(dXdXi, gieface, gdeface, face_mass, normals);
-
-  }
+  do_face_normals3d(dXdXi, gieface, gdeface, face_mass, normals);
 
   #else
     #error Invalid problem dimensionality
@@ -1478,9 +1476,12 @@ void GGridBox::do_face_normals3d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
                                  GTVector<GFTYPE>              &face_mass,
                                  GTVector<GTVector<GFTYPE>>    &normals)
 {
-   GINT            ib, ic, id; 
-   GINT            ixi[6][2] = { {0,2}, {1,2}, {2,0},
-                                 {2,1}, {1,0}, {0,1} };
+   GINT            fi, ib, ic; 
+   GUINT           id, it; 
+   GINT            ifx [6][2] = { {0,2}, {1,2}, {2,0},
+                                  {2,1}, {1,0}, {0,1} }; // ref x's for each face
+   GINT            ief[12]    = {0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3 }; // face for each edge
+   GINT            ivf [8]    = {0, 1, 2, 3, 0, 1, 2, 3 }; // face for each vertex
    GFTYPE          tiny;
    GTPoint<GFTYPE> xp(3), p1(3), p2(3);
 
@@ -1489,12 +1490,19 @@ void GGridBox::do_face_normals3d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
    // Bdy normal is dvec{X} / dxi_xi X dvec{X} / dxi_eta
    for ( auto j=0; j<gieface.size(); j++ ) { // all points on iedge
      ib = gieface[j];
-     id = gdeface[j];
+     id = GET_HIWORD(gdeface[j]); // id (which face it sits on)
+     it = GET_LOWORD(gdeface[j]); // VERTEX, EDGE, FACE
+     if      ( it == GElem_base::VERTEX ) fi = ivf[id];
+     else if ( it == GElem_base::EDGE   ) fi = ief[id];
+     else if ( it == GElem_base::FACE   ) fi = id;
+     else    assert(FALSE);
+
+cout << "GGridBox:do_face_normals3d: gdface[" << j << "]=" << gdeface[j] << " id=" << id << " it=" << it << endl;
      // Find derivs of _X_ wrt face's reference coords;
      // the cross prod of these vectors is the normal:
      for ( auto i=0; i<dXdXi.size(2); i++ ) { // d_X_/dXi
-       p1[i] = dXdXi(ixi[j][0],i)[ib]; // d_X_/dxi
-       p2[i] = dXdXi(ixi[j][1],i)[ib]; // d_X_/deta
+       p1[i] = dXdXi(ifx[fi][0],i)[ib]; // d_X_/dxi
+       p2[i] = dXdXi(ifx[fi][1],i)[ib]; // d_X_/deta
      }
      p1.cross(p2, xp);   // xp = p1 X p2
      face_mass  [j] *= xp.mag(); // d_X_/dxi X d_X_/deta| is face Jac
