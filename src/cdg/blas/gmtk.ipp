@@ -1347,13 +1347,14 @@ void minbyelem(GGrid &grid, GTVector<T> &q, GTVector<T> &min)
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : I2_X_D1 
+// METHOD : I2_X_D1 (1)
 // DESC   : Apply tensor product operator to vector:
 //            y = I2 X D1 u
 //          where I2 is the 2-direction's identity, and D1 is
 //          the deriv matrix in the 1-direction
 // ARGS   : D1  : 1-direction (dense) operator
 //          u   : operand vector; of size N1 X N2
+//          N1-2: dimensions of u if interpreted as a matrix
 //          y   : return vector result; must be at least of size
 //                N1 X N2
 // RETURNS: none
@@ -1369,7 +1370,7 @@ void I2_X_D1(GTMatrix<T> &D1,
 
   #if defined(_G_BOUNDS_CHK)
   if ( !(u.size() >= N1*N2 && y.size() >= N1*N2) ) {
-    cout << "GMTK::I2_X_D1" << "incompatible size" << endl;
+    cout << "GMTK::I2_X_D1 (1)" << "incompatible size" << endl;
     exit(1);
   }
   #endif
@@ -1388,7 +1389,59 @@ void I2_X_D1(GTMatrix<T> &D1,
     assert(FALSE);
   }
 
-} // end of method I2_X_D1
+} // end of method I2_X_D1 (1)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : I2_X_D1  (2)
+// DESC   : Apply tensor product operator to vector:
+//            y = I2 X D1 u
+//          where I2 is the 2-direction's identity, and D1 is
+//          the deriv matrix in the 1-direction, and u is the
+//          the full state component
+// ARGS   : D1  : 1-direction (dense) operator
+//          u   : operand vector consisting of Ne 'elements' 
+//                each of size ize N1 X N2
+//          N1-2: dimensions of u elemewnts if interpreted as matrices
+//          Ne  : number of 'elements' in u
+//          y   : return vector result; must be at least of size
+//                N1 X N2
+// RETURNS: none
+//**********************************************************************************
+template<typename T>
+void I2_X_D1(GTMatrix<T> &D1,
+             GTVector<T> &u, GSIZET N1, GSIZET N2, GSIZET Ne, GTVector<T> &y)
+{
+  GSIZET ND1, ND2, Nu;
+
+  ND1 = D1.size(1);
+  ND2 = D1.size(2);
+
+  #if defined(_G_BOUNDS_CHK)
+  if ( !(u.size() >= N1*N2 && y.size() >= N1*N2) ) {
+    cout << "GMTK::I2_X_D1 (2)" << "incompatible size" << endl;
+    exit(1);
+  }
+  #endif
+
+  Nu = N1 * Ne;
+
+  // Compute y = I2_X_D1 u:
+  if      ( std::is_same<T,GFLOAT>::value ) {
+    fmxm((GFLOAT*)y.data(), (GFLOAT*)(D1.data().data()), &ND1, &ND2, (GFLOAT*)u.data(), &N1, &Nu, &szMatCache_);
+  }
+  else if ( std::is_same<T,GDOUBLE>::value ) {
+    dmxm((GDOUBLE*)y.data(), (GDOUBLE*)(D1.data().data()), &ND1, &ND2, (GDOUBLE*)u.data(), &N1, &Nu, &szMatCache_);
+  }
+  else if ( std::is_same<T,GQUAD>::value ) {
+    qmxm((GQUAD*)y.data(), (GQUAD*)(D1.data().data()), &ND1, &ND2, (GQUAD*)u.data(), &N1, &Nu, &szMatCache_);
+  }
+  else {
+    assert(FALSE);
+  }
+
+} // end of method I2_X_D1 (2)
 
 
 //**********************************************************************************
@@ -1533,7 +1586,7 @@ void Dg2_X_D1(GTMatrix<T> &D1, GTVector<T> &Dg2, GTVector<T> &u,
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : D2_X_I1 
+// METHOD : D2_X_I1  (1)
 // DESC   : Apply tensor product operator to vector:
 //            y = D2 X I1 u
 //          where I1 is the 1-direction's identity, and D2
@@ -1541,6 +1594,7 @@ void Dg2_X_D1(GTMatrix<T> &D1, GTVector<T> &Dg2, GTVector<T> &u,
 // ARGS   : D2T : 2-direction (dense) operator transpose 
 //          u   : operand vector; must be at least of size
 //                D1.size(2) x D2.size(2) = D1.size(2) x D2T.size(1)
+//          N1-2: dimensions of u if interpreted as matrix
 //          y   : return vector result; must be at least of size
 //                D1.size(1) x D2.size(1) = D1.size(1) x D2T.size(2)
 // RETURNS: none
@@ -1555,7 +1609,7 @@ void D2_X_I1(GTMatrix<T> &D2T,
   N22 = D2T.size(2);
   #if defined(_G_BOUNDS_CHK)
   if ( !(u.size() >= N1*N2 && y.size() >= N1*N2) ) {
-    cout << "GMTK::D2_X_I1" << "incompatible size" << endl;
+    cout << "GMTK::D2_X_I1 (1)" << "incompatible size" << endl;
     exit(1);
   }
   #endif
@@ -1574,9 +1628,63 @@ void D2_X_I1(GTMatrix<T> &D2T,
     assert(FALSE);
   }
 
+} // end of method D2_X_I1 (1)
 
 
-} // end of method D2_X_I1
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : D2_X_I1 (2)
+// DESC   : Apply tensor product operator to vector:
+//            y = D2 X I1 u
+//          where I1 is the 1-direction's identity, and D2
+//          the deriv matrix in the 2-direction
+// ARGS   : D2T : 2-direction (dense) operator transpose 
+//          u   : operand vector consisting of Ne 'elements' 
+//                each of size ize N1 X N2
+//          N1-2: dimensions of u elemewnts if interpreted as matrices
+//          Ne  : number of 'elements' in u
+//          y   : return vector result; must be at least of size
+//                D1.size(1) x D2.size(1) = D1.size(1) x D2T.size(2)
+// RETURNS: none
+//**********************************************************************************
+template<typename T>
+void D2_X_I1(GTMatrix<T> &D2T, 
+              GTVector<T> &u, GSIZET N1, GSIZET N2, GSIZET Ne, GTVector<T> &y)
+{
+  GSIZET N21, N22, Nu;
+
+  N21 = D2T.size(1);
+  N22 = D2T.size(2);
+  #if defined(_G_BOUNDS_CHK)
+  if ( !(u.size() >= N1*N2*Ne && y.size() >= N1*N2*Ne) ) {
+    cout << "GMTK::D2_X_I1 (2)" << "incompatible size" << endl;
+    exit(1);
+  }
+  #endif
+
+  Nu = N1 * N2;
+
+  // Compute y = I2_X_D1 u = u * D2T:
+  if      ( std::is_same<T,GFLOAT>::value ) {
+    for ( auto i=0; i<Ne; i++ ) {
+      fmxm((GFLOAT*)y.data()+i*Nu, (GFLOAT*)u.data()+i*Nu, &N1, &Nu, (GFLOAT*)D2T.data().data(), &N21, &N22, &szMatCache_);
+    }
+  }
+  else if ( std::is_same<T,GDOUBLE>::value ) {
+    for ( auto i=0; i<Ne; i++ ) {
+      dmxm((GDOUBLE*)y.data()+i*Nu, (GDOUBLE*)u.data()+i*Nu, &N1, &Nu, (GDOUBLE*)D2T.data().data(), &N21, &N22, &szMatCache_);
+    }
+  }
+  else if ( std::is_same<T,GQUAD>::value ) {
+    for ( auto i=0; i<Ne; i++ ) {
+      qmxm((GQUAD*)y.data()+i*Nu, (GQUAD*)u.data()+i*Nu, &N1, &Nu, (GQUAD*)D2T.data().data(), &N21, &N22, &szMatCache_);
+    }
+  }
+  else {
+    assert(FALSE);
+  }
+
+} // end of method D2_X_I1 (2)
 
 
 //**********************************************************************************
@@ -1739,13 +1847,13 @@ void D3_X_D2_X_D1(GTMatrix<T> &D1, GTMatrix<T>  &D2T, GTMatrix<T> &D3T,
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : I3_X_I2_X_D1 
+// METHOD : I3_X_I2_X_D1 (1)
 // DESC   : Apply tensor product operator to vector:
 //            y = I3 X I2 X D1 u
 // ARGS   : D1      : 1-direction (dense) operator 
 //          u       : operand vector; must be at least of size
 //                    N1*N2*N3, with 1 changing most rapidly, then, 2, then 3
-//          N1,N2,N3: coord dimentions of u, y
+//          N1,N2,N3: coord dimensions of u, y
 //          y   : return vector result of size >= N1 * N2 * N3
 // RETURNS: none
 //**********************************************************************************
@@ -1763,7 +1871,7 @@ void I3_X_I2_X_D1(GTMatrix<T> &D1, GTVector<T> &u,
 
 #if defined(GARRAY_BOUNDS)
   if ( u.size() < NN || y.size() < NN ) {
-    cout << "GMTK::I3_X_I2_X_D1: incompatible dimensions" << endl;
+    cout << "GMTK::I3_X_I2_X_D1 (1): incompatible dimensions" << endl;
     exit(1);
   }
 #endif
@@ -1781,18 +1889,70 @@ void I3_X_I2_X_D1(GTMatrix<T> &D1, GTVector<T> &u,
     assert(FALSE);
   }
 
-} // end of method I3_X_I2_X_D1
+} // end of method I3_X_I2_X_D1 (1)
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : I3_X_D2_X_I1 
+// METHOD : I3_X_I2_X_D1 (2)
+// DESC   : Apply tensor product operator to vector:
+//            y = I3 X I2 X D1 u
+// ARGS   : D1      : 1-direction (dense) operator 
+//          u       : operand vector; must be at least of size
+//                    N1*N2*N3*Ne, with 1 changing most rapidly, then, 2, then 3,
+//                    with Ne 'elements' each of size N1*X2*N3
+//          N1-N3   : coord dimensions of u, y 'elements', if interpreted 
+//                    as matrix dimensions
+//          Ne      : number of 'elements' in u, y
+//          y   : return vector result of size >= N1 * N2 * N3
+// RETURNS: none
+//**********************************************************************************
+template<typename T>
+void I3_X_I2_X_D1(GTMatrix<T> &D1, GTVector<T> &u,
+                  GSIZET N1, GSIZET N2, GSIZET N3, GSIZET Ne,
+                  GTVector<T> &y)
+{
+  GSIZET  N11, N12, NYZ, NN, Nu;
+
+  N11 = D1.size(1);
+  N12 = D1.size(2);
+  NYZ = N2*N3;
+  NN  = N1*N2*N3*Ne;
+
+#if defined(GARRAY_BOUNDS)
+  if ( u.size() < NN || y.size() < NN ) {
+    cout << "GMTK::I3_X_I2_X_D1 (2): incompatible dimensions" << endl;
+    exit(1);
+  }
+#endif
+
+  Nu = NYZ * Ne;
+
+  if      ( std::is_same<T,GFLOAT>::value ) {
+    fmxm((GFLOAT*)y.data(), (GFLOAT*)D1.data().data(), &N11, &N12, (GFLOAT*)u.data(), &N1, &Nu, &szMatCache_);
+  }
+  else if ( std::is_same<T,GDOUBLE>::value ) {
+    dmxm((GDOUBLE*)y.data(), (GDOUBLE*)D1.data().data(), &N11, &N12, (GDOUBLE*)u.data(), &N1, &Nu, &szMatCache_);
+  }
+  else if ( std::is_same<T,GQUAD>::value ) {
+    qmxm((GQUAD*)y.data(), (GQUAD*)D1.data().data(), &N11, &N12, (GQUAD*)u.data(), &N1, &Nu, &szMatCache_);
+  }
+  else {
+    assert(FALSE);
+  }
+
+} // end of method I3_X_I2_X_D1 (2)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : I3_X_D2_X_I1 (1)
 // DESC   : Apply tensor product operator to vector:
 //            y = I3 X D2 X I1 u
 // ARGS   : D2T     : 2-direction (dense) operator transpose
 //          u       : operand vector; must be at least of size
 //                    N1*N2*N3, with 1 changing most rapidly, then, 2, then 3
-//          N1,N2,N3: coord dimentions of u, y
+//          N1,N2,N3: coord dimensions of u, y
 //          y   : return vector result of size >= N1 * N2 * N3
 // RETURNS: none
 //**********************************************************************************
@@ -1810,7 +1970,7 @@ void I3_X_D2_X_I1(GTMatrix<T> &D2T, GTVector<T> &u,
 
 #if defined(GARRAY_BOUNDS)
   if ( u.size() < NN || y.size() < NN ) {
-    cout << "GMTK::I3_X_D2_X_I1: incompatible dimensions" << endl;
+    cout << "GMTK::I3_X_D2_X_I1 (1): incompatible dimensions" << endl;
     exit(1);
   }
 #endif
@@ -1838,18 +1998,79 @@ void I3_X_D2_X_I1(GTMatrix<T> &D2T, GTVector<T> &u,
   }
 
 
-} // end of method I3_X_D2_X_I1
+} // end of method I3_X_D2_X_I1 (1)
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD : D3_X_I2_X_I1 
+// METHOD : I3_X_D2_X_I1 (2)
+// DESC   : Apply tensor product operator to vector:
+//            y = I3 X D2 X I1 u
+// ARGS   : D2T     : 2-direction (dense) operator transpose
+//          u       : operand vector; must be at least of size
+//                    N1*N2*N3*Ne, with 1 changing most rapidly, then, 2, then 3,
+//                    with Ne 'elements' each of size N1*X2*N3
+//          N1-N3   : coord dimensions of u, y 'elements', if interpreted 
+//                    as matrix dimensions
+//          Ne      : number of 'elements' in u, y
+//          y   : return vector result of size >= N1 * N2 * N3 * Ne
+// RETURNS: none
+//**********************************************************************************
+template<typename T>
+void I3_X_D2_X_I1(GTMatrix<T> &D2T, GTVector<T> &u, 
+                  GSIZET N1, GSIZET N2, GSIZET N3, GSIZET Ne,
+                  GTVector<T> &y)
+{
+  GSIZET  N21, N22, NXY, NN, Nu;
+
+  N21 = D2T.size(1);
+  N22 = D2T.size(2);
+  NXY = N1*N2;
+  NN  = N1*N2*N3;
+
+#if defined(GARRAY_BOUNDS)
+  if ( u.size() < NN || y.size() < NN ) {
+    cout << "GMTK::I3_X_D2_X_I1 (2): incompatible dimensions" << endl;
+    exit(1);
+  }
+#endif
+
+
+  if      ( std::is_same<T,GFLOAT>::value ) {
+    for ( GSIZET k=0; k<N3; k++ ) {
+      fmxm((GFLOAT*)(y.data()+k*NXY), (GFLOAT*)(u.data()+k*NXY), &N1, &N2, (GFLOAT*)D2T.data().data(), 
+           &N21, &N22, &szMatCache_);
+    }
+  }
+  else if ( std::is_same<T,GDOUBLE>::value ) {
+    for ( GSIZET k=0; k<N3; k++ ) {
+      dmxm((GDOUBLE*)(y.data()+k*NXY), (GDOUBLE*)(u.data()+k*NXY), &N1, &N2, (GDOUBLE*)D2T.data().data(), 
+           &N21, &N22, &szMatCache_);
+    }
+  }
+  else if ( std::is_same<T,GQUAD>::value ) {
+    for ( GSIZET k=0; k<N3; k++ ) {
+      qmxm((GQUAD*)(y.data()+k*NXY), (GQUAD*)(u.data()+k*NXY), &N1, &N2, (GQUAD*)D2T.data().data(), 
+           &N21, &N22, &szMatCache_);
+    }
+  }
+  else {
+    assert(FALSE);
+  }
+
+
+} // end of method I3_X_D2_X_I1 (2)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : D3_X_I2_X_I1 (1)
 // DESC   : Apply tensor product operator to vector:
 //            y = D3 X I2 X I1 u
 // ARGS   : D3T     : 3-direction (dense) operator transpose
 //          u       : operand vector; must be at least of size
 //                    N1*N2*N3, with 1 changing most rapidly, then, 2, then 3
-//          N1,N2,N3: coord dimentions of u, y
+//          N1,N2,N3: coord dimensions of u, y
 //          y   : return vector result of size >= N1 * N2 * N3
 // RETURNS: none
 //**********************************************************************************
@@ -1867,7 +2088,7 @@ void D3_X_I2_X_I1(GTMatrix<T> &D3T, GTVector<T> &u,
 
 #if defined(GARRAY_BOUNDS)
   if ( u.size() < NN || y.size() < NN ) {
-    cout << "GMTK::D3_X_I2_X_I1: incompatible dimensions" << endl;
+    cout << "GMTK::D3_X_I2_X_I1 (1): incompatible dimensions" << endl;
     exit(1);
   }
 #endif
@@ -1888,7 +2109,60 @@ void D3_X_I2_X_I1(GTMatrix<T> &D3T, GTVector<T> &u,
     assert(FALSE);
   }
 
-} // end of method D3_X_I2_X_I1
+} // end of method D3_X_I2_X_I1 (1)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : D3_X_I2_X_I1 (2)
+// DESC   : Apply tensor product operator to vector:
+//            y = D3 X I2 X I1 u
+// ARGS   : D3T     : 3-direction (dense) operator transpose
+//          u       : operand vector; must be at least of size
+//                    N1*N2*N3*Ne, with 1 changing most rapidly, then, 2, then 3,
+//                    with Ne 'elements' each of size N1*X2*N3
+//          N1-N3   : coord dimensions of u, y 'elements', if interpreted 
+//                    as matrix dimensions
+//          Ne      : number of 'elements' in u, y
+//          y   : return vector result of size >= N1 * N2 * N3
+// RETURNS: none
+//**********************************************************************************
+template<typename T>
+void D3_X_I2_X_I1(GTMatrix<T> &D3T, GTVector<T> &u,
+                  GSIZET N1, GSIZET N2, GSIZET N3, GSIZET Ne,
+                  GTVector<T> &y)
+{
+  GSIZET  N31, N32, NXY, NN;
+
+  N31 = D3T.size(1);
+  N32 = D3T.size(2);
+  NXY = N1*N2;
+  NN  = N1*N2*N3;
+
+#if defined(GARRAY_BOUNDS)
+  if ( u.size() < NN || y.size() < NN ) {
+    cout << "GMTK::D3_X_I2_X_I1 (2): incompatible dimensions" << endl;
+    exit(1);
+  }
+#endif
+
+  if      ( std::is_same<T,GFLOAT>::value ) {
+    fmxm((GFLOAT*)y.data(), (GFLOAT*)u.data(), &NXY, &N3, (GFLOAT*)D3T.data().data(), 
+         &N31, &N32, &szMatCache_);
+  }
+  else if ( std::is_same<T,GDOUBLE>::value ) {
+    dmxm((GDOUBLE*)y.data(), (GDOUBLE*)u.data(), &NXY, &N3, (GDOUBLE*)D3T.data().data(), 
+         &N31, &N32, &szMatCache_);
+  }
+  else if ( std::is_same<T,GQUAD>::value ) {
+    qmxm((GQUAD*)y.data(), (GQUAD*)u.data(), &NXY, &N3, (GQUAD*)D3T.data().data(), 
+         &N31, &N32, &szMatCache_);
+  }
+  else {
+    assert(FALSE);
+  }
+
+} // end of method D3_X_I2_X_I1 (2)
 
 
 //**********************************************************************************
