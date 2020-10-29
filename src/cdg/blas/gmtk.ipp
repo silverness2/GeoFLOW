@@ -1425,7 +1425,7 @@ void I2_X_D1(GTMatrix<T> &D1,
   }
   #endif
 
-  Nu = N1 * Ne;
+  Nu = N2 * Ne;
 
   // Compute y = I2_X_D1 u:
   if      ( std::is_same<T,GFLOAT>::value ) {
@@ -1912,15 +1912,19 @@ void I3_X_I2_X_D1(GTMatrix<T> &D1, GTVector<T> &u,
                   GSIZET N1, GSIZET N2, GSIZET N3, GSIZET Ne,
                   GTVector<T> &y)
 {
-  GSIZET  N11, N12, NYZ, NN, Nu;
+  GSIZET  ND1, ND2, NYZ, NN, Nu;
 
-  N11 = D1.size(1);
-  N12 = D1.size(2);
+  ND1 = D1.size(1);
+  ND2 = D1.size(2);
   NYZ = N2*N3;
   NN  = N1*N2*N3*Ne;
 
 #if defined(GARRAY_BOUNDS)
   if ( u.size() < NN || y.size() < NN ) {
+    cout << "GMTK::I3_X_I2_X_D1 (2): u or y of incorrect size" << endl;
+    exit(1);
+  }
+  if ( N1 != ND2 ) {
     cout << "GMTK::I3_X_I2_X_D1 (2): incompatible dimensions" << endl;
     exit(1);
   }
@@ -1929,13 +1933,13 @@ void I3_X_I2_X_D1(GTMatrix<T> &D1, GTVector<T> &u,
   Nu = NYZ * Ne;
 
   if      ( std::is_same<T,GFLOAT>::value ) {
-    fmxm((GFLOAT*)y.data(), (GFLOAT*)D1.data().data(), &N11, &N12, (GFLOAT*)u.data(), &N1, &Nu, &szMatCache_);
+    fmxm((GFLOAT*)y.data(), (GFLOAT*)D1.data().data(), &ND1, &ND2, (GFLOAT*)u.data(), &N1, &Nu, &szMatCache_);
   }
   else if ( std::is_same<T,GDOUBLE>::value ) {
-    dmxm((GDOUBLE*)y.data(), (GDOUBLE*)D1.data().data(), &N11, &N12, (GDOUBLE*)u.data(), &N1, &Nu, &szMatCache_);
+    dmxm((GDOUBLE*)y.data(), (GDOUBLE*)D1.data().data(), &ND1, &ND2, (GDOUBLE*)u.data(), &N1, &Nu, &szMatCache_);
   }
   else if ( std::is_same<T,GQUAD>::value ) {
-    qmxm((GQUAD*)y.data(), (GQUAD*)D1.data().data(), &N11, &N12, (GQUAD*)u.data(), &N1, &Nu, &szMatCache_);
+    qmxm((GQUAD*)y.data(), (GQUAD*)D1.data().data(), &ND1, &ND2, (GQUAD*)u.data(), &N1, &Nu, &szMatCache_);
   }
   else {
     assert(FALSE);
