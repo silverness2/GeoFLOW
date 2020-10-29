@@ -1804,7 +1804,7 @@ void D3_X_D2_X_D1(GTMatrix<T> &D1, GTMatrix<T>  &D2T, GTMatrix<T> &D3T,
     fmxm((GFLOAT*)y.data(), (GFLOAT*)D1.data().data(), &N11, &N12, (GFLOAT*)u.data(), &N12, &nxy, &szMatCache_);
 
   // tmp = I3_X_D2_X_I1 y:
-    for ( GSIZET k=0; k<N32; k++ ) { // do mxm op for each 'plane':
+    for ( auto k=0; k<N32; k++ ) { // do mxm op for each 'plane':
       fmxm((GFLOAT*)(tmp.data()+k*N11*N22), (GFLOAT*)(y.data()+k*N11*N22), &N11, &N22, (GFLOAT*)D2T.data().data(), &N21, &N22, &szMatCache_);
     }
 
@@ -1816,7 +1816,7 @@ void D3_X_D2_X_D1(GTMatrix<T> &D1, GTMatrix<T>  &D2T, GTMatrix<T> &D3T,
     dmxm((GDOUBLE*)y.data(), (GDOUBLE*)D1.data().data(), &N11, &N12, u.data(), &N12, &nxy, &szMatCache_);
 
   // tmp = I3_X_D2_X_I1 y:
-    for ( GSIZET k=0; k<N32; k++ ) { // do mxm op for each 'plane':
+    for ( auto k=0; k<N32; k++ ) { // do mxm op for each 'plane':
       dmxm((GDOUBLE*)(tmp.data()+k*N11*N22), (GDOUBLE*)(y.data()+k*N11*N22), &N11, &N22, (GDOUBLE*)D2T.data().data(), &N21, &N22, &szMatCache_);
     }
 
@@ -1828,7 +1828,7 @@ void D3_X_D2_X_D1(GTMatrix<T> &D1, GTMatrix<T>  &D2T, GTMatrix<T> &D3T,
     qmxm((GQUAD*)y.data(), (GQUAD*)D1.data().data(), &N11, &N12, (GQUAD*)u.data(), &N12, &nxy, &szMatCache_);
 
   // tmp = I3_X_D2_X_I1 y:
-    for ( GSIZET k=0; k<N32; k++ ) { // do mxm op for each 'plane':
+    for ( auto k=0; k<N32; k++ ) { // do mxm op for each 'plane':
       qmxm((GQUAD*)(tmp.data()+k*N11*N22), (GQUAD*)(y.data()+k*N11*N22), &N11, &N22, (GQUAD*)D2T.data().data(), &N21, &N22, &szMatCache_);
     }
 
@@ -1862,10 +1862,10 @@ void I3_X_I2_X_D1(GTMatrix<T> &D1, GTVector<T> &u,
                   GSIZET N1, GSIZET N2, GSIZET N3,
                   GTVector<T> &y)
 {
-  GSIZET  N11, N12, NYZ, NN;
+  GSIZET  ND1, ND2, NYZ, NN;
 
-  N11 = D1.size(1);
-  N12 = D1.size(2);
+  ND1 = D1.size(1);
+  ND2 = D1.size(2);
   NYZ = N2*N3;
   NN  = N1*N2*N3;
 
@@ -1877,13 +1877,13 @@ void I3_X_I2_X_D1(GTMatrix<T> &D1, GTVector<T> &u,
 #endif
 
   if      ( std::is_same<T,GFLOAT>::value ) {
-    fmxm((GFLOAT*)y.data(), (GFLOAT*)D1.data().data(), &N11, &N12, (GFLOAT*)u.data(), &N1, &NYZ, &szMatCache_);
+    fmxm((GFLOAT*)y.data(), (GFLOAT*)D1.data().data(), &ND1, &ND2, (GFLOAT*)u.data(), &N1, &NYZ, &szMatCache_);
   }
   else if ( std::is_same<T,GDOUBLE>::value ) {
-    dmxm((GDOUBLE*)y.data(), (GDOUBLE*)D1.data().data(), &N11, &N12, (GDOUBLE*)u.data(), &N1, &NYZ, &szMatCache_);
+    dmxm((GDOUBLE*)y.data(), (GDOUBLE*)D1.data().data(), &ND1, &ND2, (GDOUBLE*)u.data(), &N1, &NYZ, &szMatCache_);
   }
   else if ( std::is_same<T,GQUAD>::value ) {
-    qmxm((GQUAD*)y.data(), (GQUAD*)D1.data().data(), &N11, &N12, (GQUAD*)u.data(), &N1, &NYZ, &szMatCache_);
+    qmxm((GQUAD*)y.data(), (GQUAD*)D1.data().data(), &ND1, &ND2, (GQUAD*)u.data(), &N1, &NYZ, &szMatCache_);
   }
   else {
     assert(FALSE);
@@ -1965,10 +1965,10 @@ void I3_X_D2_X_I1(GTMatrix<T> &D2T, GTVector<T> &u,
                   GSIZET N1, GSIZET N2, GSIZET N3,
                   GTVector<T> &y)
 {
-  GSIZET  N21, N22, NXY, NN;
+  GSIZET  ND1, ND2, NXY, NN;
 
-  N21 = D2T.size(1);
-  N22 = D2T.size(2);
+  ND1 = D2T.size(1);
+  ND2 = D2T.size(2);
   NXY = N1*N2;
   NN  = N1*N2*N3;
 
@@ -1980,21 +1980,21 @@ void I3_X_D2_X_I1(GTMatrix<T> &D2T, GTVector<T> &u,
 #endif
 
   if      ( std::is_same<T,GFLOAT>::value ) {
-    for ( GSIZET k=0; k<N3; k++ ) {
+    for ( auto k=0; k<N3; k++ ) {
       fmxm((GFLOAT*)(y.data()+k*NXY), (GFLOAT*)(u.data()+k*NXY), &N1, &N2, (GFLOAT*)D2T.data().data(), 
-           &N21, &N22, &szMatCache_);
+           &ND1, &ND2, &szMatCache_);
     }
   }
   else if ( std::is_same<T,GDOUBLE>::value ) {
-    for ( GSIZET k=0; k<N3; k++ ) {
+    for ( auto k=0; k<N3; k++ ) {
       dmxm((GDOUBLE*)(y.data()+k*NXY), (GDOUBLE*)(u.data()+k*NXY), &N1, &N2, (GDOUBLE*)D2T.data().data(), 
-           &N21, &N22, &szMatCache_);
+           &ND1, &ND2, &szMatCache_);
     }
   }
   else if ( std::is_same<T,GQUAD>::value ) {
-    for ( GSIZET k=0; k<N3; k++ ) {
+    for ( auto k=0; k<N3; k++ ) {
       qmxm((GQUAD*)(y.data()+k*NXY), (GQUAD*)(u.data()+k*NXY), &N1, &N2, (GQUAD*)D2T.data().data(), 
-           &N21, &N22, &szMatCache_);
+           &ND1, &ND2, &szMatCache_);
     }
   }
   else {
@@ -2025,12 +2025,12 @@ void I3_X_D2_X_I1(GTMatrix<T> &D2T, GTVector<T> &u,
                   GSIZET N1, GSIZET N2, GSIZET N3, GSIZET Ne,
                   GTVector<T> &y)
 {
-  GSIZET  N21, N22, NXY, NN, Nu;
+  GSIZET  ND1, ND2, NXY, NN, Nu;
 
-  N21 = D2T.size(1);
-  N22 = D2T.size(2);
+  ND1 = D2T.size(1);
+  ND2 = D2T.size(2);
   NXY = N1*N2;
-  NN  = N1*N2*N3;
+  NN  = N1*N2*N3*Ne;
 
 #if defined(GARRAY_BOUNDS)
   if ( u.size() < NN || y.size() < NN ) {
@@ -2039,23 +2039,27 @@ void I3_X_D2_X_I1(GTMatrix<T> &D2T, GTVector<T> &u,
   }
 #endif
 
+  Nu  = N1*N2*N3;
 
   if      ( std::is_same<T,GFLOAT>::value ) {
-    for ( GSIZET k=0; k<N3; k++ ) {
-      fmxm((GFLOAT*)(y.data()+k*NXY), (GFLOAT*)(u.data()+k*NXY), &N1, &N2, (GFLOAT*)D2T.data().data(), 
-           &N21, &N22, &szMatCache_);
+    for ( auto j=0; j<Ne; j++ ) {
+      for ( auto k=0; k<N3; k++ ) {
+        fmxm((GFLOAT*)(y.data()+k*NXY)+j*Nu, (GFLOAT*)(u.data()+k*NXY)+j*Nu, &N1, &N2, (GFLOAT*)D2T.data().data(), &ND1, &ND2, &szMatCache_);
+      }
     }
   }
   else if ( std::is_same<T,GDOUBLE>::value ) {
-    for ( GSIZET k=0; k<N3; k++ ) {
-      dmxm((GDOUBLE*)(y.data()+k*NXY), (GDOUBLE*)(u.data()+k*NXY), &N1, &N2, (GDOUBLE*)D2T.data().data(), 
-           &N21, &N22, &szMatCache_);
+    for ( auto j=0; j<Ne; j++ ) {
+      for ( auto k=0; k<N3; k++ ) {
+        dmxm((GDOUBLE*)y.data()+k*NXY+j*Nu, (GDOUBLE*)u.data()+k*NXY+j*Nu, &N1, &N2, (GDOUBLE*)D2T.data().data(), &ND1, &ND2, &szMatCache_);
+      }
     }
   }
   else if ( std::is_same<T,GQUAD>::value ) {
-    for ( GSIZET k=0; k<N3; k++ ) {
-      qmxm((GQUAD*)(y.data()+k*NXY), (GQUAD*)(u.data()+k*NXY), &N1, &N2, (GQUAD*)D2T.data().data(), 
-           &N21, &N22, &szMatCache_);
+    for ( auto j=0; j<Ne; j++ ) {
+      for ( auto k=0; k<N3; k++ ) {
+        qmxm((GQUAD*)(y.data()+k*NXY)+j*Nu, (GQUAD*)(u.data()+k*NXY)+j*Nu, &N1, &N2, (GQUAD*)D2T.data().data(), &ND1, &ND2, &szMatCache_);
+      }
     }
   }
   else {
@@ -2083,10 +2087,10 @@ void D3_X_I2_X_I1(GTMatrix<T> &D3T, GTVector<T> &u,
                   GSIZET N1, GSIZET N2, GSIZET N3, 
                   GTVector<T> &y)
 {
-  GSIZET  N31, N32, NXY, NN;
+  GSIZET  ND1, ND2, NXY, NN;
 
-  N31 = D3T.size(1);
-  N32 = D3T.size(2);
+  ND1 = D3T.size(1);
+  ND2 = D3T.size(2);
   NXY = N1*N2;
   NN  = N1*N2*N3;
 
@@ -2099,15 +2103,15 @@ void D3_X_I2_X_I1(GTMatrix<T> &D3T, GTVector<T> &u,
 
   if      ( std::is_same<T,GFLOAT>::value ) {
     fmxm((GFLOAT*)y.data(), (GFLOAT*)u.data(), &NXY, &N3, (GFLOAT*)D3T.data().data(), 
-         &N31, &N32, &szMatCache_);
+         &ND1, &ND2, &szMatCache_);
   }
   else if ( std::is_same<T,GDOUBLE>::value ) {
     dmxm((GDOUBLE*)y.data(), (GDOUBLE*)u.data(), &NXY, &N3, (GDOUBLE*)D3T.data().data(), 
-         &N31, &N32, &szMatCache_);
+         &ND1, &ND2, &szMatCache_);
   }
   else if ( std::is_same<T,GQUAD>::value ) {
     qmxm((GQUAD*)y.data(), (GQUAD*)u.data(), &NXY, &N3, (GQUAD*)D3T.data().data(), 
-         &N31, &N32, &szMatCache_);
+         &ND1, &ND2, &szMatCache_);
   }
   else {
     assert(FALSE);
@@ -2136,10 +2140,10 @@ void D3_X_I2_X_I1(GTMatrix<T> &D3T, GTVector<T> &u,
                   GSIZET N1, GSIZET N2, GSIZET N3, GSIZET Ne,
                   GTVector<T> &y)
 {
-  GSIZET  N31, N32, NXY, NN;
+  GSIZET  ND1, ND2, NXY, NN;
 
-  N31 = D3T.size(1);
-  N32 = D3T.size(2);
+  ND1 = D3T.size(1);
+  ND2 = D3T.size(2);
   NXY = N1*N2;
   NN  = N1*N2*N3;
 
@@ -2152,15 +2156,15 @@ void D3_X_I2_X_I1(GTMatrix<T> &D3T, GTVector<T> &u,
 
   if      ( std::is_same<T,GFLOAT>::value ) {
     fmxm((GFLOAT*)y.data(), (GFLOAT*)u.data(), &NXY, &N3, (GFLOAT*)D3T.data().data(), 
-         &N31, &N32, &szMatCache_);
+         &ND1, &ND2, &szMatCache_);
   }
   else if ( std::is_same<T,GDOUBLE>::value ) {
     dmxm((GDOUBLE*)y.data(), (GDOUBLE*)u.data(), &NXY, &N3, (GDOUBLE*)D3T.data().data(), 
-         &N31, &N32, &szMatCache_);
+         &ND1, &ND2, &szMatCache_);
   }
   else if ( std::is_same<T,GQUAD>::value ) {
     qmxm((GQUAD*)y.data(), (GQUAD*)u.data(), &NXY, &N3, (GQUAD*)D3T.data().data(), 
-         &N31, &N32, &szMatCache_);
+         &ND1, &ND2, &szMatCache_);
   }
   else {
     assert(FALSE);
@@ -2209,7 +2213,7 @@ void Dg3_X_Dg2_X_D1(GTMatrix<T> &D1, GTVector<T> &Dg2, GTVector<T> &Dg3,
     fmxm((GFLOAT*)y.data(), (GFLOAT*)D1.data().data(), &N11, &N12, (GFLOAT*)u.data(), &N11, &NYZ, &szMatCache_);
 
     // tmp1 = I X Diag(D2) X I tmp:
-    for ( GSIZET k=0; k<N3; k++ ) {
+    for ( auto k=0; k<N3; k++ ) {
       fmxDm((GFLOAT*)(tmp.data()+k*NXY),  (GFLOAT*)(y.data()+k*NXY), &N11, &N12, (GFLOAT*)Dg2.data(), &N2, &szMatCache_);
     }
 
@@ -2221,7 +2225,7 @@ void Dg3_X_Dg2_X_D1(GTMatrix<T> &D1, GTVector<T> &Dg2, GTVector<T> &Dg3,
     dmxm((GDOUBLE*)y.data(), (GDOUBLE*)D1.data().data(), &N11, &N12, (GDOUBLE*)u.data(), &N11, &NYZ, &szMatCache_);
 
     // tmp1 = I X Diag(D2) X I tmp:
-    for ( GSIZET k=0; k<N3; k++ ) {
+    for ( auto k=0; k<N3; k++ ) {
       dmxDm((GDOUBLE*)(tmp.data()+k*NXY),  (GDOUBLE*)(y.data()+k*NXY), &N11, &N12, (GDOUBLE*)Dg2.data(), &N2, &szMatCache_);
     }
 
@@ -2233,7 +2237,7 @@ void Dg3_X_Dg2_X_D1(GTMatrix<T> &D1, GTVector<T> &Dg2, GTVector<T> &Dg3,
     qmxm((GQUAD*)y.data(), (GQUAD*)D1.data().data(), &N11, &N12, (GQUAD*)u.data(), &N11, &NYZ, &szMatCache_);
 
     // tmp1 = I X Diag(D2) X I tmp:
-    for ( GSIZET k=0; k<N3; k++ ) {
+    for ( auto k=0; k<N3; k++ ) {
       qmxDm((GQUAD*)(tmp.data()+k*NXY),  (GQUAD*)(y.data()+k*NXY), &N11, &N12, (GQUAD*)Dg2.data(), &N2, &szMatCache_);
     }
 
@@ -2287,7 +2291,7 @@ void Dg3_X_D2_X_Dg1(GTVector<T> &Dg1, GTMatrix<T> &D2T, GTVector<T> &Dg3,
     fDmxm((GFLOAT*)y.data(), (GFLOAT*)Dg1.data(), &N1, (GFLOAT*)u.data(), &N1, &NYZ, &szMatCache_);
 
     // tmp1 = I X D2 X I tmp:
-    for ( GSIZET k=0; k<N3; k++ ) {
+    for ( auto k=0; k<N3; k++ ) {
       fmxm((GFLOAT*)(tmp.data()+k*NXY), (GFLOAT*)(y.data()+k*NXY), &N1, &N21, (GFLOAT*)D2T.data().data(), &N21, &N22, &szMatCache_);
     }
 
@@ -2299,7 +2303,7 @@ void Dg3_X_D2_X_Dg1(GTVector<T> &Dg1, GTMatrix<T> &D2T, GTVector<T> &Dg3,
     dDmxm((GDOUBLE*)y.data(), (GDOUBLE*)Dg1.data(), &N1, (GDOUBLE*)u.data(), &N1, &NYZ, &szMatCache_);
 
     // tmp1 = I X D2 X I tmp:
-    for ( GSIZET k=0; k<N3; k++ ) {
+    for ( auto k=0; k<N3; k++ ) {
       dmxm((GDOUBLE*)(tmp.data()+k*NXY), (GDOUBLE*)(y.data()+k*NXY), &N1, &N21, (GDOUBLE*)D2T.data().data(), &N21, &N22, &szMatCache_);
     }
 
@@ -2311,7 +2315,7 @@ void Dg3_X_D2_X_Dg1(GTVector<T> &Dg1, GTMatrix<T> &D2T, GTVector<T> &Dg3,
     qDmxm((GQUAD*)y.data(), (GQUAD*)Dg1.data(), &N1, (GQUAD*)u.data(), &N1, &NYZ, &szMatCache_);
 
     // tmp1 = I X D2 X I tmp:
-    for ( GSIZET k=0; k<N3; k++ ) {
+    for ( auto k=0; k<N3; k++ ) {
       qmxm((GQUAD*)(tmp.data()+k*NXY), (GQUAD*)(y.data()+k*NXY), &N1, &N21, (GQUAD*)D2T.data().data(), &N21, &N22, &szMatCache_);
     }
 
@@ -2365,7 +2369,7 @@ void D3_X_Dg2_X_Dg1(GTVector<T> &Dg1, GTVector<T> &Dg2, GTMatrix<T> &D3T,
     fDmxm((GFLOAT*)y.data(), (GFLOAT*)Dg1.data(), &N1, (GFLOAT*)u.data(), &N1, &NYZ, &szMatCache_);
 
     // tmp1 = I X D2 X I tmp:
-    for ( GSIZET k=0; k<N31; k++ ) {
+    for ( auto k=0; k<N31; k++ ) {
       fmxDm((GFLOAT*)(tmp.data()+k*NXY), (GFLOAT*)(y.data()+k*NXY), &N1, &N2, (GFLOAT*)Dg2.data(), &N2, &szMatCache_);
     }
 
@@ -2377,7 +2381,7 @@ void D3_X_Dg2_X_Dg1(GTVector<T> &Dg1, GTVector<T> &Dg2, GTMatrix<T> &D3T,
     dDmxm((GDOUBLE*)y.data(), Dg1.data(), &N1, (GDOUBLE*)u.data(), &N1, &NYZ, &szMatCache_);
 
     // tmp1 = I X D2 X I tmp:
-    for ( GSIZET k=0; k<N31; k++ ) {
+    for ( auto k=0; k<N31; k++ ) {
       dmxDm((GDOUBLE*)(tmp.data()+k*NXY), (GDOUBLE*)(y.data()+k*NXY), &N1, &N2, (GDOUBLE*)Dg2.data(), &N2, &szMatCache_);
     }
 
@@ -2389,7 +2393,7 @@ void D3_X_Dg2_X_Dg1(GTVector<T> &Dg1, GTVector<T> &Dg2, GTMatrix<T> &D3T,
     qDmxm((GQUAD*)y.data(), (GQUAD*)Dg1.data(), &N1, (GQUAD*)u.data(), &N1, &NYZ, &szMatCache_);
 
     // tmp1 = I X D2 X I tmp:
-    for ( GSIZET k=0; k<N31; k++ ) {
+    for ( auto k=0; k<N31; k++ ) {
       qmxDm(tmp.data()+k*NXY, (GQUAD*)(y.data()+k*NXY), &N1, &N2, (GQUAD*)Dg2.data(), &N2, &szMatCache_);
     }
 
@@ -2472,9 +2476,9 @@ void matvec_prod(GTVector<T> &vret, const GTMatrix<T> &A, const GTVector<T> &b)
   #endif
 
   #if !defined(_G_USE_GBLAS)
-   for ( GSIZET i=0; i<n1_; i++ ) {
+   for ( auto i=0; i<n1_; i++ ) {
      vret[i] = 0;
-     for ( GSIZET j=0; j<n2_; j++ ) {
+     for ( auto j=0; j<n2_; j++ ) {
        vret[i] += A(i,j) * b(j);
      }
    }
@@ -2526,10 +2530,10 @@ void matmat_prod(GTMatrix<T> &C, const GTMatrix<T> &A, const GTMatrix<T> &B)
 
 
   #if !defined(_G_USE_GBLAS)
-  for ( GSIZET i=0; i<C.size(1); i++ ) {
-    for ( GSIZET j=0; j<C.size(2); j++ ) {
+  for ( auto i=0; i<C.size(1); i++ ) {
+    for ( auto j=0; j<C.size(2); j++ ) {
       C(i,j) = 0.0;
-      for ( GSIZET k=0; k<A.size(2); k++ ) {
+      for ( auto k=0; k<A.size(2); k++ ) {
         C(i,j) += A(i,k) * B(k,j);
       }
     }
