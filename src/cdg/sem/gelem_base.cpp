@@ -1703,7 +1703,7 @@ void GElem_base::get_indirect3d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
   // ... Face 2 (back):
   face_ind [2].resize(N[0]*N[2]);
   face_mass[2].resize(N[0]*N[2]);
-  face_desc[2].resize(N[2]*N[2]);
+  face_desc[2].resize(N[0]*N[2]);
   for ( k=0, m=0; k<N[2]; k++ ) {
     for ( i=0; i<N[0]; i++, m++ ) {
       face_ind[2][i+k*N[0]] = (k+1)*N[0]*N[1] + i - N[0];
@@ -1841,7 +1841,7 @@ void GElem_base::get_indirect3d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
   face_desc[5].resize(N[0]*N[1]);
   for ( j=0, m=0; j<N[1]; j++ ) {
     for ( i=0; i<N[0]; i++, m++ ) {
-      face_ind[5][i+j*N[0]] = N[0]*N[1]*(N[2]-1) + i + j*N[1];
+      face_ind[5][i+j*N[0]] = N[0]*N[1]*(N[2]-1) + i + j*N[0];
       face_mass[4][m] = (*W[0])[i] * (*W[1])[j];
       SET_LOWORD(face_desc[5][m], FACE);
       SET_HIWORD(face_desc[5][m], 5   );
