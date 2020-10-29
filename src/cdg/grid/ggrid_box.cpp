@@ -1398,13 +1398,14 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        ib = gieface[j];
        id = GET_HIWORD(gdeface[j]); 
        it = GET_LOWORD(gdeface[j]);
-       ip = id == 1 || id == 3 ? 0 : 1;
+       ip = id == 1 || id == 3 ? 1 : 0;
        for ( auto i=0; i<dXdXi.size(2); i++ ) { // over _X_
          p1[i] = dXdXi(ip,i)[ib]; 
        }
+       xm = id == 0 || id == 1 ? -1.0 : 1.0;
        kp.cross(p1, xp);   // xp = k X p1
        face_mass  [j] *= xp.mag(); // |k X d_X_/dxi_ip| is face Jac
-       xp.unit();
+       xp.unit(); xp *= xm;
        for ( ic=0; ic<GDIM && fabs(xp[ic]) < tiny; ic++ );
        assert(ic < GDIM); // no normal components > 0
        for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
