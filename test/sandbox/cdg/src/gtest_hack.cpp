@@ -144,8 +144,9 @@ int main(int argc, char **argv)
        grid_->deriv(u, idir, *utmp[0], dunew);
     }
     GTimerStop("new_deriv");
-cout << "da_y  =" << *da   [idir-1] << endl;
-cout << "dnew_y=" <<  dunew << endl;
+
+//cout << "da_y  =" << *da   [idir-1] << endl;
+//cout << "dnew_y=" <<  dunew << endl;
 
     // Find inf-norm and L2-norm errors for each method::
     GTMatrix<GFTYPE> errs(NMETH,2); // for each method, Linf and L2 errs
