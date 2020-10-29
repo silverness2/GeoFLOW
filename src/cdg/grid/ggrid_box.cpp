@@ -1497,7 +1497,6 @@ void GGridBox::do_face_normals3d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
      else if ( it == GElem_base::FACE   ) fi = id;
      else    assert(FALSE);
 
-cout << "GGridBox:do_face_normals3d: gdface[" << j << "]=" << gdeface[j] << " id=" << id << " it=" << it << endl;
      // Find derivs of _X_ wrt face's reference coords;
      // the cross prod of these vectors is the normal:
      for ( auto i=0; i<dXdXi.size(2); i++ ) { // d_X_/dXi
