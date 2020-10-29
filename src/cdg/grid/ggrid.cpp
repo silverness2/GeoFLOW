@@ -41,7 +41,8 @@ GGrid::GGrid(const geoflow::tbox::PropertyTree &ptree, GTVector<GNBasis<GCTYPE,G
 bInitialized_                   (FALSE),
 bapplybc_                       (FALSE),
 do_face_normals_                 (TRUE),
-gderivtype_                 (GDV_VARP),
+bpconst_                         (TRUE),
+gderivtype_                  (GDV_VARP),
 nprocs_        (GComm::WorldSize(comm)),
 ngelems_                            (0),
 irank_         (GComm::WorldRank(comm)),
@@ -422,6 +423,8 @@ void GGrid::grid_init()
   do_elems(); // generate element list from derived class
   GTimerStop("GGrid::grid_init: do_elems");
 
+  bpconst_ = ispconst();
+
   GComm::Synch(comm_);
 
   GTimerStart("GGrid::grid_init: do_typing");
@@ -499,6 +502,8 @@ void GGrid::grid_init(GTMatrix<GINT> &p,
   GTimerStart("GGrid::grid_init: do_elems");
   do_elems(p, xnodes); // generate element list from derived class
   GTimerStop("GGrid::grid_init: do_elems");
+
+  bpconst_ = ispconst();
 
   GComm::Synch(comm_);
 
@@ -2130,5 +2135,53 @@ void GGrid::grefderiv_constp(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 #endif
 
 } // end of method grefderiv_constp
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : ispconst
+// DESC   : Check if p is const over all elements
+// ARGS   : none. 
+// RETURNS: TRUE if p is const; else FALSE
+//**********************************************************************************
+GBOOL GGrid::ispconst()
+{
+  GBOOL       bconst;
+  GSIZET      Ne, N0[GDIM];
+  GElemList  *gelems = &this->elems();
+
+  Ne = gelems->size();
+  for ( auto k=0; k<GDIM; k++ ) N0[k]= (*gelems)[0]->size(k);
+
+  bconst = TRUE;
+  for ( auto i=1; i<Ne && bconst; i++ ) {
+    for ( auto k=0; k<GDIM; k++ ) {
+      bconst = bconst && N0[k] == (*gelems)[i]->size(k);
+    }
+  }
+
+  return bconst;
+
+} // end of method ispconst
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : set_derivtype
+// DESC   : Set derivative type. Does some checking to ensure
+//          that it's valid.
+// ARGS   : GDerivType flag
+// RETURNS: none.
+//**********************************************************************************
+void GGrid::set_derivtype(GDerivType gt)
+{
+   
+  if ( !bpconst_ ) {
+    assert( gt == GDV_VARP );
+  }
+
+  gderivtype_ = gt;
+
+} // end of method set_derivtype
 
 

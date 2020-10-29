@@ -195,8 +195,7 @@ virtual void                 print(const GString &filename){}          // print 
                             &bdyNormals() { return bdyNormals_; }      // bdy normals
         GTVector<GINT>      &idepComp  () { return idepComp_; }        // dependent vector components on bdy 
         GC_COMM              get_comm() { return comm_; }              // get communicator
-        void                 set_derivtype(GDerivType gt)
-                             { gderivtype_ = gt; }                     // set deriv. method
+        void                 set_derivtype(GDerivType gt);             // set deriv. method
         GDerivType           get_derivtype() { return gderivtype_; }   // return deriv. method
 
 virtual void                 config_bdy(const PropertyTree &ptree, 
@@ -246,17 +245,19 @@ virtual void                 do_bdy_normals(GTMatrix<GTVector<GFTYPE>> &dXdXi,
                                             GTVector<GINT>      &idepComp)=0;
                                                                       // compute bdy normals entry point
 
-        void                  init_local_face_info();           // get local face info
-        void                  globalize_coords();               // create global coord vecs from elems
-        void                  init_bc_info();                   // configure bdys
-        void                  def_geom_init();                  // iniitialze deformed elems
-        void                  reg_geom_init();                  // initialize regular elems
-        void                  do_normals();                     // compute normals to elem faces and domain bdy
-        GFTYPE                find_min_dist(); 
+        void                 init_local_face_info();                  // get local face info
+        void                 globalize_coords();                      // create global coord vecs from elems
+        void                 init_bc_info();                          // configure bdys
+        void                 def_geom_init();                         // iniitialze deformed elems
+        void                 reg_geom_init();                         // initialize regular elems
+        void                 do_normals();                            // compute normals to elem faces and domain bdy
+        GFTYPE               find_min_dist(); 
+        GBOOL                ispconst();                              // check for const p
 
         GBOOL                       bInitialized_;  // object initialized?
         GBOOL                       bapplybc_;      // bc apply callback set
         GBOOL                       do_face_normals_; // compute elem face normals for fluxes?
+        GBOOL                       bpconst_;       // is p const among elems?
         GDerivType                  gderivtype_;    // ref. deriv method type
         GElemType                   gtype_;         // element types comprising grid
         GINT                        irank_;         // MPI task id
