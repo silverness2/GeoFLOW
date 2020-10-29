@@ -2140,7 +2140,7 @@ void D3_X_I2_X_I1(GTMatrix<T> &D3T, GTVector<T> &u,
                   GSIZET N1, GSIZET N2, GSIZET N3, GSIZET Ne,
                   GTVector<T> &y)
 {
-  GSIZET  ND1, ND2, NXY, NN;
+  GSIZET  ND1, ND2, NXY, NN, Nu;
 
   ND1 = D3T.size(1);
   ND2 = D3T.size(2);
@@ -2154,17 +2154,23 @@ void D3_X_I2_X_I1(GTMatrix<T> &D3T, GTVector<T> &u,
   }
 #endif
 
+  Nu = N1*N2*N3;
+
   if      ( std::is_same<T,GFLOAT>::value ) {
-    fmxm((GFLOAT*)y.data(), (GFLOAT*)u.data(), &NXY, &N3, (GFLOAT*)D3T.data().data(), 
-         &ND1, &ND2, &szMatCache_);
+    for ( auto i=0; i<Ne; i++ ) {
+      fmxm((GFLOAT*)y.data()+i*Nu, (GFLOAT*)u.data()+i*Nu, &NXY, &N3, (GFLOAT*)D3T.data().data(), &ND1, &ND2, &szMatCache_);
+    }
   }
   else if ( std::is_same<T,GDOUBLE>::value ) {
-    dmxm((GDOUBLE*)y.data(), (GDOUBLE*)u.data(), &NXY, &N3, (GDOUBLE*)D3T.data().data(), 
-         &ND1, &ND2, &szMatCache_);
+    for ( auto i=0; i<Ne; i++ ) {
+      dmxm((GDOUBLE*)y.data()+i*Nu, (GDOUBLE*)u.data()+i*Nu, &NXY, &N3, (GDOUBLE*)D3T.data().data(), &ND1, &ND2, &szMatCache_);
+    }
   }
   else if ( std::is_same<T,GQUAD>::value ) {
-    qmxm((GQUAD*)y.data(), (GQUAD*)u.data(), &NXY, &N3, (GQUAD*)D3T.data().data(), 
-         &ND1, &ND2, &szMatCache_);
+    for ( auto i=0; i<Ne; i++ ) {
+      qmxm((GQUAD*)y.data()+i*Nu, (GQUAD*)u.data()+i*Nu, &NXY, &N3, (GQUAD*)D3T.data().data(), 
+           &ND1, &ND2, &szMatCache_);
+    }
   }
   else {
     assert(FALSE);
