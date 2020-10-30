@@ -1380,10 +1380,6 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 {
    GINT              ib, ic, ip; 
    GUINT             id, it;
-   GINT              ifx [6][2] = { {0,2}, {1,2}, {2,0},
-                                    {2,1}, {1,0}, {0,1} }; // ref x's for each face
-   GINT              ief[12]    = {0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3 }; // face for each edge
-   GINT              ivf [8]    = {0, 1, 2, 3, 0, 1, 2, 3 }; // face for each vertex
    GSIZET            mult;
    GFTYPE            tiny;
    GFTYPE            xm;
@@ -1407,42 +1403,12 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        p1[ip] = dXdXi(ip,0)[ib]; 
        xm = id == 0 || id == 1 ? -1.0 : 1.0;
        kp.cross(p1, xp);   // xp = k X p1
-       face_mass  [j] *= xp.mag(); // |k X d_X_/dxi_ip| is face Jac
+       face_mass[j] *= xp.mag(); // |k X d_X_/dxi_ip| is face Jac
        xp.unit(); xp *= xm;
 //cout << "do_face_normals2d: id=" << id << " it=" << it << " norm=" << xp << " p1=" << p1 << " ip=" << ip << endl; 
        for ( ic=0; ic<GDIM && fabs(xp[ic]) < tiny; ic++ );
        assert(ic < GDIM); // no normal components > 0
        for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
-     
-#if 0
-       if ( it == GElem_base::FACE ) {
-         xm = id == 1 || id == 2 ? 1.0 : -1.0;
-         ip = (id+1)%2;
-         normals[ip][j] = xm;
-       }
-       if ( it == GElem_base::VERTEX ) {
-         switch (it) {
-           case 0:
-             normals[0][j] = -1.0/sqrt(2.0); 
-             normals[1][j] = -1.0/sqrt(2.0);
-             break;
-           case 1:
-             normals[0][j] =  1.0/sqrt(2.0); 
-             normals[1][j] = -1.0/sqrt(2.0); 
-             break;
-           case 2:
-             normals[0][j] =  1.0/sqrt(2.0); 
-             normals[1][j] =  1.0/sqrt(2.0); 
-             break;
-           case 3:
-             normals[0][j] = -1.0/sqrt(2.0); 
-             normals[1][j] =  1.0/sqrt(2.0); 
-             break;
-           default:
-             assert(FALSE);
-         }
-       }
-#endif
      }
    }
    else if ( this->gtype_ == GE_DEFORMED 
