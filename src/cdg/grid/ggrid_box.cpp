@@ -1380,6 +1380,10 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 {
    GINT              ib, ic, ip; 
    GUINT             id, it;
+   GINT              ifx [6][2] = { {0,2}, {1,2}, {2,0},
+                                    {2,1}, {1,0}, {0,1} }; // ref x's for each face
+   GINT              ief[12]    = {0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3 }; // face for each edge
+   GINT              ivf [8]    = {0, 1, 2, 3, 0, 1, 2, 3 }; // face for each vertex
    GSIZET            mult;
    GFTYPE            tiny;
    GFTYPE            xm;
@@ -1399,13 +1403,13 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        id = GET_HIWORD(gdeface[j]); 
        it = GET_LOWORD(gdeface[j]);
        ip = id == 1 || id == 3 ? 1 : 0;
-       for ( auto i=0; i<dXdXi.size(2); i++ ) { // over _X_
-         p1[i] = dXdXi(ip,i)[ib]; 
-       }
+       p1 = 0.0;
+       p1[ip] = dXdXi(ip,0)[ib]; 
        xm = id == 0 || id == 1 ? -1.0 : 1.0;
        kp.cross(p1, xp);   // xp = k X p1
        face_mass  [j] *= xp.mag(); // |k X d_X_/dxi_ip| is face Jac
        xp.unit(); xp *= xm;
+//cout << "do_face_normals2d: id=" << id << " it=" << it << " norm=" << xp << " p1=" << p1 << " ip=" << ip << endl; 
        for ( ic=0; ic<GDIM && fabs(xp[ic]) < tiny; ic++ );
        assert(ic < GDIM); // no normal components > 0
        for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
