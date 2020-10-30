@@ -72,7 +72,7 @@ public:
   { T xn=0; for ( auto i=0; i<gdim_; i++ ) xn += ((*px_[i])*(*px_[i])); return sqrt(xn); }
 
   inline void unit()  // Make into unit vector
-  { T xn=this->norm(); for ( auto i=0; i<gdim_; i++ ) (*px_[i]) /= sqrt(xn); }
+  { T xn=this->norm(); for ( auto i=0; i<gdim_; i++ ) (*px_[i]) /= xn; }
 
   inline GBOOL    operator!=(const GTPoint<T> &p) 
   { return !this->operator==(p); }
