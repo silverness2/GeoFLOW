@@ -32,7 +32,7 @@
 #include "pdeint/equation_base.hpp"
 
 #define   USE_STOKES
-#define   DO_FACE
+#undef    DO_FACE
 
 template<typename TypePack>
 class GStressEnOp
