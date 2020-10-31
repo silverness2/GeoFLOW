@@ -1491,8 +1491,8 @@ void GElem_base::get_indirect2d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
     j = k-1;
     face_ind[0][j] = k;
     face_ind[2][j] = N[0]*(N[1]-1) + k;
-    face_mass[0][j] = (*W[0])[k];
-    face_mass[2][j] = (*W[0])[k];
+    face_mass[0][j] = (*W[0])[k] * (*W[1])[0];
+    face_mass[2][j] = (*W[0])[k] * (*W[1])[N[1]-1];
     // Set face index 'description':
     SET_LOWORD(face_desc[0][j], FACE);
     SET_HIWORD(face_desc[0][j], 0   );
@@ -1516,8 +1516,8 @@ void GElem_base::get_indirect2d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
   for ( auto j=0; j<N[1]; j++ ) { // east, west
     face_ind[1][j] = (j+1)*N[0] - 1;
     face_ind[3][j] = j*N[0];
-    face_mass[1][j] = (*W[1])[j];
-    face_mass[3][j] = (*W[1])[j];
+    face_mass[1][j] = (*W[0])[N[0]-1]*(*W[1])[j];
+    face_mass[3][j] = (*W[0])[0]     *(*W[1])[j];
     // Set face index 'description':
     SET_LOWORD(face_desc[1][j], FACE);
     SET_HIWORD(face_desc[1][j], 1   );
