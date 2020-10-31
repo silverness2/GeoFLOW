@@ -1398,7 +1398,7 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        ib = gieface[j];
        id = GET_HIWORD(gdeface[j]); 
        it = GET_LOWORD(gdeface[j]);
-       ip = id == 1 || id == 3 ? 1 : 0;
+       ip = id % 2;
        p1 = 0.0;
        p1[ip] = dXdXi(ip,0)[ib]; 
        xm = id == 0 || id == 1 ? -1.0 : 1.0;
