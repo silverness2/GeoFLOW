@@ -181,6 +181,7 @@ endforeach()
 # ONLY those options which impact level of compiler errors
 add_compile_options("-Werror")
 add_compile_options("-Wfatal-errors")
+add_compile_options("-Wno-unknown-pragmas")
 
 #---------------------------------------------------------------------
 # Check Platform Support
