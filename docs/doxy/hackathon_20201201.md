@@ -30,19 +30,20 @@ export BOOST_ROOT=/scratch2/BMC/gsd-hpcs/Bryan.Flynt/opt/boost/intel-2020.2
 
 Clone the repository and create a **build** directory:
 ```console
-User@machine:/projects> git clone https://github.com/NOAA-GSD/GeoFLOW.git
-User@machine:/projects> cd GeoFLOW
-User@machine:/projects/GeoFLOW> git checkout feature/hackathon
-User@machine:/projects/GeoFLOW> mkdir build
-User@machine:/projects/GeoFLOW> ls
-analysis  **build**  cmake  CMakeLists.txt  DISCLAIMER  docs  extern  LICENCE.md  README.md  scripts  src  test
+User@machine: > git clone https://github.com/NOAA-GSD/GeoFLOW.git
+User@machine: > cd GeoFLOW
+User@machine: GeoFLOW> git checkout feature/hackathon
+User@machine: GeoFLOW> mkdir build
+User@machine: GeoFLOW> ls
+analysis  build  cmake  CMakeLists.txt  DISCLAIMER  docs  extern  LICENCE.md  README.md  scripts  src  test
 ```
 
-Execute the commands to build the executable. I use this script (not in repo) which
-expects to be run from inside the top level GeoFLOW directory. For your first attempt,
-I'd recommend to copy and past each line to see messages if any errors result.
+Build the code using the proper environment setup.  To make it easier, I typically
+use the following script which I run from within the top level GeoFLOW directory.
+For your first attempt, I'd recommend to copy and past each line to see messages 
+if any errors result.
 ```bash
-#!/bin/bash                                                                                                                   
+#!/bin/bash  
 
 #                                                                                                                             
 # This script should be placed inside the top level GeoFLOW directory.                                                        
