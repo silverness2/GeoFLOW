@@ -86,8 +86,10 @@ make install
 ```console
 User@machine: GeoFLOW> cd build/bin
 User@machine: GeoFLOW/build/bin> ls
-
+hackathon_driver  hack_input.jsn
+User@machine: GeoFLOW/build/bin> module load intel/2020.2 impi/2020.2
 User@machine: GeoFLOW/build/bin> ./hackathon_driver
-
+main: ---------------------------derivative OK: 2.01001e-14 : direction=1 method: old
+main: ---------------------------derivative OK: 2.01001e-14 : direction=1 method: new
 ```
 
