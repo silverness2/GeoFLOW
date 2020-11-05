@@ -5,7 +5,7 @@
 ## Code
 For the hackathon the code has been reduced to a small kernel executing 
 the portion of code we plan to concentrate on. This code (and the respective 
-inputs) are only contained within the feature/hackathon branch of the GitHub 
+inputs) are only contained within the **feature/hackathon** branch of the GitHub 
 repository so make sure you are inside the correct branch before compiling.
 
 ```console
@@ -17,25 +17,30 @@ git checkout feature/hackathon
 Compiling the code is identical to the instructions provided on the main 
 [README](../../README.md). A pre-compiled Boost Library will/has be/been 
 provided on the machines we will work on to eliminate that hurdle and it's 
-recommended we all use the same compiler as those are built with.
+recommended we all use the matching compiler those are built with.  
 
-### Hera Boost Library
+More info will be provided as we gain access to the Hackathon cluster.
+
+### Provided Boost Library (on Hera)
 ```console
 export BOOST_ROOT=/scratch2/BMC/gsd-hpcs/Bryan.Flynt/opt/boost/intel-2020.2
 ```
 
-### Example Hera Build Script
-I use this build script on Hera for my own builds. It expects to be run from 
-within the the top level GeoFLOW directory and a "build" directory should exist
-that it will build into.
+## Complete Example
 
-For example, my directory structure looks like this:
+Clone the repository and create a **build** directory:
 ```console
+User@machine:/projects> git clone https://github.com/NOAA-GSD/GeoFLOW.git
+User@machine:/projects> cd GeoFLOW
+User@machine:/projects/GeoFLOW> git checkout feature/hackathon
+User@machine:/projects/GeoFLOW> mkdir build
 User@machine:/projects/GeoFLOW> ls
-analysis  build  cmake  CMakeLists.txt  DISCLAIMER  docs  extern  LICENCE.md  MYBUILD.sh  README.md  scripts  src  test
+analysis  **build**  cmake  CMakeLists.txt  DISCLAIMER  docs  extern  LICENCE.md  README.md  scripts  src  test
 ```
 
-Commands to execute from within GeoFlow
+Execute the commands to build the executable. I use this script (not in repo) which
+expects to be run from inside the top level GeoFLOW directory. For your first attempt,
+I'd recommend to copy and past each line to see messages if any errors result.
 ```bash
 #!/bin/bash                                                                                                                   
 
