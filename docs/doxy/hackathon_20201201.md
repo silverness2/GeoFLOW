@@ -1,6 +1,5 @@
 # NOAA GPU Hackathon 2020
-
-## Dates: December 1-9, 2020
+Dates: December 1-9, 2020
 
 ## Differences from Main Branch
 
