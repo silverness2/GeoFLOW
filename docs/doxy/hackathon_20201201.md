@@ -26,10 +26,16 @@ export BOOST_ROOT=/scratch2/BMC/gsd-hpcs/Bryan.Flynt/opt/boost/intel-2020.2
 
 ### Example Hera Build Script
 I use this build script on Hera for my own builds. It expects to be run from 
-within the the top level GeoFLOW directory and a build directory should exist
-that is will build into.
+within the the top level GeoFLOW directory and a "build" directory should exist
+that it will build into.
 
 For example, my directory structure looks like this:
+```console
+User@machine:/projects/GeoFLOW> ls
+analysis  build  cmake  CMakeLists.txt  DISCLAIMER  docs  extern  LICENCE.md  MYBUILD.sh  README.md  scripts  src  test
+```
+
+Commands to execute from within GeoFlow
 ```bash
 #!/bin/bash                                                                                                                   
 
@@ -43,21 +49,19 @@ if [ ! -d "build" ]; then
     exit 1
 fi
 
-#                                                                                                                             
-# Load our Modules                                                                                                            
-#                                                                                                                             
+# Load our Modules                                                       
 module purge
 module load cmake
 module load intel/2020.2
 module load impi/2020.2
 
-# Set environment variables for CMake to pick up.                                                                             
+# Set environment variables for CMake to pick up
 export CC=mpiicc
 export CXX=mpiicpc
 export FC=mpiifort
 export BOOST_ROOT=/scratch2/BMC/gsd-hpcs/Bryan.Flynt/opt/boost/intel-2020.2
 
-# Change into the "out of source" build directory                                                                             
+# Change into the "out of source" build directory
 cd build
 rm -r cmake*
 rm -r CMake*
