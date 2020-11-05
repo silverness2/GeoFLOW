@@ -6,7 +6,7 @@
 # Build list of all tests to create
 #
 set(test_cdg_files
-		  gtest_hack.cpp
+		# gtest_hack.cpp
 		# gtest_mass.cpp
 		# gtest_ylm.cpp
 		# gtest_gll.cpp

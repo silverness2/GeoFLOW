@@ -1,13 +1,30 @@
 #
-# === Final Applications to Build ===
+# === Hack-a-Thon Applications to Build ===
+#
+
+#
+# =========================================
+#            Data Installation
+# =========================================
+#
+install(
+	DIRECTORY "${MY_PROJECT_SRCDIR}/apps/"
+	DESTINATION "${MY_INSTALL_BINDIR}"  
+	FILES_MATCHING 
+	PATTERN "*.jsn"
+)
+
+#
+# =========================================
+#            Executables To Build
+# =========================================
 #
 
 # 
 # List of final applications to build
 #
-set(apps_files  
-       geoflow_stub.cpp
-       geoflow_cdg.cpp
+set(apps_files
+       hackathon_driver.cpp
 	)
 
 #		       	

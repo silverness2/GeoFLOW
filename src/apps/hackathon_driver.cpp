@@ -1,5 +1,5 @@
 //==================================================================================
-// Module       : gtest_hack.cpp
+// Module       : hackathon_driver.cpp
 // Date         : 10/21/20 (DLR)
 // Description  : GeoFLOW mini-app for tensor-producs performance 
 //                improvement
@@ -7,8 +7,80 @@
 // Derived From : 
 //==================================================================================
 
-#include "gtest_hack.h"
+
+#include "gexec.h"
+#include "gtypes.h"
+#if defined(_G_USE_GPTL)
+  #include "gptl.h"
+#endif
+#include "gcomm.hpp"
+#include "ggfx.hpp"
+#include "gllbasis.hpp"
+#include "gmass.hpp"
+#include "gmorton_keygen.hpp"
+#include "gmtk.hpp"
+#include "ggrid_factory.hpp"
+#include "pdeint/observer_base.hpp"
+#include "pdeint/observer_factory.hpp"
+#include "tbox/property_tree.hpp"
+#include "tbox/mpixx.hpp"
+#include "tbox/global_manager.hpp"
+#include "tbox/input_manager.hpp"
+//#include "gtools.h"
+
+#include <cassert>
+//#include <cstdio>
+#include <cstdlib>
+#include <iostream>
+#include <memory>
+#include <random>
+#include <unistd.h>
+
+
+
+using namespace geoflow::tbox;
+using namespace std;
+
+
+
+template< // Complete typepack
+typename StateType     = GTVector<GTVector<GFTYPE>*>,
+typename StateCompType = GTVector<GFTYPE>,
+typename StateInfoType = GStateInfo,
+typename GridType      = GGrid,
+typename MassOpType    = GMass,
+typename ValueType     = GFTYPE,
+typename DerivType     = StateType,
+typename TimeType      = ValueType,
+typename CompType      = GTVector<GStateCompType>,
+typename JacoType      = StateType,
+typename SizeType      = GSIZET
+>
+struct TypePack {
+        using State      = StateType;
+        using StateComp  = StateCompType;
+        using StateInfo  = StateInfoType;
+        using Grid       = GridType;
+        using Mass       = MassOpType;
+        using Value      = ValueType;
+        using Derivative = DerivType;
+        using Time       = TimeType;
+        using CompDesc   = CompType;
+        using Jacobian   = JacoType;
+        using Size       = SizeType;
+};
+using MyTypes       = TypePack<>;           // Define grid types used
+using Grid          = GGrid;
+using IOBaseType    = IOBase<MyTypes>;          // IO Base type
+using IOBasePtr     = std::shared_ptr<IOBaseType>;// IO Base ptr
+using ObsTraitsType = ObserverBase<MyTypes>::Traits;
+
+Grid      *grid_ = NULLPTR;
+IOBasePtr  pIO_  = NULLPTR; // ptr to IOBase operator
+
+
 #define NMETH 2
+
 
 int main(int argc, char **argv)
 {
@@ -70,12 +142,6 @@ int main(int argc, char **argv)
     // Create grid:
     ObsTraitsType binobstraits;
     grid_ = GGridFactory<MyTypes>::build(ptree, gbasis, pIO_, binobstraits, comm);
-
-#if 0 // May define if continuity is requiured
-    // Initialize gather/scatter operator:
-    GGFX<GFTYPE> ggfx;
-    init_ggfx(ptree, *grid_, ggfx);
-#endif
 
     /////////////////////////////////////////////////////////////////
     ////////////////////// Allocate arrays //////////////////////////
