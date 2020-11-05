@@ -2,7 +2,9 @@
 
 ## Dates: December 1-9, 2020
 
-## Code
+## Differences from Main Branch
+
+### Code
 For the hackathon the code has been reduced to a small kernel executing 
 the portion of code we plan to concentrate on. This code (and the respective 
 inputs) are only contained within the **feature/hackathon** branch of the GitHub 
@@ -13,7 +15,7 @@ git clone https://github.com/NOAA-GSD/GeoFLOW.git
 git checkout feature/hackathon
 ```
 
-## Compiling
+### Compiling
 Compiling the code is identical to the instructions provided on the main 
 [README](../../README.md). A pre-compiled Boost Library will/has be/been 
 provided on the machines we will work on to eliminate that hurdle and it's 
