@@ -1,7 +1,7 @@
 //==================================================================================
 // Module       : hackathon_driver.cpp
 // Date         : 10/21/20 (DLR)
-// Description  : GeoFLOW mini-app for tensor-producs performance 
+// Description  : GeoFLOW mini-app for tensor-product performance 
 //                improvement
 // Copyright    : Copyright 2020. Colorado State University. All rights reserved.
 // Derived From : 
@@ -239,12 +239,14 @@ int main(int argc, char **argv)
       // Accumulate to find global inf-norm:
       GComm::Allreduce(lnorm.data(), gnorm.data(), 1, T2GCDatatype<GFTYPE>(), GC_OP_MAX, comm);
       errs(n,0) = gnorm[0]; errs(n,1) = gnorm[1];
-      if ( errs(n,1) > eps ) {
-        std::cout << "main: ---------------------------derivative FAILED: " << errs(n,1) << " : direction=" << idir << " method: " << smethod[n]  << std::endl;
-        errcode += 1;
-      } else {
-        std::cout << "main: ---------------------------derivative OK: " << errs(n,1) << " : direction=" << idir << " method: " << smethod[n] << std::endl;
-        errcode += 0;
+      if ( myrank == 0 ) {
+        if ( errs(n,1) > eps ) {
+          std::cout << "main: ---------------------------derivative FAILED: " << errs(n,1) << " : direction=" << idir << " method: " << smethod[n]  << std::endl;
+          errcode += 1;
+        } else {
+          std::cout << "main: ---------------------------derivative OK: " << errs(n,1) << " : direction=" << idir << " method: " << smethod[n] << std::endl;
+          errcode += 0;
+        }
       }
 
     } // end, new-old method loop
