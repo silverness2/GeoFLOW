@@ -67,7 +67,11 @@ set(apps_linked_libraries
 FOREACH(app_src ${apps_files})
 	string(REPLACE ".cpp" "" app_name ${app_src})
 	add_executable(${app_name} ${app_src})
-	target_compile_options(${app_name} PRIVATE ${apps_compiler_options})
+	target_compile_options(${app_name} 
+								PRIVATE 
+								${apps_compiler_options}
+								$<$<COMPILE_LANGUAGE:CXX>:-Wno-unknown-pragmas>
+							)
 	target_include_directories(${app_name} PRIVATE ${apps_include_headers})
 	target_link_libraries(${app_name} ${apps_linked_libraries})
 	install(TARGETS ${app_name} DESTINATION "${MY_INSTALL_BINDIR}")

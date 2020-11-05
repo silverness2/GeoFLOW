@@ -28,7 +28,8 @@ export BOOST_ROOT=/scratch2/BMC/gsd-hpcs/Bryan.Flynt/opt/boost/intel-2020.2
 
 ## Complete Example
 
-Clone the repository and create a **build** directory:
+### Clone the repository and create a **build** directory.
+
 ```console
 User@machine: > git clone https://github.com/NOAA-GSD/GeoFLOW.git
 User@machine: > cd GeoFLOW
@@ -38,10 +39,11 @@ User@machine: GeoFLOW> ls
 analysis  build  cmake  CMakeLists.txt  DISCLAIMER  docs  extern  LICENCE.md  README.md  scripts  src  test
 ```
 
-Build the code using the proper environment setup.  To make it easier, I typically
-use the following script which I run from within the top level GeoFLOW directory.
-For your first attempt, I'd recommend to copy and past each line to see messages 
-if any errors result.
+### Build the code using the proper environment setup.  
+
+To make it easier, I typically use the following script which I run from within 
+the top level GeoFLOW directory. For your first attempt, I'd recommend to copy 
+and past each line to see messages if any errors result.
 ```bash
 #!/bin/bash  
 
@@ -79,4 +81,13 @@ cmake --log-level=VERBOSE ../.
 make install
 ```   
 
+### Running the test stub
+
+```console
+User@machine: GeoFLOW> cd build/bin
+User@machine: GeoFLOW/build/bin> ls
+
+User@machine: GeoFLOW/build/bin> ./hackathon_driver
+
+```
 
