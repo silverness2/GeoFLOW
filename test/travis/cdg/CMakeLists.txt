@@ -56,7 +56,7 @@ endif()
 FOREACH(test_src ${test_cdg_files})
 	string(REPLACE ".cpp" "" test_name ${test_src})
 	add_executable(${test_name} ${test_src})
-	target_compile_options(${test_name} PRIVATE ${compiler_options})
+	target_compile_options(${test_name} PRIVATE ${compiler_options} $<$<COMPILE_LANGUAGE:CXX>:-Wno-unknown-pragmas>)
 	target_include_directories(${test_name} PRIVATE ${include_headers})
 	target_link_libraries(${test_name} ${linked_libraries})
 	add_test(NAME ${test_name} 
