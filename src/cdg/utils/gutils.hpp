@@ -45,6 +45,11 @@ void compute_temp(const GTVector<T> &e, const GTVector<T> &d, const GTVector<T> 
 template<typename T>
 void compute_p(const GTVector<T> &Temp, const GTVector<T> &d, const GTVector<T> &q, GFTYPE R, GTVector<T> &p);
 
+template<typename T>
+GSIZET in_seg(const GTVector<GTPoint<T>> &vertices, const GTVector<GTVector<T>> &x, GTVector<GSIZET> &ind);
+template<typename T>
+GSIZET in_poly(const GTVector<GTPoint<T>> &vertices, const GTVector<GTVector<T>> &x, T eps, GTVector<GSIZET> &ind);
+
 } // end, namespace geoflow
 
 #include "gutils.ipp"

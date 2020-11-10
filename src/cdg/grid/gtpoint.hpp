@@ -144,6 +144,13 @@ public:
       return ret;
   }
 
+  inline T dot(const GTPoint<T> &a)
+  {
+      T ret = (*px_[0]) * a[0];
+      for ( auto j=1; j<gdim_; j++ ) ret += (*px_[j]) * a[j];
+      return ret;
+  }
+
   inline T cross2(const GTPoint<T> &p)
   {
       // Compute ret_z = this X p for 2d vectors
