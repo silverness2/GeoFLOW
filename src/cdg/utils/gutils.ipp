@@ -202,20 +202,20 @@ void compute_p(const GTVector<T> &Temp, const GTVector<T> &d, const GTVector<T> 
 template<typename T>
 GSIZET in_seg(const GTVector<GTPoint<T>> &verts, const GTVector<GTVector<T>> &x, GTVector<GSIZET> &ind)
 {
-  GINT       ndim
+  GINT       ndim;
   GSIZET     nfound;
   T          mr1, mr2;
   GTPoint<T> c(3), d(3), p(3), r1(3), r2(3);
 
   p    = 0.0;
-  d    = verts[1] = verts[0];
+  d    = verts[1] ; d -= verts[0];
   ndim = x.size();
   ind.resizem(x[0].size());
   nfound = 0;
   for ( auto i=0; i<x[0].size(); i++ ) {
-    p.assign((x, i);
-    r1 = p - vert[0]; mr1 = r1.mag)(;
-    r2 = p - vert[1]; mr2 = r2.mag)(;
+    p.assign(x, i);
+    r1 = p ; r1 -= verts[0]; mr1 = r1.mag();
+    r2 = p ; r2 -= verts[1]; mr2 = r2.mag();
     d.cross(r1, c); // c = d X r1
     if ( (mr1+mr2) <= d.mag() ) {
       ind[nfound++] = i;
@@ -258,8 +258,8 @@ GSIZET in_poly(GTVector<GTPoint<T>> &verts, const GTVector<GTVector<T>> &x, T ep
       // Assume vertices in counterclockwise order, and
       // compute normal to edge segment n, np1. This vector
       // points 'inward' in a r.h. sense:
-      r1 = verts[(n+1)%nverts] - verts[n];
-      r2 = verts[(n+2)%nverts] - verts[(n+1)%nverts];
+      r1 = verts[(n+1)%nverts]; r1 -= verts[n];
+      r2 = verts[(n+2)%nverts]; r2  -= verts[(n+1)%nverts];
      
       r1.cross(r2, c); // c = r1 X r2, normal to plane
 
@@ -268,7 +268,7 @@ GSIZET in_poly(GTVector<GTPoint<T>> &verts, const GTVector<GTVector<T>> &x, T ep
       xp.assign(x, i); // test point
 
       // Compute vector dr =  r_test - polyVertex:
-      dr = xp - verts[n];
+      dr = xp; dr -= verts[n];
       dotdrN = dr.dot(N);
       dotdrc = dr.dot(c);
 
