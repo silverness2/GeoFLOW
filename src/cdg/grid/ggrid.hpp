@@ -171,7 +171,7 @@ virtual void                 print(const GString &filename){}          // print 
         BdyUpdateList       &bdy_update_list() 
                              { return bdy_update_list_; }              // bdy_update_list pointers
         GTVector<GTVector<GFTYPE>>
-                            &faceNormal()
+                            &faceNormals()
                              { return faceNormals_; }                  // elem face normals
         GTVector<GFTYPE>
                             &faceMass()
@@ -190,6 +190,7 @@ virtual void                 print(const GString &filename){}          // print 
                             &igbdy_bdyface() { return igbdy_bdyface_;} // bdy ind for each face node
         GTVector<GTVector<GBdyType>>  
                             &igbdyt_bdyface() { return igbdyt_bdyface_;}// bdy types for each face node
+        GTVector<GFTYPE>    &bdyMass() { return bdyMass_; }            // bdy Mass * Jac
         GTVector<GTVector<GFTYPE>>
                             &bdyNormals() { return bdyNormals_; }      // bdy normals
         GTVector<GINT>      &idepComp  () { return idepComp_; }        // dependent vector components on bdy 
