@@ -96,8 +96,9 @@ public:
   { x1 = f;  x2 = f;  x3 = f;  x4 = f; return *this;}
 
   inline void assign(const GTVector<GTVector<T>> &v, GSIZET i)
-  { for ( auto j=0; j<gdim_; j++ ) *px_[j] = v[j][i];
-    if ( gdim_>0) x1 = v[0][i]; if ( gdim_>1) x2 = v[1][i]; if (gdim_>2) x3 = v[2][i]; if ( gdim_>3) x4 = v[3][i];}
+  { for ( auto j=0; j<gdim_; j++ ) *px_[j] = 0.0;
+    for ( auto j=0; j<v.size(); j++ ) *px_[j] = v[j][i];
+  }
 
   inline GTPoint<T> operator-(T f) {
       GTPoint ret(*this);
