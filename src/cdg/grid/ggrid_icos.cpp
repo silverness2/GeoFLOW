@@ -876,11 +876,17 @@ void GGridIcos::print(const GString &filename, GCOORDSYST icoord)
 //          igbdyf : For each natural/canonical global boundary face,
 //                  gives vector of global bdy ids. Allocated here.
 //          igbdyft: bdy type ids for each index in igbdyf. Allocated here.
+//          igbdy  : 'flat' version of igbdyf
+//          debdy  : node descriptor for each index in igbdy
+//          Mbdy   : bdy mass (quadrature weights)
 // RETURNS: none.
 //**********************************************************************************
 void GGridIcos::config_bdy(const geoflow::tbox::PropertyTree &ptree, 
-                           GTVector<GTVector<GSIZET>> &igbdyf, 
-                           GTVector<GTVector<GBdyType>> &igbdyft)
+                           GTVector<GTVector<GSIZET>>   &igbdyf, 
+                           GTVector<GTVector<GBdyType>> &igbdyft,
+                           GTVector<GSIZET>             &igbdy,
+                           GTVector<GUINT>              &debdy,
+                           GTVector<GFTYPE>             &Mbdy)
 {
   // Cycle over all geometric boundaries, and configure:
 
@@ -1023,22 +1029,25 @@ void GGridIcos::find_bdy_ind3d(GFTYPE radius, GTVector<GSIZET> &ibdy)
 //                      for all facase
 //          gdeface   : description for each face node
 //          normals   : vector of normal components
+//          idepComp  : vector index dependent on the other indices (first 
+//                      component index whose normal component is nonzero)
 // RETURNS: none
 //**********************************************************************************
 void GGridIcos::do_face_normals(GTMatrix<GTVector<GFTYPE>> &dXdXi,
-                                GTVector<GSIZET> &gieface,
-                                GTVector<GUINT>  &gdeface,
-                                GTVector<GFTYPE> &face_mass,
-                                GTVector<GTVector<GFTYPE>> &normals)
+                                GTVector<GSIZET>           &gieface,
+                                GTVector<GUINT>            &gdeface,
+                                GTVector<GFTYPE>           &face_mass,
+                                GTVector<GTVector<GFTYPE>> &normals,
+                                GTVector<GINT>             &depComp)
 {
 
   #if defined(_G_IS2D)
 
-    do_face_normals2d(dXdXi, gieface, gdeface, face_mass, normals);
+    do_face_normals2d(dXdXi, gieface, gdeface, face_mass, normals, depComp);
 
   #elif defined(_G_IS3D)
 
-    do_face_normals3d(dXdXi, gieface, gdeface, face_mass, normals);
+    do_face_normals3d(dXdXi, gieface, gdeface, face_mass, normals, depComp);
 
   #else
     #error Invalid problem dimensionality
@@ -1058,13 +1067,16 @@ void GGridIcos::do_face_normals(GTMatrix<GTVector<GFTYPE>> &dXdXi,
 //                      for all facase
 //          gdeface   : description for each face node
 //          normals   : vector of normal components
+//          idepComp  : vector index dependent on the other indices (first 
+//                      component index whose normal component is nonzero)
 // RETURNS: none
 //**********************************************************************************
 void GGridIcos::do_face_normals2d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
-                                  GTVector<GSIZET> &gieface,
-                                  GTVector<GUINT>  &gdeface,
-                                  GTVector<GFTYPE> &face_mass,
-                                  GTVector<GTVector<GFTYPE>> &normals)
+                                  GTVector<GSIZET>           &gieface,
+                                  GTVector<GUINT>            &gdeface,
+                                  GTVector<GFTYPE>           &face_mass,
+                                  GTVector<GTVector<GFTYPE>> &normals,
+                                  GTVector<GINT>             &depComp)
 {
 
    GINT              ib, ic, id,  ip;
@@ -1116,13 +1128,16 @@ void GGridIcos::do_face_normals2d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
 //                      for all facase
 //          gdeface   : description for each face node
 //          normals   : vector of normal components
+//          idepComp  : vector index dependent on the other indices (first 
+//                      component index whose normal component is nonzero)
 // RETURNS: none
 //**********************************************************************************
 void GGridIcos::do_face_normals3d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
-                                  GTVector<GSIZET> &gieface,
-                                  GTVector<GUINT>  &gdeface,
-                                  GTVector<GFTYPE> &face_mass,
-                                  GTVector<GTVector<GFTYPE>> &normals)
+                                  GTVector<GSIZET>           &gieface,
+                                  GTVector<GUINT>            &gdeface,
+                                  GTVector<GFTYPE>           &face_mass,
+                                  GTVector<GTVector<GFTYPE>> &normals,
+                                  GTVector<GINT>             &depComp)
 {
    GINT            ib, ic, id;
    GINT            ixi[6][2] = { {0,2}, {1,2}, {2,0},
@@ -1167,16 +1182,21 @@ void GGridIcos::do_face_normals3d(GTMatrix<GTVector<GFTYPE>> &dXdXi,
 // RETURNS: none
 //**********************************************************************************
 void GGridIcos::do_bdy_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
-                               GTVector<GTVector<GSIZET>>    &igbdy_face,
+                               GTVector<GSIZET>              &igbdy,
+                               GTVector<GUINT>               &debdy,
+                               GTVector<GFTYPE>              &bdy_mass,
                                GTVector<GTVector<GFTYPE>>    &normals,
                                GTVector<GINT>                &idepComp)
 {
   GSIZET icurr, nbdy, nface;
 
+#if 0
   nbdy = 0;
   for ( auto j=0; j<igbdy_face.size(); j++ ) {
     nbdy += igbdy_face[j].size();
   }
+#endif
+  nbdy = igbdy.size();
   idepComp.resize(nbdy);
   for ( auto j=0; j<normals.size(); j++ ) normals[j].resize(nbdy);
 
@@ -1185,6 +1205,7 @@ void GGridIcos::do_bdy_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
     // No bdys in 2D
   #elif defined(_G_IS3D)
 
+#if 0
   icurr = 0;
   for ( auto j=0; j<2; j++ ) {      // for each global bdy face
     nface = igbdy_face[j].size();   // # bdy nodes on this face
@@ -1193,6 +1214,8 @@ void GGridIcos::do_bdy_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
     do_bdy_normals3d(dXdXi, igbdy_face[j], j, normals, idepComp);
     icurr += nface;
   }
+#endif
+    do_bdy_normals3d(dXdXi, igbdy, debdy, bdy_mass, normals, idepComp);
   #else
     #error Invalid problem dimensionality
   #endif
@@ -1227,12 +1250,14 @@ void GGridIcos::do_bdy_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 //                    component index whose normal component is nonzero)
 // RETURNS: none
 //**********************************************************************************
-void GGridIcos::do_bdy_normals3d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
-                                 GTVector<GSIZET>              &igbdy,
-                                 GINT                           iface,
+void GGridIcos::do_bdy_normals3d(GTMatrix<GTVector<GFTYPE>>  &dXdXi,
+                                 GTVector<GSIZET>            &igbdy,
+                                 GTVector<GUINT>             &debdy,
+                                 GTVector<GFTYPE>            &bdy_mass,
                                  GTVector<GTVector<GFTYPE>>  &normals,
-                                 GTVector<GINT>             &idepComp)
+                                 GTVector<GINT>              &idepComp)
 {
+#if 0
    GSIZET          ib, ic, ip; 
    GFTYPE          tiny;
    GFTYPE          xm;
@@ -1259,6 +1284,7 @@ void GGridIcos::do_bdy_normals3d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        idepComp[j] = ic;  // dependent component
      }
    }
+#endif
 
 } // end, method do_bdy_normals3d
 
