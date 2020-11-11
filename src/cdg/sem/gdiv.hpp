@@ -22,7 +22,7 @@
 #include "gmtk.hpp"
 #include "pdeint/equation_base.hpp"
 
-#undef  DO_FACE 
+#undef  DO_BDY
 
 template<typename TypePack>
 class GDivOp
