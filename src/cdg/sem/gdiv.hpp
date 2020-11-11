@@ -55,7 +55,7 @@ public:
         };
 
                           GDivOp() = delete;
-                          GDivOp(Grid &grid, Traits &traits);
+                          GDivOp(Traits &traits, Grid &grid);
                           GDivOp(const GDivOp &);
                          ~GDivOp();
 

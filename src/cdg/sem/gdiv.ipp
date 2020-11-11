@@ -21,7 +21,7 @@
 // RETURNS: none
 //**********************************************************************************
 template<typename TypePack>
-GDivOp<TypePack>::GDivOp(Grid &grid, Traits &traits)
+GDivOp<TypePack>::GDivOp(Traits &traits, Grid &grid)
 :
 traits_       (traits),
 grid_         (&grid),
