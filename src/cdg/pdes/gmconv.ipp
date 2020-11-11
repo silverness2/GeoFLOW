@@ -750,11 +750,13 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
   // Instantiate spatial discretization operators:
   gmass_      = &grid_->massop();
 //ghelm_      = new GHelmholtz(*grid_);
-  gstressen_  = new GStressEnOp<TypePack>(*grid_);
-
-//ghelm_->set_Lap_scalar(nu_);
-  gstressen_->set_mu(nu_);
-  gstressen_->set_kappa(kappa_);
+  
+  typename GStressEnOp<TypePack>::Traits trstress;
+  trstress.Stokes_hyp = TRUE;
+  trstress.indep_diss = TRUE;
+  trstress.mu   .resize(nu_   .size());  trstress.mu    = nu_;
+  trstress.kappa.resize(kappa_.size());  trstress.kappa = kappa_;
+  gstressen_  = new GStressEnOp<TypePack>(trstress, *grid_);
 
   if ( traits_.isteptype ==  GSTEPPER_EXRK ) {
     gimass_ = &grid_->imassop();
@@ -771,7 +773,7 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
   if ( traits_.bconserved ) {
     assert(FALSE && "Conservation not yet supported");
     gpdv_  = new GpdV<TypePack>(*grid_);
-    gdiv_  = new GDivOp<TypePack>(*grid_,trgdiv);
+    gdiv_  = new GDivOp<TypePack>(trgdiv, *grid_);
 //  gflux_ = new GFlux(*grid_);
     assert( (gmass_     != NULLPTR
 //        && ghelm_     != NULLPTR
@@ -782,7 +784,7 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
   else {
     gadvect_ = new GAdvect<TypePack>(*grid_);
     gpdv_    = new GpdV<TypePack>(*grid_);
-    gdiv_    = new GDivOp<TypePack>(*grid_,trgdiv);
+    gdiv_    = new GDivOp<TypePack>(trgdiv, *grid_);
     assert( (gmass_     != NULLPTR
 //        && ghelm_     != NULLPTR
           && gstressen_ != NULLPTR
