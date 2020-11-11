@@ -2,21 +2,26 @@
 // Module       : gstress.hpp
 // Date         : 09/05/20 (DLR)
 // Description  : Represents the SEM discretization of the full viscous
-//                stress-energy operator. The viscous stress in the 
+//                stress-energy operator. The effect of the viscous stress in the 
 //                momentum eqution is
-//                    F_i = [2  mu s_{ij}],j + (zeta Div u delta_ij),j,
+//                    F_i = [2  mu s_{ij}],j + (zeta Div u delta_{ij}),j,
 //                where
-//                    s_{ij} = (u_j,i + u_i,j)/2
-//                and the viscous stress-energy for the energy equation is
-//                    [2 kappa u_i F_i  + lambda Div u delta_i,j) ],j
-//                where u_i is the velocity, and mu, the viscosity. Repeated
-//                indices are summed here.  mu, zeta, kappa, lamnda,
-//                may vary in space or be constant. zeta defaults to
-//               -2/3 mu according to the Stokes hypothesis; similarly,
-//                lambda defaults to -2/3 kappa for the energy. 
+//                    s_{ij} = (u_j,i + u_i,j)/2 - 1/d Div u delta_{ij}, and
+//                d is the problem dimension. The viscous stress-energy for the 
+//                energy equation is
+//                    [2 kappa u_i s_{ij}],j - [lambda u_i Div u delta_{ij}],j
+//                where u_i is the velocity, and mu, the (shear) viscosity, zeta is
+//                the 'bulk' viscosity. Strictly speaking, kappa=mu, and lambda=zeta,
+//                but we allow these to be set independently for now. Repeated
+//                indices are summed here.  mu, zeta, kappa, lambda, may vary
+//                in space or be constant. Currently, the so-called Stokes 
+//                approximation is used by default s.t.
+//                      (zeta - 2 mu/d) = -2/3 mu, and
+//                      (lambda - 2 kappa/d ) = -2/3 kappa.
+//               
 //                For the energy, this operator is nonlinear, 
-//                so it should not derive from GLinOp. Operator requires 
-//                that grid consist of elements of only one type.
+//                so it should not derive from GLinOp. 
+//                      
 // Copyright    : Copyright 2020. Colorado State University. All rights reserved.
 // Derived From : none
 //==================================================================================
@@ -152,10 +157,10 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
 
   GINT       nxy = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
   GSIZET                     k;
-  GTVector<GSIZET>          *gieface = &grid_->gieface() ;
-  GTVector<GTVector<Ftype>> *normals = &grid_->faceNormal();
+  GTVector<GSIZET>          *igbdy   = &grid_->igbdy() ;
+  GTVector<GTVector<Ftype>> *normals = &grid_->bdyNormals();
   StateComp                 *mass    =  grid_->massop().data();
-  StateComp                 *fmass   = &grid_->faceMass();
+  StateComp                 *bmass   = &grid_->bdyMass();
 
   assert( idir > 0 && idir <= nxy );
 
@@ -172,11 +177,12 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
     utmp[1]->pointProd(*mu_);
     grid_->wderiv(*utmp[1]  , j+1, TRUE , *utmp[0], *utmp[2]);
     so -= *utmp[2];
-#if defined(DO_FACE)
-    // Compute surface terms for this component, j:
-    for ( auto f=0; f<gieface->size(); f++ ) {
-      k = (*gieface)[f];
-      so[k] += (*utmp[1])[k] * (*normals)[j][f] * (*fmass)[f];
+
+#if defined(DO_BDY)
+  // Compute bdy terms for this component, j:
+    for ( auto b=0; b<igbdy->size(); b++ ) {
+      k = (*igbdy)[b];
+      so[k] += (*utmp[1])[k] * (*normals)[j][b] * (*bmass)[b];
     }
 #endif
   }
@@ -189,17 +195,17 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
     grid_->wderiv(*utmp[1]  , j+1, TRUE , *utmp[0], *utmp[2]);
     so -= *utmp[2];
 
-#if defined(DO_FACE)
+#if defined(DO_BDY)
     // Compute surface terms for this component, j:
-    for ( auto f=0; f<gieface->size(); f++ ) {
-      k = (*gieface)[f];
-      so[k] += (*utmp[1])[k] * (*normals)[j][f] * (*fmass)[f];
+    for ( auto b=0; b<igbdy->size(); b++ ) {
+      k = (*igbdy)[b];
+      so[k] += (*utmp[1])[k] * (*normals)[j][b] * (*bmass)[b];
     }
 #endif
   }
 
-#if defined(USE_STOKES)
-  // Compute Stokes hypothesis term:
+
+  // Compute dilitation term:
   //   -D^{T,j} (zeta (Div u) delta_ij):
   grid_->deriv(*u[0]  , 1, *utmp[0], *utmp[1]); // store Div in utmp[1]]
   for ( auto j=1; j<nxy; j++ ) { 
@@ -210,15 +216,14 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
   grid_->wderiv(*utmp[1], idir, TRUE, *utmp[0], *utmp[2]);
   so -= *utmp[2];
  
-#if defined(DO_FACE)
+#if defined(DO_BDY)
   // Compute surface terms for
   //  Integral zeta (Div u) delta_ij.n^j dV:
   // Use kernel above, for i=idir:
-  for ( auto f=0; f<gieface->size(); f++ ) {
-    k = (*gieface)[f];
-    so[k] += (*utmp[1])[k] * (*normals)[idir-1][f] * (*fmass)[f];
+  for ( auto b=0; b<igbdy->size(); b++ ) {
+    k = (*igbdy)[b];
+    so[k] += (*utmp[1])[k] * (*normals)[idir-1][b] * (*bmass)[b];
   }
-#endif 
 #endif 
 
 
@@ -246,10 +251,10 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
 
   GINT       nxy = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
   GSIZET                     k;
-  GTVector<GSIZET>          *gieface = &grid_->gieface() ;
-  GTVector<GTVector<Ftype>> *normals = &grid_->faceNormal();
+  GTVector<GSIZET>          *igbdy   = &grid_->igbdy() ;
+  GTVector<GTVector<Ftype>> *normals = &grid_->bdyNormals();
   StateComp                 *mass    =  grid_->massop().data();
-  StateComp                 *fmass   = &grid_->faceMass();
+  StateComp                 *bmass   = &grid_->faceMass();
 
 
   // eo -= D^{T,j} [ kappa u^i [D_i u_j + Dj u_i) 
@@ -269,15 +274,15 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
     utmp[1]->pointProd(*kappa_);
     grid_->wderiv(*utmp[1], j+1, TRUE , *utmp[0], *utmp[2]);
     eo -= *utmp[2];
+  }
 
-#if defined(DO_FACE)
+#if defined(DO_BDY)
     // Do the surface terms for jth component of normal:
-    for ( auto f=0; f<nxy; f++ ) {
-      k = (*gieface)[f];
-      eo[k] += (*utmp[1])[k] * (*normals)[j][f] * (*fmass)[f];
+    for ( auto b=0; b<nxy; b++ ) {
+      k = (*igbdy)[b];
+      eo[k] += (*utmp[1])[k] * (*normals)[j][b] * (*bmass)[b];
     }
 #endif
-  }
 
   // -= D^{T,j} [ kappa u^i (D_j u_i) ] terms:
   for ( auto j=0; j<nxy; j++ ) { 
@@ -291,18 +296,17 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
     utmp[1]->pointProd(*kappa_);
     grid_->wderiv(*utmp[1], j+1, TRUE , *utmp[0], *utmp[2]);
     eo -= *utmp[2];
-
-#if defined(DO_FACE)
-    // Do the surface terms for jth component of normal:
-    for ( auto f=0; f<nxy; f++ ) {
-      k = (*gieface)[f];
-      eo[k] += (*utmp[1])[k] * (*normals)[j][f] * (*fmass)[f];
-    }
-#endif
   }
 
-#if defined(USE_STOKES)
-  // Compute Stokes hypothesis term:
+#if defined(DO_BDY)
+    // Do the surface terms for jth component of normal:
+    for ( auto b=0; b<nxy; b++ ) {
+      k = (*igbdy)[b];
+      eo[k] += (*utmp[1])[k] * (*normals)[j][b] * (*bmass)[b];
+    }
+#endif
+
+  // Compute dilitation term:
   //   -= D^{T,j} (lambda (Div u) delta_ij):
   //   ... First, compute Div u:
   // (NOTE: we'll use MTK to compute Div u eventually):
@@ -323,17 +327,15 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
     u[j]->pointProd(*utmp[1],*utmp[2]); 
     grid_->wderiv(*utmp[2], j+1, TRUE, *utmp[0], *utmp[3]); 
     eo -= *utmp[3];
+  }
 
-#if defined(DO_FACE)
+#if defined(DO_BDY)
     // Do the surface terms for jth component of normal:
-    for ( auto f=0; f<nxy; f++ ) {
-      k = (*gieface)[f];
-      eo[k] += (*utmp[2])[k] * (*normals)[j][f] * (*fmass)[f];
+    for ( auto b=0; b<nxy; b++ ) {
+      k = (*igbdy)[b];
+      eo[k] += (*utmp[2])[k] * (*normals)[j][b] * (*bmass)[b];
     }
 #endif
-  }
-#endif 
-
 
 } // end of method apply (2)
 

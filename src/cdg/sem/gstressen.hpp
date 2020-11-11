@@ -2,21 +2,26 @@
 // Module       : gstress.hpp
 // Date         : 09/05/20 (DLR)
 // Description  : Represents the SEM discretization of the full viscous
-//                stress-energy operator. The viscous stress in the 
+//                stress-energy operator. The effect of the viscous stress in the 
 //                momentum eqution is
-//                    F_i = [2 mu s_{ij}],j + (zeta Div u delta_ij),j,
+//                    F_i = [2  mu s_{ij}],j + (zeta Div u delta_{ij}),j,
 //                where
-//                    s_{ij} = (u_j,i + u_i,j)/2
-//                and the viscous stress-energy for the energy equation is
-//                    [2 kappa u_i F_i  + lambda Div u delta_i,j) ],j
-//                where u_i is the velocity, and mu, the viscosity. Repeated
-//                indices are summed here.  mu, zeta, kappa, lamnda,
-//                may vary in space or be constant. zeta defaults to
-//               -2/3 mu according to the Stokes hypothesis; similarly,
-//                lambda defaults to -2/3 kappa for the energy. 
+//                    s_{ij} = (u_j,i + u_i,j)/2 - 1/d Div u delta_{ij}, and
+//                d is the problem dimension. The viscous stress-energy for the 
+//                energy equation is
+//                    [2 kappa u_i s_{ij}],j - [lambda u_i Div u delta_{ij}],j
+//                where u_i is the velocity, and mu, the (shear) viscosity, zeta is
+//                the 'bulk' viscosity. Strictly speaking, kappa=mu, and lambda=zeta,
+//                but we allow these to be set independently for now. Repeated
+//                indices are summed here.  mu, zeta, kappa, lambda, may vary
+//                in space or be constant. Currently, the so-called Stokes 
+//                approximation is used by default s.t.
+//                      (zeta - 2 mu/d) = -2/3 mu, and
+//                      (lambda - 2 kappa/d ) = -2/3 kappa.
+//               
 //                For the energy, this operator is nonlinear, 
-//                so it should not derive from GLinOp. Operator requires 
-//                that grid consist of elements of only one type.
+//                so it should not derive from GLinOp. 
+//
 // Copyright    : Copyright 2020. Colorado State University. All rights reserved.
 // Derived From : none
 //==================================================================================
@@ -32,7 +37,7 @@
 #include "pdeint/equation_base.hpp"
 
 #define   USE_STOKES
-#undef    DO_FACE
+#undef    DO_BDY
 
 template<typename TypePack>
 class GStressEnOp
