@@ -761,6 +761,7 @@ void GGrid::do_normals()
   GSIZET          nxy = gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
   GSIZET          n;
   GTPoint<GFTYPE> pt;
+  GTVector<GINT>  idep;
 
   // Note: at a given node, the (Cartesian) normals are
   // computed as n_j = (dX_/dxi  X  dX_/deta)_j, where
@@ -770,11 +771,13 @@ void GGrid::do_normals()
   // Set element face normals. Note: arrays for 
   // normals are allocated in these calls:
   if ( do_face_normals_ ) {
-    do_face_normals(dXdXi_, gieface_, gdeface_, faceMass_, faceNormals_);
+    idep.resize(gieface_.size());
+    do_face_normals(dXdXi_, gieface_, gdeface_, faceMass_, faceNormals_, idep);
   }
   
   // Set domain boundary node normals:
-  do_bdy_normals(dXdXi_, igbdy_bdyface_, bdyNormals_, idepComp_);
+//do_bdy_normals(dXdXi_, igbdy_, debdy_, bdyMass_, bdyNormals_, idepComp_);
+  do_face_normals(dXdXi_, igbdy_, debdy_, bdyMass_, bdyNormals_, idepComp_);
    
 } // end of method do_normals
 
@@ -1295,7 +1298,7 @@ void GGrid::init_bc_info()
 
   // Find boundary indices & types from config file 
   // specification, for _each_ natural/canonical domain face:
-  config_bdy(ptree_, igbdy_bdyface_, igbdyt_bdyface_);
+  config_bdy(ptree_, igbdy_bdyface_, igbdyt_bdyface_, igbdy_, debdy_, bdyMass_);
 
   // Flatten bdy index indirection array; this is
   // done in child classes, and stored in igbdy_.
