@@ -271,10 +271,13 @@ const char * const sGStateCompType [] ={"GSC_KINETIC","GSC_MAGNETIC","GSC_DENSIT
   #define GET_HIWORD(a) ( a >> _WLO )
 #endif
 #if !defined(SET_LOWORD)
-  #define SET_LOWORD(a,b)   (a &= HIMASK);( a |= (b & LOMASK) )
+  #define SET_LOWORD(a,b)   ( a &= HIMASK );( a |= (b & LOMASK) )
 #endif
 #if !defined(SET_HIWORD)
-  #define SET_HIWORD(a,b) (a &= LOMASK);( a |= ( b << _WLO ) )
+  #define SET_HIWORD(a,b) ( a &= LOMASK );( a |= ( b << _WLO ) )
+#endif
+#if !defined(SET_DSWORD)
+  #define SET_DSWORD(u,lo,hi) SET_LOWORD(u,lo);SET_HIWORD(u,hi) 
 #endif
 
 
