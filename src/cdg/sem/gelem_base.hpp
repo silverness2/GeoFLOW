@@ -3,11 +3,11 @@
 // Date         : 6/1/18 (DLR)
 // Description  : Base class forming interfaces for all allowed 1D/2D/3D (lin/quad/hex) 
 //                elements
-// Copyright    : Copyright 2018. Colorado State University. All rights reserved
+// Copyright    : Copyright 2018. Colorado State University. All rights reserved.
 // Derived From : none.
 //               
 //
-//          V7 ________________ V6
+//          V7 ________________ V6<->P1_
 //            /|     M6       /|
 //       M7  / |             / |
 //          /  |    F5   M5 /  |
@@ -21,7 +21,7 @@
 //        |  / M3   F4   |  / M1                     
 //        | /            | /                       
 //        |/_____________|/a                     
-//       V0       M0     V1
+// P0_<-> V0     M0     V1
 //
 // Faces are labeled s.t. F0-F3 correspond to orientation of edges on bottom plane;
 // F4 and F5 are bottom and top faces, respectively. Nodes are labeled implicitly starting
@@ -51,7 +51,7 @@ typedef GTMatrix<GTVector<GFTYPE>>           GMVFType;
 class GElem_base 
 {
 public:
-                            enum ElemNodeType {VERTEX=0, EDGE, FACE};
+                            enum ElemNodeType {VERTEX=0, EDGE, FACE, VOL};
                             GElem_base();
                             GElem_base(GElemType etype, GNBasis<GCTYPE,GFTYPE> *b1, GNBasis<GCTYPE,GFTYPE> *b2, GNBasis<GCTYPE,GFTYPE> *b3=NULLPTR);
                             GElem_base(GElemType etypa, GNBasis<GCTYPE,GFTYPE> *b[], GINT nb);
@@ -156,8 +156,6 @@ inline  GTVector<GFTYPE>   &face_mass(GINT i){ return face_mass_[i];}
 inline  GVVUInt            &face_desc(){ return face_desc_;}
 inline  GTVector<GUINT>    &face_desc(GINT i){ return face_desc_[i];}
 inline  GTVector<GINT>     &bdy_indices(){ return bdy_indices_;}
-inline  GTVector<GBdyType> &ibdy_types(){ return ibdy_types_;}
-inline  GTVector<GINT>     &ibdy_indices(){ return ibdy_indices_;}
 inline  GTVector<GBdyType> &bdy_types(){ return bdy_types_;}
 
 virtual void                dogeom1d (GTMatrix<GTVector<GFTYPE>> &rij, GTMatrix<GTVector<GFTYPE>> &irij, GTVector<GFTYPE> &jac, GTVector<GFTYPE> &facejac); 
@@ -253,9 +251,8 @@ GVVInt                  face_indices_;  // all indices comprising faces
 GVVUInt                 face_desc_;     // 'description' of face nodes
 GVVFType                face_mass_;     // weights at each face_indices node
 GIBuffer                bdy_indices_;   // global bdy indices
-GIBuffer                ibdy_indices_;  // internal bdy indices
-GTVector<GBdyType>      bdy_types_;     // global bdy condition/type
-GTVector<GBdyType>      ibdy_types_;    // internal bdy condition/type
+GTVector<ElemNodeType>  bdy_nodetype_;  // node type of bdy nodes
+GTVector<GBdyType>      bdy_types_;     // bdy types on any global bdy nodes
 };
 
 #endif

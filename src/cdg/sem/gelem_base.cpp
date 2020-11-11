@@ -210,21 +210,9 @@ std::ostream &operator<<(std::ostream &str, GElem_base &e)
   str << std::endl << " lVertices: " ;
   for ( i=0; i<e.nVertices_; i++ ) str << (e.xVertices_[i]) << " "; 
   str << std::endl;
-#if defined(G_IS2D)
-  str << std::endl << " Edge Midpoints: " ;
-  for ( i=0; i<e.nFaces_; i++ ) str << (e.spEMidpoints_[i]) << " "; 
-#elif defined(G_IS3D)
-  str << std::endl << " Edge Midpoints: " ;
-  for ( i=0; i<e.nEdges_; i++ ) str << (e.spEMidpoints_[i]) << " "; 
-  str << std::endl << " Face Midpoints: " ;
-  for ( i=0; i<e.nFaces_; i++ ) str << (e.spFMidpoints_[i]) << " "; 
-#endif
   str << std::endl;
-  str << " bdy_indices: " << e.bdy_indices_ << std::endl;
-  str << " bdy_types  : " << e.bdy_types_ << std::endl;
-#if defined(G_IS3D)
-//str << " face_types : " << *(e.face_types_) << std::endl;
-#endif
+  str << " bdy_indices : " << e.bdy_indices_  << std::endl;
+  str << " bdy_nodetype: " << e.bdy_nodetype_ << std::endl;
   str << std::endl << "}";
 
   return str;
@@ -2248,7 +2236,7 @@ void GElem_base::operator=(const GElem_base &e)
   edge_indices_ = e.edge_indices_;
   face_indices_ = e.face_indices_;
   bdy_indices_  = e.bdy_indices_;
-  bdy_types_    = e.bdy_types_;
+  bdy_nodetype_ = e.bdy_nodetype_;
 
 } // end, method operator=
 
