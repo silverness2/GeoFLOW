@@ -35,8 +35,9 @@
 // RETURNS: none
 //**********************************************************************************
 template<typename TypePack>
-GStressEnOp<TypePack>::GStressEnOp(Grid &grid)
+GStressEnOp<TypePack>::GStressEnOp(Traits &traits, Grid &grid)
 :
+traits_               (traits),
 bown_mu_                (TRUE),
 bown_zeta_              (TRUE),
 bown_kappa_             (TRUE),
@@ -50,14 +51,35 @@ lambda_              (NULLPTR)
 {
   assert(grid_->ntype().multiplicity(0) == GE_MAX-1 
         && "Only a single element type allowed on grid");
-  mu_      = new GTVector<Ftype>(1); // kinetic visc.
-  *mu_     = 1.0;
-  zeta_    = new GTVector<Ftype>(1); // Stokes visc.
- *zeta_    = -2.0/3.0;
-  kappa_   = new GTVector<Ftype>(1); // energy dissipation
- *kappa_   = 1.0;
-  lambda_  = new GTVector<Ftype>(1); // energy Stokes dissipation
- *lambda_  = -2.0/3.0;
+  
+  if ( traits_.indep_diss) {
+    assert(traits.mu.size() > 0 && traits_.kappa.size()  > 0);
+    if  ( traits_.Stokes_hyp ) {
+      traits_.zeta.resize(traits.mu.size());
+      traits_.lambda.resize(traits.kappa.size());
+      traits.zeta = traits_.mu * (-2.0/3.0);
+      traits.lambda= traits_.kappa * (-2.0/3.0);
+    } else {
+      assert(traits.zeta.size() > 0 && traits_.lambda.size()  > 0);
+    }
+    mu_     = &traits_.mu;
+    zeta_   = &traits_.zeta;
+    kappa_  = &traits_.kappa;
+    lambda_ = &traits_.lambda;
+  } else {
+    assert(traits.mu.size() > 0 );
+    if  ( traits_.Stokes_hyp ) {
+      traits_.zeta.resize(traits.mu.size());
+      traits.zeta = traits_.mu * (-2.0/3.0);
+    } else {
+      assert(traits.zeta.size() > 0 );
+    }
+    mu_     = &traits_.mu;
+    zeta_   = &traits_.zeta;
+    kappa_  = &traits_.mu;
+    lambda_ = &traits_.zeta;
+  }
+
 } // end of constructor method (1)
 
 
@@ -71,69 +93,7 @@ lambda_              (NULLPTR)
 template<typename TypePack>
 GStressEnOp<TypePack>::~GStressEnOp()
 {
-  if ( mu_    != NULLPTR && bown_mu_    ) delete mu_;
-  if ( kappa_ != NULLPTR && bown_kappa_ ) delete kappa_;
 } // end, destructor
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : set_mu
-// DESC   : Set viscosity (for momentum). This may be a field if length>1, 
-//          or a constant if length == 1. Stokes viscosity parameter
-//          is also set here
-// ARGS   : 
-//          mu    : 'viscosity' parameter, global
-//             
-// RETURNS:  none
-//**********************************************************************************
-template<typename TypePack>
-void GStressEnOp<TypePack>::set_mu(StateComp &mu)
-{
-  assert(mu.size() == 1 || mu.size() >= grid_->ndof()
-       && "Viscosity parameter of invalid size");
-
-  if ( mu_     != NULLPTR && bown_mu_     ) delete mu_;
-  if ( zeta_   != NULLPTR && bown_zeta_   ) delete zeta_;
-
-  mu_ = &mu;
-  bown_mu_ = FALSE;
-
-  zeta_  = new GTVector<Ftype>(mu_->size());
- *zeta_  = *mu_;
- *zeta_ *= -2.0/3.0;
-
-
-} // end of method set_mu
-
-
-//**********************************************************************************
-//**********************************************************************************
-// METHOD : set_kappa
-// DESC   : Set kappa (for stress energy). This may be a field if length>1, 
-//          or a constant if length == 1.
-// ARGS   : 
-//          kappa : 'kappa' parameter, global
-//             
-// RETURNS:  none
-//**********************************************************************************
-template<typename TypePack>
-void GStressEnOp<TypePack>::set_kappa(StateComp &kappa)
-{
-  assert(kappa.size() == 1 || kappa.size() >= grid_->ndof()
-       && "Energy dissipation parameter of invalid size");
-
-  if ( kappa_  != NULLPTR && bown_kappa_  ) delete kappa_;
-  if ( lambda_ != NULLPTR && bown_lambda_ ) delete lambda_;
-
-  kappa_ = &kappa;
-  bown_kappa_ = FALSE;
-
-  lambda_  = new GTVector<Ftype>(kappa_->size());
- *lambda_  = *kappa_;
- *lambda_ *= -2.0/3.0; // Stokes hyp.
-
-} // end of method set_kappa
 
 
 //**********************************************************************************

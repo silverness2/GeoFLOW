@@ -64,10 +64,18 @@ public:
         static_assert(std::is_same<Grid,GGrid>::value,
                "Grid is of incorrect type");
 
-public:
+        // GStressEn solver traits:
+        struct Traits {
+          GBOOL       Stokes_hyp = TRUE; // use Stokes hypothesis?
+          GBOOL       indep_diss = TRUE; // use indep. diss'n for mom & energy?
+          StateComp   mu;                // dynamic/shear viscosity
+          StateComp   zeta;              // bulk (dilitation) viscosity
+          StateComp   kappa;             // shear visc for energy
+          StateComp   lambda;            // bulk visc. for energy
+        };
 
                           GStressEnOp() = delete;
-                          GStressEnOp(Grid &grid);
+                          GStressEnOp(Traits &traits, Grid &grid);
                           GStressEnOp(const GStressEnOp &);
                          ~GStressEnOp();
 
@@ -80,17 +88,17 @@ public:
 
 
 private:
-        GBOOL                        bown_mu_;    // flag telling instance if it owns mu_
-        GBOOL                        bown_zeta_;  // flag telling instance if it owns zeta_
-        GBOOL                        bown_kappa_; // flag telling instance if it owns kappa_
-        GBOOL                        bown_lambda_;// flag telling instance if it owns kappa_
-        Mass                         *massop_;    // mass matrix, required
-        Grid                         *grid_;      // grid set on construction
-        StateComp                    *mu_;        // dynamic viscosity
-        StateComp                    *zeta_;      // stress' Stokes viscosity
-        StateComp                    *kappa_;     // energy dissipation
-        StateComp                    *lambda_;    // energy Stokes dissipation
-
+        GBOOL             bown_mu_;    // flag telling instance if it owns mu_
+        GBOOL             bown_zeta_;  // flag telling instance if it owns zeta_
+        GBOOL             bown_kappa_; // flag telling instance if it owns kappa_
+        GBOOL             bown_lambda_;// flag telling instance if it owns kappa_
+        Mass             *massop_;     // mass matrix, required
+        Grid             *grid_;       // grid set on construction
+        StateComp        *mu_;         // dynamic/shear viscosity
+        StateComp        *zeta_;       // bulk/dilitation viscosity
+        StateComp        *kappa_;      // dyn.shear visc for energy
+        StateComp        *lambda_;     // bulk/diliataion visc for energy
+        Traits            traits_;     // operator traits
 
 };
 
