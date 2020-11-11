@@ -38,10 +38,6 @@ template<typename TypePack>
 GStressEnOp<TypePack>::GStressEnOp(Traits &traits, Grid &grid)
 :
 traits_               (traits),
-bown_mu_                (TRUE),
-bown_zeta_              (TRUE),
-bown_kappa_             (TRUE),
-bown_lambda_            (TRUE),
 grid_                  (&grid),
 massop_       (&grid.massop()),
 mu_                  (NULLPTR),
