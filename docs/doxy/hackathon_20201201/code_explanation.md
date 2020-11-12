@@ -1,4 +1,4 @@
-# Hackathon Source Code Explinatiion
+# Hackathon Source Code Explanation
 
 ## Relevant Files
 
