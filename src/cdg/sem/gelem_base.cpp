@@ -1471,16 +1471,15 @@ void GElem_base::get_indirect2d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &ve
   face_mass.resize(nFaces_);
   face_desc.resize(nFaces_);
   for ( auto j=0; j<nFaces_; j++ ) { 
-    face_ind[j].resize(j%2==0?N[0]-2:N[1]);
-    face_mass[j].resize(j%2==0?N[0]-2:N[1]);
-    face_desc[j].resize(j%2==0?N[0]-2:N[1]);
+    face_ind[j].resize(j%2==0?N[0]:N[1]);
+    face_mass[j].resize(j%2==0?N[0]:N[1]);
+    face_desc[j].resize(j%2==0?N[0]:N[1]);
   }
-  for ( auto k=1; k<N[0]-1; k++ ) { // south, north
-    j = k-1;
-    face_ind[0][j] = k;
-    face_ind[2][j] = N[0]*(N[1]-1) + k;
-    face_mass[0][j] = (*W[0])[k] * (*W[1])[0];
-    face_mass[2][j] = (*W[0])[k] * (*W[1])[N[1]-1];
+  for ( auto j=0; j<N[0]; j++ ) { // south, north
+    face_ind[0][j] = j;
+    face_ind[2][j] = N[0]*(N[1]-1) + j;
+    face_mass[0][j] = (*W[0])[j] * (*W[1])[0];
+    face_mass[2][j] = (*W[0])[j] * (*W[1])[N[1]-1];
     // Set face index 'description':
     SET_LOWORD(face_desc[0][j], FACE);
     SET_HIWORD(face_desc[0][j], 0   );
