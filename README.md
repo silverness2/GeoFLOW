@@ -1,7 +1,7 @@
 # GeoFLOW
 Geo FLuid Object Workbench
 
-## Go To [Hackathon Instructions](docs/doxy/hackathon_20201201.md) for 2020 NOAA GPU Hackathon 
+## Go To [Hackathon Instructions](docs/doxy/hackathon_20201201/index.md) for 2020 NOAA GPU Hackathon 
 
 ## Compilation from Source on UNIX
 

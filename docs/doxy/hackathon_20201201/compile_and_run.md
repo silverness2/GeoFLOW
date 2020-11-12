@@ -1,16 +1,20 @@
-# NOAA GPU Hackathon 2020
-Dates: December 1-9, 2020
 
 ## Differences from Main Branch
 
-### Code
+### Download GitHub Repository
+Your first step is to get the code from the GitHub reposity
+```console
+git clone https://github.com/NOAA-GSD/GeoFLOW.git
+```
+
+### Branch feature/hackathon
 For the hackathon the code has been reduced to a small kernel executing 
 the portion of code we plan to concentrate on. This code (and the respective 
 inputs) are only contained within the **feature/hackathon** branch of the GitHub 
 repository so make sure you are inside the correct branch before compiling.
 
 ```console
-git clone https://github.com/NOAA-GSD/GeoFLOW.git
+cd GeoFLOW
 git checkout feature/hackathon
 ```
 
@@ -72,6 +76,8 @@ export BOOST_ROOT=/scratch2/BMC/gsd-hpcs/Bryan.Flynt/opt/boost/intel-2020.2
 
 # Change into the "out of source" build directory
 cd build
+
+# Remove any cached files from previous attempts
 rm -r cmake*
 rm -r CMake*
 
