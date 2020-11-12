@@ -4,7 +4,7 @@
 ### Download GitHub Repository
 Your first step is to get the code from the GitHub reposity
 ```console
-git clone https://github.com/NOAA-GSD/GeoFLOW.git
+User@machine: > git clone https://github.com/NOAA-GSD/GeoFLOW.git
 ```
 
 ### Branch feature/hackathon
@@ -14,8 +14,8 @@ inputs) are only contained within the **feature/hackathon** branch of the GitHub
 repository so make sure you are inside the correct branch before compiling.
 
 ```console
-cd GeoFLOW
-git checkout feature/hackathon
+User@machine: > cd GeoFLOW
+User@machine: > git checkout feature/hackathon
 ```
 
 ### Compiling
