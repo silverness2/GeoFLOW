@@ -36,7 +36,6 @@
 #include "gmtk.hpp"
 #include "pdeint/equation_base.hpp"
 
-#define   USE_STOKES
 #undef    DO_BDY
 
 template<typename TypePack>
