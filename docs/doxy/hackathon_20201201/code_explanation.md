@@ -2,7 +2,7 @@
 
 ## Relevant Files
 
-### [GeoFLOW/src/cdg/grid/ggrid.cpp](../../src/cdg/grid/ggrid.cpp)
+### [GeoFLOW/src/cdg/grid/ggrid.cpp](../../../src/cdg/grid/ggrid.cpp)
 
 #### compute_grefderiv
 Top level entry point for derivative calculations is the function
@@ -126,7 +126,7 @@ void GGrid::grefderiv_varp(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 }
 ```
 
-### [GeoFLOW/src/cdg/blas/gmtk.cpp](../../src/cdg/blas/gmtk.ipp)
+### [GeoFLOW/src/cdg/blas/gmtk.cpp](../../../src/cdg/blas/gmtk.ipp)
 
 #### I2\_X\_D1 (5 & 6 Arguments Nearly Same)
 The matrix multiply routines forward the call to BLAS like routine to perform the operations 

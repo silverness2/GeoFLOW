@@ -1,5 +1,5 @@
 
-## Differences from Main Branch
+## Compile and Run
 
 ### Download GitHub Repository
 Your first step is to get the code from the GitHub reposity
