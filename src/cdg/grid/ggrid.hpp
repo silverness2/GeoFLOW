@@ -233,7 +233,7 @@ virtual void                        do_face_normals(GTMatrix<GTVector<GFTYPE>> &
                                       GTVector<GUINT>            &dgface,
                                       GTVector<GFTYPE>           &face_mass,
                                       GTVector<GTVector<GFTYPE>> &normals,
-                                      GTVector<GINT>             &depComp)=0;
+                                      GTVector<GINT>             &idepComp)=0;
                                                                       // compute normals to elem faces 
 virtual void                        do_bdy_normals(GTMatrix<GTVector<GFTYPE>> &dXdXi,
                                       GTVector<GSIZET>           &igbdy,

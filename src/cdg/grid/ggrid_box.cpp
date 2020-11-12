@@ -983,9 +983,9 @@ void GGridBox::config_bdy(const PropertyTree           &ptree,
     debdy.reserve(nind+itmp.size());
     Mbdy.reserve(nind+itmp.size());
     for ( auto k=0; k<itmp.size(); k++ ) {
-      igbdy[k+nind] = itmp[k];
-      debdy[k+nind] = utmp[k];
-      Mbdy[k+nind] = mtmp[k];
+      igbdy.push_back(itmp[k]);
+      debdy.push_back(utmp[k]);
+      Mbdy .push_back(mtmp[k]);
     }
     if ( "uniform" == bdyclass ) { // uniform bdy conditions
       geoflow::get_bdy_block(bdytree, stblock);
@@ -1176,7 +1176,7 @@ void GGridBox::find_bdy_ind2d(GINT bdyid, GBOOL bunique, GTVector<GSIZET> &ikeep
   for( auto i=0; i<nbdy; i++ ) {
     ibdy[i] = itmp[i];
     debdy[i] = utmp[i];
-    ikeep[nold+i] = ibdy[i];
+    ikeep.push_back(ibdy[i]);
   }
 
 } // end, method find_bdy_ind2d
@@ -1314,7 +1314,7 @@ void GGridBox::find_bdy_ind3d(GINT bdyid, GBOOL bunique, GTVector<GSIZET> &ikeep
   ikeep.reserve(nold+nbdy);
   for( auto i=0; i<nbdy; i++ ) {
     ibdy[i] = itmp[i];
-    ikeep[nold+i] = ibdy[i];
+    ikeep.push_back(ibdy[i]);
   }
 
 } // end, method find_bdy_ind3d
@@ -1389,7 +1389,7 @@ void GGridBox::find_bdy_ind2d(GINT bdyid, GBOOL bunique, GTVector<GSIZET> &ikeep
       assert(FALSE);
   }
    
-istart = 0;
+  istart = 0;
   nbdy   = 0;
   for ( auto e=0; e<gelems_.size(); e++ ) { 
     xnodes = &gelems_[e]->xNodes();
@@ -1400,10 +1400,10 @@ istart = 0;
     for ( auto i=0; i<nind; i++ ) { 
       xp.assign(*xnodes, ind[i]);
       ie      = ind[i] + istart ;
-      if ( bunique ) bexist = ikeep.containsn(ie,nkeep);
+      if ( bunique ) bexist = ktmp.containsn(ie,nkeep);
       if ( !bunique || !bexist ) {
         itmp[nbdy] = ie;
-        mtmp[nbdy] = (*emass)[ind[i]];
+        mtmp[nbdy] = (*emass)[i];
         SET_DSWORD(utmp[nbdy], GElem_base::FACE, bdyid);
         // Check if point is a vertex:
         if ( xp == v[0] ) { // is FUZZY
@@ -1415,8 +1415,8 @@ istart = 0;
         ktmp[nkeep++] = ie; // to store in keep
         nbdy++;
       }
-      istart += nnodes;
     } // end, element's glob bdy
+    istart += nnodes;
   } // end, elem loop
 
   // Fill return arrays:

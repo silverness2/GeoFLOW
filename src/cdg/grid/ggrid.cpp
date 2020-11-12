@@ -777,6 +777,7 @@ void GGrid::do_normals()
   
   // Set domain boundary node normals:
 //do_bdy_normals(dXdXi_, igbdy_, debdy_, bdyMass_, bdyNormals_, idepComp_);
+  idepComp_.resize(igbdy_.size());
   do_face_normals(dXdXi_, igbdy_, debdy_, bdyMass_, bdyNormals_, idepComp_);
    
 } // end of method do_normals
