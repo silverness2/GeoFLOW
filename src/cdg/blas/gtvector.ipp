@@ -212,10 +212,12 @@ n_           (obj.size()),
 icsz_ (_G_VEC_CACHE_SIZE),
 bdatalocal_        (TRUE)
 {
+  const T *dobj = obj.data();
+
   data_ = new T [n_];
   assert(this->data_!= NULLPTR );
   for ( auto j=0; j<obj.capacity(); j++ ) {
-    data_[j] = obj[j];
+    data_[j] = dobj[j];
   }
   gindex_ = obj.gindex_;
   gindex_keep_ = gindex_;
@@ -526,8 +528,10 @@ void GTVector<T>::push_back(const T &obj)
   GLLONG  ibeg    = gindex_.beg();
   GLLONG  iend    = gindex_.end() + 1;
   gindex_(iglob, iloc, ibeg, iend, istride,  ipad);
+  gindex_keep_ = gindex_;
 
   data_[gindex_.end()] = obj;
+
 
   #if defined(_G_AUTO_CREATE_DEV)
     updatedev();
