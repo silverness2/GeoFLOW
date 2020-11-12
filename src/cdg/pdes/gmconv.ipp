@@ -235,6 +235,18 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
 
   // Compute velocity for timestep:
   compute_v(s_, *irhoT, v_); // stored in v_
+cout << "dudt_impl: istage=" << istage_ << " dmin = " << rhoT->min()  << endl;
+cout << "dudt_impl: istage=" << istage_ << " idmax = " << irhoT->amax()  << endl;
+if  ( !irhoT->isfinite() ) 
+  cout << "dudt_impl: stage=" << istage_ << " 1/rhoT bad!" << endl;
+if  ( !v_[0]->isfinite() ) 
+  cout << "dudt_impl: stage=" << istage_ << " v1 bad!" << endl;
+else
+  cout << "dudt_impl: stage=" << istage_ << " v1 good!" << endl;
+if  ( !v_[1]->isfinite() ) 
+  cout << "dudt_impl: stage=" << istage_ << " v2 bad!" << endl;
+else
+  cout << "dudt_impl: stage=" << istage_ << " v1 good!" << endl;
 #if 0
 for ( auto j=0; j<v_.size(); j++ ) {
 cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax()  << endl;
@@ -254,6 +266,10 @@ cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax
 #else
   compute_div(*rhoT, v_, urhstmp_, *dudt[DENSITY]); 
 #endif
+
+  if  ( !dudt[DENSITY]->isfinite() ) 
+    cout << "dudt_impl: stage=" << istage_ << " DENSITY bad!" << endl;
+
   if ( traits_.dofallout ) {
     compute_falloutsrc(*rhoT, qi_, tvi_, -1, urhstmp_, *Ltot);
     GMTK::saxpy<Ftype>(*dudt[DENSITY], 1.0, *Ltot, 1.0);   // += Ltot
@@ -319,6 +335,8 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
 #else
   compute_div(*tmp1, v_, urhstmp_, *dudt[ENERGY]); // Div (h v);
 #endif
+  if  ( !dudt[ENERGY]->isfinite() ) 
+    cout << "dudt_impl: stage=" << istage_ << " ENERGY bad!" << endl;
 
   gstressen_->apply(v_, urhstmp_, *tmp1);          // mu u_i s^{ij},j
  *dudt[ENERGY] -= *tmp1;                           // -= mu u^i s^{ij},j
@@ -367,6 +385,10 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
 #else
     compute_div(*s_[j], v_, urhstmp_, *dudt[j]); 
 #endif
+  if  ( !s_[0]->isfinite() ) 
+    cout << "dudt_impl: stage=" << istage_ << " s1 bad!" << endl;
+  if  ( !s_[1]->isfinite() ) 
+    cout << "dudt_impl: stage=" << istage_ << " s2 bad!" << endl;
     if ( traits_.dofallout || !traits_.dodry ) {
       compute_falloutsrc(*u[j], qliq_, tvi_,-1.0, urhstmp_, *Ltot);
                                                       // hydrometeor fallout src
@@ -477,7 +499,7 @@ void GMConv<TypePack>::step_impl(const Time &t, State &uin, State &uf, State &ub
   bret = TRUE;
   GSIZET j;
   for ( j=0; j<uevolve_.size() && bret; j++ ) {
-     bret = bret && uevolve_ [j]->isfinite();
+//   bret = bret && uevolve_ [j]->isfinite();
   }
   assert(bret && "Solution not finite");
 
