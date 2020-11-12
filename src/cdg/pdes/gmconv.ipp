@@ -475,7 +475,8 @@ void GMConv<TypePack>::step_impl(const Time &t, State &uin, State &uf, State &ub
 
   // Check solution for NaN and Inf:
   bret = TRUE;
-  for ( auto j=0; j<uevolve_.size(); j++ ) {
+  GSIZET j;
+  for ( j=0; j<uevolve_.size() && bret; j++ ) {
      bret = bret && uevolve_ [j]->isfinite();
   }
   assert(bret && "Solution not finite");
