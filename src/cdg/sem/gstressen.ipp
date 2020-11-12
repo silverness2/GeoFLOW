@@ -49,32 +49,37 @@ lambda_              (NULLPTR)
         && "Only a single element type allowed on grid");
   
   if ( traits_.indep_diss) {
-    assert(traits.mu.size() > 0 && traits_.kappa.size()  > 0);
+    assert(traits_.mu.size() > 0 && traits_.kappa.size()  > 0);
     if  ( traits_.Stokes_hyp ) {
-      traits_.zeta.resize(traits.mu.size());
-      traits_.lambda.resize(traits.kappa.size());
-      traits.zeta = traits_.mu * (-2.0/3.0);
-      traits.lambda= traits_.kappa * (-2.0/3.0);
+      traits_.zeta.resize(traits_.mu.size());
+      traits_.lambda.resize(traits_.kappa.size());
+      traits_.zeta  = traits_.mu   ; traits_.zeta   *= -2.0/3.0;
+      traits_.lambda= traits_.kappa; traits_.lambda *= -2.0/3.0;
     } else {
-      assert(traits.zeta.size() > 0 && traits_.lambda.size()  > 0);
+      assert(traits_.zeta.size() > 0 && traits_.lambda.size()  > 0);
+      traits_.zeta   -= (traits_.mu * (2.0/GDIM));
+      traits_.lambda -= (traits_.kappa * (2.0/GDIM));
     }
     mu_     = &traits_.mu;
     zeta_   = &traits_.zeta;
     kappa_  = &traits_.kappa;
     lambda_ = &traits_.lambda;
-  } else {
-    assert(traits.mu.size() > 0 );
+  } else { // kappa, lambda depend only on mu, zeta:
+    assert(traits_.mu.size() > 0 );
     if  ( traits_.Stokes_hyp ) {
-      traits_.zeta.resize(traits.mu.size());
-      traits.zeta = traits_.mu * (-2.0/3.0);
+      traits_.zeta.resize(traits_.mu.size());
+      traits_.zeta = traits_.mu; traits_.zeta *= -2.0/3.0;
     } else {
-      assert(traits.zeta.size() > 0 );
+      assert(traits_.zeta.size() > 0 );
+      traits_.zeta   -= (traits_.mu * (2.0/GDIM));
     }
     mu_     = &traits_.mu;
     zeta_   = &traits_.zeta;
     kappa_  = &traits_.mu;
     lambda_ = &traits_.zeta;
   }
+
+  cout << "GStressen:: mu=" << *mu_ << " zeta=" << *zeta_ << " kappa=" << *kappa_ << " lambda=" << *lambda_ << endl;
 
 } // end of constructor method (1)
 
