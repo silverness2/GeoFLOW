@@ -216,11 +216,21 @@ bdatalocal_        (TRUE)
 
   if ( data_ != NULLPTR ) delete [] data_;
 
+#if 0
+  // Copy all reserved data too:
   data_ = new T [n_];
   assert(this->data_!= NULLPTR );
   for ( auto j=0; j<obj.capacity(); j++ ) {
     data_[j] = dobj[j];
   }
+#else
+  // Don't copy reserved data:
+  data_ = new T [obj.size()];
+  assert(this->data_!= NULLPTR );
+  for ( auto j=0; j<obj.size(); j++ ) {
+    data_[j] = dobj[j];
+  }
+#endif
   gindex_ = obj.gindex_;
   gindex_keep_ = gindex_;
 
