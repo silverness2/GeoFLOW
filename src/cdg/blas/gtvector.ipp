@@ -214,6 +214,8 @@ bdatalocal_        (TRUE)
 {
   const T *dobj = obj.data();
 
+  if ( data_ != NULLPTR ) delete [] data_;
+
   data_ = new T [n_];
   assert(this->data_!= NULLPTR );
   for ( auto j=0; j<obj.capacity(); j++ ) {
