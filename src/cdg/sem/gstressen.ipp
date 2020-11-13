@@ -79,7 +79,6 @@ lambda_              (NULLPTR)
     lambda_ = &traits_.zeta;
   }
 
-  cout << "GStressen:: mu=" << *mu_ << " zeta=" << *zeta_ << " kappa=" << *kappa_ << " lambda=" << *lambda_ << endl;
 
 } // end of constructor method (1)
 
@@ -235,15 +234,15 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
     utmp[1]->pointProd(*kappa_);
     grid_->wderiv(*utmp[1], j+1, TRUE , *utmp[0], *utmp[2]);
     eo -= *utmp[2];
-  }
 
 #if defined(DO_BDY)
     // Do the surface terms for jth component of normal:
-    for ( auto b=0; b<nxy; b++ ) {
+    for ( auto b=0; b<igbdy->size(); b++ ) {
       k = (*igbdy)[b];
       eo[k] += (*utmp[1])[k] * (*normals)[j][b] * (*bmass)[b];
     }
 #endif
+  }
 
   // -= D^{T,j} [ kappa u^i (D_j u_i) ] terms:
   for ( auto j=0; j<nxy; j++ ) { 
@@ -257,15 +256,15 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
     utmp[1]->pointProd(*kappa_);
     grid_->wderiv(*utmp[1], j+1, TRUE , *utmp[0], *utmp[2]);
     eo -= *utmp[2];
-  }
 
 #if defined(DO_BDY)
     // Do the surface terms for jth component of normal:
-    for ( auto b=0; b<nxy; b++ ) {
+    for ( auto b=0; b<igbdy->size(); b++ ) {
       k = (*igbdy)[b];
       eo[k] += (*utmp[1])[k] * (*normals)[j][b] * (*bmass)[b];
     }
 #endif
+  }
 
   // Compute dilitation term:
   //   -= D^{T,j} (lambda (Div u) delta_ij):
@@ -288,15 +287,15 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
     u[j]->pointProd(*utmp[1],*utmp[2]); 
     grid_->wderiv(*utmp[2], j+1, TRUE, *utmp[0], *utmp[3]); 
     eo -= *utmp[3];
-  }
 
 #if defined(DO_BDY)
     // Do the surface terms for jth component of normal:
-    for ( auto b=0; b<nxy; b++ ) {
+    for ( auto b=0; b<igbdy->size(); b++ ) {
       k = (*igbdy)[b];
       eo[k] += (*utmp[2])[k] * (*normals)[j][b] * (*bmass)[b];
     }
 #endif
+  }
 
 } // end of method apply (2)
 
