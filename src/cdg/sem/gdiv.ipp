@@ -84,17 +84,14 @@ void GDivOp<TypePack>::apply(StateComp &d, State &u, State &utmp, StateComp &div
        grid_->wderiv(*utmp[1], j+1, TRUE, *utmp[0], *utmp[2]);
        div -= *utmp[2];
 
-    }
-
 #if defined(DO_BDY)
-    // Global bdy terms:
-    for ( auto b=0; b<igbdy->size(); b++ ) {
-      k = (*igbdy)[b];
-      for ( auto j=0; j<nxy; j++ ) { 
-        div[k] += d[k]*(*u[j])[k] * (*normals)[j][b] * (*bmass)[b];
+      // Global bdy terms:
+      for ( auto b=0; b<igbdy->size(); b++ ) {
+        k = (*igbdy)[b];
+        div[k] += (*utmp[1])[k] * (*normals)[j][b] * (*bmass)[b];
       }
-    }
 #endif
+    }
   }
   else {
 
@@ -153,12 +150,10 @@ void GDivOp<TypePack>::apply(State &u, State &utmp, StateComp &div)
     for ( auto j=0; j<nxy; j++ ) { 
        grid_->wderiv(*u[j], j+1, TRUE, *utmp[0], *utmp[1]);
        div -= *utmp[1];
-    }
 
 #if defined(DO_BDY)
-    for ( auto b=0; b<igbdy->size(); b++ ) {
-      k = (*igbdy)[b];
-      for ( auto j=0; j<nxy; j++ ) { 
+      for ( auto b=0; b<igbdy->size(); b++ ) {
+        k = (*igbdy)[b];
         div[k] += (*u[j])[k] * (*normals)[j][b] * (*bmass)[b];
       }
     }
