@@ -1735,7 +1735,7 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        for ( ic=0; ic<GDIM && fabs(xp[ic]) < tiny; ic++ );
        assert(ic < GDIM); // no normal components > 0
        for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
-       depComp[j] = ip;
+       depComp[j] = ic;
      }
    }
    else if ( this->gtype_ == GE_DEFORMED 
