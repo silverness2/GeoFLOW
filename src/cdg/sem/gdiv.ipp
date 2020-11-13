@@ -88,8 +88,8 @@ void GDivOp<TypePack>::apply(StateComp &d, State &u, State &utmp, StateComp &div
 
 #if defined(DO_BDY)
     // Global bdy terms:
-    for ( auto b=0; b<gibdy->size(); b++ ) {
-      k = (*gibdy)[b];
+    for ( auto b=0; b<igbdy->size(); b++ ) {
+      k = (*igbdy)[b];
       for ( auto j=0; j<nxy; j++ ) { 
         div[k] += d[k]*(*u[j])[k] * (*normals)[j][b] * (*bmass)[b];
       }
@@ -156,8 +156,8 @@ void GDivOp<TypePack>::apply(State &u, State &utmp, StateComp &div)
     }
 
 #if defined(DO_BDY)
-    for ( auto b=0; b<gibdy->size(); b++ ) {
-      k = (*gibdy)[b];
+    for ( auto b=0; b<igbdy->size(); b++ ) {
+      k = (*igbdy)[b];
       for ( auto j=0; j<nxy; j++ ) { 
         div[k] += (*u[j])[k] * (*normals)[j][b] * (*bmass)[b];
       }
