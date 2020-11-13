@@ -224,6 +224,7 @@ inline  GINT                szrhstmp();
         GINT                nevolve_;       // num StateComp's evolved
         GINT                nhydro_;        // num hydrometeors
         GINT                nmoist_;        // number of moist components
+        GSIZET              icycle_;        // internal cycle number
         GStepperType        isteptype_;     // stepper type
         GTVector<GFTYPE>    tcoeffs_;       // coeffs for time deriv
         GTVector<GFTYPE>    acoeffs_;       // coeffs for NL adv term

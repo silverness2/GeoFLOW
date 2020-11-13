@@ -25,6 +25,7 @@ istage_                      (0),
 nevolve_                     (0),
 nhydro_                      (0),
 nmoist_                      (0),
+icycle_                      (0),
 gmass_                 (NULLPTR),
 gimass_                (NULLPTR),
 /*
@@ -235,23 +236,6 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
 
   // Compute velocity for timestep:
   compute_v(s_, *irhoT, v_); // stored in v_
-cout << "dudt_impl: istage=" << istage_ << " dmin = " << rhoT->min()  << endl;
-cout << "dudt_impl: istage=" << istage_ << " idmax = " << irhoT->amax()  << endl;
-if  ( !irhoT->isfinite() ) 
-  cout << "dudt_impl: stage=" << istage_ << " 1/rhoT bad!" << endl;
-if  ( !v_[0]->isfinite() ) 
-  cout << "dudt_impl: stage=" << istage_ << " v1 bad!" << endl;
-else
-  cout << "dudt_impl: stage=" << istage_ << " v1 good!" << endl;
-if  ( !v_[1]->isfinite() ) 
-  cout << "dudt_impl: stage=" << istage_ << " v2 bad!" << endl;
-else
-  cout << "dudt_impl: stage=" << istage_ << " v1 good!" << endl;
-#if 0
-for ( auto j=0; j<v_.size(); j++ ) {
-cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax()  << endl;
-}
-#endif
   
   // Compute all operators as though they are on the LHS, then
   // change the sign and add Mass at the end....
@@ -266,9 +250,6 @@ cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax
 #else
   compute_div(*rhoT, v_, urhstmp_, *dudt[DENSITY]); 
 #endif
-
-  if  ( !dudt[DENSITY]->isfinite() ) 
-    cout << "dudt_impl: stage=" << istage_ << " DENSITY bad!" << endl;
 
   if ( traits_.dofallout ) {
     compute_falloutsrc(*rhoT, qi_, tvi_, -1, urhstmp_, *Ltot);
@@ -321,13 +302,6 @@ cout << "dudt_impl: istage=" << istage_ << " v[" << j << "]max= " << v_[j]->amax
     geoflow::compute_p(*T, *rhoT, *u[VAPOR], RV, *tmp1); // partial pressure for vapor
    *p += *tmp1;
   }
-#if 0
-cout << "dudt_impl: istage=" << istage_ << " dmax = " << rhoT->amax()  << endl;
-cout << "dudt_impl: istage=" << istage_ << " pmax = " << p->amax()  << endl;
-cout << "dudt_impl: istage=" << istage_ << " emax = " << e->amax()  << endl;
-cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
-#endif
-
 
   GMTK::saxpy<Ftype>(*tmp1, *e, 1.0, *p, 1.0);     // h = p+e, enthalpy density
 #if defined(USE_DIVOP)
@@ -335,8 +309,6 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
 #else
   compute_div(*tmp1, v_, urhstmp_, *dudt[ENERGY]); // Div (h v);
 #endif
-  if  ( !dudt[ENERGY]->isfinite() ) 
-    cout << "dudt_impl: stage=" << istage_ << " ENERGY bad!" << endl;
 
   gstressen_->apply(v_, urhstmp_, *tmp1);          // mu u_i s^{ij},j
  *dudt[ENERGY] -= *tmp1;                           // -= mu u^i s^{ij},j
@@ -385,10 +357,6 @@ cout << "dudt_impl: istage=" << istage_ << " Tmax = " << T->amax()  << endl;
 #else
     compute_div(*s_[j], v_, urhstmp_, *dudt[j]); 
 #endif
-  if  ( !s_[0]->isfinite() ) 
-    cout << "dudt_impl: stage=" << istage_ << " s1 bad!" << endl;
-  if  ( !s_[1]->isfinite() ) 
-    cout << "dudt_impl: stage=" << istage_ << " s2 bad!" << endl;
     if ( traits_.dofallout || !traits_.dodry ) {
       compute_falloutsrc(*u[j], qliq_, tvi_,-1.0, urhstmp_, *Ltot);
                                                       // hydrometeor fallout src
@@ -497,11 +465,12 @@ void GMConv<TypePack>::step_impl(const Time &t, State &uin, State &uf, State &ub
 
   // Check solution for NaN and Inf:
   bret = TRUE;
-  GSIZET j;
-  for ( j=0; j<uevolve_.size() && bret; j++ ) {
-//   bret = bret && uevolve_ [j]->isfinite();
+  for ( auto j=0; j<uevolve_.size() && bret; j++ ) {
+    bret = bret && uevolve_ [j]->isfinite();
   }
   assert(bret && "Solution not finite");
+
+  icycle_++;
 
 } // end of method step_impl (1)
 
@@ -932,7 +901,6 @@ void GMConv<TypePack>::apply_bc_impl(const Time &t, State &u, State &ub)
       (*updatelist)[k][j]->update(*grid_, this->stateinfo(), ttime, utmp_, u, ub);
     }
   }
-
 } // end of method apply_bc_impl
 
 
@@ -1446,20 +1414,18 @@ void GMConv<TypePack>::assign_helpers(const State &u, const State &uf)
 template<typename TypePack>
 GINT GMConv<TypePack>::szrhstmp()
 {
-   GINT       sum = 0;
-// GGridIcos *icos = dynamic_cast<GGridIcos*>(grid_);
-   GGridBox  *box  = dynamic_cast <GGridBox*>(grid_);
+  GINT       sum = 0;
+  GGridBox  *box = dynamic_cast <GGridBox*>(grid_);
    
-   // Get tmp size for operators:
-   if ( box ) {
-     sum += box->gtype() == GE_DEFORMED ? 2*GDIM : GDIM;
-   }
-   else {
-     sum += 2*GDIM;
-   }
+  // Get tmp size for operators:
+  if ( box ) {
+    sum += box->gtype() == GE_DEFORMED ? 2*GDIM : GDIM;
+  }
+  else {
+    sum += 2*GDIM;
+  }
   sum += GDIM + 3; // size for compute_* methods
   sum += 6;        // size for misc tmp space in dudt_impl
-
 
   return sum;
 
