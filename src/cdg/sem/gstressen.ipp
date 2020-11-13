@@ -214,7 +214,7 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
   GTVector<GSIZET>          *igbdy   = &grid_->igbdy() ;
   GTVector<GTVector<Ftype>> *normals = &grid_->bdyNormals();
   StateComp                 *mass    =  grid_->massop().data();
-  StateComp                 *bmass   = &grid_->faceMass();
+  StateComp                 *bmass   = &grid_->bdyMass();
 
 
   // eo -= D^{T,j} [ kappa u^i [D_i u_j + Dj u_i) 
