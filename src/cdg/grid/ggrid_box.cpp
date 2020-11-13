@@ -1727,10 +1727,16 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        ip = id % 2;
        p1 = 0.0;
        p1[ip] = dXdXi(ip,0)[ib]; 
-       xm = id == 0 || id == 1 ? -1.0 : 1.0;
+       xm = id == 0 || id == 3 ? -1.0 : 1.0;
+#if 0
        kp.cross(p1, xp);   // xp = k X p1
        face_mass[j] *= xp.mag(); // |k X d_X_/dxi_ip| is face Jac
        xp.unit(); xp *= xm;
+#else
+       face_mass[j] *= p1[ip];
+       xp = 0.0;
+       xp[(id+1)%2] = xm; 
+#endif
 //cout << "do_face_normals2d: id=" << id << " it=" << it << " norm=" << xp << " p1=" << p1 << " ip=" << ip << endl; 
        for ( ic=0; ic<GDIM && fabs(xp[ic]) < tiny; ic++ );
        assert(ic < GDIM); // no normal components > 0
