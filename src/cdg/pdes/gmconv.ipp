@@ -762,7 +762,7 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
   }
 
   typename GDivOp<TypePack>::Traits trgdiv;
-  trgdiv.docollocation = TRUE;
+  trgdiv.docollocation = FALSE;
   if ( traits_.bconserved ) {
     assert(FALSE && "Conservation not yet supported");
     gpdv_  = new GpdV<TypePack>(*grid_);
