@@ -466,7 +466,7 @@ void GMConv<TypePack>::step_impl(const Time &t, State &uin, State &uf, State &ub
   // Check solution for NaN and Inf:
   bret = TRUE;
   for ( auto j=0; j<uevolve_.size() && bret; j++ ) {
-    bret = bret && uevolve_ [j]->isfinite();
+//  bret = bret && uevolve_ [j]->isfinite();
   }
   assert(bret && "Solution not finite");
 
@@ -682,7 +682,7 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
   GExRKStepper<GFTYPE>::Traits rktraits;
   switch ( traits_.isteptype ) {
     case GSTEPPER_EXRK:
-#if 0
+#if 1
       rktraits.bssp   = TRUE;
       rktraits.norder = 3;
       rktraits.nstage = 4;
@@ -744,9 +744,10 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
 //ghelm_      = new GHelmholtz(*grid_);
   
   typename GStressEnOp<TypePack>::Traits trstress;
-  trstress.Stokes_hyp = TRUE;
-  trstress.indep_diss = TRUE;
+  trstress.Stokes_hyp = FALSE;
+  trstress.indep_diss = FALSE;
   trstress.mu   .resize(nu_   .size());  trstress.mu    = nu_;
+  trstress.zeta .resize(nu_   .size());  trstress.zeta  = 0.0; 
   trstress.kappa.resize(kappa_.size());  trstress.kappa = kappa_;
   gstressen_  = new GStressEnOp<TypePack>(trstress, *grid_);
 
