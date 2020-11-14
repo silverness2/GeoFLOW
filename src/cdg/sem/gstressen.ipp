@@ -57,8 +57,8 @@ lambda_              (NULLPTR)
       traits_.lambda= traits_.kappa; traits_.lambda *= -2.0/3.0;
     } else {
       assert(traits_.zeta.size() > 0 && traits_.lambda.size()  > 0);
-      traits_.zeta   -= (traits_.mu * (2.0/GDIM));
-      traits_.lambda -= (traits_.kappa * (2.0/GDIM));
+      traits_.zeta   -= (traits_.mu * (1.0/GDIM));
+      traits_.lambda -= (traits_.kappa * (1.0/GDIM));
     }
     mu_     = &traits_.mu;
     zeta_   = &traits_.zeta;
@@ -71,7 +71,7 @@ lambda_              (NULLPTR)
       traits_.zeta = traits_.mu; traits_.zeta *= -2.0/3.0;
     } else {
       assert(traits_.zeta.size() > 0 );
-      traits_.zeta   -= (traits_.mu * (2.0/GDIM));
+      traits_.zeta   -= (traits_.mu * (1.0/GDIM));
     }
     mu_     = &traits_.mu;
     zeta_   = &traits_.zeta;
