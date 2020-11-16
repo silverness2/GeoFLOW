@@ -164,7 +164,6 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
 #endif
   }
 
-
   // Compute dilitation term:
   //   -D^{T,j} (zeta (Div u) delta_ij):
   grid_->deriv(*u[0]  , 1, *utmp[0], *utmp[1]); // store Div in utmp[1]]
@@ -282,7 +281,7 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
   utmp[1]->pointProd(*lambda_);
 
   // Now compute
-  //   D^{T,j} [lambda u^i (Div u) delta_ij]:
+  //  -= D^{T,j} [lambda u^i (Div u) delta_ij]:
   for ( auto j=0; j<nxy; j++ ) { 
     u[j]->pointProd(*utmp[1],*utmp[2]); 
     grid_->wderiv(*utmp[2], j+1, TRUE, *utmp[0], *utmp[3]); 
