@@ -93,7 +93,6 @@
 #include "gmtk.hpp"
 #include "pdeint/equation_base.hpp"
 
-#define USE_DIVOP
 
 using namespace geoflow::pdeint;
 using namespace std;
@@ -136,6 +135,10 @@ public:
           GBOOL           usebase     = TRUE;   // use hydrostatic base state?
           GBOOL           variabledt  = FALSE;  // use variable timestep?
           GBOOL           bvarvterm   = FALSE;  // time dep term velocities?
+          GBOOL           usedivop    = TRUE;   // use divergence operator?
+          GBOOL           divopcolloc = TRUE;   // use collocation in GDivOp?
+          GBOOL           Stokeshyp   = FALSE;  // use Stokes hypothesis
+          GBOOL           bindepdiss  = FALSE;  // indep. mom & energy diss?
           GINT            nstate      = GDIM+2; // no. vars in state vec
           GINT            nsolve      = GDIM+2; // no. vars to solve for
           GINT            nlsector    = 0;      // no. vars in liq-sector
@@ -147,8 +150,10 @@ public:
           GFTYPE          Ts_base     = 300.0;  // base state surf temp (K)
           GFTYPE          P0_base     = 1000.0; // base state ref pressure (mb)
           GFTYPE          courant     = 0.5;    // Courant factor
-          GFTYPE          nu          = 0.0;    // viscosity constant
-          GFTYPE          kappa       = 0.0;    // viscosity constant
+          GFTYPE          nu          = 0.0;    // shear viscosity constant
+          GFTYPE          kappa       = 0.0;    // energy-shear visc constant
+          GFTYPE          zeta        = 0.0;    // mom bulk viscosity constant
+          GFTYPE          lambda      = 0.0;    // energy bulk shear visc const
           GTVector<GINT>  iforced;              // state comps to force
           GTVector<Ftype> omega;                // rotation rate vector
           GString         ssteptype;            // stepping method

@@ -245,11 +245,10 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   // Total density RHS:
   // *************************************************************
 
-#if defined(USE_DIVOP)
-  gdiv_->apply(*rhoT, v_, urhstmp_, *dudt[DENSITY]); 
-#else
-  compute_div(*rhoT, v_, urhstmp_, *dudt[DENSITY]); 
-#endif
+  if ( traits_.usedivop )   
+    gdiv_->apply(*rhoT, v_, urhstmp_, *dudt[DENSITY]); 
+  else
+    compute_div(*rhoT, v_, urhstmp_, *dudt[DENSITY]); 
 
   if ( traits_.dofallout ) {
     compute_falloutsrc(*rhoT, qi_, tvi_, -1, urhstmp_, *Ltot);
@@ -268,15 +267,16 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
     gadvect_->apply(*qi_[j], v_, urhstmp_, *dudt[VAPOR+j]); // apply advection
     compute_vpref(*tvi_[j], W_);
     *tmp1 = (*qi_[j]) * (*rhoT);                // q_i rhoT
-#if defined(USE_DIVOP)
-    gdiv_->apply(*tmp1, W_, urhstmp_, *tmp2); 
-    *tmp2 *= *irhoT;                            // Div(q_i rhoT W)/rhoT
-    *dudt[VAPOR+j] = *tmp2;                    // += Div(q_i rhoT W)/rhoT
-#else
-    compute_div(*tmp1, W_, urhstmp_, *tmp2);    // Div(q_i rhoT W)
-    *tmp2 *= *irhoT;                            // Div(q_i rhoT W)/rhoT
-    *dudt[VAPOR+j] = *tmp2;                     // += Div(q_i rhoT W)/rhoT
-#endif
+    if ( traits_.usedivop ) {
+      gdiv_->apply(*tmp1, W_, urhstmp_, *tmp2); 
+     *tmp2 *= *irhoT;                           // Div(q_i rhoT W)/rhoT
+     *dudt[VAPOR+j] = *tmp2;                    // += Div(q_i rhoT W)/rhoT
+    }
+    else {
+      compute_div(*tmp1, W_, urhstmp_, *tmp2);  // Div(q_i rhoT W)
+     *tmp2 *= *irhoT;                           // Div(q_i rhoT W)/rhoT
+     *dudt[VAPOR+j] = *tmp2;                    // += Div(q_i rhoT W)/rhoT
+    }
     *tmp1  = (*Ltot) * (*irhoT); *tmp1 *= (*qi_[j]);// q_i/rhoT Ltot
     *dudt[VAPOR+j] -= *tmp1;                    // += -q_i/rhoT Ltot
     if ( uf[VAPOR+j] != NULLPTR ) {             // add in sdot(s_i)/rhoT
@@ -304,11 +304,11 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   }
 
   GMTK::saxpy<Ftype>(*tmp1, *e, 1.0, *p, 1.0);     // h = p+e, enthalpy density
-#if defined(USE_DIVOP)
-  gdiv_->apply(*tmp1, v_, urhstmp_, *dudt[ENERGY]); 
-#else
-  compute_div(*tmp1, v_, urhstmp_, *dudt[ENERGY]); // Div (h v);
-#endif
+
+  if ( traits_.usedivop ) 
+    gdiv_->apply(*tmp1, v_, urhstmp_, *dudt[ENERGY]); 
+  else
+    compute_div(*tmp1, v_, urhstmp_, *dudt[ENERGY]); // Div (h v);
 
   gstressen_->apply(v_, urhstmp_, *tmp1);          // mu u_i s^{ij},j
  *dudt[ENERGY] -= *tmp1;                           // -= mu u^i s^{ij},j
@@ -352,11 +352,12 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
   }
   Mass = grid_->massop().data();
   for ( auto j=0; j<v_.size(); j++ ) { // for each component
-#if defined(USE_DIVOP)
-    gdiv_->apply(*s_[j], v_, urhstmp_, *dudt[j]); 
-#else
-    compute_div(*s_[j], v_, urhstmp_, *dudt[j]); 
-#endif
+
+    if ( traits_.usedivop )   
+      gdiv_->apply(*s_[j], v_, urhstmp_, *dudt[j]); 
+    else
+      compute_div(*s_[j], v_, urhstmp_, *dudt[j]); 
+
     if ( traits_.dofallout || !traits_.dodry ) {
       compute_falloutsrc(*u[j], qliq_, tvi_,-1.0, urhstmp_, *Ltot);
                                                       // hydrometeor fallout src
@@ -744,11 +745,12 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
 //ghelm_      = new GHelmholtz(*grid_);
   
   typename GStressEnOp<TypePack>::Traits trstress;
-  trstress.Stokes_hyp = FALSE;
-  trstress.indep_diss = FALSE;
-  trstress.mu   .resize(nu_   .size());  trstress.mu    = nu_;
-  trstress.zeta .resize(nu_   .size());  trstress.zeta  = 0.0; 
-  trstress.kappa.resize(kappa_.size());  trstress.kappa = kappa_;
+  trstress.Stokes_hyp = traits_.Stokeshyp;
+  trstress.indep_diss = traits_.bindepdiss;
+  trstress.mu    .resize(nu_   .size());  trstress.mu    = nu_;
+  trstress.zeta  .resize(nu_   .size());  trstress.zeta  = traits_.zeta; 
+  trstress.kappa .resize(kappa_.size());  trstress.kappa = kappa_;
+  trstress.lambda.resize(kappa_.size());  trstress.lambda= traits_.lambda;
   gstressen_  = new GStressEnOp<TypePack>(trstress, *grid_);
 
   if ( traits_.isteptype ==  GSTEPPER_EXRK ) {
@@ -762,7 +764,7 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
   }
 
   typename GDivOp<TypePack>::Traits trgdiv;
-  trgdiv.docollocation = FALSE;
+  trgdiv.docollocation = traits_.divopcolloc;
   if ( traits_.bconserved ) {
     assert(FALSE && "Conservation not yet supported");
     gpdv_  = new GpdV<TypePack>(*grid_);
@@ -1241,11 +1243,10 @@ void GMConv<TypePack>::compute_falloutsrc(StateComp &g, State &qi, State &tvi, G
      compute_vpref(*tvi[j], W_);
 
      // Compute i_th contribution to source term:
-#if defined(USE_DIVOP)
-     gdiv_->apply(*qg, W_, utmp, *div); 
-#else
-     compute_div(*qg, W_, utmp, *div);
-#endif
+     if ( traits_.usedivop ) 
+       gdiv_->apply(*qg, W_, utmp, *div); 
+     else 
+       compute_div(*qg, W_, utmp, *div);
      r += *div;
    }
 
