@@ -1410,7 +1410,7 @@ void GGridBox::find_bdy_ind2d(GINT bdyid, GBOOL bunique, GTVector<GSIZET> &ikeep
           SET_DSWORD(utmp[nbdy], GElem_base::VERTEX, iv[bdyid][0]);
         }
         if ( xp == v[1] ) { // is FUZZY
-          SET_DSWORD(utmp[nbdy], GElem_base::VERTEX, iv[bdyid][0]);
+          SET_DSWORD(utmp[nbdy], GElem_base::VERTEX, iv[bdyid][1]);
         }
         ktmp[nkeep++] = ie; // to store in keep
         nbdy++;
@@ -1755,11 +1755,11 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        face_mass[j] *= xp.mag(); // |k X d_X_/dxi_ip| is face Jac
        xp.unit(); xp *= xm;
 #endif
-//cout << "do_face_normals2d: j=" << j << " id=" << id << " it=" << it << " norm=" << xp << endl; 
        for ( ic=0; ic<GDIM && fabs(xp[ic]) < tiny; ic++ );
        assert(ic < GDIM); // no normal components > 0
        for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
        depComp[j] = ic;
+cout << "do_face_normals2d: j=" << j << " id=" << id << " it=" << it << " norm=" << xp << " idep=" << ic << endl; 
      }
    }
    else if ( this->gtype_ == GE_DEFORMED 
