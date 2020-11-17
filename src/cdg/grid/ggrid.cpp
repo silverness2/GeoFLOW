@@ -40,7 +40,7 @@ GGrid::GGrid(const geoflow::tbox::PropertyTree &ptree, GTVector<GNBasis<GCTYPE,G
 :
 bInitialized_                   (FALSE),
 bapplybc_                       (FALSE),
-do_face_normals_                 (TRUE),
+do_face_normals_                (FALSE),
 nprocs_        (GComm::WorldSize(comm)),
 ngelems_                            (0),
 irank_         (GComm::WorldRank(comm)),
@@ -1210,16 +1210,17 @@ void GGrid::init_local_face_info()
 {
   GBOOL                        bret;
   GSIZET                       ibeg, iend; // beg, end indices for global array
-  GTVector<GINT>              *iebdy;      // domain bdy indices
-  GTVector<GINT>              itmp; 
-  GTVector<GUINT>             utmp; 
+  GTVector<GINT>               itmp; 
+  GTVector<GUINT>              utmp; 
   GTVector<GTVector<GINT>>    *ieface;     // element face indices
   GTVector<GTVector<GUINT>>   *deface;     // element face node description
-  GTVector<GTVector<GFTYPE>> *efacemass;   // element face weights
-  GTVector<GFTYPE>            ftmp; 
+  GTVector<GTVector<GFTYPE>>  *efacemass;  // element face weights
+  GTVector<GFTYPE>             ftmp; 
 
   GSIZET  m, n, nn; 
   GSIZET        ig; // index into global array
+
+  if ( !do_face_normals_ ) return;
 
   n = 0;
   for ( auto e=0; e<gelems_.size(); e++ ) { // get global # face nodes
@@ -1276,8 +1277,6 @@ void GGrid::init_local_face_info()
     gdeface_ [j] = utmp[j];
     faceMass_[j] = ftmp[j];
   }
-
-  
 
 
 } // end, init_local_face_info
