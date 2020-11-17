@@ -21,18 +21,20 @@ GExRKStepper<T>::GExRKStepper(Traits &traits, GGrid &grid)
 :
 bRHS_                 (FALSE),
 bapplybc_             (FALSE),
-bSSP_           (traits.bssp),
+bSSP_           (traits.bSSP),
 norder_       (traits.norder),
 nstage_       (traits.nstage),
 grid_                 (&grid),
 ggfx_               (NULLPTR)
 {
   if ( !bSSP_ ) {
-    butcher_ .setOrder(norder_);
+    butcher_ .setOrder(norder_); // nstage_ is ignored
   }
   else {
-    assert(norder_==3 && nstage_==4);
+    assert( (norder_==3 && nstage_==4)
+        ||  (norder_==3 && nstage_==3) );
   }
+
 } // end of constructor method
 
 
@@ -72,7 +74,7 @@ void GExRKStepper<T>::step(const Time &t, const State &uin, State &uf, State &ub
 
   assert(bRHS_  && "(1) RHS callback not set");
   if ( bSSP_ ) {
-    step_s(t, uin, uf, ub, dt, tmp, uout);
+    step_ssp(t, uin, uf, ub, dt, tmp, uout);
   }
   else {
     step_b(t, uin, uf, ub, dt, tmp, uout);
@@ -103,7 +105,7 @@ void GExRKStepper<T>::step(const Time &t, State &uin, State &uf, State &ub,
 {
   assert(bRHS_  && "(2) RHS callback not set");
   if ( bSSP_ ) {
-    step_b(t, uin, uf, ub, dt, tmp);
+    step_ssp(t, uin, uf, ub, dt, tmp);
   }
   else {
     step_b(t, uin, uf, ub, dt, tmp);
@@ -374,12 +376,14 @@ void GExRKStepper<T>::resize(GINT nstate)
 } // end of method resize
 
 
-#if 0
+
 //**********************************************************************************
 //**********************************************************************************
-// METHOD     : step_s (1)
+// METHOD     : step_ssp (1)
 // DESCRIPTION: Computes one SSP RK step at specified timestep. Note: callback 
 //              to RHS-computation function must be set prior to entry.
+//              The input state is not overwritten. This is a driver for specific
+//              methods that handle different norder_ and nstage_.
 //
 //
 // ARGUMENTS  : t    : time, t^n, for state, uin=u^n
@@ -394,7 +398,43 @@ void GExRKStepper<T>::resize(GINT nstate)
 // RETURNS    : none.
 //**********************************************************************************
 template<typename T>
-void GExRKStepper<T>::step_s(const Time &t, const State &uin, State &uf, State &ub,  
+void GExRKStepper<T>::step_ssp(const Time &t, const State &uin, State &uf, State &ub,  
+                           const Time &dt, State &tmp, State &uout)
+{
+  if      ( norder_ == 3 && nstage_ == 3 ) {
+    step_ssp33(t, uin, uf, ub, dt, tmp, uout);
+  }
+  else if ( norder_ == 3 && nstage_ == 4 ) {
+    step_ssp34(t, uin, uf, ub, dt, tmp, uout);
+  }
+  else {
+    assert(FALSE);
+  }
+
+} // end, method step_ssp (1)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD     : step_s34
+// DESCRIPTION: Computes one SSP RK34 (3rd order, 4 stages) step at 
+//              specified timestep. Note: callback to RHS-computation 
+//              function must be set prior to entry.
+//
+//
+// ARGUMENTS  : t    : time, t^n, for state, uin=u^n
+//              uin  : initial (entry) state, u^n
+//              uf   : forcing tendency
+//              ub   : bdy tendency
+//              dt   : time step
+//              tmp  : tmp space. Must have at least NState*(M+1)+1 vectors,
+//                     where NState is the number of state vectors.
+//              uout : updated state, at t^n+1
+//               
+// RETURNS    : none.
+//**********************************************************************************
+template<typename T>
+void GExRKStepper<T>::step_ssp34(const Time &t, const State &uin, State &uf, State &ub,  
                            const Time &dt, State &tmp, State &uout)
 {
 
@@ -474,15 +514,15 @@ void GExRKStepper<T>::step_s(const Time &t, const State &uin, State &uf, State &
     }
   }
   
-} // end of method step_s (1)
-#endif
+} // end of method step_ssp34
 
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD     : step_s (1)
-// DESCRIPTION: Computes one SSP RK step at specified timestep. Note: callback 
-//              to RHS-computation function must be set prior to entry.
+// METHOD     : step_ssp33 (1)
+// DESCRIPTION: Computes one SSP RK3e (3rd order, 3 stages) step at 
+//              specified timestep. Note: callback to RHS-computation 
+//              function must be set prior to entry.
 //
 //
 // ARGUMENTS  : t    : time, t^n, for state, uin=u^n
@@ -497,7 +537,7 @@ void GExRKStepper<T>::step_s(const Time &t, const State &uin, State &uf, State &
 // RETURNS    : none.
 //**********************************************************************************
 template<typename T>
-void GExRKStepper<T>::step_s(const Time &t, const State &uin, State &uf, State &ub,  
+void GExRKStepper<T>::step_ssp33(const Time &t, const State &uin, State &uf, State &ub,  
                            const Time &dt, State &tmp, State &uout)
 {
 
@@ -558,14 +598,16 @@ void GExRKStepper<T>::step_s(const Time &t, const State &uin, State &uf, State &
     }
   }
 
-} // end of method step_s (1)
+} // end of method step_ssp33
+
 
 //**********************************************************************************
 //**********************************************************************************
-// METHOD     : step_s (2)
+// METHOD     : step_ssp (2)
 // DESCRIPTION: Computes one SSP RK step at specified timestep. Note: callback 
 //              to RHS-computation function must be set prior to entry.
-//              The input state is overwritten.
+//              The input state is overwritten. This is a driver for specific
+//              methods that handle different norder_ and nstage_.
 //
 // ARGUMENTS  : t    : time, t^n, for state, uin=u^n
 //              uin  : initial (entry) state, u^n
@@ -576,13 +618,13 @@ void GExRKStepper<T>::step_s(const Time &t, const State &uin, State &uf, State &
 // RETURNS    : none.
 //**********************************************************************************
 template<typename T>
-void GExRKStepper<T>::step_s(const Time &t, State &uin, State &uf, State &ub,  
+void GExRKStepper<T>::step_ssp(const Time &t, State &uin, State &uf, State &ub,  
                            const Time &dt, State &tmp)
 {
 
-  assert(FALSE && "Not ready yet");
+  assert(FALSE && "Not implemented yet");
 
-} // end of method step_s (2)
+} // end of method step_ssp (2)
 
 
 //**********************************************************************************
