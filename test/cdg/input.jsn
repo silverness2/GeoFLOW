@@ -84,7 +84,9 @@
   "stepper_props": {
     "stepping_method"  : "GSTEPPER_EXRK",
     "time_deriv_order" : 2,
+    "nstage"           : 2,
     "extrap_order"     : 2,
+    "stab_preserving"  : false,
     "variable_dt"      : true,
     "courant"          : 0.1
   },
