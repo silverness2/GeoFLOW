@@ -56,15 +56,17 @@ public:
 
   template<typename U=T> typename std::enable_if<std::is_floating_point<U>::value, GBOOL>::type
   operator==(const GTPoint<T> &pp) // Add 'fuzziness' to equality check
-  { GBOOL b;     
-    for ( GINT i=0,b=TRUE;i<gdim_;i++) { 
-      b = b && FUZZYEQ(*px_[i], pp[i], eps_); }  // do check for 'equality'
+  { GBOOL b=TRUE, f;     
+    for ( auto i=0;i<gdim_;i++) { 
+      f = FUZZYEQ(*px_[i], pp[i], eps_);
+      b = b && f; 
+    }  // do check for 'equality'
     return b; }
 
   template<typename U=T> typename std::enable_if<!std::is_floating_point<U>::value, GBOOL>::type
   operator==(const GTPoint<T> &pp) // Add 'fuzziness' to equality check
-  { GBOOL b; GTPoint<T> pq = pp;
-    for ( GINT i=0,b=TRUE;i<gdim_;i++) b = b && ( pq[i] == *px_[i] );
+  { GBOOL b=TRUE; GTPoint<T> pq = pp;
+    for ( auto i=0;i<gdim_;i++) b = b && ( pq[i] == *px_[i] );
     return b; }
 
   template<typename U=T> typename std::enable_if<std::is_floating_point<U>::value, T>::type
