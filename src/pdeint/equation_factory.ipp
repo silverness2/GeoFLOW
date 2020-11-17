@@ -52,6 +52,8 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
                                   + (btraits.bpureadv ? GDIM : 0);
                 btraits.courant   = stp_ptree.getValue<double>("courant",0.5);
                 btraits.itorder   = stp_ptree.getValue<int>   ("time_deriv_order",4);
+                btraits.nstage    = stp_ptree.getValue<int>   ("nstage",4);
+                btraits.bSSP      = stp_ptree.getValue<int>   ("stab_preserving",false);
                 btraits.inorder   = stp_ptree.getValue<int>   ("extrap_order",2);
                 btraits.ssteptype = stp_ptree.getValue<std::string>
                                                              ("stepping_method","GSTEPPER_EXRK");
@@ -98,6 +100,8 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
                 ctraits.variabledt  = stp_ptree.getValue<bool>  ("variable_dt",false);
                 ctraits.bvarvterm   = stp_ptree.getValue<bool>  ("variable_term_vel",false);
                 ctraits.itorder     = stp_ptree.getValue<int>   ("time_deriv_order",4);
+                ctraits.nstage      = stp_ptree.getValue<int>   ("nstage",4);
+                ctraits.bSSP        = stp_ptree.getValue<int>   ("stab_preserving",false);
                 ctraits.inorder     = stp_ptree.getValue<int>   ("extrap_order",2);
                 ctraits.courant     = stp_ptree.getValue<double>("courant",0.5);
                 ctraits.ssteptype   = stp_ptree.getValue<std::string>
