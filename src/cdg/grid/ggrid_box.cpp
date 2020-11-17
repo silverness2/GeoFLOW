@@ -1046,6 +1046,7 @@ void GGridBox::config_bdy(const PropertyTree           &ptree,
     }
   }
 
+
 } // end of method config_bdy
 
 
@@ -1337,7 +1338,6 @@ void GGridBox::find_bdy_ind3d(GINT bdyid, GBOOL bunique, GTVector<GSIZET> &ikeep
 //          ibdy     : array of indices into xNodes that comprise this boundary
 // RETURNS: none.
 //**********************************************************************************
-//    find_bdy_ind2d(j, TRUE, ikeep, mtmp, utmp, itmp); // unique bdy node ids only
 void GGridBox::find_bdy_ind2d(GINT bdyid, GBOOL bunique, GTVector<GSIZET> &ikeep,
                               GTVector<GFTYPE> &mbdy, GTVector<GUINT> &debdy, 
                               GTVector<GSIZET> &ibdy)
@@ -1755,7 +1755,7 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        face_mass[j] *= xp.mag(); // |k X d_X_/dxi_ip| is face Jac
        xp.unit(); xp *= xm;
 #endif
-//cout << "do_face_normals2d: id=" << id << " it=" << it << " norm=" << xp << " p1=" << p1 << " ip=" << ip << endl; 
+//cout << "do_face_normals2d: j=" << j << " id=" << id << " it=" << it << " norm=" << xp << endl; 
        for ( ic=0; ic<GDIM && fabs(xp[ic]) < tiny; ic++ );
        assert(ic < GDIM); // no normal components > 0
        for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
@@ -1859,15 +1859,14 @@ void GGridBox::do_face_normals3d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
 // METHOD : do_bdy_normals
 // DESC   : Compute normals to each domain bdy 
 // ARGS   : 
-//          dXdXi     : matrix of dX_i/dXi_j matrix elements, s.t.
-//                      dXdX_i(i,j) = dx^j/dxi^i
-//          igbdy_face: vector of bdy indices into global volume fields 
-//                      for each face
-//          gdeface   : description for each face node
-//          bdy_mass  : Mass matrix * Jacobian on bdy nodes
-//          normals   : vector of normal components
-//          depComp   : vector index dependent on the other indices (first 
-//                      component index whose normal component is nonzero)
+//          dXdXi    : matrix of dX_i/dXi_j matrix elements, s.t.
+//                     dXdX_i(i,j) = dx^j/dxi^i
+//          igbdy    : vector of bdy indices into global volume fields 
+//          gdeface  : description for each face node
+//          bdy_mass: Mass matrix * Jacobian on bdy nodes
+//          normals  : vector of normal components
+//          depComp  : vector index dependent on the other indices (first 
+//                     component index whose normal component is nonzero)
 // RETURNS: none
 //**********************************************************************************
 void GGridBox::do_bdy_normals(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
