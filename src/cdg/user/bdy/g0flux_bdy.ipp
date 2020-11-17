@@ -82,12 +82,6 @@ GBOOL G0FluxBdy<Types>::update_impl(
   if ( traits_.compute_once && bcomputed_ ) return TRUE;
 
 
-#if 0
-  for ( auto j=0; j<traits_.istate.size(); j++ ) {
-    assert(ub[istate[j]] != NULL && "Illegal bdy vector");
-  }
-#endif
-
   // Handle 0-Flux bdy conditions. This
   // is computed by solving
   //    vec{n} \cdot vec{u} = 0
@@ -109,13 +103,13 @@ GBOOL G0FluxBdy<Types>::update_impl(
     xn   = (*bdyNormals)[nid][iloc];// n_id == normal component for dependent vector comp
     sum  = 0.0;
     for ( auto k=0; k<nstate_; k++ ) { // for each vector component
-      sum -= (*bdyNormals)[k][iloc] * (*u[traits_.istate[k]])[ind];
-
-      // Set all comps here, then reset the dependent one:
-//    (*ub[k])[ind] = (*u[k])[ind]; 
+      if ( nid != istate[k] ) {
+        sum -= (*bdyNormals)[k][iloc] * (*u[traits_.istate[k]])[ind];
+      }
     }
-//  (*ub[nid])[ind] = ( sum + (*bdyNormals)[nid][iloc] * (*u[nid])[ind] ) / xn;
+    // Ensure vv.n = 0:
     (*u[nid])[ind] = ( sum + (*bdyNormals)[nid][iloc] * (*u[nid])[ind] ) / xn;
+    (*u[nid])[ind] = sum / xn;
   }
 
   bcomputed_ = TRUE;
