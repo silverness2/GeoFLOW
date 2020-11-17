@@ -103,7 +103,7 @@ GBOOL G0FluxBdy<Types>::update_impl(
     xn   = (*bdyNormals)[nid][iloc];// n_id == normal component for dependent vector comp
     sum  = 0.0;
     for ( auto k=0; k<nstate_; k++ ) { // for each vector component
-      if ( nid != istate[k] ) {
+      if ( nid != traits_.istate[k] ) {
         sum -= (*bdyNormals)[k][iloc] * (*u[traits_.istate[k]])[ind];
       }
     }
