@@ -683,11 +683,9 @@ void GMConv<TypePack>::init_impl(State &u, State &tmp)
   GExRKStepper<GFTYPE>::Traits rktraits;
   switch ( traits_.isteptype ) {
     case GSTEPPER_EXRK:
-#if 1
-      rktraits.bssp   = TRUE;
-      rktraits.norder = 3;
-      rktraits.nstage = 4;
-#endif
+      rktraits.bSSP   = traits_.bSSP;
+      rktraits.norder = traits_.itorder;
+      rktraits.nstage = traits_.nstage;
       gexrk_ = new GExRKStepper<Ftype>(rktraits, *grid_);
       gexrk_->setRHSfunction(rhs);
       gexrk_->set_apply_bdy_callback(applybc);

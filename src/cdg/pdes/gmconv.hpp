@@ -139,13 +139,15 @@ public:
           GBOOL           divopcolloc = TRUE;   // use collocation in GDivOp?
           GBOOL           Stokeshyp   = FALSE;  // use Stokes hypothesis
           GBOOL           bindepdiss  = FALSE;  // indep. mom & energy diss?
+          GBOOL           bSSP        = FALSE;  // use strong stab pres RK?
           GINT            nstate      = GDIM+2; // no. vars in state vec
           GINT            nsolve      = GDIM+2; // no. vars to solve for
           GINT            nlsector    = 0;      // no. vars in liq-sector
           GINT            nisector    = 0;      // no. vars in ice-sector
           GINT            nbase       = 2;      // no. vars in base state (p, d)
-          GINT            itorder     = 2;
-          GINT            inorder     = 2;
+          GINT            itorder     = 2;      // formal  time iorder
+          GINT            nstage      = 2;      // no. stages for time integ.
+          GINT            inorder     = 2;      // formal nonlin. extrap order
           GStepperType    isteptype   = GSTEPPER_EXRK;
           GFTYPE          Ts_base     = 300.0;  // base state surf temp (K)
           GFTYPE          P0_base     = 1000.0; // base state ref pressure (mb)
