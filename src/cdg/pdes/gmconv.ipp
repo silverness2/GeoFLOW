@@ -364,7 +364,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
      *dudt[j] += *Ltot;                               // += L_tot
     }
 
-#if 1
+#if 0
     grid_->wderiv(*p, j+1, TRUE, *tmp2, *tmp1);       // Grad p'
    *dudt[j] -= *tmp1;                                 // += Grad p'
 #else
@@ -373,8 +373,6 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
    *dudt[j] += *tmp1;                                 // += Grad p'
 #endif
 
-//  ghelm_->opVec_prod(*v_[j], urhstmp_, *tmp1);      // rhoT nu Laplacian v_j
-// *tmp1 *= *rhoT;
     gstressen_->apply(v_, j+1, urhstmp_, *tmp1);      // mu s^{ij},j
    *dudt[j] -= *tmp1;                                 // -= mu s^{ij},j
 
