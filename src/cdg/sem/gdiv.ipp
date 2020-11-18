@@ -156,8 +156,8 @@ void GDivOp<TypePack>::apply(State &u, State &utmp, StateComp &div)
         k = (*igbdy)[b];
         div[k] += (*u[j])[k] * (*normals)[j][b] * (*bmass)[b];
       }
-    }
 #endif
+    }
   }
   else {
 
