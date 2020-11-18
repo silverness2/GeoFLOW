@@ -170,7 +170,7 @@ void GMConv<TypePack>::dt_impl(const Time &t, State &u, Time &dt)
    GComm::Allreduce(&dtmin, &dt1, 1, T2GCDatatype<Ftype>() , GC_OP_MIN, comm_);
 
    // Limit any timestep-to-timestep increae to 10%:
-   dt = MIN(dt1*traits_.courant, 1.1*dt);
+   dt = MIN(dt1*traits_.courant, 1.01*dt);
 
 } // end of method dt_impl
 
