@@ -1729,8 +1729,13 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
          xm = id == 0 || id == 3 ? -1.0 : 1.0;
          xp[(id+1)%2] = xm; 
          face_mass[j] *= dXdXi(id%2,0)[ib];
+         for ( ic=0; ic<GDIM && fabs(xp[ic]) < tiny; ic++ );
+         assert(ic < GDIM); // no normal components > 0
+         for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
+         depComp[j] = ic;
        }
        else if ( it == GElem_base::VERTEX ) {
+         depComp[j] = -1;
          if ( id == 0 ) {
            xp[0] =  0.0; //-1.0/sqrt(2.0);
            xp[1] = -1.0; //-1.0/sqrt(2.0);
@@ -1757,10 +1762,12 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        face_mass[j] *= xp.mag(); // |k X d_X_/dxi_ip| is face Jac
        xp.unit(); xp *= xm;
 #endif
+#if 0
        for ( ic=0; ic<GDIM && fabs(xp[ic]) < tiny; ic++ );
        assert(ic < GDIM); // no normal components > 0
        for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
        depComp[j] = ic;
+#endif
 cout << "do_face_normals2d: j=" << j << " id=" << id << " it=" << it << " norm=" << xp << " idep=" << ic << endl; 
      }
    }
