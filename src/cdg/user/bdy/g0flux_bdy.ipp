@@ -108,7 +108,7 @@ GBOOL G0FluxBdy<Types>::update_impl(
       }
     }
     // Ensure vv.n = 0:
-    (*u[nid])[ind] = ( sum + (*bdyNormals)[nid][iloc] * (*u[nid])[ind] ) / xn;
+//  (*u[nid])[ind] = ( sum + (*bdyNormals)[nid][iloc] * (*u[nid])[ind] ) / xn;
     (*u[nid])[ind] = sum / xn;
   }
 
