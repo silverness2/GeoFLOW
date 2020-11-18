@@ -998,6 +998,7 @@ void GGridBox::config_bdy(const PropertyTree           &ptree,
       }
       // May have different uniform bdys for different state comps:
       for ( auto k=0; k<stblock.tbdy.size() && !bperiodic; k++ ) {
+cout << "GGridBox::ConfigBdy: itmp[k=" << k << "]" << itmp << endl;
         base_ptr = GUpdateBdyFactory<BdyTypePack>::build(ptree, sbdy, *this,  j,
                                             stblock.tbdy[k], stblock.istate[k], itmp);
         igbdyft[j] = stblock.tbdy[k];
@@ -1723,31 +1724,32 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        ib = gieface[j];
        id = GET_HIWORD(gdeface[j]); 
        it = GET_LOWORD(gdeface[j]);
-       ip = id % 2;
-       p1 = 0.0;
-       p1[ip] = dXdXi(ip,0)[ib]; 
-       xm = id == 0 || id == 3 ? -1.0 : 1.0;
        xp = 0.0;
        if ( it == GElem_base::FACE) {
-         face_mass[j] *= p1[ip];
+         xm = id == 0 || id == 3 ? -1.0 : 1.0;
          xp[(id+1)%2] = xm; 
+         face_mass[j] *= dXdXi(id%2,0)[ib];
        }
        else if ( it == GElem_base::VERTEX ) {
          if ( id == 0 ) {
-           xp[0] = -1.0/sqrt(2.0);
-           xp[1] = -1.0/sqrt(2.0);
+           xp[0] =  0.0; //-1.0/sqrt(2.0);
+           xp[1] = -1.0; //-1.0/sqrt(2.0);
+           face_mass[j] *= dXdXi(0,0)[ib];
          }
          else if ( id == 1 ) {
-           xp[0] =  1.0/sqrt(2.0);
-           xp[1] = -1.0/sqrt(2.0);
+           xp[0] =  1.0; // 1.0/sqrt(2.0);
+           xp[1] =  0.0; // 1.0/sqrt(2.0);
+           face_mass[j] *= dXdXi(1,0)[ib];
          }
          else if ( id == 2 ) {
-           xp[0] =  1.0/sqrt(2.0);
-           xp[1] =  1.0/sqrt(2.0);
+           xp[0] =  0.0; // 1.0/sqrt(2.0);
+           xp[1] =  1.0; // 1.0/sqrt(2.0);
+           face_mass[j] *= dXdXi(0,0)[ib];
          }
          else if ( id == 3 ) {
-           xp[0] = -1.0/sqrt(2.0);
-           xp[1] =  1.0/sqrt(2.0);
+           xp[0] = -1.0; //-1.0/sqrt(2.0);
+           xp[1] =  0.0; // 1.0/sqrt(2.0);
+           face_mass[j] *= dXdXi(1,0)[ib];
          }
        }
 #if 0
