@@ -69,7 +69,7 @@ GBOOL G0FluxBdy<Types>::update_impl(
 {
    GString    serr = "G0FluxBdy<Types>::update_impl: ";
    GBdyType   itype;
-   GINT       nid, k;
+   GINT       idd, k;
    GSIZET     il, iloc, ind;
    Ftype      sum, xn;
    GTVector<GTVector<Ftype>>  *bdyNormals;
@@ -99,17 +99,25 @@ GBOOL G0FluxBdy<Types>::update_impl(
   for ( auto j=0; j<igbdy->size(); j++ ) {
     iloc = traits_.ibdyloc[j];     // index into bdy arrays
     ind  = (*igbdy)[j];            // index into volume array
-    nid  = (*idep)[iloc];           // dependent vector component
-    xn   = (*bdyNormals)[nid][iloc];// n_id == normal component for dependent vector comp
+    idd  = (*idep)[iloc];          // dependent vector component
+    xn   = (*bdyNormals)[idd][iloc];// n_idd == normal component for dependent vector comp
+
     sum  = 0.0;
-    for ( auto k=0; k<nstate_; k++ ) { // for each vector component
-      if ( nid != traits_.istate[k] ) {
+    for ( auto k=0; k<nstate_ && idd >=0; k++ ) { // for each vector component
+      if ( idd != traits_.istate[k] ) {
         sum -= (*bdyNormals)[k][iloc] * (*u[traits_.istate[k]])[ind];
       }
     }
-    // Ensure vv.n = 0:
-//  (*u[nid])[ind] = ( sum + (*bdyNormals)[nid][iloc] * (*u[nid])[ind] ) / xn;
-    (*u[nid])[ind] = sum / xn;
+    
+    if ( idd >= 0 ) {
+      // Ensure vv.n = 0:
+//    (*u[idd])[ind] = ( sum + (*bdyNormals)[idd][iloc] * (*u[idd])[ind] ) / xn;
+      (*u[idd])[ind] = sum / xn;
+    }
+    else {
+      // Set v == 0, say, on a vertex:
+      for ( auto k=0; k<nstate_; k++ ) (*u[traits_.istate[k]])[ind] = 0.0;
+    }
   }
 
   bcomputed_ = TRUE;
