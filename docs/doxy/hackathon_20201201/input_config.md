@@ -1,7 +1,7 @@
 
 ## Input Configuration
 
-### Test problem
+### Test Problem
 The test case consists of using the element basis functions to approximate
 the derivative to a known function (or field) over the grid.  This excersises
 the derivative calculation routines which are the primary focus of the hackathon.
@@ -10,7 +10,7 @@ simplified input file that the executable expects to find within the same
 execution directory. 
 
 ### Input File [hack_input.jsn](../../../src/cdg/apps/hack_input.hpp)
-The input file "hack_input.jsn" for the hackathon executable is placed by 
+The input file **hack_input.jsn** for the hackathon executable is placed by 
 the build+install process into the same directory as the compiled binary. 
 As the file name extension indicates it is a standard JSON formatted file 
 which describes the parameters of the run. The majority of this abbreviated
@@ -35,20 +35,26 @@ respectively.  In general, it makes since to have these equal for testing.
 ```
 The **poly_test** block controls the test case functionality. The known 
 function takes the form of f(x,y,z) = x<sup>p</sup> + y<sup>q</sup> + z<sup>r</sup> 
-with the polynomial powers being represented by the 3 values within **poly**.  
-The **ncylces** variable controls how many times the same derivative 
-calculations are repeated to provide a level of work that is sufficient 
-to properly profile. 
+with the polynomial powers being represented by the 3 values within **poly**. The
+**ncylces** variable controls how many times the same derivative calculations
+are repeated to provide a level of work that is sufficient to properly profile. 
+
+```json
+"num_elems" : [100, 100, 1],
+```
+The **num_elems** parameter controls the number of elements in each direction
+for a cubed region of the domain. This computation isn't part of the kernel
+development but can be usefull to control the total number of elements to
+perform the test calculations on.
 
 ### Quick Reference
 | Parameter |    Description   |    Example   |
 |-----------|:----------------:|:------------:|
-|exp_order  | Expansion polynomial order in reference space for each direction        |   [6, 4, 5]  |
-|poly       | Polynomial order of known function we are approximating derivatives for |   [2, 2, 2]  |
-|ncycles    | Number of time to calculate the derivatives within each test            |      1000    |
-|idir       | Direction to calculate the derivative in                                | 1 or 2 or 3  |
-|num_elems  | Number of elements within a cubed region of the grid                    | [50, 50, 50] |
-
+|exp_order  | Expansion polynomial order in reference space for each direction  |   [6, 4, 5]  |
+|poly       | Polynomial order of known function we are approximating           |   [2, 2, 2]  |
+|ncycles    | Number of repeated derivative calculations to perform             |      1000    |
+|idir       | Direction to calculate the derivative in                          | 1 or 2 or 3  |
+|num_elems  | Number of elements within a cubed region of the grid              | [50, 50, 50] |
 
 ### Example File
 ```json
