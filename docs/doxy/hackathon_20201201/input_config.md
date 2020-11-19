@@ -9,7 +9,7 @@ All element basis functions and test case parameters are controled through a
 simplified input file that the executable expects to find within the same 
 execution directory. 
 
-### Input File [hack_input.jsn](../../../src/cdg/apps/hack_input.hpp)
+### Input File: [hack_input.jsn](../../../src/cdg/apps/hack_input.hpp)
 The input file **hack_input.jsn** for the hackathon executable is placed by 
 the build+install process into the same directory as the compiled binary. 
 As the file name extension indicates it is a standard JSON formatted file 
@@ -22,9 +22,13 @@ participants.
 ```
 The **exp_order** controls the polynomial expansions within each element 
 of the grid. In the above example, the first coordinate direction of the 
-reference element contains a 6th order polynomial while the seconds and 
+reference element contains a 6th order polynomial while the second and 
 third coordinate directions contain a 4th and 5th order polynomial 
-respectively.  In general, it makes since to have these equal for testing.
+respectively. To properly approximate the derivative and recieve a "Passing"
+message at the conclusion of the test run these values must be equal to 
+or larger than the **poly** values described in the next section. In 
+general, it makes since to have the expansion polynomial equal in all 
+directions and greater than the **poly** value for testing (i.e. [4,4,4]).
 
 ```json
   "poly_test": {
