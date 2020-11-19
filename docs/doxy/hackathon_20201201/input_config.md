@@ -11,10 +11,10 @@ execution directory.
 
 ### Input File [hack_input.jsn](../../../src/cdg/apps/hack_input.hpp)
 The input file "hack_input.jsn" for the hackathon executable is placed by 
-the build system into the same directory as the compiled binary. As the 
-file name extension indicates it is a standard JSON formatted file which 
-describes the parameters of the run. The majority of this abbreviated file
-can be ignored but a couple parameters will be of interest to hackathon 
+the build+install process into the same directory as the compiled binary. 
+As the file name extension indicates it is a standard JSON formatted file 
+which describes the parameters of the run. The majority of this abbreviated
+file can be ignored but a couple parameters will be of interest to hackathon 
 participants.
 
 ```json
@@ -26,7 +26,6 @@ reference element contains a 6th order polynomial while the seconds and
 third coordinate directions contain a 4th and 5th order polynomial 
 respectively.  In general, it makes since to have these equal for testing.
 
-
 ```json
   "poly_test": {
     "poly"     : [2, 2, 1],
@@ -35,19 +34,23 @@ respectively.  In general, it makes since to have these equal for testing.
   },
 ```
 The **poly_test** block controls the test case functionality. The known 
-function takes the form of x^p + y^q + z^r with the polynomial powers 
-being represented by the 3 values within **poly**.  The "ncylces" variable 
-controls how many times the derivative calculations are computed to 
-provide a level of work that is sufficient to properly profile. 
+function takes the form of f(x,y,z) = x<sup>p</sup> + y<sup>q</sup> + z<sup>r</sup> 
+with the polynomial powers being represented by the 3 values within **poly**.  
+The **ncylces** variable controls how many times the same derivative 
+calculations are repeated to provide a level of work that is sufficient 
+to properly profile. 
+
+### Quick Reference
+| Parameter |    Description   |    Example   |
+|-----------|:----------------:|:------------:|
+|exp_order  | Expansion polynomial order in reference space for each direction        |   [6, 4, 5]  |
+|poly       | Polynomial order of known function we are approximating derivatives for |   [2, 2, 2]  |
+|ncycles    | Number of time to calculate the derivatives within each test            |      1000    |
+|idir       | Direction to calculate the derivative in                                | 1 or 2 or 3  |
+|num_elems  | Number of elements within a cubed region of the grid                    | [50, 50, 50] |
 
 
-| Parameter |   Purpose   |    Example   |
-|-----------|:-----------:|:------------:|
-|exp_order  | Expansion polynomial order in reference space for each direction |  [6, 4, 5] |
-
-
-
-
+### Example File
 ```json
 { 
   "exp_order"            : [4, 4, 4],
