@@ -3,9 +3,10 @@ Dates: December 1-9, 2020
 
 ## Table of Contents
 
-* [How To Compile & Run](compile_and_run.md)
-* [Explanation of Math Operations](math_explanation.md)
-* [Explanation of Source Code](code_explanation.md)
+* [Compile & Run](compile_and_run.md)
+* [Math Operations](math_explanation.md)
+* [Source Code Focus](code_explanation.md)
+* [Input File & Configuration](input_config.md)
 
 ## Introduction
 
