@@ -144,7 +144,7 @@ if(USE_PAPI)
 endif()
 
 if(GEOFLOW_TRACER_USE_NVTX)
-	find_package(CUDA) 
+	find_package(CUDA REQUIRED) 
 endif()
 
 find_package(Doxygen)

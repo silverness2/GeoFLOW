@@ -4,7 +4,7 @@
   "IO_implementation"    : "gio",
   "poly_test": {
     "poly"     : [2, 2, 1],
-    "ncycles"  : 1000,
+    "ncycles"  : 10,
     "idir"     : 1
   },
   "fully_periodic": {

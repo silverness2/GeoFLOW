@@ -87,6 +87,8 @@ public:
 private:
 	static constexpr std::size_t m_nest_indent = 3;
 	static std::size_t m_current_indent;
+	static std::size_t m_count;
+
 };
 
 } // namespace tbox
