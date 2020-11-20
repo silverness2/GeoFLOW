@@ -18,6 +18,16 @@ option(VERBOSE_MAKE   "VERBOSE_MAKE"  OFF)   # Verbose MakeFile Ouput
 option(ENABLE_TESTS   "ENABLE_TESTS"  ON)   # Enable Testing
 
 #
+# Turn on function tracing where instrumented
+# - To use NVTX or PIO Tracing must be turned on
+# - NVTX must be using CUDA
+# - PIO prints indented call blocks to pio::pout
+#
+option(GEOFLOW_USE_TRACER       "GEOFLOW_USE_TRACER"      OFF)  # Turn Tracing On
+option(GEOFLOW_TRACER_USE_NVTX  "GEOFLOW_TRACER_USE_NVTX" OFF) # Use NVTX Profiling
+option(GEOFLOW_TRACER_USE_PIO   "GEOFLOW_TRACER_USE_PIO"  OFF)  # Use PIO Ouput
+
+#
 # ============================== Build Type ============================
 # Default: 
 # > cmake -D CMAKE_BUILD_TYPE=Debug

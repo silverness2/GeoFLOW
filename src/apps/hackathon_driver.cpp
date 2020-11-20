@@ -22,10 +22,12 @@
 #include "ggrid_factory.hpp"
 #include "pdeint/observer_base.hpp"
 #include "pdeint/observer_factory.hpp"
+#include "tbox/pio.hpp"
 #include "tbox/property_tree.hpp"
 #include "tbox/mpixx.hpp"
 #include "tbox/global_manager.hpp"
 #include "tbox/input_manager.hpp"
+#include "tbox/tracer.hpp"
 //#include "gtools.h"
 
 #include <cassert>
@@ -100,6 +102,8 @@ int main(int argc, char **argv)
     GComm::InitComm(&argc, &argv);
     GINT myrank  = GComm::WorldRank();
     GINT nprocs  = GComm::WorldSize();
+    pio::initialize(myrank);
+    GEOFLOW_TRACE();
 
     // Read main prop tree; may ovewrite with
     // certain command line args:
@@ -281,6 +285,7 @@ int main(int argc, char **argv)
 #endif
     GTimerFinal();
 
+    pio::finalize();
     GComm::TermComm();
 
     return( errcode );

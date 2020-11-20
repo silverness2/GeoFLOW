@@ -24,6 +24,7 @@
 #include "gcg.hpp"
 #include "gmtk.hpp"
 #include "tbox/error_handler.hpp"
+#include "tbox/tracer.hpp"
 
 using namespace std;
 
@@ -56,6 +57,7 @@ ggfx_                         (NULLPTR),
 ptree_                          (ptree),
 bdy_apply_callback_           (NULLPTR)
 {
+	GEOFLOW_TRACE();
 } // end of constructor method (1)
 
 
@@ -68,6 +70,7 @@ bdy_apply_callback_           (NULLPTR)
 //**********************************************************************************
 GGrid::~GGrid()
 {
+	GEOFLOW_TRACE();
   if ( mass_ != NULLPTR ) delete mass_;
   if ( imass_ != NULLPTR ) delete imass_;
   for ( auto j=0; j<gelems_.size(); j++ ) {
@@ -89,6 +92,7 @@ GGrid::~GGrid()
 //**********************************************************************************
 void GGrid::do_typing()
 {
+	GEOFLOW_TRACE();
   GTVector<GElemType> itmp(gelems_.size());
 
   GSIZET *ind=NULLPTR;
@@ -121,6 +125,7 @@ void GGrid::do_typing()
 //**********************************************************************************
 void GGrid::print(GString filename, GBOOL bdof)
 {
+	GEOFLOW_TRACE();
   GString serr = "GridIcos::print: ";
   std::ofstream ios;
 
@@ -207,6 +212,7 @@ void GGrid::print(GString filename, GBOOL bdof)
 //**********************************************************************************
 std::ostream &operator<<(std::ostream &str, GGrid &e)
 {
+	GEOFLOW_TRACE();
   return str;
 } // end of operator <<
 
@@ -220,6 +226,7 @@ std::ostream &operator<<(std::ostream &str, GGrid &e)
 //**********************************************************************************
 GSIZET GGrid::ndof()
 {
+	GEOFLOW_TRACE();
    assert(gelems_.size() > 0 && "Elements not set");
 
    GSIZET Ntot=0;
@@ -238,6 +245,7 @@ GSIZET GGrid::ndof()
 //**********************************************************************************
 GSIZET GGrid::nfacedof()
 {
+	GEOFLOW_TRACE();
    return gieface_.size();
 } // end of method nfacedof
 
@@ -253,6 +261,7 @@ GSIZET GGrid::nfacedof()
 //**********************************************************************************
 GSIZET GGrid::nbdydof()
 {
+	GEOFLOW_TRACE();
    return igbdy_.size();;
 } // end of method nbdydof
 
@@ -267,6 +276,7 @@ GSIZET GGrid::nbdydof()
 //**********************************************************************************
 GFTYPE GGrid::minlength(GTVector<GFTYPE> *dx)
 {
+	GEOFLOW_TRACE();
    assert(gelems_.size() > 0 && "Elements not set");
 
    GFTYPE emin, lmin, gmin;
@@ -317,6 +327,7 @@ GFTYPE GGrid::minlength(GTVector<GFTYPE> *dx)
 //**********************************************************************************
 GFTYPE GGrid::maxlength(GTVector<GFTYPE> *dx)
 {
+	GEOFLOW_TRACE();
    assert(gelems_.size() > 0 && "Elements not set");
 
    GFTYPE emax, lmax, gmax;
@@ -364,6 +375,7 @@ GFTYPE GGrid::maxlength(GTVector<GFTYPE> *dx)
 //**********************************************************************************
 GFTYPE GGrid::avglength()
 {
+	GEOFLOW_TRACE();
    assert(gelems_.size() > 0 && "Elements not set");
 
    GFTYPE gavg, lavg, navg, lv[2], gv[2];;
@@ -418,6 +430,7 @@ GFTYPE GGrid::avglength()
 //**********************************************************************************
 void GGrid::grid_init()
 {
+	GEOFLOW_TRACE();
 
   GTimerStart("GGrid::grid_init: do_elems");
   do_elems(); // generate element list from derived class
@@ -498,6 +511,7 @@ void GGrid::grid_init()
 void GGrid::grid_init(GTMatrix<GINT> &p,
                       GTVector<GTVector<GFTYPE>> &xnodes)
 {
+	GEOFLOW_TRACE();
 
   GTimerStart("GGrid::grid_init: do_elems");
   do_elems(p, xnodes); // generate element list from derived class
@@ -572,6 +586,7 @@ void GGrid::grid_init(GTMatrix<GINT> &p,
 //**********************************************************************************
 void GGrid::def_geom_init()
 {
+	GEOFLOW_TRACE();
    assert(gelems_.size() > 0 && "Elements not set");
    assert(gtype_ == GE_2DEMBEDDED
        || gtype_ == GE_DEFORMED && "Invalid element type");
@@ -662,6 +677,7 @@ void GGrid::def_geom_init()
 //**********************************************************************************
 void GGrid::reg_geom_init()
 {
+	GEOFLOW_TRACE();
    assert(gelems_.size() > 0 && "Elements not set");
    assert( gtype_ == GE_REGULAR && "Invalid element type");
 
@@ -761,6 +777,7 @@ void GGrid::reg_geom_init()
 //**********************************************************************************
 void GGrid::do_normals()
 {
+	GEOFLOW_TRACE();
   assert(gelems_.size() > 0 && "Elements not set");
 
   GString         serr = "GridIcos::do_normals: ";
@@ -794,6 +811,7 @@ void GGrid::do_normals()
 //**********************************************************************************
 void GGrid::globalize_coords()
 {
+	GEOFLOW_TRACE();
    GString serr = "GridIcos::globalize_coords: ";
    GSIZET  nxy = gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
    GTVector<GTVector<GFTYPE>> *xe;
@@ -830,6 +848,7 @@ void GGrid::globalize_coords()
 //**********************************************************************************
 GTMatrix<GTVector<GFTYPE>> &GGrid::dXidX()
 {
+	GEOFLOW_TRACE();
    assert(bInitialized_ && "Object not inititaized");
    return dXidX_;
 
@@ -845,6 +864,7 @@ GTMatrix<GTVector<GFTYPE>> &GGrid::dXidX()
 //**********************************************************************************
 GTVector<GFTYPE> &GGrid::dXidX(GSIZET i, GSIZET j)
 {
+	GEOFLOW_TRACE();
    assert(bInitialized_ && "Object not inititaized");
    return dXidX_(i,j);
 
@@ -860,6 +880,7 @@ GTVector<GFTYPE> &GGrid::dXidX(GSIZET i, GSIZET j)
 //**********************************************************************************
 GMass &GGrid::massop()
 {
+	GEOFLOW_TRACE();
    assert(bInitialized_ && "Object not inititaized");
    return *mass_;
 
@@ -875,6 +896,7 @@ GMass &GGrid::massop()
 //**********************************************************************************
 GMass &GGrid::imassop()
 {
+	GEOFLOW_TRACE();
    assert(bInitialized_ && "Object not inititaized");
    if ( imass_ == NULLPTR ) imass_ = new GMass(*this, TRUE);
    return *imass_;
@@ -891,6 +913,7 @@ GMass &GGrid::imassop()
 //**********************************************************************************
 GTVector<GFTYPE> &GGrid::Jac()
 {
+	GEOFLOW_TRACE();
    assert(bInitialized_ && "Object not inititaized");
    return Jac_;
 
@@ -906,6 +929,7 @@ GTVector<GFTYPE> &GGrid::Jac()
 //**********************************************************************************
 GTVector<GFTYPE> &GGrid::faceJac()
 {
+	GEOFLOW_TRACE();
    assert(bInitialized_ && "Object not inititaized");
    return faceJac_;
 
@@ -923,6 +947,7 @@ GTVector<GFTYPE> &GGrid::faceJac()
 //**********************************************************************************
 GFTYPE GGrid::find_min_dist()
 {
+	GEOFLOW_TRACE();
   assert(gelems_.size() > 0 && "Elements not set");
 
  
@@ -971,6 +996,7 @@ GFTYPE GGrid::find_min_dist()
 //**********************************************************************************
 GFTYPE GGrid::integrate(GTVector<GFTYPE> &u, GTVector<GFTYPE> &tmp, GBOOL bglobal)
 {
+	GEOFLOW_TRACE();
   assert(bInitialized_ && "Object not inititaized");
 
   GSIZET                       ibeg, iend; // beg, end indices for global array
@@ -1056,6 +1082,7 @@ GFTYPE GGrid::integrate(GTVector<GFTYPE> &u, GTVector<GFTYPE> &tmp, GBOOL bgloba
 void GGrid::deriv(GTVector<GFTYPE> &u, GINT idir, GTVector<GFTYPE> &utmp, 
                   GTVector<GFTYPE> &du)
 {
+	GEOFLOW_TRACE();
   assert(bInitialized_ && "Object not inititialized");
 
 
@@ -1099,6 +1126,7 @@ void GGrid::deriv(GTVector<GFTYPE> &u, GINT idir, GTVector<GFTYPE> &utmp,
 void GGrid::wderiv(GTVector<GFTYPE> &u, GINT idir, GBOOL dotrans, 
                   GTVector<GFTYPE> &utmp, GTVector<GFTYPE> &du)
 {
+	GEOFLOW_TRACE();
   assert(bInitialized_ && "Object not inititialized");
 
 
@@ -1167,6 +1195,7 @@ GTVector<GFTYPE> t1(ndof());
 void GGrid::wderiv(GTVector<GFTYPE> &u, GINT idir, GBOOL bwghts, GTVector<GFTYPE> &utmp, 
                    GTVector<GFTYPE> &du)
 {
+	GEOFLOW_TRACE();
   assert(bInitialized_ && "Object not inititialized");
 
 
@@ -1211,6 +1240,7 @@ void GGrid::wderiv(GTVector<GFTYPE> &u, GINT idir, GBOOL bwghts, GTVector<GFTYPE
 //**********************************************************************************
 void GGrid::init_local_face_info()
 {
+	GEOFLOW_TRACE();
   GBOOL                       bret;
   GSIZET                      ibeg, iend; // beg, end indices for global array
   GTVector<GINT>             *iebdy;      // domain bdy indices
@@ -1296,6 +1326,7 @@ void GGrid::init_local_face_info()
 //**********************************************************************************
 void GGrid::init_bc_info()
 {
+	GEOFLOW_TRACE();
   GSIZET   nind;
   GBdyType btype;
 
@@ -1365,6 +1396,7 @@ void GGrid::init_bc_info()
 //**********************************************************************************
 void GGrid::add_terrain(const State &xb, State &utmp)
 {
+	GEOFLOW_TRACE();
    assert(gtype_ == GE_2DEMBEDDED
        || gtype_ == GE_DEFORMED && "Invalid element type");
 
@@ -1449,7 +1481,7 @@ void GGrid::add_terrain(const State &xb, State &utmp)
 //************************************************************************************
 void GGrid::smooth(GGFX_OP op, GTVector<GFTYPE> &tmp, GTVector<GFTYPE> &u)
 {
-
+	GEOFLOW_TRACE();
   tmp = u;
 
   u.pointProd(*(this->massop().data()));
@@ -1489,6 +1521,7 @@ void GGrid::smooth(GGFX_OP op, GTVector<GFTYPE> &tmp, GTVector<GFTYPE> &u)
 void GGrid::compute_grefderivW(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
                                GINT idir, GBOOL dotrans, GTVector<GFTYPE> &du)
 {
+	GEOFLOW_TRACE();
   GSIZET               ibeg, iend; // beg, end indices for global array
   GBOOL                bembedded;
   GTVector<GSIZET>     N(GDIM);
@@ -1624,6 +1657,7 @@ void GGrid::compute_grefderivW(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 void GGrid::compute_grefderivsW(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
                                 GBOOL dotrans, GTVector<GTVector<GFTYPE>*> &du)
 {
+	GEOFLOW_TRACE();
   assert(du.size() >= GDIM
   && "Insufficient number of derivatives specified");
 
@@ -1727,7 +1761,7 @@ void GGrid::compute_grefderivsW(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 void GGrid::compute_grefdiv(GTVector<GTVector<GFTYPE>*> &u, GTVector<GFTYPE> &etmp,
                             GBOOL dotrans, GTVector<GFTYPE> &divu)
 {
-
+	GEOFLOW_TRACE();
   GBOOL                        bembedded;
   GSIZET                       ibeg, iend; // beg, end indices for global array
   GTVector<GTVector<GFTYPE>*>  W(GDIM);    // element 1/weights
@@ -1832,6 +1866,7 @@ void GGrid::compute_grefdiv(GTVector<GTVector<GFTYPE>*> &u, GTVector<GFTYPE> &et
 void GGrid::compute_grefderivs(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
                                GBOOL dotrans, GTVector<GTVector<GFTYPE>*> &du)
 {
+	GEOFLOW_TRACE();
   assert(du.size() >= GDIM
        && "Insufficient number of derivatives specified");
   
@@ -1922,7 +1957,7 @@ void GGrid::compute_grefderivs(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 void GGrid::compute_grefderiv(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
                               GINT idir, GBOOL dotrans, GTVector<GFTYPE> &du)
 {
-
+	GEOFLOW_TRACE();
   switch ( gderivtype_ ) {
     case GDV_VARP:
       grefderiv_varp(u, etmp, idir, dotrans, du);
@@ -1969,6 +2004,7 @@ void GGrid::compute_grefderiv(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 void GGrid::grefderiv_varp(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
                              GINT idir, GBOOL dotrans, GTVector<GFTYPE> &du)
 {
+	GEOFLOW_TRACE();
   GSIZET               ibeg, iend; // beg, end indices for global array
   GTVector<GSIZET>     N(GDIM);
   GTMatrix<GFTYPE>    *Di;         // element-based 1d derivative operators
@@ -2086,6 +2122,7 @@ void GGrid::grefderiv_varp(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 void GGrid::grefderiv_constp(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
                             GINT idir, GBOOL dotrans, GTVector<GFTYPE> &du)
 {
+	GEOFLOW_TRACE();
   GSIZET               ibeg, iend, Ne,  NN; // beg, end indices for global array
   GTVector<GSIZET>     N(GDIM);
   GTMatrix<GFTYPE>    *Di;         // element-based 1d derivative operators
@@ -2146,6 +2183,7 @@ void GGrid::grefderiv_constp(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
 //**********************************************************************************
 GBOOL GGrid::ispconst()
 {
+	GEOFLOW_TRACE();
   GBOOL       bconst;
   GSIZET      Ne, N0[GDIM];
   GElemList  *gelems = &this->elems();
@@ -2175,7 +2213,7 @@ GBOOL GGrid::ispconst()
 //**********************************************************************************
 void GGrid::set_derivtype(GDerivType gt)
 {
-   
+	GEOFLOW_TRACE();
   if ( !bpconst_ ) {
     assert( gt == GDV_VARP );
   }

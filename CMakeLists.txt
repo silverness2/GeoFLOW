@@ -143,6 +143,10 @@ if(USE_PAPI)
 	find_package(PAPI REQUIRED)
 endif()
 
+if(GEOFLOW_TRACER_USE_NVTX)
+	find_package(CUDA) 
+endif()
+
 find_package(Doxygen)
 
 

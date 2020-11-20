@@ -90,7 +90,10 @@
 
 /** Enable program tracer output.
  */
-#define GEOFLOW_USE_TRACER
+#cmakedefine GEOFLOW_USE_TRACER
+#cmakedefine GEOFLOW_TRACER_USE_NVTX
+#cmakedefine GEOFLOW_TRACER_USE_PIO
+
 
 /** Insure empty loops are not optimized away
  */

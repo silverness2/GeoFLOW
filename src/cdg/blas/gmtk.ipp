@@ -7,6 +7,10 @@
 // Derived From : none.
 //==================================================================================
 
+
+#include "tbox/tracer.hpp"
+
+
 namespace GMTK 
 {
 
@@ -23,6 +27,7 @@ namespace GMTK
 template<typename T>
 T fact(T n)
 {
+	GEOFLOW_TRACE();
    T Tzero = static_cast<T>(0);
    T Tone  = static_cast<T>(1);
    if ( n == Tzero || n == Tone ) {
@@ -50,6 +55,7 @@ T fact(T n)
 template<typename T>
 void Plm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GTVector<T> &plm)
 {
+	GEOFLOW_TRACE();
   T fact;
   T pmm, pmmp1, pll, somx2;
   T colat, r;
@@ -123,6 +129,7 @@ void Plm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GTVector<T> &plm)
 template<typename T>
 void Ylm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT iri, GTVector<T> &ylm_r, GTVector<T> &ylm_i)
 {
+	GEOFLOW_TRACE();
   T phi;
   T x, y, z;
   GDOUBLE rfact, xl, xm;
@@ -184,6 +191,7 @@ void Ylm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT iri, GTVector<
 template<typename T>
 void dYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT idir,  GINT iri, T cexcl,  GTVector<GTVector<T>*> &tmp, GTVector<T> &dylm_r, GTVector<T> &dylm_i)
 {
+	GEOFLOW_TRACE();
   T colat, phi, r, rexcl;
   T x, y, z;
   T xl, xm;
@@ -294,6 +302,7 @@ void dYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT idir,  GINT i
 template<typename T>
 void ddYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT idir, GINT iri, T cexcl,  GTVector<GTVector<T>*> &tmp, GTVector<T> &dylm_r, GTVector<T> &dylm_i)
 {
+	GEOFLOW_TRACE();
   T colat, phi, r, rexcl;
   T x, y, z;
   T xl, xm;
@@ -380,6 +389,7 @@ void ddYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT idir, GINT i
 template<typename T>
 void rYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GTVector<T> &tmp, GTVector<T> &rylm)
 {
+	GEOFLOW_TRACE();
   T rfact;
 
 
@@ -428,6 +438,7 @@ void rYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GTVector<T> &tmp, 
 template<typename T>
 void drYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT idir, T cexcl, GTVector<GTVector<T>*>  &tmp, GTVector<T> &drylm)
 {
+	GEOFLOW_TRACE();
   T rfact;
   GTVector<T> *dr, *di;  // real and imaginary comps of derivative
   GTVector<GTVector<T>> mytmp(2);
@@ -483,6 +494,7 @@ void drYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT idir, T cexc
 template<typename T>
 void ddrYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT idir, T cexcl, GTVector<GTVector<T>*>  &tmp, GTVector<T> &drylm)
 {
+	GEOFLOW_TRACE();
   T rfact;
   GTVector<T> *dr, *di;  // real and imaginary comps of derivative
   GTVector<GTVector<T>> mytmp(2);
@@ -535,6 +547,7 @@ void ddrYlm_cart(GINT l, GINT m, GTVector<GTVector<T>> &xnodes, GINT idir, T cex
 template<typename T>
 void Rx3(T alpha, GTVector<T> &y, GTVector<T> &z)
 {
+	GEOFLOW_TRACE();
   assert( z.size() == y.size() &&  "Incompatible vectors");
 
   for ( auto j=0; j<y.size(); j++ ) { // cycle over all vector elems
@@ -565,6 +578,7 @@ void Rx3(T alpha, GTVector<T> &y, GTVector<T> &z)
 template<typename T>
 void Ry3(T alpha, GTVector<T> &x, GTVector<T> &z)
 {
+	GEOFLOW_TRACE();
   assert( z.size() == x.size() &&  "Incompatible vectors");
 
   for ( auto j=0; j<x.size(); j++ ) { // cycle over all vector elems
@@ -595,6 +609,7 @@ void Ry3(T alpha, GTVector<T> &x, GTVector<T> &z)
 template<typename T>
 void Rz3(T alpha, GTVector<T> &x, GTVector<T> &y)
 {
+	GEOFLOW_TRACE();
   assert( y.size() == x.size() &&  "Incompatible vectors");
 
   for ( auto j=0; j<x.size(); j++ ) { // cycle over all vector elems
@@ -627,6 +642,7 @@ void Rz3(T alpha, GTVector<T> &x, GTVector<T> &y)
 template<typename T>
 void cross_prod_k(GTVector<GTVector<T>*> &A, GINT *iind, GINT nind, GINT isgn, GTVector<GTVector<T>*> &C)
 {
+	GEOFLOW_TRACE();
   assert( A.size() >= 2 && C.size() >= 2 &&  "Incompatible dimensionality");
 
   GSIZET n;
@@ -671,7 +687,7 @@ void cross_prod_k(GTVector<T> &Ax, GTVector<T> &Ay,
                   GINT *iind, GINT nind, GINT isgn, 
                   GTVector<T> &Cx, GTVector<T> &Cy)
 {
-
+	GEOFLOW_TRACE();
   GSIZET n;
   T      fact = isgn < 0 ? -1.0 : 1.0;
   if ( iind != NULLPTR ) {
@@ -716,6 +732,7 @@ template<typename T>
 void cross_prod(GTVector<GTVector<T>*> &A, GTVector<GTVector<T>*> &B, 
                 GINT *iind, GINT nind, GTVector<GTVector<T>*> &C)
 {
+	GEOFLOW_TRACE();
   assert( A.size() >= 3 && B.size() && C.size() >= 3 && "Incompatible input vectors");
 
   GSIZET n;
@@ -768,7 +785,7 @@ void cross_prod(GTVector<T> &Ax, GTVector<T> &Ay, GTVector<T> &Az,
                 GINT *iind, GINT nind, 
                 GTVector<T> &Cx, GTVector<T> &Cy, GTVector<T> &Cz)
 {
-
+	GEOFLOW_TRACE();
   GSIZET n;
   T      x1, y1, z1;
   T      x2, y2, z2;
@@ -820,6 +837,7 @@ template<typename T>
 void cross_prod(GTVector<GTVector<T>*> &A, GTVector<GTVector<T>*> &B, 
                 GINT idir, GTVector<T> &C)
 {
+	GEOFLOW_TRACE();
   assert( (A.size() == 2 || A.size() == 3) && "Incompatible dimensionality");
   assert( A.size() == B.size() && "Incompatible input vectors");
 
@@ -966,6 +984,7 @@ template<typename T>
 void cross_prod_s(GTVector<T> &A, GTVector<GTVector<T>*> &B, 
                 GINT idir, GTVector<T> &C)
 {
+	GEOFLOW_TRACE();
   assert( A.size() == B.size() && "Incompatible input vectors");
   assert(idir > 0 && idir < A.size());
 
@@ -1033,6 +1052,7 @@ void cross_prod_s(GTVector<T> &A, GTVector<GTVector<T>*> &B,
 template<typename T>
 void normalize_euclidean(GTVector<GTVector<T>*> &x, GINT *iind, GINT nind, T x0)
 {
+	GEOFLOW_TRACE();
   GSIZET n;
   T      xn;
 
@@ -1078,6 +1098,7 @@ void normalize_euclidean(GTVector<GTVector<T>*> &x, GINT *iind, GINT nind, T x0)
 template<typename T>
 void paxy(GTVector<T> &z, const GTVector<T> &x, T a, const GTVector<T> &y) 
 {
+	GEOFLOW_TRACE();
   if ( y.size() > 1 ) {
     for ( auto j=0; j<x.size(); j++ ) { 
       z[j] = a*x[j]*y[j];
@@ -1107,6 +1128,7 @@ void paxy(GTVector<T> &z, const GTVector<T> &x, T a, const GTVector<T> &y)
 template<typename T>
 void paxy(GTVector<T> &x, T a, const GTVector<T> &y) 
 {
+	GEOFLOW_TRACE();
   if ( y.size() > 1 ) {
     for ( auto j=0; j<x.size(); j++ ) { 
       x[j] = a*x[j]*y[j];
@@ -1136,6 +1158,7 @@ void paxy(GTVector<T> &x, T a, const GTVector<T> &y)
 template<typename T>
 void saxpy(GTVector<T> &x, T a, GTVector<T> &y, T b) 
 {
+	GEOFLOW_TRACE();
   if ( y.size() > 1 ) {
     for ( auto j=0; j<x.size(); j++ ) { 
       x[j] = a*x[j] + b*y[j];
@@ -1166,6 +1189,7 @@ void saxpy(GTVector<T> &x, T a, GTVector<T> &y, T b)
 template<typename T>
 void saxpy(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y, T b) 
 {
+	GEOFLOW_TRACE();
   if ( y.size() > 1 ) {
     for ( auto j=0; j<x.size(); j++ ) { 
       z[j] = a*x[j] + b*y[j];
@@ -1199,6 +1223,7 @@ void saxpy(GTVector<T> &z, GTVector<T> &x, T a, GTVector<T> &y, T b)
 template<typename T>
 void normalizeL2(GGrid &grid, GTVector<GTVector<T>*> &u, GTVector<GTVector<T>*> &tmp, T E0)
 {
+	GEOFLOW_TRACE();
   GSIZET  n;
   GDOUBLE xn, xint;
 
@@ -1227,6 +1252,7 @@ void normalizeL2(GGrid &grid, GTVector<GTVector<T>*> &u, GTVector<GTVector<T>*> 
 template<typename T>
 void zero(GTVector<T> &u)
 {
+	GEOFLOW_TRACE();
   T tiny=std::numeric_limits<T>::epsilon();
 
   for ( auto j=0; j<u.size(); j++ ) {
@@ -1251,6 +1277,7 @@ void zero(GTVector<T> &u)
 template<typename T>
 void zero(GTVector<GTVector<T>*> &u)
 {
+	GEOFLOW_TRACE();
   T tiny=std::numeric_limits<T>::epsilon();
 
   for ( auto i=0; i<u.size(); i++ ) {
@@ -1277,6 +1304,7 @@ void zero(GTVector<GTVector<T>*> &u)
 template<typename T>
 void zero(GTVector<GTVector<T>> &u)
 {
+	GEOFLOW_TRACE();
   T tiny=std::numeric_limits<T>::epsilon();
 
   for ( auto i=0; i<u.size(); i++ ) {
@@ -1302,6 +1330,7 @@ void zero(GTVector<GTVector<T>> &u)
 template<typename T>
 void maxbyelem(GGrid &grid, GTVector<T> &q, GTVector<T> &max)
 {
+	GEOFLOW_TRACE();
   GSIZET     ibeg, iend;
   GElemList *elems = &grid.elems();
 
@@ -1330,6 +1359,7 @@ void maxbyelem(GGrid &grid, GTVector<T> &q, GTVector<T> &max)
 template<typename T>
 void minbyelem(GGrid &grid, GTVector<T> &q, GTVector<T> &min)
 {
+	GEOFLOW_TRACE();
   GSIZET ibeg, iend;
   GElemList *elems = &grid.elems();
 
@@ -1363,6 +1393,7 @@ template<typename T>
 void I2_X_D1(GTMatrix<T> &D1,
              GTVector<T> &u, GSIZET N1, GSIZET N2, GTVector<T> &y)
 {
+	GEOFLOW_TRACE();
   GSIZET ND1, ND2;
 
   ND1 = D1.size(1);
@@ -1413,6 +1444,7 @@ template<typename T>
 void I2_X_D1(GTMatrix<T> &D1,
              GTVector<T> &u, GSIZET N1, GSIZET N2, GSIZET Ne, GTVector<T> &y)
 {
+	GEOFLOW_TRACE();
   GSIZET ND1, ND2, Nu;
 
   ND1 = D1.size(1);
@@ -1465,6 +1497,7 @@ template <typename T>
 void D2_X_D1(GTMatrix<T> &D1, GTMatrix<T>  &D2T, 
              GTVector<T> &u, GTVector<T> &tmp, GTVector<T> &y)
 {
+	GEOFLOW_TRACE();
   GSIZET   N11, N12, N21, N22;
 
   N11 = D1 .size(1);
@@ -1538,6 +1571,7 @@ template<typename T>
 void Dg2_X_D1(GTMatrix<T> &D1, GTVector<T> &Dg2, GTVector<T> &u, 
               GTVector<T> &tmp, GTVector<T> &y)
 {
+	GEOFLOW_TRACE();
   GSIZET   N11, N12, N2;
 
   N11 = D1.size(1);
@@ -1603,6 +1637,7 @@ template<typename T>
 void D2_X_I1(GTMatrix<T> &D2T, 
               GTVector<T> &u, GSIZET N1, GSIZET N2, GTVector<T> &y)
 {
+	GEOFLOW_TRACE();
   GSIZET N21, N22;
 
   N21 = D2T.size(1);
@@ -1651,6 +1686,7 @@ template<typename T>
 void D2_X_I1(GTMatrix<T> &D2T, 
               GTVector<T> &u, GSIZET N1, GSIZET N2, GSIZET Ne, GTVector<T> &y)
 {
+	GEOFLOW_TRACE();
   GSIZET N21, N22, Nu;
 
   N21 = D2T.size(1);
@@ -1710,6 +1746,7 @@ template<typename T>
 void D2_X_Dg1(GTVector<T> &Dg1, GTMatrix<T> &D2T, GTVector<T> &u, 
               GTVector<T> &tmp, GTVector<T> &y)
 {
+	GEOFLOW_TRACE();
   GSIZET   N1, N21, N22;
 
   N1  = Dg1.size();
@@ -1777,6 +1814,7 @@ template<typename T>
 void D3_X_D2_X_D1(GTMatrix<T> &D1, GTMatrix<T>  &D2T, GTMatrix<T> &D3T,
                   GTVector<T> &u, GTVector<T> &tmp, GTVector<T> &y)
 {
+	GEOFLOW_TRACE();
   GSIZET   N11, N12, N21, N22, N31, N32;
 
   N11 = D1 .size(1);
@@ -1862,6 +1900,7 @@ void I3_X_I2_X_D1(GTMatrix<T> &D1, GTVector<T> &u,
                   GSIZET N1, GSIZET N2, GSIZET N3,
                   GTVector<T> &y)
 {
+	GEOFLOW_TRACE();
   GSIZET  ND1, ND2, NYZ, NN;
 
   ND1 = D1.size(1);
@@ -1912,6 +1951,7 @@ void I3_X_I2_X_D1(GTMatrix<T> &D1, GTVector<T> &u,
                   GSIZET N1, GSIZET N2, GSIZET N3, GSIZET Ne,
                   GTVector<T> &y)
 {
+	GEOFLOW_TRACE();
   GSIZET  ND1, ND2, NYZ, NN, Nu;
 
   ND1 = D1.size(1);
@@ -1965,6 +2005,7 @@ void I3_X_D2_X_I1(GTMatrix<T> &D2T, GTVector<T> &u,
                   GSIZET N1, GSIZET N2, GSIZET N3,
                   GTVector<T> &y)
 {
+	GEOFLOW_TRACE();
   GSIZET  ND1, ND2, NXY, NN;
 
   ND1 = D2T.size(1);
@@ -2025,6 +2066,7 @@ void I3_X_D2_X_I1(GTMatrix<T> &D2T, GTVector<T> &u,
                   GSIZET N1, GSIZET N2, GSIZET N3, GSIZET Ne,
                   GTVector<T> &y)
 {
+	GEOFLOW_TRACE();
   GSIZET  ND1, ND2, NXY, NN, Nu;
 
   ND1 = D2T.size(1);
@@ -2087,6 +2129,7 @@ void D3_X_I2_X_I1(GTMatrix<T> &D3T, GTVector<T> &u,
                   GSIZET N1, GSIZET N2, GSIZET N3, 
                   GTVector<T> &y)
 {
+	GEOFLOW_TRACE();
   GSIZET  ND1, ND2, NXY, NN;
 
   ND1 = D3T.size(1);
@@ -2140,6 +2183,7 @@ void D3_X_I2_X_I1(GTMatrix<T> &D3T, GTVector<T> &u,
                   GSIZET N1, GSIZET N2, GSIZET N3, GSIZET Ne,
                   GTVector<T> &y)
 {
+	GEOFLOW_TRACE();
   GSIZET  ND1, ND2, NXY, NN, Nu;
 
   ND1 = D3T.size(1);
@@ -2196,6 +2240,7 @@ template<typename T>
 void Dg3_X_Dg2_X_D1(GTMatrix<T> &D1, GTVector<T> &Dg2, GTVector<T> &Dg3,
                     GTVector<T> &u, GTVector<T> &tmp, GTVector<T> &y)
 {
+	GEOFLOW_TRACE();
   GSIZET N11, N12, N2, N3, NN, NXY, NYZ;
 
   N11 = D1.size(1);
@@ -2274,6 +2319,7 @@ template<typename T>
 void Dg3_X_D2_X_Dg1(GTVector<T> &Dg1, GTMatrix<T> &D2T, GTVector<T> &Dg3,
                     GTVector<T> &u, GTVector<T> &tmp, GTVector<T> &y)
 {
+	GEOFLOW_TRACE();
   GSIZET N1, N21, N22, N3, NN, NXY, NYZ;
 
   N1  = Dg1.size();
@@ -2352,6 +2398,7 @@ template<typename T>
 void D3_X_Dg2_X_Dg1(GTVector<T> &Dg1, GTVector<T> &Dg2, GTMatrix<T> &D3T,
                     GTVector<T> &u, GTVector<T> &tmp, GTVector<T> &y)
 {
+	GEOFLOW_TRACE();
   GSIZET N1, N2, N31, N32, NN, NXY, NYZ;
 
   N1  = Dg1.size();
@@ -2428,6 +2475,7 @@ void D3_X_Dg2_X_Dg1(GTVector<T> &Dg1, GTVector<T> &Dg2, GTMatrix<T> &D3T,
 template<typename T>
 void add(GTVector<T> &vret, const GTVector<T> &va, const GTVector<T> &vb, T a, T b) 
 {
+	GEOFLOW_TRACE();
   #if defined(_G_BOUNDS_CHK)
   if ( va.size() < vret.size() || vb.size() < vret.size() ) {
     cout << "GTVector<T>::add: " << "incompatible size" << endl;
@@ -2474,6 +2522,7 @@ while(1){};
 template<typename T>
 void matvec_prod(GTVector<T> &vret, const GTMatrix<T> &A, const GTVector<T> &b) 
 {
+	GEOFLOW_TRACE();
   #if defined(_G_BOUNDS_CHK)
   if ( b.size() < A.size(2) ) {
     cout << "GMTK::matvec_prod: " << "incompatible size" << endl;
@@ -2527,6 +2576,7 @@ void matvec_prod(GTVector<T> &vret, const GTMatrix<T> &A, const GTVector<T> &b)
 template<typename T>
 void matmat_prod(GTMatrix<T> &C, const GTMatrix<T> &A, const GTMatrix<T> &B) 
 {
+	GEOFLOW_TRACE();
   #if defined(_G_BOUNDS_CHK)
   if ( A.size(2) != B.size(1) ) {
     cout << "GMTK::matmat_prod:incompatible matrix"<< endl;
@@ -2596,6 +2646,7 @@ void matmat_prod(GTMatrix<T> &C, const GTMatrix<T> &A, const GTMatrix<T> &B)
 template<typename T>
 void dot(GTVector<GTVector<T>*> &x, GTVector<GTVector<T>*> &y, GTVector<T> &tmp, GTVector<T> &r)
 {
+	GEOFLOW_TRACE();
    assert(x.size() == y.size());
 
    r = 0.0;

@@ -5,8 +5,8 @@
  *      Author: bflynt
  */
 
-#ifndef MOSAIC_DEBUG_TRACER_HPP_
-#define MOSAIC_DEBUG_TRACER_HPP_
+#ifndef GEOFLOW_SRC_TBOX_TRACER_HPP_
+#define GEOFLOW_SRC_TBOX_TRACER_HPP_
 
 #include "configure.hpp"
 
@@ -19,7 +19,7 @@
  * builds a macro is used to only insert Tracer construction
  * when TRACER_ON is defined.
  */
-#if defined( MOSAIC_USE_TRACER )
+#if defined( GEOFLOW_USE_TRACER )
 
 #include <string>
 
@@ -93,6 +93,16 @@ private:
 } // namespace geoflow
 
 
+#ifndef GEOFLOW_TRACE
+
+// This is some crazy magic that helps produce __BASE__247
+// Vanilla interpolation of __BASE__##__LINE__ would produce __BASE____LINE__
+// Instead this fixes things with macro resolution ordering
+// __COUNTER__ may have portability issues so you could use __LINE__ instead
+#define PP_CAT(a, b) PP_CAT_I(a, b)
+#define PP_CAT_I(a, b) PP_CAT_II(~, a ## b)
+#define PP_CAT_II(p, res) res
+#define UNIQUE_NAME(base) PP_CAT(base, __COUNTER__)
 
 /**
  * \def TRACER(msg)
@@ -106,22 +116,21 @@ private:
  * \param	pre	Prefix to insert before message.
  * \param	msg	Message to insert after prefix.
  */
-#ifndef TRACER
-   #define TRACER(msg) geoflow::tbox::Tracer local_scope_tracer(msg)
-   #define TRACER_W_PREFIX(pre,msg) geoflow::tbox::Tracer local_scope_tracer(pre,msg)
-#endif
+#define GEOFLOW_TRACE() ::geoflow::tbox::Tracer UNIQUE_NAME(trace)(__FUNCTION__);
+#define GEOFLOW_TRACE_MSG(msg) ::geoflow::tbox::Tracer UNIQUE_NAME(trace)(msg);
+#endif  // #ifndef GEOFLOW_TRACE
 
-#else // #ifdef MOSAIC_USE_TRACER
+#else // #ifdef GEOFLOW_USE_TRACER
 
 /**
  * Macro to ignore Tracer construction
  */
-   #ifndef TRACER
-      #define TRACER(msg)
-      #define TRACER_W_PREFIX(pre,msg)
-   #endif
+#ifndef GEOFLOW_TRACE
+	#define GEOFLOW_TRACE()
+	#define GEOFLOW_TRACE_MSG(msg)
+#endif
 
-#endif //  MOSAIC_USE_TRACER
+#endif //  GEOFLOW_USE_TRACER
 
 
-#endif /* MOSAIC_DEBUG_TRACER_HPP_ */
+#endif /* GEOFLOW_SRC_TBOX_TRACER_HPP_ */
