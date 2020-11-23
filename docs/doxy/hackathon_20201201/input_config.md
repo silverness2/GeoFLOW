@@ -38,7 +38,7 @@ directions and greater than the **poly** value for testing (i.e. [4,4,4]).
   },
 ```
 The **poly_test** block controls the test case functionality. The known 
-function takes the form of f(x,y,z) = x<sup>p</sup> + y<sup>q</sup> + z<sup>r</sup> 
+function takes the form of f(x,y,z) = x<sup>p</sup> y<sup>q</sup> z<sup>r</sup> 
 with the polynomial powers being represented by the 3 values within **poly**. The
 **ncylces** variable controls how many times the same derivative calculations
 are repeated to provide a level of work that is sufficient to properly profile. 
