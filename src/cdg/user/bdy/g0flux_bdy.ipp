@@ -100,21 +100,21 @@ GBOOL G0FluxBdy<Types>::update_impl(
     iloc = traits_.ibdyloc[j];     // index into bdy arrays
     ind  = (*igbdy)[j];            // index into volume array
     idd  = (*idep)[iloc];          // dependent vector component
-    xn   = (*bdyNormals)[idd][iloc];// n_idd == normal component for dependent vector comp
 
-    sum  = 0.0;
-    for ( auto k=0; k<nstate_ && idd >=0; k++ ) { // for each vector component
-      if ( idd != traits_.istate[k] ) {
-        sum -= (*bdyNormals)[k][iloc] * (*u[traits_.istate[k]])[ind];
-      }
-    }
-    
     if ( idd >= 0 ) {
+      xn   = (*bdyNormals)[idd][iloc];// n_idd == normal component for dependent vector comp
+      sum  = 0.0;
+      for ( auto k=0; k<nstate_ && idd >=0; k++ ) { // for each vector component
+        if ( idd != traits_.istate[k] ) {
+          sum -= (*bdyNormals)[k][iloc] * (*u[traits_.istate[k]])[ind];
+        }
+      }
+    
       // Ensure vv.n = 0:
 //    (*u[idd])[ind] = ( sum + (*bdyNormals)[idd][iloc] * (*u[idd])[ind] ) / xn;
       (*u[idd])[ind] = sum / xn;
-    }
-    else {
+  }
+  else {
       // Set v == 0, say, on a vertex:
       for ( auto k=0; k<nstate_; k++ ) (*u[traits_.istate[k]])[ind] = 0.0;
     }
