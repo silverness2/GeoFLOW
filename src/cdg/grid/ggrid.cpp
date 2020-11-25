@@ -1110,9 +1110,14 @@ GTVector<GFTYPE> t1(ndof());
   // du/dx_idir = Sum_j=[1:N] dxi_j/dx_idir D_j u:
   if ( this->gtype() == GE_REGULAR ) {
     if ( dotrans ) {
+      compute_grefderiv(u, etmp_, idir, dotrans, du); // D_idir u
+      du.pointProd((*dXidX)(idir-1, 0));
+      du.pointProd(*mass);
+#if 0
       u.pointProd((*dXidX)(idir-1,0), utmp);
       utmp.pointProd(*mass);
       compute_grefderiv(utmp, etmp_, idir, dotrans, du); // D_idir u
+#endif
     }
     else {
       compute_grefderiv(u, etmp_, idir, dotrans, du); // D_idir u
