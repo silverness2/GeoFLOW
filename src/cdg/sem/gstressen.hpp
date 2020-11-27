@@ -36,7 +36,7 @@
 #include "gmtk.hpp"
 #include "pdeint/equation_base.hpp"
 
-#undef   DO_BDY
+#define   DO_BDY
 
 template<typename TypePack>
 class GStressEnOp
