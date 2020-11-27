@@ -1220,7 +1220,7 @@ void GGrid::init_local_face_info()
   GTVector<GUINT>              utmp; 
   GTVector<GTVector<GINT>>    *ieface;     // element face indices
   GTVector<GTVector<GUINT>>   *deface;     // element face node description
-  GTVector<GTVector<GFTYPE>>  *efacemass;  // element face weights
+  GTVector<GFTYPE>            *efacemass;  // element face weights
   GTVector<GFTYPE>             ftmp; 
 
   GSIZET  m, n, nn; 
@@ -1261,13 +1261,13 @@ void GGrid::init_local_face_info()
         if ( !gieface_.containsn(ig, m) ) { // don't include repeated face ind
           itmp  [m] = ig;
           utmp  [m] = (*deface)[j][k];
-          ftmp  [m] = (*efacemass)[j][k];
+          ftmp  [m] = (*efacemass)[(*ieface)[(*ieface)[j][k]];
           m++;
         }
 #else
         itmp  [m] = ig;
         utmp  [m] = (*deface)[j][k];
-        ftmp  [m] = (*efacemass)[j][k];
+        ftmp  [m] = (*efacemass)[(*ieface)[j][k]];
         m++;
 #endif
       } // end, face node loop

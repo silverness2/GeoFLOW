@@ -1394,7 +1394,7 @@ void GGridBox::find_bdy_ind2d(GINT bdyid, GBOOL bunique, GTVector<GSIZET> &ikeep
   nbdy   = 0;
   for ( auto e=0; e<gelems_.size(); e++ ) { 
     xnodes = &gelems_[e]->xNodes();
-    emass  = &gelems_[e]->face_mass(bdyid);
+    emass  = &gelems_[e]->face_mass();
     nnodes = gelems_[e]->nnodes();
     nind   = geoflow::in_seg(v, *xnodes, ind); // get indices on segment
     // For each index on bdy, set description:
@@ -1404,7 +1404,7 @@ void GGridBox::find_bdy_ind2d(GINT bdyid, GBOOL bunique, GTVector<GSIZET> &ikeep
       if ( bunique ) bexist = ktmp.containsn(ie,nkeep);
       if ( !bunique || !bexist ) {
         itmp[nbdy] = ie;
-        mtmp[nbdy] = (*emass)[i];
+        mtmp[nbdy] = (*emass)[ind[i]];
         SET_DSWORD(utmp[nbdy], GElem_base::FACE, bdyid);
         // Check if point is a vertex:
         if ( xp == v[0] ) { // is FUZZY
