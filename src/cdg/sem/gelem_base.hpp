@@ -45,6 +45,7 @@ typedef GTVector<GTVector<GINT>>             GVVInt;
 typedef GTVector<GTVector<GUINT>>            GVVUInt;
 typedef GTVector<GTVector<GBdyType>>         GVVBTyp;
 typedef GTVector<GTVector<GFTYPE>>           GVVFType;
+typedef GTVector<GFTYPE>                     GVFType;
 typedef GTMatrix<GTVector<GFTYPE>>           GMVFType;
 
 
@@ -151,8 +152,9 @@ inline  GVVInt             &edge_indices(){ return edge_indices_;}
 inline  GTVector<GINT>     &edge_indices(GINT i){ return edge_indices_[i];}
 inline  GVVInt             &face_indices(){ return face_indices_;}
 inline  GTVector<GINT>     &face_indices(GINT i){ return face_indices_[i];}
-inline  GVVFType           &face_mass(){ return face_mass_;}
-inline  GTVector<GFTYPE>   &face_mass(GINT i){ return face_mass_[i];}
+inline  GTVector<GFTYPE>   &face_mass(){ return face_mass_;}
+//inline  GVVFType           &face_mass(){ return face_mass_;}
+//inline  GTVector<GFTYPE>   &face_mass(GINT i){ return face_mass_[i];}
 inline  GVVUInt            &face_desc(){ return face_desc_;}
 inline  GTVector<GUINT>    &face_desc(GINT i){ return face_desc_[i];}
 inline  GTVector<GINT>     &bdy_indices(){ return bdy_indices_;}
@@ -176,13 +178,13 @@ virtual void                build_elem2d();
 virtual void                build_elem3d();
 
 virtual void                get_indirect  (GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &vert_ind,
-                                          GVVInt &edge_ind, GVVInt &face_ind, GVVFType &face_mass, GVVUInt &face_desc);
+                                          GVVInt &edge_ind, GVVInt &face_ind, GVFType &face_mass, GVVUInt &face_desc);
 virtual void                get_indirect1d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &vert_ind,
-                                          GVVInt &edge_ind, GVVInt &face_ind, GVVFType &face_mass, GVVUInt &face_desc);
+                                          GVVInt &edge_ind, GVVInt &face_ind, GVFType &face_mass, GVVUInt &face_desc);
 virtual void                get_indirect2d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &vert_ind,
-                                          GVVInt &edge_ind, GVVInt &face_ind, GVVFType &face_mass, GVVUInt &face_desc);
+                                          GVVInt &edge_ind, GVVInt &face_ind, GVFType &face_mass, GVVUInt &face_desc);
 virtual void                get_indirect3d(GTVector<GNBasis<GCTYPE,GFTYPE>*> &b, GVVInt &vert_ind,
-                                          GVVInt &edge_ind, GVVInt &face_ind, GVVFType &face_mass, GVVUInt &face_desc);
+                                          GVVInt &edge_ind, GVVInt &face_ind, GVFType &face_mass, GVVUInt &face_desc);
         void                Jac(GMVFType &rij, GTVector<GFTYPE> &jac, GBOOL &pChk, GINT *ind, GINT nind);
 virtual void                Jac_embed(GMVFType &G, GTVector<GFTYPE> &jac, GBOOL &pChk, GINT *pind, GINT nind);
         void                inv(GMVFType &G, GMVFType &iG);
@@ -249,7 +251,7 @@ GVVInt                  vert_indices_;  // all indices comprising vertices
 GVVInt                  edge_indices_;  // all indices comprising edges          
 GVVInt                  face_indices_;  // all indices comprising faces
 GVVUInt                 face_desc_;     // 'description' of face nodes
-GVVFType                face_mass_;     // weights at each face_indices node
+GVFType                 face_mass_;     // weights at each face_indices node, indexed by vol index
 GIBuffer                bdy_indices_;   // global bdy indices
 GTVector<ElemNodeType>  bdy_nodetype_;  // node type of bdy nodes
 GTVector<GBdyType>      bdy_types_;     // bdy types on any global bdy nodes
