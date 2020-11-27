@@ -1261,7 +1261,7 @@ void GGrid::init_local_face_info()
         if ( !gieface_.containsn(ig, m) ) { // don't include repeated face ind
           itmp  [m] = ig;
           utmp  [m] = (*deface)[j][k];
-          ftmp  [m] = (*efacemass)[(*ieface)[(*ieface)[j][k]];
+          ftmp  [m] = (*efacemass)[(*ieface)[j][k]];
           m++;
         }
 #else
