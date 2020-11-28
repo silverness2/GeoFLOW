@@ -434,10 +434,13 @@ void GMConv<TypePack>::step_impl(const Time &t, State &uin, State &uf, State &ub
     steptop_callback_(t, uin, dt);
   }
 
+  // Set bdy conditions:
+  apply_bc_impl(t, uin, ub);
 
   // Set evolved state vars from input state.
   // These are not deep copies:
   for ( auto j=0; j<traits_.nsolve; j++ ) uevolve_ [j] = uin[j];
+  
 
   switch ( traits_.isteptype ) {
     case GSTEPPER_EXRK:
@@ -461,6 +464,7 @@ void GMConv<TypePack>::step_impl(const Time &t, State &uin, State &uf, State &ub
     }
   }
 
+  apply_bc_impl(t, uin, ub);
 
   // Check solution for NaN and Inf:
   bret = TRUE;
