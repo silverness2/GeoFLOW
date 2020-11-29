@@ -199,11 +199,11 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
   // Use kernel above, for i=idir:
   for ( auto b=0; b<igbdy->size(); b++ ) {
     k = (*igbdy)[b];
-#if defined(DO_COMPRESS_MODES_ONLY)
+    #if defined(DO_COMPRESS_MODES_ONLY)
     so[k] += (*utmp[1])[k]*tfact_[k] * (*normals)[idir-1][b] * (*bmass)[b];
-#else
+    #else
     so[k] += (*utmp[1])[k] * (*normals)[idir-1][b] * (*bmass)[b];
-#endif
+    #endif
   }
 #endif 
 
@@ -331,11 +331,11 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
     // Do the surface terms for jth component of normal:
     for ( auto b=0; b<igbdy->size(); b++ ) {
       k = (*igbdy)[b];
-#if defined(DO_COMPRESS_MODES_ONLY)
+      #if defined(DO_COMPRESS_MODES_ONLY)
       eo[k] += (*utmp[2])[k]*tfact_[k] * (*normals)[j][b] * (*bmass)[b];
-#else
+      #else
       eo[k] += (*utmp[2])[k] * (*normals)[j][b] * (*bmass)[b];
-#endif
+      #endif
     }
 #endif
   }
