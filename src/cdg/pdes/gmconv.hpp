@@ -135,7 +135,6 @@ public:
           GBOOL           usebase     = TRUE;   // use hydrostatic base state?
           GBOOL           variabledt  = FALSE;  // use variable timestep?
           GBOOL           bvarvterm   = FALSE;  // time dep term velocities?
-          GBOOL           usedivop    = TRUE;   // use divergence operator?
           GBOOL           divopcolloc = TRUE;   // use collocation in GDivOp?
           GBOOL           Stokeshyp   = FALSE;  // use Stokes hypothesis
           GBOOL           bindepdiss  = FALSE;  // indep. mom & energy diss?
@@ -213,7 +212,6 @@ inline  void                compute_cv   (const State &u, StateComp &utmp, State
 inline  void                compute_qd   (const State &u, StateComp &qd);
 inline  void                compute_falloutsrc
                                          (StateComp &g, State &qi, State &v, GINT jexcl, State &utmp, StateComp &r );
-inline  void                compute_div  (StateComp &q, State &v, State &utmp, StateComp &div );
 inline  void                compute_v    (const State &u, StateComp &id, State &v);
 inline  void                compute_vpref(StateComp &tv, State &W);
 inline  void                compute_vpref(StateComp &tv, GINT idir, StateComp &W);
