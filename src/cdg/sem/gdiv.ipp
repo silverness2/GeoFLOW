@@ -86,6 +86,8 @@ void GDivOp<TypePack>::apply(StateComp &d, State &u, State &utmp, StateComp &div
 
 #if defined(DO_BDY)
       // Global bdy terms:
+      //  Note: utmp[1] should contain effect of bdy conditions,
+      //        which are imposed on entry
       for ( auto b=0; b<igbdy->size(); b++ ) {
         k = (*igbdy)[b];
         div[k] += (*utmp[1])[k] * (*normals)[j][b] * (*bmass)[b];
