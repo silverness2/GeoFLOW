@@ -48,7 +48,6 @@
     "dofallout"       : false,
     "dogravity"       : true,
     "bconserved"      : false,
-    "usedivop"        : true,
     "divopcolloc"     : true,
     "Stokeshyp"       : true,
     "bindepdiss"      : false,
@@ -88,7 +87,7 @@
     "stab_preserving"  : false,
     "extrap_order"     : 2,
     "variable_dt"      : true,
-    "courant"          : 0.025
+    "courant"          : 0.1
   },
   "dissipation_traits": {
     "nu"      : 4000.0,
@@ -154,7 +153,7 @@
     "integ_type" : "time",
     "time_end"   : 1101.0,
     "cycle_end"  : 10,
-    "dt"         : 0.005
+    "dt"         : 0.02
   }
 
 }

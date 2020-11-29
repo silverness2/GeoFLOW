@@ -48,7 +48,6 @@
     "dofallout"       : false,
     "dogravity"       : true,
     "bconserved"      : false,
-    "usedivop"        : false,
     "divopcolloc"     : false,
     "Stokeshyp"       : false,
     "bindepdiss"      : false,
