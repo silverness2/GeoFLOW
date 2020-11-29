@@ -77,7 +77,6 @@ EquationFactory<ET>::build(const tbox::PropertyTree& ptree, Grid& grid){
                 ctraits.dofallout   = eqn_ptree.getValue<bool>  ("dofallout");
                 ctraits.dograv      = eqn_ptree.getValue<bool>  ("dogravity");
                 ctraits.usebase     = eqn_ptree.getValue<bool>  ("usebase_state");
-                ctraits.usedivop    = eqn_ptree.getValue<bool>  ("usedivop");
                 ctraits.divopcolloc = eqn_ptree.getValue<bool>  ("divopcolloc");
                 ctraits.Stokeshyp   = eqn_ptree.getValue<bool>  ("Stokeshyp");
                 ctraits.bindepdiss  = eqn_ptree.getValue<bool>  ("bindepdiss",false);
