@@ -116,7 +116,9 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
        && "Insufficient temp space specified");
 
   GINT       nxy = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
+  GINT                       isgn;
   GSIZET                     k;
+  Ftype                      fsgn;
   GTVector<GSIZET>          *igbdy   = &grid_->igbdy() ;
   GTVector<GTVector<Ftype>> *normals = &grid_->bdyNormals();
   StateComp                 *mass    =  grid_->massop().data();
@@ -124,6 +126,9 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
 
   assert( idir > 0 && idir <= nxy );
 
+#if defined(DO_COMPRESS_MODES_ONLY)
+  tfact_.resizem(u[0]->size());
+#endif
 
   // so = -D^{T,j} [mu [D_i u_j + Dj u_i) + Dk zeta u_k delta_ij ]:
   //    + surface terms:
@@ -171,8 +176,21 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
     grid_->deriv(*u[j]  , j+1, *utmp[0], *utmp[2]); 
     *utmp[1] += *utmp[2];
   }
+
   utmp[1]->pointProd(*zeta_);
+
+#if defined(DO_COMPRESS_MODES_ONLY)
+  for ( auto i=0; i<utmp[1]->size(); i++ ) {
+    isgn      = sgn<Ftype>((*utmp[1])[i]);
+    fsgn      = static_cast<Ftype>(isgn);
+    tfact_[i] = isgn == 0 ? 1.0 : 0.5*(1.0-fsgn);
+  }
+#endif
+
   grid_->wderiv(*utmp[1], idir, TRUE, *utmp[0], *utmp[2]);
+#if defined(DO_COMPRESS_MODES_ONLY)
+  utmp[2]->pointProd(tfact_);
+#endif
   so -= *utmp[2];
  
 #if defined(DO_BDY)
@@ -181,9 +199,14 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
   // Use kernel above, for i=idir:
   for ( auto b=0; b<igbdy->size(); b++ ) {
     k = (*igbdy)[b];
+#if defined(DO_COMPRESS_MODES_ONLY)
+    so[k] += (*utmp[1])[k]*tfact_[k] * (*normals)[idir-1][b] * (*bmass)[b];
+#else
     so[k] += (*utmp[1])[k] * (*normals)[idir-1][b] * (*bmass)[b];
+#endif
   }
 #endif 
+
 
 
 } // end of method apply (1)
@@ -209,12 +232,17 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
        && "Insufficient temp space specified");
 
   GINT       nxy = grid_->gtype() == GE_2DEMBEDDED ? GDIM+1 : GDIM;
+  Ftype                      isgn;
   GSIZET                     k;
+  Ftype                      fsgn;
   GTVector<GSIZET>          *igbdy   = &grid_->igbdy() ;
   GTVector<GTVector<Ftype>> *normals = &grid_->bdyNormals();
   StateComp                 *mass    =  grid_->massop().data();
   StateComp                 *bmass   = &grid_->bdyMass();
 
+#if defined(DO_COMPRESS_MODES_ONLY)
+  tfact_.resizem(u[0]->size());
+#endif
 
   // eo -= D^{T,j} [ kappa u^i [D_i u_j + Dj u_i) 
   //    + lambda u^i (Dk u^k) delta_ij ]
@@ -278,20 +306,36 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
     grid_->deriv(*u[j], j+1, *utmp[0], *utmp[2]); 
     *utmp[1] += *utmp[2];
   }
+
   utmp[1]->pointProd(*lambda_);
+
+#if defined(DO_COMPRESS_MODES_ONLY)
+  for ( auto i=0; i<utmp[1]->size(); i++ ) {
+    isgn      = sgn<Ftype>((*utmp[1])[i]);
+    fsgn      = static_cast<Ftype>(isgn);
+    tfact_[i] = isgn == 0 ? 1.0 : 0.5*(1.0-fsgn);
+  }
+#endif
 
   // Now compute
   //  -= D^{T,j} [lambda u^i (Div u) delta_ij]:
   for ( auto j=0; j<nxy; j++ ) { 
     u[j]->pointProd(*utmp[1],*utmp[2]); 
     grid_->wderiv(*utmp[2], j+1, TRUE, *utmp[0], *utmp[3]); 
+#if defined(DO_COMPRESS_MODES_ONLY)
+    utmp[3]->pointProd(tfact_);
+#endif
     eo -= *utmp[3];
 
 #if defined(DO_BDY)
     // Do the surface terms for jth component of normal:
     for ( auto b=0; b<igbdy->size(); b++ ) {
       k = (*igbdy)[b];
+#if defined(DO_COMPRESS_MODES_ONLY)
+      eo[k] += (*utmp[2])[k]*tfact_[k] * (*normals)[j][b] * (*bmass)[b];
+#else
       eo[k] += (*utmp[2])[k] * (*normals)[j][b] * (*bmass)[b];
+#endif
     }
 #endif
   }

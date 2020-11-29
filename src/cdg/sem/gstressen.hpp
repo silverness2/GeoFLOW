@@ -36,7 +36,8 @@
 #include "gmtk.hpp"
 #include "pdeint/equation_base.hpp"
 
-#define   DO_BDY
+#define DO_BDY
+#undef  DO_COMPRESS_MODES_ONLY
 
 template<typename TypePack>
 class GStressEnOp
@@ -91,6 +92,7 @@ private:
         StateComp        *zeta_;       // bulk/dilitation viscosity
         StateComp        *kappa_;      // dyn.shear visc for energy
         StateComp        *lambda_;     // bulk/diliataion visc for energy
+        StateComp         tfact_;      // diliataion truncation factor
         Traits            traits_;     // operator traits
 
 };
