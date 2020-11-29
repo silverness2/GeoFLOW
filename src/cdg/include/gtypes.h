@@ -281,7 +281,7 @@ const char * const sGStateCompType [] ={"GSC_KINETIC","GSC_MAGNETIC","GSC_DENSIT
 #endif
 
 
-#if !defined GError
+#if !defined(GError)
   #define GError() printf("Error: %s; line: %d\n",__FILE__,__LINE__);
 #endif
 
@@ -294,6 +294,13 @@ const char * const sGStateCompType [] ={"GSC_KINETIC","GSC_MAGNETIC","GSC_DENSIT
 
 
 #endif // _G_TYPES_DEF
+
+#if !defined(_G_SGN)
+#define  _G_SGN
+template<typename T> int sgn(T val) {
+    return ( T(0) < val ) - ( val < T(0) );
+}
+#endif
 
 #endif // !defined(_GTYPES_HPP)
 
