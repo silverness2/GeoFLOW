@@ -76,7 +76,6 @@ GBOOL G0FluxBdy<Types>::update_impl(
    GTVector<GINT>             *idep;
    GTVector<GSIZET>           *igbdy;
 // GTVector<GTVector<GSIZET>> *ilbdy;
-   GTPoint<Ftype>              pt(3), pn(3);
 
 
 
@@ -103,10 +102,6 @@ GBOOL G0FluxBdy<Types>::update_impl(
     ind  = (*igbdy)[j];            // index into volume array
     idd  = (*idep)[iloc];          // dependent vector component
 
-pt.assign(*xnodes, ind);
-pn.assign(*bdyNormals, iloc);
-cout << "G0Flux: ind=" << ind << " iloc =" << iloc << " bdypt=" << pt << " normal=" << pn << endl;
-
     if ( idd >= 0 ) {
       xn   = (*bdyNormals)[idd][iloc];// n_idd == normal component for dependent vector comp
       sum  = 0.0;
@@ -127,8 +122,6 @@ cout << "G0Flux: ind=" << ind << " iloc =" << iloc << " bdypt=" << pt << " norma
   }
 
   bcomputed_ = TRUE;
-
-exit(1);
 
 
   return TRUE;
