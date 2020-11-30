@@ -72,10 +72,11 @@ GBOOL G0FluxBdy<Types>::update_impl(
    GINT       idd, k;
    GSIZET     il, iloc, ind;
    Ftype      sum, xn;
-   GTVector<GTVector<Ftype>>  *bdyNormals;
+   GTVector<GTVector<Ftype>>  *bdyNormals, *xnodes;
    GTVector<GINT>             *idep;
    GTVector<GSIZET>           *igbdy;
 // GTVector<GTVector<GSIZET>> *ilbdy;
+   GTPoint<Ftype>              pt(3), pn(3);
 
 
 
@@ -91,6 +92,7 @@ GBOOL G0FluxBdy<Types>::update_impl(
   //       following loops to have a better chance
   //       of vectorization. Unrolling likely
   //       won't occur:
+  xnodes     = &grid.xNodes();
   bdyNormals = &grid.bdyNormals(); // bdy normal vector
   idep       = &grid.idepComp();   // dependent components
   igbdy      = &traits_.ibdyvol;
@@ -101,10 +103,14 @@ GBOOL G0FluxBdy<Types>::update_impl(
     ind  = (*igbdy)[j];            // index into volume array
     idd  = (*idep)[iloc];          // dependent vector component
 
+pt.assign(*xnodes, ind);
+pn.assign(*bdyNormals, iloc);
+cout << "G0Flux: ind=" << ind << " iloc =" << iloc << " bdypt=" << pt << " normal=" << pn << endl;
+
     if ( idd >= 0 ) {
       xn   = (*bdyNormals)[idd][iloc];// n_idd == normal component for dependent vector comp
       sum  = 0.0;
-      for ( auto k=0; k<nstate_ && idd >=0; k++ ) { // for each vector component
+      for ( auto k=0; k<nstate_; k++ ) { // for each indep vector component
         if ( idd != traits_.istate[k] ) {
           sum -= (*bdyNormals)[k][iloc] * (*u[traits_.istate[k]])[ind];
         }
@@ -113,14 +119,17 @@ GBOOL G0FluxBdy<Types>::update_impl(
       // Ensure vv.n = 0:
 //    (*u[idd])[ind] = ( sum + (*bdyNormals)[idd][iloc] * (*u[idd])[ind] ) / xn;
       (*u[idd])[ind] = sum / xn;
-  }
-  else {
-      // Set v == 0, say, on a vertex:
-      for ( auto k=0; k<nstate_; k++ ) (*u[traits_.istate[k]])[ind] = 0.0;
+    }
+    else {
+        // Set v == 0, say, on a vertex:
+        for ( auto k=0; k<nstate_; k++ ) (*u[traits_.istate[k]])[ind] = 0.0;
     }
   }
 
   bcomputed_ = TRUE;
+
+exit(1);
+
 
   return TRUE;
 
