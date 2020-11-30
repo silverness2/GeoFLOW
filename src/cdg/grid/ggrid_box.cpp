@@ -1725,7 +1725,7 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
        it = GET_LOWORD(gdeface[j]);
        xp = 0.0;
        if ( it == GElem_base::FACE) {
-         xm = id == 0 || id == 3 ? -1.0 : 1.0;
+         xm = (id == 0 || id == 3) ? -1.0 : 1.0;
          xp[(id+1)%2] = xm; 
          face_mass[j] *= dXdXi(id%2,0)[ib];
          for ( ic=0; ic<GDIM && fabs(xp[ic]) < tiny; ic++ );
