@@ -998,7 +998,6 @@ void GGridBox::config_bdy(const PropertyTree           &ptree,
       }
       // May have different uniform bdys for different state comps:
       for ( auto k=0; k<stblock.tbdy.size() && !bperiodic; k++ ) {
-cout << "GGridBox::ConfigBdy: itmp[k=" << k << "]" << itmp << endl;
         base_ptr = GUpdateBdyFactory<BdyTypePack>::build(ptree, sbdy, *this,  j,
                                             stblock.tbdy[k], stblock.istate[k], itmp);
         igbdyft[j] = stblock.tbdy[k];
@@ -1735,7 +1734,6 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
          depComp[j] = ic;
        }
        else if ( it == GElem_base::VERTEX ) {
-         depComp[j] = -1;
          if ( id == 0 ) {
            xp[0] =  0.0; //-1.0/sqrt(2.0);
            xp[1] = -1.0; //-1.0/sqrt(2.0);
@@ -1756,20 +1754,18 @@ void GGridBox::do_face_normals2d(GTMatrix<GTVector<GFTYPE>>    &dXdXi,
            xp[1] =  0.0; // 1.0/sqrt(2.0);
            face_mass[j] *= dXdXi(1,0)[ib];
          }
+         for ( ic=0; ic<GDIM && fabs(xp[ic]) < tiny; ic++ );
+         assert(ic < GDIM); // no normal components > 0
+         for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
+         depComp[j] = -1;
        }
 #if 0
        kp.cross(p1, xp);   // xp = k X p1
        face_mass[j] *= xp.mag(); // |k X d_X_/dxi_ip| is face Jac
        xp.unit(); xp *= xm;
 #endif
-#if 0
-       for ( ic=0; ic<GDIM && fabs(xp[ic]) < tiny; ic++ );
-       assert(ic < GDIM); // no normal components > 0
-       for ( auto i=0; i<normals.size(); i++ ) normals[i][j] = xp[i];
-       depComp[j] = ic;
-#endif
 cout << "do_face_normals2d: j=" << j << " id=" << id << " it=" << it << " norm=" << xp << " idep=" << ic << endl; 
-     }
+     } // end, j-loop over bdy face nodes
    }
    else if ( this->gtype_ == GE_DEFORMED 
         ||   this->gtype_ == GE_2DEMBEDDED ) {
