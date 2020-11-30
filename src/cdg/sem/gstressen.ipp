@@ -6,7 +6,7 @@
 //                momentum eqution is
 //                    F_i = [2  mu s_{ij}],j + (zeta Div u delta_{ij}),j,
 //                where
-//                    s_{ij} = (u_j,i + u_i,j)/2 - 1/d Div u delta_{ij}, and
+//                    s_{ij} = (u_j,i + u_i,j)/2 - 1/2d Div u delta_{ij}, and
 //                d is the problem dimension. The viscous stress-energy for the 
 //                energy equation is
 //                    [2 kappa u_i s_{ij}],j - [lambda u_i Div u delta_{ij}],j
@@ -16,8 +16,8 @@
 //                indices are summed here.  mu, zeta, kappa, lambda, may vary
 //                in space or be constant. Currently, the so-called Stokes 
 //                approximation is used by default s.t.
-//                      (zeta - 2 mu/d) = -2/3 mu, and
-//                      (lambda - 2 kappa/d ) = -2/3 kappa.
+//                      (zeta -  mu/d) = -2/3 mu, and
+//                      (lambda -  kappa/d ) = -2/3 kappa.
 //               
 //                For the energy, this operator is nonlinear, 
 //                so it should not derive from GLinOp. 
@@ -131,7 +131,7 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
 #endif
 
   // so = -D^{T,j} [mu [D_i u_j + Dj u_i) + Dk zeta u_k delta_ij ]:
-  //    + surface terms:
+  //    + bdy surface terms:
   // Below, i = idir:
 
   // Do -D^{T,j} [mu (D_i u_j) ] terms:
@@ -144,7 +144,7 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
     so -= *utmp[2];
 
 #if defined(DO_BDY)
-  // Compute bdy terms for this component, j:
+    // Compute bdy terms for this component, j:
     for ( auto b=0; b<igbdy->size(); b++ ) {
       k = (*igbdy)[b];
       so[k] += (*utmp[1])[k] * (*normals)[j][b] * (*bmass)[b];
@@ -177,13 +177,13 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
     *utmp[1] += *utmp[2];
   }
 
-  utmp[1]->pointProd(*zeta_);
+  utmp[1]->pointProd(*zeta_);  // zeta Div u
 
 #if defined(DO_COMPRESS_MODES_ONLY)
   for ( auto i=0; i<utmp[1]->size(); i++ ) {
     isgn      = sgn<Ftype>((*utmp[1])[i]);
     fsgn      = static_cast<Ftype>(isgn);
-    tfact_[i] = isgn == 0 ? 1.0 : 0.5*(1.0-fsgn);
+    tfact_[i] = isgn == 0 ? 0.0 : 0.5*(1.0-fsgn);
   }
 #endif
 
@@ -199,11 +199,11 @@ void GStressEnOp<TypePack>::apply(State &u, GINT idir, State &utmp, StateComp &s
   // Use kernel above, for i=idir:
   for ( auto b=0; b<igbdy->size(); b++ ) {
     k = (*igbdy)[b];
-    #if defined(DO_COMPRESS_MODES_ONLY)
+  #if defined(DO_COMPRESS_MODES_ONLY)
     so[k] += (*utmp[1])[k]*tfact_[k] * (*normals)[idir-1][b] * (*bmass)[b];
-    #else
+  #else
     so[k] += (*utmp[1])[k] * (*normals)[idir-1][b] * (*bmass)[b];
-    #endif
+  #endif
   }
 #endif 
 
@@ -331,11 +331,11 @@ void GStressEnOp<TypePack>::apply(State &u, State &utmp, StateComp &eo)
     // Do the surface terms for jth component of normal:
     for ( auto b=0; b<igbdy->size(); b++ ) {
       k = (*igbdy)[b];
-      #if defined(DO_COMPRESS_MODES_ONLY)
+    #if defined(DO_COMPRESS_MODES_ONLY)
       eo[k] += (*utmp[2])[k]*tfact_[k] * (*normals)[j][b] * (*bmass)[b];
-      #else
+    #else
       eo[k] += (*utmp[2])[k] * (*normals)[j][b] * (*bmass)[b];
-      #endif
+    #endif
     }
 #endif
   }

@@ -6,7 +6,7 @@
 //                momentum eqution is
 //                    F_i = [2  mu s_{ij}],j + (zeta Div u delta_{ij}),j,
 //                where
-//                    s_{ij} = (u_j,i + u_i,j)/2 - 1/d Div u delta_{ij}, and
+//                    s_{ij} = (u_j,i + u_i,j)/2 - 1/2d Div u delta_{ij}, and
 //                d is the problem dimension. The viscous stress-energy for the 
 //                energy equation is
 //                    [2 kappa u_i s_{ij}],j - [lambda u_i Div u delta_{ij}],j
@@ -16,8 +16,8 @@
 //                indices are summed here.  mu, zeta, kappa, lambda, may vary
 //                in space or be constant. Currently, the so-called Stokes 
 //                approximation is used by default s.t.
-//                      (zeta - 2 mu/d) = -2/3 mu, and
-//                      (lambda - 2 kappa/d ) = -2/3 kappa.
+//                      (zeta - mu/d) = -2/3 mu, and
+//                      (lambda - kappa/d ) = -2/3 kappa.
 //               
 //                For the energy, this operator is nonlinear, 
 //                so it should not derive from GLinOp. 
