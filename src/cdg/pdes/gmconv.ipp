@@ -350,7 +350,7 @@ void GMConv<TypePack>::dudt_impl(const Time &t, const State &u, const State &uf,
 
 #if 0
     grid_->wderiv(*p, j+1, TRUE, *tmp2, *tmp1);       // Grad p'
-   *dudt[j] -= *tmp1;                                 // += Grad p'
+   *dudt[j] -= *tmp1;                                 // -= Grad p'
 #else
     grid_->deriv(*p, j+1, *tmp2, *tmp1);              // Grad p'
    *tmp1 *= *Mass; 
