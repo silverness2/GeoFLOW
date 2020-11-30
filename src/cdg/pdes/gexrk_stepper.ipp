@@ -158,6 +158,7 @@ void GExRKStepper<T>::step_b(const Time &t, const State &uin, State &uf, State &
   
   h = dt ; 
 
+
   // Set temp space, initialize iteration:
   for ( n=0; n<nstate; n++ ) {
     u   [n] =  tmp[n];
@@ -171,6 +172,8 @@ void GExRKStepper<T>::step_b(const Time &t, const State &uin, State &uf, State &
     }
   }
 
+  tt = t ;
+  if ( bapplybc_  ) bdy_apply_callback_ (tt, uout, ub); 
  
   for ( m=0; m<nstage_-1; m++ ) { // cycle thru stages minus 1
     // Compute k_m:
@@ -197,6 +200,7 @@ void GExRKStepper<T>::step_b(const Time &t, const State &uin, State &uf, State &
       *uout[n] += *isum; // += h * c_m * k_m
     }
     GMTK::constrain2sphere(*grid_, uout);
+    if ( bapplybc_  ) bdy_apply_callback_ (tt, uout, ub); 
   } // end, m-loop
 
    // Do contrib from final stage, M = nstage_:
@@ -208,21 +212,11 @@ void GExRKStepper<T>::step_b(const Time &t, const State &uin, State &uf, State &
    }
     GMTK::constrain2sphere(*grid_, u);
 
-#if 0
-   if ( ggfx_ != NULLPTR ) {
-     for ( n=0; n<nstate; n++ ) { // for each state member, u
-       ggfx_->doOp(*u[n], GGFX_OP_SMOOTH);
-     }
-   }
-#endif
-
    if ( bapplybc_  ) bdy_apply_callback_ (tt, u, ub); 
    rhs_callback_( tt, u, uf, ub, h, K_[0]); // k_M at stage M
 
-   if ( ggfx_ != NULLPTR ) {
-     for ( n=0; n<nstate; n++ ) { // for each state member, uout
-       ggfx_->doOp(*K_[0][n], GGFX_OP_SMOOTH);
-     }
+   for ( n=0; ggfx_!=NULLPTR && n<nstate; n++ ) { // for each state member, uout
+     ggfx_->doOp(*K_[0][n], GGFX_OP_SMOOTH);
    }
 
    // Compute final output state, and set its bcs and
@@ -234,10 +228,8 @@ void GExRKStepper<T>::step_b(const Time &t, const State &uin, State &uf, State &
    if ( bapplybc_  ) bdy_apply_callback_ (tt, uout, ub); 
    GMTK::constrain2sphere(*grid_, uout);
 
-   if ( ggfx_ != NULLPTR ) {
-     for ( n=0; n<nstate; n++ ) { // for each state member, uout
-       ggfx_->doOp(*uout[n], GGFX_OP_SMOOTH);
-     }
+   for ( n=0; ggfx_!=NULLPTR && n<nstate; n++ ) { // for each state member, uout
+     ggfx_->doOp(*uout[n], GGFX_OP_SMOOTH);
    }
 
    if ( bapplybc_  ) bdy_apply_callback_ (tt, uout, ub); 
