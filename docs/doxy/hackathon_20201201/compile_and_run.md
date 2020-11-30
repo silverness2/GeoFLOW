@@ -31,6 +31,15 @@ More info will be provided as we gain access to the Hackathon cluster.
 export BOOST_ROOT=/scratch2/BMC/gsd-hpcs/Bryan.Flynt/opt/boost/intel-2020.2
 ```
 
+### Turning On/Off NVidia Profiler (NVTX)
+The hackathon code has the ability to be instrumented using the 
+[NVIDIA Tools Extension SDK (NVTX)](https://developer.nvidia.com/blog/cuda-pro-tip-generate-custom-application-profile-timelines-nvtx/)
+profiling calls inserted automatically by the CMake build system. To accomplish 
+this the Tracer must be turned on using the **GEOFLOW_USE_TRACER** variable
+followed by the **GEOFLOW_TRACER_USE_NVTX** variable to specify what the tracer 
+should do.  Turning on these two CMake variables the build system will detect 
+the CUDA library, insert the calls to NVTX, compile and link the proper libraries.
+
 ## Complete Example
 
 ### Clone the repository and create a **build** directory.
@@ -67,6 +76,7 @@ module purge
 module load cmake
 module load intel/2020.2
 module load impi/2020.2
+module load cuda
 
 # Set environment variables for CMake to pick up
 export CC=mpiicc
@@ -81,8 +91,8 @@ cd build
 rm -r cmake*
 rm -r CMake*
 
-# Configure using CMake                                                                                                       
-cmake --log-level=VERBOSE ../.
+# Configure using CMake                                                                                          
+cmake -DGEOFLOW_USE_TRACER=ON -DGEOFLOW_TRACER_USE_NVTX=ON --log-level=VERBOSE ../.
 
 # Make it                                                                                                                     
 make install

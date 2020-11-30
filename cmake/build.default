@@ -24,7 +24,7 @@ option(ENABLE_TESTS   "ENABLE_TESTS"  ON)   # Enable Testing
 # - PIO prints indented call blocks to pio::pout
 #
 option(GEOFLOW_USE_TRACER       "GEOFLOW_USE_TRACER"      OFF)  # Turn Tracing On
-option(GEOFLOW_TRACER_USE_NVTX  "GEOFLOW_TRACER_USE_NVTX" OFF) # Use NVTX Profiling
+option(GEOFLOW_TRACER_USE_NVTX  "GEOFLOW_TRACER_USE_NVTX" OFF)  # Use NVTX Profiling
 option(GEOFLOW_TRACER_USE_PIO   "GEOFLOW_TRACER_USE_PIO"  OFF)  # Use PIO Ouput
 
 #
