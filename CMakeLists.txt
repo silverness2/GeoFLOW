@@ -143,7 +143,7 @@ if(USE_PAPI)
 	find_package(PAPI REQUIRED)
 endif()
 
-if(GEOFLOW_TRACER_USE_NVTX)
+if(USE_CUDA OR GEOFLOW_TRACER_USE_NVTX)
 	find_package(CUDA REQUIRED) 
 endif()
 
