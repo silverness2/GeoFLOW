@@ -42,7 +42,7 @@ target_compile_features(cdg
 # 
 target_compile_options(cdg 
 	PRIVATE
-		$<$<COMPILE_LANGUAGE:CXX>:-Wno-unknown-pragmas>
+#		$<$<COMPILE_LANGUAGE:CXX>:-Wno-unknown-pragmas>
 	)
 
 #
