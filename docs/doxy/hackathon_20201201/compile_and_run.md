@@ -24,11 +24,20 @@ Compiling the code is identical to the instructions provided on the main
 provided on the machines we will work on to eliminate that hurdle and it's 
 recommended we all use the matching compiler those are built with.  
 
-More info will be provided as we gain access to the Hackathon cluster.
-
 ### Provided Boost Library (on Hera)
 ```console
 export BOOST_ROOT=/scratch2/BMC/gsd-hpcs/Bryan.Flynt/opt/boost/intel-2020.2
+```
+
+### Provided Boost Library (on Raplab)
+To use GCC 10.2 with OpenMPI 4.0.5 the Boost Library is
+```console
+export BOOST_ROOT=/home/u00u6ftz35hMh2y7S6357/opt/apps/gcc-10_2_0/openmpi-4_0_5/boost/1.73.0
+```
+
+To use NVHPC 20.9 the Boost Library is
+```console
+export BOOST_ROOT=/home/u00u6ftz35hMh2y7S6357/opt/apps/nvhpc-20_9_mpi/boost/1.73.0
 ```
 
 ### Turning On/Off NVidia Profiler (NVTX)
@@ -40,7 +49,7 @@ followed by the **GEOFLOW_TRACER_USE_NVTX** variable to specify what the tracer
 should do.  Turning on these two CMake variables the build system will detect 
 the CUDA library, insert the calls to NVTX, compile and link the proper libraries.
 
-## Complete Example
+## Complete Example (on Hera)
 
 ### Clone the repository and create a **build** directory.
 
