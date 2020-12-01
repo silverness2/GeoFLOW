@@ -70,7 +70,7 @@ FOREACH(app_src ${apps_files})
 	target_compile_options(${app_name} 
 								PRIVATE 
 								${apps_compiler_options}
-								$<$<COMPILE_LANGUAGE:CXX>:-Wno-unknown-pragmas>
+#								$<$<COMPILE_LANGUAGE:CXX>:-Wno-unknown-pragmas>
 							)
 	target_include_directories(${app_name} PRIVATE ${apps_include_headers})
 	target_link_libraries(${app_name} ${apps_linked_libraries})
