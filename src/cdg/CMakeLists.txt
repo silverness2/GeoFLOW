@@ -57,6 +57,7 @@ target_include_directories(cdg
 		"$<INSTALL_INTERFACE:${MY_INSTALL_INCDIR}>"
 		"$<BUILD_INTERFACE:${MY_PROJECT_INCDIR}>"
 		"$<BUILD_INTERFACE:${MY_INSTALL_SRCDIR}>"
+		"$<$<BOOL:${CUDA_FOUND}>:${CUDA_INCLUDE_DIRS}>"
 	)
 
 #
@@ -72,6 +73,7 @@ target_link_libraries(cdg
 		"$<$<BOOL:${Boost_MPI_FOUND}>:Boost::mpi>"
 		"$<$<BOOL:${PAPI_FOUND}>:PAPI::PAPI>"
 		"$<$<BOOL:${GPTL_FOUND}>:GPTL::GPTL>"
+		"$<$<BOOL:${CUDA_FOUND}>:${CUDA_CUBLAS_LIBRARIES}>"
 	)
 
 #

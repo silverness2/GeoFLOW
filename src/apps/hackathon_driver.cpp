@@ -38,7 +38,8 @@
 #include <random>
 #include <unistd.h>
 
-
+//cublas
+#include "cdg/blas/cublas_init.h"
 
 using namespace geoflow::tbox;
 using namespace std;
@@ -97,6 +98,9 @@ int main(int argc, char **argv)
     std::vector<GINT> 
             pstd(GDIM);  
     GC_COMM comm = GC_COMM_WORLD;
+
+    // Init culbas
+    cublas_init();
 
     // Initialize comm:
     GComm::InitComm(&argc, &argv);
@@ -287,6 +291,9 @@ int main(int argc, char **argv)
 
     pio::finalize();
     GComm::TermComm();
+
+    // destroy cublas
+    cublas_destroy();
 
     return( errcode );
 

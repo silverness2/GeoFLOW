@@ -6,6 +6,7 @@
 
 
  set(CDG_BLAS_SRC   ${GHOME}/blas/cff_blas.F
+                    ${GHOME}/blas/cublas_init.cpp
                     ${GHOME}/blas/qmxmp.F
                     ${GHOME}/blas/dmxmp.F
                     ${GHOME}/blas/fmxmp.F
