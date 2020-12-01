@@ -91,7 +91,11 @@ bdatalocal_        (TRUE)
   gindex_keep_ = gindex_;
   n_=gindex_.end()+1+gindex_.pad();
 
+#if defined(_USE_CUDA)
+  cudaMallocManaged(&data_, n_);
+#else
   data_ = new T [n_];
+#endif
   assert(this->data_!= NULLPTR );
 
   #if defined(_G_AUTO_CREATE_DEV)
@@ -114,7 +118,11 @@ n_           (obj.size()),
 icsz_ (_G_VEC_CACHE_SIZE),
 bdatalocal_        (TRUE)
 {
+#if defined(_USE_CUDA)
+  cudaMallocManaged(&data_, n_);
+#else
   data_ = new T [n_];
+#endif
   assert(this->data_!= NULLPTR );
   
   for ( auto j=0; j<obj.capacity(); j++ ) {
@@ -146,7 +154,11 @@ n_            (n/istride),
 icsz_ (_G_VEC_CACHE_SIZE),
 bdatalocal_        (TRUE)
 {
+#if defined(_USE_CUDA)
+  cudaMallocManaged(&data_, n_);
+#else
   data_ = new T [n_];
+#endif
   assert(this->data_!= NULLPTR );
 
   GLLONG k=0;
@@ -182,7 +194,11 @@ icsz_ (_G_VEC_CACHE_SIZE),
 bdatalocal_        (TRUE)
 {
   if ( bdatalocal_ ) {
+#if defined(_USE_CUDA)
+    cudaMallocManaged(&data_, n_);
+#else
     data_ = new T [n_];
+#endif
     assert(this->data_!= NULLPTR );
     GLLONG k=0;
     for ( auto j=0; j<n_; j++ ) {
@@ -217,7 +233,11 @@ n_           (obj.size()),
 icsz_ (_G_VEC_CACHE_SIZE),
 bdatalocal_        (TRUE)
 {
+#if defined(_USE_CUDA)
+  cudaMallocManaged(&data_, n_);
+#else
   data_ = new T [n_];
+#endif
   assert(this->data_!= NULLPTR );
   for ( auto j=0; j<obj.capacity(); j++ ) {
     data_[j] = obj[j];
@@ -242,7 +262,12 @@ template<class T>
 GTVector<T>::~GTVector()
 {
   #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
+
+#if defined(_USE_CUDA)
+    cudaFree(data_);
+#else
   if ( data_  != NULLPTR  && bdatalocal_ ) delete [] data_;
+#endif
   data_ = NULLPTR;
 }
 
@@ -315,11 +340,19 @@ void GTVector<T>::resize(GSIZET nnew)
 
   if ( (iend-ibeg+1+ipad) > n_ ) {      // must reallocate; change capacity
     if ( this->data_ != NULLPTR ) { 
+#if defined(_USE_CUDA)
+      cudaFree(this->data_);
+#else
       delete [] this->data_;
+#endif
       this->data_ = NULLPTR; 
     }
     this->n_ = iend-ibeg+1+ipad;
+#if defined(_USE_CUDA)
+  cudaMallocManaged(&data_, n_);
+#else
     this->data_ = new T [this->n_];
+#endif
   }
   gindex_(nnew, nnew, ibeg, iend, istride, ipad);
   gindex_keep_ = gindex_;
@@ -358,11 +391,19 @@ void GTVector<T>::resize(GIndex &gi)
 
   if ( (iend-ibeg+1+ipad) > n_ ) {      // must reallocate; change capacity
     if ( this->data_ != NULLPTR ) { 
+#if defined(_USE_CUDA)
+      cudaFree(this->data_);
+#else
       delete [] this->data_; 
+#endif
       this->data_ = NULLPTR; 
     }
     this->n_ = iend-ibeg+1+ipad;
+#if defined(_USE_CUDA)
+  cudaMallocManaged(&data_, n_);
+#else
     this->data_ = new T [this->n_];
+#endif
   }
   gindex_(nnew, nnew, ibeg, iend, istride, ipad);
   gindex_keep_ = gindex_;
@@ -393,7 +434,11 @@ void GTVector<T>::resizem(GSIZET nnew)
       #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
     #endif
 
+#if defined(_USE_CUDA)
+  cudaMallocManaged(&data_, n_);
+#else
     resize(nnew);
+#endif
 
     #if defined(_G_AUTO_CREATE_DEV)
 //    #pragma acc enter data create( data_[0:n_-1] )
@@ -430,17 +475,29 @@ void GTVector<T>::reserve(GSIZET nnew)
   GLLONG ipad    = gindex_.pad();
 
   // Check: is following exception-safe? No....
+#if defined(_USE_CUDA)
+  cudaMallocManaged(&data_, n_);
+#else
   ttmp  = new T [ibeg+nnew+ipad];
+#endif
   assert(ttmp != NULLPTR );
 
   // Copy old data to temp buffer:
   if ( nnew > n_ ) { // growing
     for ( auto j=0; j<n_; j++ ) ttmp[j] = this->data_[j];
     if ( this->data_ != NULLPTR ){
+#if defined(_USE_CUDA)
+      cudaFree(this->data_);
+#else
       delete [] this->data_;
+#endif
       this->data_ = NULLPTR; 
     }
+#if defined(_USE_CUDA)
+  cudaMallocManaged(&data_, n_);
+#else
     this->data_ = new T [ibeg+nnew+ipad];
+#endif
     assert(this->data_ != NULLPTR );
 
     // Copy only what was there already to expanded buffer,
@@ -452,10 +509,18 @@ void GTVector<T>::reserve(GSIZET nnew)
   else if ( nnew < n_ ) { // shrinking
     for ( auto j=0; j<nnew; j++ ) ttmp[j] = this->data_[j];
     if ( this->data_ != NULLPTR ) {
+#if defined(_USE_CUDA)
+      cudaFree(this->data_);
+#else
       delete [] this->data_;
+#endif
       this->data_ = NULLPTR; 
     }
+#if defined(_USE_CUDA)
+    cudaMallocManaged(&data_, n_);
+#else
     this->data_ = new T [ibeg+nnew+ipad];
+#endif
     assert(this->data_ != NULLPTR );
 
     // Copy only what of the original fills fills new buffer:
@@ -490,7 +555,11 @@ void GTVector<T>::clear()
     #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
   #endif
   if ( data_ != NULLPTR ) {
+#if defined(_USE_CUDA)
+      cudaFree(this->data_);
+#else
     delete [] data_;
+#endif
     this->data_ = NULLPTR; 
   }
   n_ = 0;
@@ -639,7 +708,11 @@ GTVector<T> &GTVector<T>::operator=(const GTVector<T> &obj)
 
   if ( data_ == NULLPTR ) {
     n_ = obj.capacity();
+#if defined(_USE_CUDA)
+    cudaMallocManaged(&data_, n_);
+#else
     data_ = new T [n_];
+#endif
     assert(this->data_ != NULLPTR );
     gindex_ = obj.gindex_;
     gindex_keep_ = gindex_;
@@ -681,7 +754,11 @@ GTVector<T> &GTVector<T>::operator=(const std::vector<T> &obj)
 
   if ( data_ == NULLPTR ) {
     n_ = obj.capacity();
+#if defined(_USE_CUDA)
+    cudaMallocManaged(&data_, n_);
+#else
     data_ = new T [n_];
+#endif
     assert(this->data_ != NULLPTR );
     gindex_(n_, n_, 0, n_-1, 1,  0);
     gindex_keep_ = gindex_;
