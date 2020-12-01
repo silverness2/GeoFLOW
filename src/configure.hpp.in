@@ -22,6 +22,7 @@
 #cmakedefine USE_MPI
 #cmakedefine USE_GPTL
 #cmakedefine USE_PAPI
+#cmakedefine USE_CUDA
 
 //
 // Code Configure/Compilation Records
@@ -52,6 +53,10 @@
 
 #if defined(USE_PAPI)
 	#define _G_USE_PAPI
+#endif
+
+#if defined(USE_CUDA)
+	#define _G_USE_CUDA
 #endif
 
 #if defined(USE_MPI)
