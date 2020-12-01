@@ -11,7 +11,14 @@ if [ ! -d "build" ]; then
     exit 1
 fi
 
-# Load our Modules  
+# Load our Modules 
+# IMPORTANT:
+# You must have configured your system to use the custom modules
+# for these paths to appear and work on your system
+#
+# export MODULEAPPS_ROOT=/home/u00u6ftz35hMh2y7S6357/opt/apps
+# export MODULEPATH_ROOT=${MODULEAPPS_ROOT}/modulefiles
+# module use ${MODULEPATH_ROOT}
 
 # Using GCC 10.2 + OpenMPI 4.0.5 Compiler
 module purge
