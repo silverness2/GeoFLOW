@@ -1,0 +1,34 @@
+```bash
+#!/bin/bash  
+
+#                                                                                                                             
+# This script should be placed inside the top level GeoFLOW directory.                                                        
+# The following commands will attempt to ensure a build directory exists                                                      
+# within that level directory                                                                                                 
+#                                                                                                                             
+if [ ! -d "build" ]; then
+    echo "build/ directory is not found at current level"
+    exit 1
+fi
+
+# Load our Modules  
+module purge
+module load gcc/7.5.0/cmake/3.18.4
+module load compilers/gcc-10.2.0
+module load gcc/10.2.0/openmpi/4.0.5
+module load gcc/10.2.0/openmpi/4.0.5/boost/1.73.0
+module load cuda/11.0.2
+
+# Change into the "out of source" build directory
+cd build
+
+# Remove any cached files from previous attempts
+rm -r cmake*
+rm -r CMake*
+
+# Configure using CMake                                                                                          
+cmake -DGEOFLOW_USE_TRACER=ON -DGEOFLOW_TRACER_USE_NVTX=ON --log-level=VERBOSE ../.
+
+# Make it                                                                                                                     
+make install
+```   

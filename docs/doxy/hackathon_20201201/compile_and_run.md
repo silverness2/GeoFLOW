@@ -67,45 +67,11 @@ analysis  build  cmake  CMakeLists.txt  DISCLAIMER  docs  extern  LICENCE.md  RE
 To make it easier, I typically use the following script which I run from within 
 the top level GeoFLOW directory. For your first attempt, I'd recommend to copy 
 and past each line to see messages if any errors result.
-```bash
-#!/bin/bash  
 
-#                                                                                                                             
-# This script should be placed inside the top level GeoFLOW directory.                                                        
-# The following commands will attempt to ensure a build directory exists                                                      
-# within that level directory                                                                                                 
-#                                                                                                                             
-if [ ! -d "build" ]; then
-    echo "build/ directory is not found at current level"
-    exit 1
-fi
+[Hera Build Script](hera_build_script.md)
 
-# Load our Modules                                                       
-module purge
-module load cmake
-module load intel/2020.2
-module load impi/2020.2
-module load cuda
+[Raplab Build Script](raplab_build_script.md)
 
-# Set environment variables for CMake to pick up
-export CC=mpiicc
-export CXX=mpiicpc
-export FC=mpiifort
-export BOOST_ROOT=/scratch2/BMC/gsd-hpcs/Bryan.Flynt/opt/boost/intel-2020.2
-
-# Change into the "out of source" build directory
-cd build
-
-# Remove any cached files from previous attempts
-rm -r cmake*
-rm -r CMake*
-
-# Configure using CMake                                                                                          
-cmake -DGEOFLOW_USE_TRACER=ON -DGEOFLOW_TRACER_USE_NVTX=ON --log-level=VERBOSE ../.
-
-# Make it                                                                                                                     
-make install
-```   
 
 ### Running the test stub
 
