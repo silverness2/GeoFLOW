@@ -183,8 +183,8 @@ endforeach()
 # Set Project Level Compiler Options
 #---------------------------------------------------------------------
 # ONLY those options which impact level of compiler errors
-add_compile_options("-Werror")         # Change all Warnings to Errors
-add_compile_options("-Wfatal-errors")  # Stop at 1st Error Encountered
+# add_compile_options("-Werror")         # Change all Warnings to Errors
+# add_compile_options("-Wfatal-errors")  # Stop at 1st Error Encountered
 
 #---------------------------------------------------------------------
 # Check Platform Support
