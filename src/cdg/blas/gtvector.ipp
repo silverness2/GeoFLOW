@@ -59,7 +59,12 @@ n_                    (n),
 icsz_ (_G_VEC_CACHE_SIZE),
 bdatalocal_        (TRUE)
 {
+#if defined(_USE_CUDA)
+  cudaMallocManaged(&data_, n_);
+#else
   data_ = new T [n_];
+#endif
+
   assert(this->data_!= NULLPTR );
   gindex_(n_, n_, 0, n_-1, 1,  0);
   gindex_keep_ = gindex_;
