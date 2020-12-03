@@ -32,7 +32,6 @@
     "grid_name" : "grid_sphere",
     "radiusi"   : 1.0,
     "radiuso"   : 2.0,
-    "num_elems" : [10, 10, 10],
     "bdy_inner": "GBDY_DIRICHLET",
     "bdy_outer": "GBDY_SPONGE"
   },
@@ -48,7 +47,7 @@
     "dofallout"       : false,
     "dogravity"       : true,
     "bconserved"      : false,
-    "divopcolloc"     : false,
+    "divopcolloc"     : true,
     "Stokeshyp"       : false,
     "bindepdiss"      : false,
     "nliq"            : 0,
@@ -69,7 +68,7 @@
     "grid_name" : "grid_box",
     "xyz0"      : [-25600, 0, 0],
     "delxyz"    : [51200.0, 10000.0, 1.0],
-    "num_elems" : [512, 100, 1],
+    "num_elems" : [50, 25, 1],
     "bdy_x_0"   : "0-flux",
     "bdy_x_1"   : "0-flux",
     "bdy_y_0"   : "0-flux",
@@ -82,14 +81,18 @@
   },
   "stepper_props": {
     "stepping_method"  : "GSTEPPER_EXRK",
-    "time_deriv_order" : 2,
+    "time_deriv_order" : 3,
+    "nstage"           : 3,
+    "stab_preserving"  : true,
     "extrap_order"     : 2,
     "variable_dt"      : true,
-    "courant"          : 0.2
+    "courant"          : 0.1
   },
   "dissipation_traits": {
-    "nu"      : 500.0,
-    "kappa"   : 500.0,
+    "nu"      : 1000.0,
+    "kappa"   : 1000.0,
+    "zeta"    : 1000.0,
+    "lambda"  : 1000.0,
     "nu_type" : "constant"
   },
   "gio": {
