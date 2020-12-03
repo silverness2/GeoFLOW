@@ -2,7 +2,7 @@
 // Module       : gtypes.hpp
 // Date         : 1/1/18 (DLR)
 // Description  : Basic types, defs
-// Copyright    : Copyright 2018. Colorado State University. All rights reserved
+// Copyright    : Copyright 2018. Colorado State University. All rights reserved.
 // Derived From : none.
 //==================================================================================
 #if !defined(_GTYPES_HPP)
@@ -20,6 +20,7 @@
 #if defined(_G_USE_GPTL)
   #include "gptl.h"
 #endif
+
 
 // Following is a list of preprocessor variables that may be set:
 // _G_AUTO_CREATE_DEV : Auto-copy/create classes on device
