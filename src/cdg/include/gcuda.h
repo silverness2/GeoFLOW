@@ -24,7 +24,7 @@ struct cuMatBlockDat {
   GTVector        <GINT> ibblk;  // for each stream, starting blk index
   GTVector        <GINT> ieblk;  // for each stream, ending blk index
   GTVector<GCUSTREAM>  pStream;  // stream pointers
-}
+};
 
 
 #endif // !defined(_GTYPES_HPP)
