@@ -12,18 +12,26 @@
 
 #if defined(_G_USE_CUDA)
 
-  #define GCUSTREAM cudaStream_t
+  #define GCuStream    cudaStream_t
+  #define GBlasHandle  cublasHandle_t
+  #define GBlasStatus  cublasStatus_t
+  #define GBlasOp      cublasOperation_t
+  #define GBlasError   cudaError_t
 
 #else
 
-  #define GCUSTREAM void*
+  #define GCuStream    void*
+  #define GBlasHandle  void*
+  #define GBlasStatus  void*
+  #define GBlasOp      int
+  #define GBlasError   int
 
 #endif
 
 struct cuMatBlockDat {
   GTVector        <GINT> ibblk;  // for each stream, starting blk index
   GTVector        <GINT> ieblk;  // for each stream, ending blk index
-  GTVector<GCUSTREAM>  pStream;  // stream pointers
+  GTVector<GCuStream>  pStream;  // stream pointers
 };
 
 
