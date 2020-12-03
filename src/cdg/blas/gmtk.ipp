@@ -1478,6 +1478,73 @@ void I2_X_D1(GTMatrix<T> &D1,
 
 //**********************************************************************************
 //**********************************************************************************
+// METHOD : I2_X_D1  (3)
+// DESC   : Apply tensor product operator to vector:
+//            y = I2 X D1 u
+//          where I2 is the 2-direction's identity, and D1 is
+//          the deriv matrix in the 1-direction, and u is the
+//          the full state component
+// ARGS   : D1   : 1-direction (dense) operator
+//          u    : operand vector consisting of Ne 'elements' 
+//                 each of size ize N1 X N2
+//          N1-2 : dimensions of u elemewnts if interpreted as matrices
+//          Ne   : number of 'elements' in u
+//          cudat: cuMatBlockDat structure data
+//          y    : return vector result; must be at least of size
+//                 N1 X N2
+// RETURNS: none
+//**********************************************************************************
+template<typename T>
+void I2_X_D1(GTMatrix<T> &D1,
+             GTVector<T> &u, GSIZET N1, GSIZET N2, GSIZET Ne, cuMatBlockDat &cudat, GTVector<T> &y)
+{
+	GEOFLOW_TRACE();
+  GSIZET ND1, ND2, Nu;
+
+  ND1 = D1.size(1);
+  ND2 = D1.size(2);
+
+  #if defined(_G_BOUNDS_CHK)
+  if ( !(u.size() >= N1*N2 && y.size() >= N1*N2) ) {
+    cout << "GMTK::I2_X_D1 (2)" << "incompatible size" << endl;
+    exit(1);
+  }
+  #endif
+
+  Nu = N2 * Ne;
+
+#if !defined(_G_USE_CUDA)
+  // Compute y = I2_X_D1 u:
+  if      ( std::is_same<T,GFLOAT>::value ) {
+    fmxm((GFLOAT*)y.data(), (GFLOAT*)(D1.data().data()), &ND1, &ND2, (GFLOAT*)u.data(), &N1, &Nu, &szMatCache_);
+  }
+  else if ( std::is_same<T,GDOUBLE>::value ) {
+    dmxm((GDOUBLE*)y.data(), (GDOUBLE*)(D1.data().data()), &ND1, &ND2, (GDOUBLE*)u.data(), &N1, &Nu, &szMatCache_);
+  }
+  else if ( std::is_same<T,GQUAD>::value ) {
+    qmxm((GQUAD*)y.data(), (GQUAD*)(D1.data().data()), &ND1, &ND2, (GQUAD*)u.data(), &N1, &Nu, &szMatCache_);
+  }
+  else {
+    assert(FALSE);
+  }
+#else
+  if      ( std::is_same<T,GFLOAT>::value ) {
+  }
+  else if ( std::is_same<T,GDOUBLE>::value ) {
+  }
+  else if ( std::is_same<T,GQUAD>::value ) {
+  }
+  else {
+    assert(FALSE);
+  }
+  
+#endif
+
+} // end of method I2_X_D1 (3)
+
+
+//**********************************************************************************
+//**********************************************************************************
 // METHOD : D2_X_D1 
 // DESC   : Apply tensor product operator to vector:
 //            y = D2 X D1 u
@@ -1721,6 +1788,76 @@ void D2_X_I1(GTMatrix<T> &D2T,
   }
 
 } // end of method D2_X_I1 (2)
+
+
+//**********************************************************************************
+//**********************************************************************************
+// METHOD : D2_X_I1 (3)
+// DESC   : Apply tensor product operator to vector:
+//            y = D2 X I1 u
+//          where I1 is the 1-direction's identity, and D2
+//          the deriv matrix in the 2-direction
+// ARGS   : D2T  : 2-direction (dense) operator transpose 
+//          u    : operand vector consisting of Ne 'elements' 
+//                 each of size ize N1 X N2
+//          N1-2 : dimensions of u elemewnts if interpreted as matrices
+//          Ne   : number of 'elements' in u
+//          cudat: cuMatBlockDat structure data
+//          y    : return vector result; must be at least of size
+//                  D1.size(1) x D2.size(1) = D1.size(1) x D2T.size(2)
+// RETURNS: none
+//**********************************************************************************
+template<typename T>
+void D2_X_I1(GTMatrix<T> &D2T, 
+              GTVector<T> &u, GSIZET N1, GSIZET N2, GSIZET Ne, cuMatBlockDat &cudat, GTVector<T> &y)
+{
+	GEOFLOW_TRACE();
+  GSIZET N21, N22, Nu;
+
+  N21 = D2T.size(1);
+  N22 = D2T.size(2);
+  #if defined(_G_BOUNDS_CHK)
+  if ( !(u.size() >= N1*N2*Ne && y.size() >= N1*N2*Ne) ) {
+    cout << "GMTK::D2_X_I1 (2)" << "incompatible size" << endl;
+    exit(1);
+  }
+  #endif
+
+  Nu = N1 * N2;
+
+  // Compute y = I2_X_D1 u = u * D2T:
+#if !defined(_G_USE_CUDA)
+  if      ( std::is_same<T,GFLOAT>::value ) {
+    for ( auto i=0; i<Ne; i++ ) {
+      fmxm((GFLOAT*)y.data()+i*Nu, (GFLOAT*)u.data()+i*Nu, &N1, &Nu, (GFLOAT*)D2T.data().data(), &N21, &N22, &szMatCache_);
+    }
+  }
+  else if ( std::is_same<T,GDOUBLE>::value ) {
+    for ( auto i=0; i<Ne; i++ ) {
+      dmxm((GDOUBLE*)y.data()+i*Nu, (GDOUBLE*)u.data()+i*Nu, &N1, &Nu, (GDOUBLE*)D2T.data().data(), &N21, &N22, &szMatCache_);
+    }
+  }
+  else if ( std::is_same<T,GQUAD>::value ) {
+    for ( auto i=0; i<Ne; i++ ) {
+      qmxm((GQUAD*)y.data()+i*Nu, (GQUAD*)u.data()+i*Nu, &N1, &Nu, (GQUAD*)D2T.data().data(), &N21, &N22, &szMatCache_);
+    }
+  }
+  else {
+    assert(FALSE);
+  }
+#else
+  if      ( std::is_same<T,GFLOAT>::value ) {
+  }
+  else if ( std::is_same<T,GDOUBLE>::value ) {
+  }
+  else if ( std::is_same<T,GQUAD>::value ) {
+  }
+  else {
+    assert(FALSE);
+  }
+#endif
+
+} // end of method D2_X_I1 (3)
 
 
 //**********************************************************************************

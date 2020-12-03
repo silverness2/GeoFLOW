@@ -2137,11 +2137,11 @@ void GGrid::grefderiv_constp(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
   switch (idir) {
   case 1:
     Di = (*gelems)[0]->gbasis(0)->getDerivMatrix (dotrans);
-    GMTK::I2_X_D1(*Di, u, N[0], N[1], Ne,  du); 
+    GMTK::I2_X_D1(*Di, u, N[0], N[1], Ne, cudat_, du); 
     break;
   case 2:
     Di = (*gelems)[0]->gbasis(1)->getDerivMatrix(!dotrans);
-    GMTK::D2_X_I1(*Di, u, N[0], N[1], Ne, du); 
+    GMTK::D2_X_I1(*Di, u, N[0], N[1], Ne, cudat_, du); 
     break;
   default:
     assert(FALSE && "Invalid coordinate direction");
@@ -2152,17 +2152,17 @@ void GGrid::grefderiv_constp(GTVector<GFTYPE> &u, GTVector<GFTYPE> &etmp,
   case 1:
     Di = (*gelems)[0]->gbasis(0)->getDerivMatrix (dotrans); 
     NN = N[2]*N[1] * Ne;
-    GMTK::I3_X_I2_X_D1(*Di, u, N[0], N[1], N[2], Ne, du); 
+    GMTK::I3_X_I2_X_D1(*Di, u, N[0], N[1], N[2], Ne, cudat_, du); 
     break;
 
   case 2:
     Di = (*gelems)[0]->gbasis(1)->getDerivMatrix(!dotrans); 
-    GMTK::I3_X_D2_X_I1(*Di, u, N[0], N[1], N[2], Ne, du); 
+    GMTK::I3_X_D2_X_I1(*Di, u, N[0], N[1], N[2], Ne, cudat_, du); 
     break;
 
   case 3:
     Di = (*gelems)[0]->gbasis(2)->getDerivMatrix(!dotrans); 
-    GMTK::D3_X_I2_X_I1(*Di, u, N[0], N[1], N[2], Ne, du); 
+    GMTK::D3_X_I2_X_I1(*Di, u, N[0], N[1], N[2], Ne, cudat_, du); 
     break;
 
   default:

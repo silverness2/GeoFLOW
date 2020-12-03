@@ -22,6 +22,7 @@
 #include "ggfx.hpp"
 #include "glinop.hpp"
 #include "ghelmholtz.hpp"
+#include "gcuda.h"
 #include "pdeint/update_bdy_base.hpp"
 #include "pdeint/lin_solver_base.hpp"
 #include "tbox/property_tree.hpp"
@@ -300,6 +301,7 @@ virtual void                 do_bdy_normals(GTMatrix<GTVector<GFTYPE>> &dXdXi,
         std::function<void(const Time &t, State &u, State &ub)>
                                     bdy_apply_callback_;            
                                                     // bdy apply callback
+        cuMatBlockDat               cudat_;         // CUDA data structure
 };
 
 #endif
