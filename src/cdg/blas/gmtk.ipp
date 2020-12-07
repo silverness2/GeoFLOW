@@ -8,6 +8,7 @@
 //==================================================================================
 
 
+
 #include "tbox/tracer.hpp"
 
 
@@ -1393,7 +1394,7 @@ template<typename T>
 void I2_X_D1(GTMatrix<T> &D1,
              GTVector<T> &u, GSIZET N1, GSIZET N2, GTVector<T> &y)
 {
-	GEOFLOW_TRACE();
+  GEOFLOW_TRACE_MSG("I2_X_D1(5 args)");
   GSIZET ND1, ND2;
 
   ND1 = D1.size(1);
@@ -1444,7 +1445,7 @@ template<typename T>
 void I2_X_D1(GTMatrix<T> &D1,
              GTVector<T> &u, GSIZET N1, GSIZET N2, GSIZET Ne, GTVector<T> &y)
 {
-	GEOFLOW_TRACE();
+  GEOFLOW_TRACE_MSG("I2_X_D1(6 args)");
   GSIZET ND1, ND2, Nu;
 
   ND1 = D1.size(1);
@@ -1498,7 +1499,11 @@ template<typename T>
 void I2_X_D1(GTMatrix<T> &D1,
              GTVector<T> &u, GSIZET N1, GSIZET N2, GSIZET Ne, GCBLAS::cuMatBlockDat &cudat, GTVector<T> &y)
 {
-	GEOFLOW_TRACE();
+
+//	GMTK::I2_X_D1(*Di, u, N[0], N[1], Ne, cudat_, du);
+//	fmxm((GFLOAT*)y.data(), (GFLOAT*)(D1.data().data()), &ND1, &ND2, (GFLOAT*)(u.data()), &N1, &N2, &szMatCache_);
+
+  GEOFLOW_TRACE_MSG("I2_X_D1(7 args)");
   GSIZET ND1, ND2, Nu;
   GINT   M, N, K, lda, ldb, ldc;
 
@@ -1522,8 +1527,8 @@ void I2_X_D1(GTMatrix<T> &D1,
   lda = M;
   ldb = K;
   ldc = M;
-   GCBLAS::gemm<T>(cudat.hcublas, GCBLAS::CblasRowMajor, GCBLAS::CblasNoTrans, GCBLAS::CblasNoTrans,
-                    M, N, K, 0.0, A, lda, B, ldb, beta, C, ldc);
+  GCBLAS::gemm<T>(cudat.hcublas, GCBLAS::CblasRowMajor, GCBLAS::CblasNoTrans, GCBLAS::CblasNoTrans,
+                    M, N, K, 1.0, (T*)(D1.data().data()), lda, (T*)(u.data()), ldb, 0.0, (T*)y.data(), ldc);
 
 #else
 
@@ -1831,14 +1836,14 @@ void D2_X_I1(GTMatrix<T> &D2T,
 
 // Compute y = I2_X_D1 u = u * D2T:
 #if defined(USE_CBLAS) || defined(USE_CUBLAS)
-  M   = ND1;
+  M   = N21;
   N   = N2;
-  K   = ND2;
+  K   = N22;
   lda = M;
   ldb = K;
   ldc = M;
   GCBLAS::batched_gemm<T>(cudat, GCBLAS::CblasRowMajor, GCBLAS::CblasNoTrans, GCBLAS::CblasNoTrans,
-                           M, N, K, 0.0, A, lda, B, ldb, beta, C, ldc);
+                           M, N, K, 1.0, (T*)(D2T.data().data()), lda, (T*)u.data(), ldb, 0.0, (T*)y.data(), ldc);
 
 #else
 
@@ -2678,9 +2683,11 @@ void matvec_prod(GTVector<T> &vret, const GTMatrix<T> &A, const GTVector<T> &b)
 
 #if defined(USE_CBLAS) || defined(USE_CUBLAS)
 
-  for ( auto i=0; i<n1_; i++ ) {
+  GSIZET n1 = A.size(1);
+  GSIZET n2 = A.size(2);
+  for ( auto i=0; i<n1; i++ ) {
      vret[i] = 0;
-     for ( auto j=0; j<n2_; j++ ) {
+     for ( auto j=0; j<n2; j++ ) {
        vret[i] += A(i,j) * b(j);
      }
    }

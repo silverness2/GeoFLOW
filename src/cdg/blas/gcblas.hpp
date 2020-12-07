@@ -13,9 +13,11 @@
 
 #if defined(USE_CBLAS)
 #include "cblas.h"
+//#include "mkl.h" 
 #endif
 #if defined(USE_CUBLAS)
-  #include "cublas.h"
+  #include "cuda_runtime_api.h"
+  #include "cublas_v2.h"
 #endif
 
 namespace GCBLAS
@@ -56,9 +58,9 @@ void stream_destroy(GCuStream &);
 
 template<typename T>
 void gemm(GBlasHandle h, 
-          const enum GBLAS_ORDER Order,
-          const enum GBLAS_TRANSPOSE TransA,
-          const enum GBLAS_TRANSPOSE TransB,
+          const GBLAS_ORDER Order,
+          const GBLAS_TRANSPOSE TransA,
+          const GBLAS_TRANSPOSE TransB,
           const int M, const int N, const int K,
           const T alpha, const T  *A, const int lda,
           const T *B, const int ldb, const T beta,
@@ -66,9 +68,9 @@ void gemm(GBlasHandle h,
 
 template<typename T>
 void batched_gemm( cuMatBlockDat &cudat,
-          const enum GBLAS_ORDER Order,
-          const enum GBLAS_TRANSPOSE TransA,
-          const enum GBLAS_TRANSPOSE TransB,
+          const GBLAS_ORDER Order,
+          const GBLAS_TRANSPOSE TransA,
+          const GBLAS_TRANSPOSE TransB,
           const int M, const int N, const int K,
           const T alpha, const T  *A, const int lda,
           const T *B, const int ldb, const T beta,
@@ -76,6 +78,8 @@ void batched_gemm( cuMatBlockDat &cudat,
 
 
 } // end, namespace GCBLAS
+
+#include "gcblas.ipp"
 
 #endif // !defined(_GCBLAS_HPP)
 
