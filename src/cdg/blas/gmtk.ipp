@@ -8,7 +8,6 @@
 //==================================================================================
 
 
-
 #include "tbox/tracer.hpp"
 
 
@@ -1523,7 +1522,7 @@ void I2_X_D1(GTMatrix<T> &D1,
   lda = M;
   ldb = K;
   ldc = M;
-  GCBLAS::gemm<T>(cudat.hcublas, GCBLAS::CblasRowMajor, GCBLAS::CblasNoTrans, GCBLAS::CblasNoTrans,
+  GCBLAS::gemm<T>(cudat.hcublas, GCBLAS::CblasColMajor, GCBLAS::CblasNoTrans, GCBLAS::CblasNoTrans,
                     M, N, K, 1.0, (T*)(D1.data().data()), lda, (T*)(u.data()), ldb, 0.0, (T*)y.data(), ldc);
 #else
 
@@ -1837,7 +1836,7 @@ void D2_X_I1(GTMatrix<T> &D2T,
   lda = M;
   ldb = K;
   ldc = M;
-  GCBLAS::batched_gemm<T>(cudat, GCBLAS::CblasRowMajor, GCBLAS::CblasNoTrans, GCBLAS::CblasNoTrans,
+  GCBLAS::batched_gemm<T>(cudat, GCBLAS::CblasColMajor, GCBLAS::CblasNoTrans, GCBLAS::CblasNoTrans,
                            M, N, K, 1.0, (T*)(D2T.data().data()), lda, (T*)u.data(), ldb, 0.0, (T*)y.data(), ldc);
 
 #else
