@@ -52,21 +52,21 @@ void gemm(GBlasHandle h,
 
   static const GBlasOp cuBlasOps[] = { CUBLAS_OP_N, CUBLAS_OP_T, CUBLAS_OP_C };
 
-  if constexpr ( std::is_same<T,GFLOAT>::value ) {
-	GEOFLOW_TRACE_MSG("cublasSgemm(...)");
+  if ( std::is_same<T,GFLOAT>::value ) {
     cublasSgemm( h, cuBlasOps[TransA-CblasNoTrans], cuBlasOps[TransB-CblasNoTrans],
                  M, N, K, 
                  (const float*)(&alpha), (const float*)A, lda,
                  (const float*)B, ldb, (const float*)(&beta),
                  (float*)C, ldc);
+    cudaDeviceSynchronize(); 
   }
-  else if constexpr ( std::is_same<T,GDOUBLE>::value ) {
-	GEOFLOW_TRACE_MSG("cublasDgemm(...)");
+  else if ( std::is_same<T,GDOUBLE>::value ) {
     cublasDgemm( h, cuBlasOps[TransA-CblasNoTrans], cuBlasOps[TransB-CblasNoTrans],
                  M, N, K, 
                  (const double*)(&alpha), (const double*)A, lda,
                  (const double*)B, ldb, (const double*)(&beta),
                  (double*)C, ldc);
+    cudaDeviceSynchronize(); 
   }
 
 #else
@@ -112,6 +112,8 @@ void batched_gemm(cuMatBlockDat &cudat,
   }
 
 #elif defined(USE_CUBLAS)
+  GINT        bcount;
+  GBlasStatus stat;
   static const GBlasOp cuBlasOps[] = { CUBLAS_OP_N, CUBLAS_OP_T, CUBLAS_OP_C };
 
   for ( auto j=0; j<nstreams; j++ ) {
@@ -120,29 +122,35 @@ void batched_gemm(cuMatBlockDat &cudat,
   ibstride = 0;
   if      ( std::is_same<T,GFLOAT>::value ) {
     for ( auto j=0; j<nstreams; j++ ) {
-      iastart  = cudat.ibblk[j]*M*K*sizeof(T);
-      iastride = (cudat.ieblk[j] - cudat.ibblk[j] + 1)*M*K*sizeof(T);
-      cublasSgemmStridedBatched( 
+      iastart  = cudat.ibblk[j]*M*K; //*sizeof(T);
+      bcount   = cudat.ieblk[j] - cudat.ibblk[j] + 1;
+      iastride = M*K; //*sizeof(T);
+      stat     = cublasSgemmStridedBatched( 
                    cudat.hbatch_cublas, 
                    cuBlasOps[TransA-CblasNoTrans], cuBlasOps[TransB-CblasNoTrans],
                    M, N, K, 
-                   (const float*)&alpha, (const float*)(A+iastart), lda, iastride,
+                   (const float*)&alpha, (const float*)A+iastart, lda, iastride,
                    (const float*)B, ldb, ibstride, (const float*)&beta,
-                   (float*)(C+iastart), ldc, iastride, nstreams);
+                   (float*)C+iastart, ldc, iastride, bcount);
+      assert(stat == CUBLAS_STATUS_SUCCESS);
     }
+    cudaDeviceSynchronize(); 
   }
   else if ( std::is_same<T,GDOUBLE>::value ) {
     for ( auto j=0; j<nstreams; j++ ) {
-      iastart  = cudat.ibblk[j]*M*K*sizeof(T);
-      iastride = (cudat.ieblk[j] - cudat.ibblk[j] + 1)*M*K*sizeof(T);
-      cublasDgemmStridedBatched( 
+      iastart  = cudat.ibblk[j]*M*K; //*sizeof(T);
+      bcount   = cudat.ieblk[j] - cudat.ibblk[j] + 1;
+      iastride = M*K; //*sizeof(T);
+      stat     = cublasDgemmStridedBatched( 
                    cudat.hbatch_cublas, 
                    cuBlasOps[TransA-CblasNoTrans], cuBlasOps[TransB-CblasNoTrans],
                    M, N, K, 
-                   (const double*)&alpha, (const double*)(A+iastart), lda, iastride,
+                   (const double*)&alpha, (const double*)A+iastart,  lda, iastride,
                    (const double*)B, ldb, ibstride, (const double*)&beta,
-                   (double*)(C+iastart), ldc, iastride, nstreams);
+                   (double*)C+iastart, ldc, iastride, bcount);
+      assert(stat == CUBLAS_STATUS_SUCCESS);
     }
+    cudaDeviceSynchronize(); 
   }
   else {
     assert(FALSE);
