@@ -12,7 +12,6 @@ option(USE_MPI        "USE_MPI"       ON)   # Build with MPI?
 
 option(USE_CUBLAS     "USE_CUBLAS"    ON)  # Build with cuBLAS
 option(USE_CBLAS      "USE_CBLAS"     OFF)  # Use System CBLAS
-option(USE_OPENACC    "USE_OPENACC"   OFF)  # Compile for OpenACC
 
 option(USE_GPTL       "USE_GPTL"      OFF)  # Build with GPTL?
 option(USE_PAPI       "USE_PAPI"      OFF)  # Is GPTL built with PAPI support?
@@ -21,7 +20,7 @@ option(VERBOSE_MAKE   "VERBOSE_MAKE"  ON)   # Verbose MakeFile Ouput
 option(ENABLE_TESTS   "ENABLE_TESTS"  ON)   # Enable Testing
 
 option(USE_OPENACC          "Using OpenACC"  ON)
-option(OpenACC_ACCEL_TARGET "OpenACC Target" "tesla:cc70")
+set(OpenACC_ACCEL_TARGET    "tesla:cc70"     CACHE)
 
 #
 # Turn on function tracing where instrumented
