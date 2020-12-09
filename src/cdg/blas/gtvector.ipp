@@ -1581,6 +1581,7 @@ GTVector<T>::amindiff(T tiny)
 //          ret: GTVector & ret
 // RETURNS: GTVector & 
 //**********************************************************************************
+#pragma acc routine vector
 template<class T>
 void
 GTVector<T>::pointProd(const GTVector<T> &obj, GTVector<T> &ret ) 
@@ -1594,11 +1595,13 @@ while(1){};
   #endif
 
   if ( obj.size() > 1 ) {
+#pragma acc parallel loop
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       ret[j] = this->data_[j-gindex_.beg()] * obj[j-gindex_.beg()];
     }
   }
   else {
+#pragma acc parallel loop
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       ret[j] = this->data_[j-gindex_.beg()] * obj[0];
     }
@@ -1631,11 +1634,13 @@ while(1){};
   #endif
 
   if ( obj.size() > 1 ) {
+#pragma acc parallel loop
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       ret[j] = a * this->data_[j-gindex_.beg()] * obj[j-gindex_.beg()];
     }
   }
   else {
+#pragma acc parallel loop
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       ret[j] = a * this->data_[j-gindex_.beg()] * obj[0];
     }
@@ -1666,11 +1671,14 @@ while(1){};
   #endif
 
   if ( obj.size() > 1 ) {
+
+#pragma acc parallel loop
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       data_[j] *= obj[j-gindex_.beg()];
     }
   }
   else {
+#pragma acc parallel loop
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       data_[j] *= obj[0];
     }
