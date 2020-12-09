@@ -65,8 +65,8 @@
 
 #if defined(USE_OPENACC)
 	#define _G_USE_OPENACC
-	#define _G_AUTO_CREATE_DEV
-	#define _G_AUTO_UPDATE_DEV
+//	#define _G_AUTO_CREATE_DEV
+//	#define _G_AUTO_UPDATE_DEV
 #endif
 
 #if GDIM == CPP_INT_TWO
