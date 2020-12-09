@@ -41,10 +41,6 @@ bdatalocal_        (TRUE)
 {
   gindex_(n_, n_, 0, n_-1, 1,  0);
   gindex_keep_ = gindex_;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
 }
 
 
@@ -76,10 +72,6 @@ bdatalocal_        (TRUE)
   assert(this->data_!= NULLPTR );
   gindex_(n_, n_, 0, n_-1, 1,  0);
   gindex_keep_ = gindex_;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
 }
 
 //**********************************************************************************
@@ -110,10 +102,6 @@ bdatalocal_        (TRUE)
   data_ = new T [n_];
 #endif
   assert(this->data_!= NULLPTR );
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
 }
 
 
@@ -148,10 +136,6 @@ bdatalocal_        (TRUE)
   }
   gindex_(n_, n_, 0, n_-1, 1,  0);
   gindex_keep_ = gindex_;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
   updatedev();
 }
 
@@ -191,10 +175,6 @@ bdatalocal_        (TRUE)
   }
   gindex_(n_, n_, 0, n_-1, 1,  0);
   gindex_keep_ = gindex_;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
   updatedev();
 }
 
@@ -240,10 +220,6 @@ bdatalocal_     (blocmgd)
     gindex_(n_, n_, 0, n_-1, istride,  0);
   }
   gindex_keep_ = gindex_;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
   updatedev();
 }
 
@@ -277,10 +253,6 @@ bdatalocal_        (TRUE)
   }
   gindex_ = obj.gindex_;
   gindex_keep_ = gindex_;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
   updatedev();
 }
 
@@ -294,8 +266,6 @@ bdatalocal_        (TRUE)
 template<class T>
 GTVector<T>::~GTVector()
 {
-  #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
-
 #if defined(USE_CUBLAS)
     cudaFree(data_);
 #else
@@ -360,11 +330,6 @@ template<class T>
 void GTVector<T>::resize(GSIZET nnew)
 {
   assert(bdatalocal_ && "Data not local; cannot resize");
-
-  #if defined(_G_AUTO_CREATE_DEV)
-//  #pragma acc exit data delete( data_[0:n_-1] )
-    #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
-  #endif
   
   GLLONG ibeg    = gindex_.beg();
   GLLONG iend    = ibeg + nnew - 1;
@@ -394,12 +359,6 @@ void GTVector<T>::resize(GSIZET nnew)
   }
   gindex_(nnew, nnew, ibeg, iend, istride, ipad);
   gindex_keep_ = gindex_;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-//  #pragma acc enter data create( data_[0:n_-1] )
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
- 
 } // end, method resize
 
 
@@ -415,11 +374,6 @@ template<class T>
 void GTVector<T>::resize(GIndex &gi)
 {
   assert(bdatalocal_ && "Data not local; cannot resize");
-
-  #if defined(_G_AUTO_CREATE_DEV)
-//  #pragma acc exit data delete( data_[0:n_-1] )
-    #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
-  #endif
 
   GLLONG nnew    = gi.end()+gi.pad()+1;
   GLLONG ibeg    = gi.beg();
@@ -450,12 +404,6 @@ void GTVector<T>::resize(GIndex &gi)
   }
   gindex_(nnew, nnew, ibeg, iend, istride, ipad);
   gindex_keep_ = gindex_;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-//  #pragma acc enter data create( data_[0:n_-1] )
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
- 
 } // end, method resize
 
 
@@ -472,10 +420,6 @@ void GTVector<T>::resizem(GSIZET nnew)
   if ( nnew > n_ ) {
 
     assert(bdatalocal_ && "Data not local; cannot resize");
-    #if defined(_G_AUTO_CREATE_DEV)
-//    #pragma acc exit data delete( data_[0:n_-1] )
-      #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
-    #endif
 
 #if defined(USE_CUBLAS)
   if ( !std::is_class<T>::value && !std::is_pointer<T>::value && std::is_floating_point<T>::value ) {
@@ -487,11 +431,6 @@ void GTVector<T>::resizem(GSIZET nnew)
 #else
     resize(nnew);
 #endif
-
-    #if defined(_G_AUTO_CREATE_DEV)
-//    #pragma acc enter data create( data_[0:n_-1] )
-      #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-    #endif
   }
 
 } // end, method resizem
@@ -510,11 +449,6 @@ template<class T>
 void GTVector<T>::reserve(GSIZET nnew)
 {
   assert(bdatalocal_ && "Can reserve only on data local vector");
-
-  #if defined(_G_AUTO_CREATE_DEV)
-//  #pragma acc exit data delete( data_[0:n_-1] )
-    #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
-  #endif
 
   T *ttmp=NULLPTR;
   GLLONG ibeg    = gindex_.beg();
@@ -593,12 +527,6 @@ void GTVector<T>::reserve(GSIZET nnew)
   }
 
   if ( ttmp != NULLPTR ) delete [] ttmp;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-//  #pragma acc enter data create( data_[0:n_-1] )
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
- 
 } // end, method reserve
 
 
@@ -612,11 +540,6 @@ void GTVector<T>::reserve(GSIZET nnew)
 template<class T>
 void GTVector<T>::clear()
 {
-
-  #if defined(_G_AUTO_CREATE_DEV)
-//  #pragma acc exit data delete( data_[0:n_-1] )
-    #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
-  #endif
   if ( data_ != NULLPTR ) {
 #if defined(USE_CUBLAS)
       cudaFree(this->data_);
@@ -628,12 +551,6 @@ void GTVector<T>::clear()
   n_ = 0;
   gindex_(n_, n_, 0, n_-1, 1,  0);
   gindex_keep_ = gindex_;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-//  #pragma acc enter data create( data_[0:n_-1] )
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
-
 } // end, method clear
 
 
@@ -972,7 +889,6 @@ while(1){};
 template<class T> 
 void GTVector<T>::updatehost()
 {
-  #pragma acc update self( data_[0:n_-1] )
 } // end of method updatehost
 
 
@@ -986,9 +902,6 @@ void GTVector<T>::updatehost()
 template<class T> 
 void GTVector<T>::updatedev()
 {
-#if defined(_G_AUTO_UPDATE_DEV)
-  #pragma acc update device( data_[0:n_-1] )
-#endif
 } // end of method updatedev
 
 //**********************************************************************************
