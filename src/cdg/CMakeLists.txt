@@ -69,6 +69,7 @@ target_link_libraries(cdg
 		tbox
 	PRIVATE
 		"$<$<BOOL:${OpenMP_FOUND}>:OpenMP::OpenMP_CXX>"
+		"$<$<BOOL:${OpenACC_FOUND}>:OpenACC::OpenACC_CXX>"
 		"$<$<BOOL:${MPI_CXX_FOUND}>:MPI::MPI_CXX>"
 		"$<$<BOOL:${Boost_SERIALIZATION_FOUND}>:Boost::serialization>"
 		"$<$<BOOL:${Boost_MPI_FOUND}>:Boost::mpi>"
