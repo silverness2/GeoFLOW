@@ -218,10 +218,12 @@ add_subdirectory(src)
 add_subdirectory(analysis/src)
 
 # Build Testing
-include(CTest)
-if(BUILD_TESTING)
-  add_subdirectory(test)
-endif()
+if(DO_TESTS)
+	include(CTest)
+	if(BUILD_TESTING)
+  		add_subdirectory(test)
+	endif()
+endif(DO_TESTS)
 
 # Build Documentation (DOxygen)
 if(DOXYGEN_FOUND)
