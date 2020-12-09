@@ -42,6 +42,7 @@ target_compile_features(cdg
 # 
 target_compile_options(cdg 
 	PRIVATE
+		"$<$<BOOL:${OpenACC_CXX_FOUND}>:${OpenACC_CXX_OPTIONS}>"
 #		$<$<COMPILE_LANGUAGE:CXX>:-Wno-unknown-pragmas>
 	)
 
@@ -69,7 +70,6 @@ target_link_libraries(cdg
 		tbox
 	PRIVATE
 		"$<$<BOOL:${OpenMP_FOUND}>:OpenMP::OpenMP_CXX>"
-		"$<$<BOOL:${OpenACC_FOUND}>:OpenACC::OpenACC_CXX>"
 		"$<$<BOOL:${MPI_CXX_FOUND}>:MPI::MPI_CXX>"
 		"$<$<BOOL:${Boost_SERIALIZATION_FOUND}>:Boost::serialization>"
 		"$<$<BOOL:${Boost_MPI_FOUND}>:Boost::mpi>"
@@ -78,6 +78,7 @@ target_link_libraries(cdg
 		"$<$<BOOL:${CBLAS_FOUND}>:${CBLAS_LIBRARIES_DEP}>"
 		"$<$<BOOL:${CUDA_FOUND}>:${CUDA_LIBRARIES}>"
 		"$<$<BOOL:${CUDA_FOUND}>:${CUDA_CUBLAS_LIBRARIES}>"
+		"$<$<BOOL:${OpenACC_CXX_FOUND}>:OpenACC::OpenACC_CXX>"
 	)
 
 #

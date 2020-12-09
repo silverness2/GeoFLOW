@@ -20,6 +20,9 @@ option(DO_AUTO_PROF   "DO_AUTO_PROF"  OFF)  # Do auto-profing with GPTL?
 option(VERBOSE_MAKE   "VERBOSE_MAKE"  ON)   # Verbose MakeFile Ouput
 option(ENABLE_TESTS   "ENABLE_TESTS"  ON)   # Enable Testing
 
+option(USE_OPENACC          "Using OpenACC"  OFF)
+option(OpenACC_ACCEL_TARGET "OpenACC Target" "tesla:cc70")
+
 #
 # Turn on function tracing where instrumented
 # - To use NVTX or PIO Tracing must be turned on

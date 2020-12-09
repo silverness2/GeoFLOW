@@ -151,6 +151,10 @@ if(USE_CUBLAS OR GEOFLOW_TRACER_USE_NVTX)
 	find_package(CUDA REQUIRED) 
 endif()
 
+if(USE_OPENACC)
+	find_package(OpenACC REQUIRED)
+endif()
+
 find_package(Doxygen)
 
 
