@@ -20,10 +20,11 @@ using namespace std;
 
 
 struct stBdyBlock {
-  GTVector<GTVector<GINT>>  istate; // vector of staet index vectors
-  GTVector<GBdyType>        tbdy;   // vector of bdy types; one for each istate vector
-  GString                   config_method; // name of bdy node config method
-  GString                   inflow_method; // name of inflow method, if any
+  GTVector<GTVector<GINT>>   istate; // vectors of state index vectors
+  GTVector<GTVector<GFTYPE>> value ; // vectors of Dirichlet values
+  GTVector<GBdyType>         tbdy;   // vector of bdy types; one for each istate vector
+  GString                    config_method; // name of bdy node config method
+  GString                    inflow_method; // name of inflow method, if any
 };
 
 namespace geoflow

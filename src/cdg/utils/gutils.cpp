@@ -84,13 +84,17 @@ GBOOL file_empty(GString sfile)
 //**********************************************************************************
 void get_bdy_block(const geoflow::tbox::PropertyTree &sptree, stBdyBlock &stblock)
 {
+  GBOOL                bvalvec;
   GString              sconf;
   std::vector<GString> svec;
   std::vector<std::vector<GINT>> 
                        ivecvec;
+  std::vector<std::vector<GFTYPE>> 
+                       fvecvec;
   
   // Clear out structure data:
   stblock.istate.clear();
+  stblock.value .clear();
   stblock.tbdy  .clear();
   stblock.config_method.clear();
   stblock.inflow_method.clear();
@@ -109,7 +113,12 @@ void get_bdy_block(const geoflow::tbox::PropertyTree &sptree, stBdyBlock &stbloc
 #endif
   svec = sptree.getArray<GString>("base_type");
 
+  bvalvec = FALSE;
   ivecvec = sptree.getArray2D<GINT>("istate");
+  if ( sptree.isArray2D<GFTYPE>(("value")
+    fvecvec = sptree.getArray2D<GINT>("value");
+    bvalvec = TRUE;
+  }
   
   if ( svec.size() != ivecvec.size() ) {
     cout << "GUtils::get_bdy_block: istate and base_type array sizes not equal" << endl;
@@ -122,9 +131,13 @@ void get_bdy_block(const geoflow::tbox::PropertyTree &sptree, stBdyBlock &stbloc
   }
 
   stblock.istate.resize(svec.size());
+  stblock.value .resize(svec.size());
+  assert(bvalvec && fvecve.size() == svec.size());
   for ( auto j=0; j<svec.size(); j++ ) {
     stblock.istate[j].resize(ivecvec[j].size());
+    stblock.value [j].resize(fvecvec[j].size());
     stblock.istate[j] = ivecvec[j];
+    stblock.value [j] = fvecvec[j];
   }
 
 
