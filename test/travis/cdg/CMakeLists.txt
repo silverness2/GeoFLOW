@@ -33,6 +33,7 @@ set(linked_libraries
 		"$<$<BOOL:${Boost_MPI_FOUND}>:Boost::mpi>"
 		"$<$<BOOL:${PAPI_FOUND}>:PAPI::PAPI>"
 		"$<$<BOOL:${GPTL_FOUND}>:GPTL::GPTL>"
+		"$<$<BOOL:${OpenACC_CXX_FOUND}>:OpenACC::OpenACC_CXX>"
 	)
 	
 # 

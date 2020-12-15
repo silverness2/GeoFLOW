@@ -34,11 +34,6 @@ icsz_                 (_G_MAT_CACHE_SIZE),
 singzero_             (1e-12)
 {
   data_.resize(1);
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] ) 
-  #endif
-
 } // end of constructor 1 
 
 
@@ -62,11 +57,6 @@ singzero_             (1e-12)
   data_.resize(n1_*n2_);
 
   zero();
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] ) 
-  #endif
-
 } // end of constructor 2
 
 
@@ -89,11 +79,6 @@ singzero_             (1e-12)
   data_.resize(n1_*n2_);
 
   zero();
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] ) 
-  #endif
-
 } // end of constructor 3
 
 
@@ -120,11 +105,6 @@ singzero_             (1e-12)
   for ( auto j=0; j< n1_*n2_; j++ ) data_[j] = array[j];
 
   zero();
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] )
-  #endif
-
 } // end of constructor 4
 
 
@@ -162,11 +142,6 @@ singzero_             (1e-12)
   }
 
   zero();
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] )
-  #endif
-
 } // end of constructor 5
 
 
@@ -190,10 +165,6 @@ GTMatrix<T>::GTMatrix(const GTMatrix<T> &m)
   data_.resize(n1_*n2_);
 
   data_ = m.data_;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] ) )
-  #endif
   updatedev();
 
 } // end of copy constructor
@@ -209,7 +180,6 @@ GTMatrix<T>::GTMatrix(const GTMatrix<T> &m)
 template<class T> 
 GTMatrix<T>::~GTMatrix<T>()
 {
-  #pragma acc exit data delete( data_[0:1], this[0:1] )
 }
 
 //**********************************************************************************

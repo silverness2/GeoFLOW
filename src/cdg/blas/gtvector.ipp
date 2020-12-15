@@ -41,10 +41,6 @@ bdatalocal_        (TRUE)
 {
   gindex_(n_, n_, 0, n_-1, 1,  0);
   gindex_keep_ = gindex_;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
 }
 
 
@@ -76,10 +72,6 @@ bdatalocal_        (TRUE)
   assert(this->data_!= NULLPTR );
   gindex_(n_, n_, 0, n_-1, 1,  0);
   gindex_keep_ = gindex_;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
 }
 
 //**********************************************************************************
@@ -110,10 +102,6 @@ bdatalocal_        (TRUE)
   data_ = new T [n_];
 #endif
   assert(this->data_!= NULLPTR );
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
 }
 
 
@@ -148,10 +136,6 @@ bdatalocal_        (TRUE)
   }
   gindex_(n_, n_, 0, n_-1, 1,  0);
   gindex_keep_ = gindex_;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
   updatedev();
 }
 
@@ -191,10 +175,6 @@ bdatalocal_        (TRUE)
   }
   gindex_(n_, n_, 0, n_-1, 1,  0);
   gindex_keep_ = gindex_;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
   updatedev();
 }
 
@@ -240,10 +220,6 @@ bdatalocal_     (blocmgd)
     gindex_(n_, n_, 0, n_-1, istride,  0);
   }
   gindex_keep_ = gindex_;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
   updatedev();
 }
 
@@ -277,10 +253,6 @@ bdatalocal_        (TRUE)
   }
   gindex_ = obj.gindex_;
   gindex_keep_ = gindex_;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
   updatedev();
 }
 
@@ -294,8 +266,6 @@ bdatalocal_        (TRUE)
 template<class T>
 GTVector<T>::~GTVector()
 {
-  #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
-
 #if defined(USE_CUBLAS)
     cudaFree(data_);
 #else
@@ -360,11 +330,6 @@ template<class T>
 void GTVector<T>::resize(GSIZET nnew)
 {
   assert(bdatalocal_ && "Data not local; cannot resize");
-
-  #if defined(_G_AUTO_CREATE_DEV)
-//  #pragma acc exit data delete( data_[0:n_-1] )
-    #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
-  #endif
   
   GLLONG ibeg    = gindex_.beg();
   GLLONG iend    = ibeg + nnew - 1;
@@ -394,12 +359,6 @@ void GTVector<T>::resize(GSIZET nnew)
   }
   gindex_(nnew, nnew, ibeg, iend, istride, ipad);
   gindex_keep_ = gindex_;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-//  #pragma acc enter data create( data_[0:n_-1] )
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
- 
 } // end, method resize
 
 
@@ -415,11 +374,6 @@ template<class T>
 void GTVector<T>::resize(GIndex &gi)
 {
   assert(bdatalocal_ && "Data not local; cannot resize");
-
-  #if defined(_G_AUTO_CREATE_DEV)
-//  #pragma acc exit data delete( data_[0:n_-1] )
-    #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
-  #endif
 
   GLLONG nnew    = gi.end()+gi.pad()+1;
   GLLONG ibeg    = gi.beg();
@@ -450,12 +404,6 @@ void GTVector<T>::resize(GIndex &gi)
   }
   gindex_(nnew, nnew, ibeg, iend, istride, ipad);
   gindex_keep_ = gindex_;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-//  #pragma acc enter data create( data_[0:n_-1] )
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
- 
 } // end, method resize
 
 
@@ -472,10 +420,6 @@ void GTVector<T>::resizem(GSIZET nnew)
   if ( nnew > n_ ) {
 
     assert(bdatalocal_ && "Data not local; cannot resize");
-    #if defined(_G_AUTO_CREATE_DEV)
-//    #pragma acc exit data delete( data_[0:n_-1] )
-      #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
-    #endif
 
 #if defined(USE_CUBLAS)
   if ( !std::is_class<T>::value && !std::is_pointer<T>::value && std::is_floating_point<T>::value ) {
@@ -487,11 +431,6 @@ void GTVector<T>::resizem(GSIZET nnew)
 #else
     resize(nnew);
 #endif
-
-    #if defined(_G_AUTO_CREATE_DEV)
-//    #pragma acc enter data create( data_[0:n_-1] )
-      #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-    #endif
   }
 
 } // end, method resizem
@@ -510,11 +449,6 @@ template<class T>
 void GTVector<T>::reserve(GSIZET nnew)
 {
   assert(bdatalocal_ && "Can reserve only on data local vector");
-
-  #if defined(_G_AUTO_CREATE_DEV)
-//  #pragma acc exit data delete( data_[0:n_-1] )
-    #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
-  #endif
 
   T *ttmp=NULLPTR;
   GLLONG ibeg    = gindex_.beg();
@@ -593,12 +527,6 @@ void GTVector<T>::reserve(GSIZET nnew)
   }
 
   if ( ttmp != NULLPTR ) delete [] ttmp;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-//  #pragma acc enter data create( data_[0:n_-1] )
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
- 
 } // end, method reserve
 
 
@@ -612,11 +540,6 @@ void GTVector<T>::reserve(GSIZET nnew)
 template<class T>
 void GTVector<T>::clear()
 {
-
-  #if defined(_G_AUTO_CREATE_DEV)
-//  #pragma acc exit data delete( data_[0:n_-1] )
-    #pragma acc exit data delete( data_[0:n_-1], this[0:1] )
-  #endif
   if ( data_ != NULLPTR ) {
 #if defined(USE_CUBLAS)
       cudaFree(this->data_);
@@ -628,12 +551,6 @@ void GTVector<T>::clear()
   n_ = 0;
   gindex_(n_, n_, 0, n_-1, 1,  0);
   gindex_keep_ = gindex_;
-
-  #if defined(_G_AUTO_CREATE_DEV)
-//  #pragma acc enter data create( data_[0:n_-1] )
-    #pragma acc enter data copyin( this[0:1] ) create( data_[0:n_-1] )
-  #endif
-
 } // end, method clear
 
 
@@ -943,7 +860,7 @@ void GTVector<T>::set(T a)
 template<class T> 
 void GTVector<T>::set(T *a, GSIZET n)
 { 
-  #if defined(_G_BOUNDS_CHK) && !defined(_G_USE_OPENACC)
+  #if defined(_G_BOUNDS_CHK) && !defined(GEOFLOW_USE_OPENACC)
   if ( gindex_.beg()+n > gindex_.end()+1  ) {
     std::cout <<  "GTVector<T>::set: " << "assignment size mismatch: " << std::endl;
 while(1){};
@@ -972,7 +889,6 @@ while(1){};
 template<class T> 
 void GTVector<T>::updatehost()
 {
-  #pragma acc update self( data_[0:n_-1] )
 } // end of method updatehost
 
 
@@ -986,9 +902,6 @@ void GTVector<T>::updatehost()
 template<class T> 
 void GTVector<T>::updatedev()
 {
-#if defined(_G_AUTO_UPDATE_DEV)
-  #pragma acc update device( data_[0:n_-1] )
-#endif
 } // end of method updatedev
 
 //**********************************************************************************
@@ -1259,7 +1172,7 @@ GTVector<T>::operator*=(const T b)
 // ARGS   : GTVector &
 // RETURNS: void
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 void
 GTVector<T>::operator+=(const GTVector &obj)
@@ -1289,7 +1202,7 @@ GTVector<T>::operator+=(const GTVector &obj)
 // ARGS   : GTVector & arg
 // RETURNS: void
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 void
 GTVector<T>::operator-=(const GTVector &obj)
@@ -1668,6 +1581,7 @@ GTVector<T>::amindiff(T tiny)
 //          ret: GTVector & ret
 // RETURNS: GTVector & 
 //**********************************************************************************
+//#pragma acc routine vector
 template<class T>
 void
 GTVector<T>::pointProd(const GTVector<T> &obj, GTVector<T> &ret ) 
@@ -1681,11 +1595,13 @@ while(1){};
   #endif
 
   if ( obj.size() > 1 ) {
+#pragma acc parallel loop
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       ret[j] = this->data_[j-gindex_.beg()] * obj[j-gindex_.beg()];
     }
   }
   else {
+#pragma acc parallel loop
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       ret[j] = this->data_[j-gindex_.beg()] * obj[0];
     }
@@ -1718,11 +1634,13 @@ while(1){};
   #endif
 
   if ( obj.size() > 1 ) {
+#pragma acc parallel loop
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       ret[j] = a * this->data_[j-gindex_.beg()] * obj[j-gindex_.beg()];
     }
   }
   else {
+#pragma acc parallel loop
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       ret[j] = a * this->data_[j-gindex_.beg()] * obj[0];
     }
@@ -1753,11 +1671,14 @@ while(1){};
   #endif
 
   if ( obj.size() > 1 ) {
+
+#pragma acc parallel loop
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       data_[j] *= obj[j-gindex_.beg()];
     }
   }
   else {
+#pragma acc parallel loop
     for ( auto j=this->gindex_.beg(); j<=this->gindex_.end(); j+=this->gindex_.stride() ) {
       data_[j] *= obj[0];
     }
@@ -1967,7 +1888,7 @@ GTVector<T>::abs()
 // ARGS   : val : type T
 // RETURNS: GSIZET multiplicity
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GSIZET
 GTVector<T>::multiplicity(T val)
@@ -2000,7 +1921,7 @@ GTVector<T>::multiplicity(T val)
 //          ifound: index where 'val' is first encountered, if at all
 // RETURNS: GSIZET multiplicity
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GSIZET
 GTVector<T>::multiplicity_s(T val, GSIZET istart, GSIZET &ifound)
@@ -2039,7 +1960,7 @@ GTVector<T>::multiplicity_s(T val, GSIZET istart, GSIZET &ifound)
 //          n    : new size of index array, if resized. Should be >= multiplicity
 // RETURNS: GSIZET multiplicity
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GSIZET
 GTVector<T>::multiplicity(T val, GSIZET *&index, GSIZET &n)
@@ -2080,7 +2001,7 @@ GTVector<T>::multiplicity(T val, GSIZET *&index, GSIZET &n)
 //          floor: check only values > floor
 // RETURNS: GSIZET multiplicity
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GSIZET
 GTVector<T>::multiplicity_floor(T val, T floor)
@@ -2112,7 +2033,7 @@ GTVector<T>::multiplicity_floor(T val, T floor)
 //          floor: check only values > floor
 // RETURNS: GSIZET multiplicity
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GSIZET
 GTVector<T>::multiplicity_floor(T val, GSIZET *&index, GSIZET &n, T floor)
@@ -2153,7 +2074,7 @@ GTVector<T>::multiplicity_floor(T val, GSIZET *&index, GSIZET &n, T floor)
 //          ceil : check only values < ceil
 // RETURNS: GSIZET multiplicity
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GSIZET
 GTVector<T>::multiplicity_ceil(T val, T ceil)
@@ -2183,7 +2104,7 @@ GTVector<T>::multiplicity_ceil(T val, T ceil)
 // ARGS   : val : member to search for in buffer
 // RETURNS: TRUE if member is in list, else FALSE. If list is empty, returns TRUE
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GBOOL
 GTVector<T>::onlycontains(T val)
@@ -2209,7 +2130,7 @@ GTVector<T>::onlycontains(T val)
 // ARGS   : val : member to search for in buffer
 // RETURNS: index of first occurrence, else -1
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GLONG
 GTVector<T>::findfirst(T val)
@@ -2234,7 +2155,7 @@ GTVector<T>::findfirst(T val)
 // ARGS   : val : member to search for in buffer
 // RETURNS: index of last occurrence, else -1
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GLONG
 GTVector<T>::findlast(T val)
@@ -2262,7 +2183,7 @@ GTVector<T>::findlast(T val)
 //                   if return is TRUE
 // RETURNS: TRUE if member is in list, else FALSE. 
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GBOOL
 GTVector<T>::contains(T val, GSIZET &iwhere)
@@ -2299,7 +2220,7 @@ GTVector<T>::contains(T val, GSIZET &iwhere)
 //                   of indices where val exsts, and nw will change
 // RETURNS: number of indices at which this == val
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GSIZET
 GTVector<T>::contains(T val, GSIZET *&iwhere, GSIZET &nw)
@@ -2348,7 +2269,7 @@ GTVector<T>::contains(T val, GSIZET *&iwhere, GSIZET &nw)
 //          iwhere : first index where val is found; else unchanged
 // RETURNS: TRUE if member is in list, else FALSE. 
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GBOOL
 GTVector<T>::containsn(T val, GSIZET n, GSIZET &iwhere)
@@ -2380,7 +2301,7 @@ GTVector<T>::containsn(T val, GSIZET n, GSIZET &iwhere)
 // ARGS   : val : member to search for in buffer
 // RETURNS: TRUE if member is in list, else FALSE. 
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GBOOL
 GTVector<T>::contains(T val)
@@ -2406,7 +2327,7 @@ GTVector<T>::contains(T val)
 //          n   : number of indices to check, staring with gindex.beg()
 // RETURNS: TRUE if member is in list, else FALSE. 
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GBOOL
 GTVector<T>::containsn(T val, GSIZET n)
@@ -2440,7 +2361,7 @@ GTVector<T>::containsn(T val, GSIZET n)
 // RETURNS:  TRUE if member is in list, else FALSE. On TRUE, set iwhere to
 //           index where member is found first
 //************************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GBOOL
 GTVector<T>::contains_floor(T val, GSIZET  &iwhere, T floor, GSIZET istart)
@@ -2477,7 +2398,7 @@ GTVector<T>::contains_floor(T val, GSIZET  &iwhere, T floor, GSIZET istart)
 // RETURNS:  TRUE if member is in list, else FALSE. On TRUE, set iwhere to
 //           index where member is found first
 //************************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GBOOL
 GTVector<T>::contains_ceil(T val, GSIZET  &iwhere, T ceil, GSIZET istart)
@@ -2521,7 +2442,7 @@ GTVector<T>::contains_ceil(T val, GSIZET  &iwhere, T ceil, GSIZET istart)
 //          itmp    : tmp array of type GSIZET, of size at least of size()
 // RETURNS    :  TRUE on success; else FALSE 
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GSIZET
 GTVector<T>::distinctrng(GSIZET ibeg, GSIZET n, GSIZET is, T *&vals,
@@ -2583,7 +2504,7 @@ GTVector<T>::distinctrng(GSIZET ibeg, GSIZET n, GSIZET is, T *&vals,
 //          itmp    : tmp array of type GSIZET, of size at least of size()
 // RETURNS    :  TRUE on success; else FALSE 
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GSIZET
 GTVector<T>::distinctrng(GSIZET ibeg, GSIZET n, GSIZET is,
@@ -2645,7 +2566,7 @@ GTVector<T>::distinctrng(GSIZET ibeg, GSIZET n, GSIZET is,
 //          itmp    : tmp array of type GSIZET, of size at least size()
 // RETURNS    :  number distinct values found
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GSIZET
 GTVector<T>::distinctrng_floor(GSIZET ibeg, GSIZET n, GSIZET is, T *&vals,
@@ -2711,7 +2632,7 @@ GTVector<T>::distinctrng_floor(GSIZET ibeg, GSIZET n, GSIZET is, T *&vals,
 //          itmp    : tmp array of type GSIZET, of size at least of size()
 // RETURNS    :  number distinct values found
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GSIZET
 GTVector<T>::distinctrng_floor(GSIZET ibeg, GSIZET n, GSIZET is, 
@@ -2766,7 +2687,7 @@ GTVector<T>::distinctrng_floor(GSIZET ibeg, GSIZET n, GSIZET is,
 //          itmp    : tmp array of type GSIZET, of size at least of size()
 // RETURNS    :  no. distinct elements
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GSIZET
 GTVector<T>::distinct(GSIZET  *&indices, GSIZET  &nd, 
@@ -2796,7 +2717,7 @@ GTVector<T>::distinct(GSIZET  *&indices, GSIZET  &nd,
 //          itmp    : tmp array of type GSIZET, of size at least of size()
 // RETURNS :  no. distinct elements
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 GSIZET
 GTVector<T>::distinct_floor(GSIZET  *&indices, GSIZET  &nd, 
@@ -2818,7 +2739,7 @@ GTVector<T>::distinct_floor(GSIZET  *&indices, GSIZET  &nd,
 // ARGS   : none.
 // RETURNS: none
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 void
 GTVector<T>::sortdecreasing()
@@ -2858,7 +2779,7 @@ GTVector<T>::sortdecreasing()
 //                 then B = A(isort). Resized if necessary.
 // RETURNS: none
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 void
 GTVector<T>::sortdecreasing(GTVector<GSIZET> &isort)
@@ -2904,7 +2825,7 @@ GTVector<T>::sortdecreasing(GTVector<GSIZET> &isort)
 // ARGS   : none.
 // RETURNS: nona
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 void
 GTVector<T>::sortincreasing()
@@ -2946,7 +2867,7 @@ GTVector<T>::sortincreasing()
 //                 then B = A(isort). Resized if necessary.
 // RETURNS: nona
 //**********************************************************************************
-#pragma acc routine vector
+//#pragma acc routine vector
 template<class T>
 void
 GTVector<T>::sortincreasing(GTVector<GSIZET> &isort)
