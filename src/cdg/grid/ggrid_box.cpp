@@ -999,7 +999,7 @@ void GGridBox::config_bdy(const PropertyTree           &ptree,
       // May have different uniform bdys for different state comps:
       for ( auto k=0; k<stblock.tbdy.size() && !bperiodic; k++ ) {
         base_ptr = GUpdateBdyFactory<BdyTypePack>::build(ptree, sbdy, *this,  j,
-                                            stblock.tbdy[k], stblock.istate[k], itmp);
+                                            stblock.tbdy[k], stblock.istate[k], stblock.value[k], itmp);
         igbdyft[j] = stblock.tbdy[k];
         bdy_update_list_[j].push_back(base_ptr);
       }
@@ -1015,7 +1015,7 @@ void GGridBox::config_bdy(const PropertyTree           &ptree,
         GSpecBdyFactory::dospec(bdytree, *this, j, itmp);
         for ( auto k=0; k<svec.size(); k++ ) { // for each sub-block
           base_ptr = GUpdateBdyFactory<BdyTypePack>::build(ptree, svec[k], *this,  j,
-                                              stblock.tbdy[k], stblock.istate[k], itmp);
+                                              stblock.tbdy[k], stblock.istate[k], stblock.value[k], itmp);
 
           for ( auto m=0; m<itmp.size(); m++ ) {
             if ( igbdyf[j].contains(itmp[m]) ) igbdyft[j][m] = stblock.tbdy[k];
