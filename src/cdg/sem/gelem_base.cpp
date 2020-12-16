@@ -935,6 +935,7 @@ void GElem_base::dogeom2d(GTMatrix<GTVector<GFTYPE>> &rij, GTMatrix<GTVector<GFT
   }
 
 
+#if 0
   // Compute face Jacobians. Linearize edge nodes, including them
   // in order:
   GINT ntot=0;
@@ -951,6 +952,7 @@ void GElem_base::dogeom2d(GTMatrix<GTVector<GFTYPE>> &rij, GTMatrix<GTVector<GFT
   else if ( elemtype_ == GE_REGULAR ) {
     fjac = jac[0];
   } 
+#endif
 
 } // end of method dogeom2d
 
@@ -1042,7 +1044,7 @@ void GElem_base::dogeom3d(GTMatrix<GTVector<GFTYPE>> &rij, GTMatrix<GTVector<GFT
     jac = 0.125*L[0]*L[1]*L[2];
   }
 
-
+#if 0
   // Compute face Jacobians. Linearize edge nodes, including them
   // in order:
   GINT ntot=0;
@@ -1059,7 +1061,7 @@ void GElem_base::dogeom3d(GTMatrix<GTVector<GFTYPE>> &rij, GTMatrix<GTVector<GFT
   else if ( elemtype_ == GE_REGULAR ) {
     fjac = jac[0];
   } 
-
+#endif
 
 } // end of method dogeom3d
 
